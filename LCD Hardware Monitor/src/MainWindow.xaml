@@ -4,21 +4,21 @@
 	xmlns:mui="http://firstfloorsoftware.com/ModernUI"
 	Style="{StaticResource BlankWindow}"
 	ResizeMode="CanMinimize"
-	Title="LCD Hardware Monitor" Height="650" Width="1100">
+	Title="LCD Hardware Monitor" MinHeight="650" MinWidth="1100">
 
 	<Grid
 		Margin="10,0,10,10">
 		<Grid.ColumnDefinitions>
-			<ColumnDefinition />
+			<ColumnDefinition MinWidth="320"/>
 			<ColumnDefinition Width="10"/>
-			<ColumnDefinition />
+			<ColumnDefinition MinWidth="320"/>
 		</Grid.ColumnDefinitions>
 
 		<!-- Left Side -->
 		<Grid Grid.Column="0">
 			<Grid.RowDefinitions>
-				<RowDefinition />
-				<RowDefinition Height ="40"/>
+				<RowDefinition Height="Auto"/>
+				<RowDefinition Height="20"/>
 				<RowDefinition />
 			</Grid.RowDefinitions>
 
