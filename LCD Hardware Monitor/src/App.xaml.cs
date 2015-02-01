@@ -1,6 +1,6 @@
 ﻿using System.Windows;
 
-namespace LCD_Hardware_Monitor
+namespace LCDHardwareMonitor
 {
 	/// <summary>
 	/// Interaction logic for App.xaml

@@ -1,14 +1,14 @@
 ﻿using System;
 using System.Windows;
-using OpenHardwareMonitor.GUI;
 using OpenHardwareMonitor.Hardware;
+using FirstFloor.ModernUI.Windows.Controls;
 
-namespace LCD_Hardware_Monitor
+namespace LCDHardwareMonitor
 {
 	/// <summary>
 	/// Interaction logic for MainWindow.xaml
 	/// </summary>
-	public partial class MainWindow : Window
+	public partial class MainWindow : ModernWindow
 	{
 		public MainWindow ()
 		{
@@ -16,9 +16,11 @@ namespace LCD_Hardware_Monitor
 
 			Computer computer = new Computer();
 			computer.Open();
-			computer.Accept(new UpdateVisitor());
+			//computer.Accept(new UpdateVisitor());
 
-			//computer.GetReport();
+			string report = computer.GetReport();
+			Console.WriteLine(report);
+
 			foreach ( var hardware in computer.Hardware )
 			{
 				PrintHardwareRecursively(hardware);

@@ -1,6 +1,35 @@
-﻿<Window x:Class="LCD_Hardware_Monitor.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="MainWindow" Height="350" Width="525">
-    <Grid/>
-</Window>
+﻿<mui:ModernWindow x:Class="LCDHardwareMonitor.MainWindow"
+                  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                  xmlns:mui="http://firstfloorsoftware.com/ModernUI"
+                  Style="{StaticResource BlankWindow}"
+                  Title="LCD Hardware Monitor" Height="650" Width="1100">
+
+	<Grid>
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition />
+			<ColumnDefinition />
+		</Grid.ColumnDefinitions>
+
+		<StackPanel Grid.Column="0">
+			<StackPanel Margin="0,0,0,40">
+				<TextBlock Text="LCD Preview" Style="{StaticResource Title}" />
+				<Canvas Height="240" Width="320" Background="Black" />
+			</StackPanel>
+
+			<StackPanel HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+				<TextBlock Text="Element Settings" Style="{StaticResource Title}" />
+				<mui:ModernFrame HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+					<TextBlock>Settings go here</TextBlock>
+				</mui:ModernFrame>
+			</StackPanel>
+		</StackPanel>
+
+		<StackPanel Grid.Column="1">
+			<TextBlock Text="Elements" Style="{StaticResource Title}" />
+			<ListView>
+			</ListView>
+		</StackPanel>
+	</Grid>
+
+</mui:ModernWindow>

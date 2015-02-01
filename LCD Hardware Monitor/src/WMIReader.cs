@@ -5,7 +5,7 @@ using System.Reflection;
 using Microsoft.Management.Infrastructure;
 using OpenHardwareMonitor.Hardware;
 
-namespace LCD_Hardware_Monitor
+namespace LCDHardwareMonitor
 {
 	class WMIReader
 	{

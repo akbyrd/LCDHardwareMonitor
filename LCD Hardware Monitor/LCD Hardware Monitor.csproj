@@ -7,7 +7,7 @@
     <ProjectGuid>{0DF8E09D-EFF9-48F5-BE02-D85B99B2D37B}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>LCD_Hardware_Monitor</RootNamespace>
+    <RootNamespace>LCDHardwareMonitor</RootNamespace>
     <AssemblyName>LCD Hardware Monitor</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
@@ -37,6 +37,9 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="FirstFloor.ModernUI">
+      <HintPath>..\packages\ModernUI.WPF.1.0.6\lib\net45\FirstFloor.ModernUI.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.Management.Infrastructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>C:\Program Files (x86)\Reference Assemblies\Microsoft\WMI\v1.0\Microsoft.Management.Infrastructure.dll</HintPath>
@@ -57,7 +60,12 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="external\UpdateVisitor.cs" />
+    <Compile Include="src\Pages\ControlExamplesPage.xaml.cs">
+      <DependentUpon>ControlExamplesPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="src\Pages\OHMDataPage.xaml.cs">
+      <DependentUpon>OHMDataPage.xaml</DependentUpon>
+    </Compile>
     <Compile Include="src\WMIReader.cs" />
     <Page Include="src\MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
@@ -71,6 +79,14 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Page Include="src\Pages\ControlExamplesPage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="src\Pages\OHMDataPage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs">
@@ -100,7 +116,7 @@
     <AppDesigner Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\External\OpenHardwareMonitorLib.csproj">
+    <ProjectReference Include="..\modules\OpenHardwareMonitor\OpenHardwareMonitorLib.csproj">
       <Project>{b0397530-545a-471d-bb74-027ae456df1a}</Project>
       <Name>OpenHardwareMonitorLib</Name>
     </ProjectReference>
