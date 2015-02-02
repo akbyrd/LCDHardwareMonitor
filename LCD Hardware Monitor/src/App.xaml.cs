@@ -7,6 +7,6 @@ namespace LCDHardwareMonitor
 	/// </summary>
 	public partial class App : Application
 	{
-		WMIReader wmiReader = new WMIReader();
+		//WMIReader wmiReader = new WMIReader();
 	}
 }
