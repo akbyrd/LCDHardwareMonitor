@@ -13,14 +13,14 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace LCDHardwareMonitor
+namespace LCDHardwareMonitor.src.Pages
 {
 	/// <summary>
-	/// Interaction logic for ControlExamplesPage.xaml
+	/// Interaction logic for LCDDesignerPage.xaml
 	/// </summary>
-	public partial class ControlExamplesPage : UserControl
+	public partial class LCDDesignerPage : UserControl
 	{
-		public ControlExamplesPage ()
+		public LCDDesignerPage ()
 		{
 			InitializeComponent();
 		}
