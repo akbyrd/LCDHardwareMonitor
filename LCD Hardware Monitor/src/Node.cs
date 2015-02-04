@@ -2,7 +2,7 @@
 
 namespace LCDHardwareMonitor
 {
-	class Node
+	public class Node
 	{
 		public object Source { get; set; }
 		public string Text { get; set; }

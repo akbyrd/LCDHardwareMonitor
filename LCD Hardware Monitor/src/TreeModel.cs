@@ -1,6 +1,6 @@
 ﻿namespace LCDHardwareMonitor
 {
-	class TreeModel
+	public class TreeModel
 	{
 		public Node Root { get; private set; }
 

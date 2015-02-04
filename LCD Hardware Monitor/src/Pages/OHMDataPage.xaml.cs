@@ -3,20 +3,33 @@ using OpenHardwareMonitor.Hardware;
 
 namespace LCDHardwareMonitor.Pages
 {
+	public class StringList : System.Collections.Generic.List<string> { }
+
 	/// <summary>
 	/// Interaction logic for OHMDataPage.xaml
 	/// </summary>
 	public partial class OHMDataPage : UserControl
 	{
-		private Computer computer;
-		private TreeModel treeModel;
+		private Computer  Computer  { get; set; }
+		private TreeModel TreeModel { get; set; }
+
+		public StringList stuff { get; set; }
 
 		public OHMDataPage ()
 		{
-			InitializeComponent();
+			Computer = InitializeComputer();
+			TreeModel = BuildSensorTree();
 
-			computer = InitializeComputer();
-			treeModel = BuildSensorTree();
+			stuff = new StringList();
+			stuff.Add("New String 1");
+			stuff.Add("New String 2");
+			stuff.Add("New String 3");
+			stuff.Add("New String 4");
+			stuff.Add("New String 5");
+			stuff.Add("New String 6");
+
+			//DataContext = this;
+			InitializeComponent();
 		}
 
 		private Computer InitializeComputer ()
@@ -39,10 +52,10 @@ namespace LCDHardwareMonitor.Pages
 		{
 			TreeModel treeModel = new TreeModel();
 
-			treeModel.Root.Text = computer.ToString();
+			treeModel.Root.Text = Computer.ToString();
 
 			//TODO: Stack approach
-			foreach ( IHardware hardware in computer.Hardware )
+			foreach ( IHardware hardware in Computer.Hardware )
 			{
 				AddHardwareRecursively(treeModel.Root, hardware);
 			}
@@ -63,6 +76,8 @@ namespace LCDHardwareMonitor.Pages
 				Node sensorNode = new Node();
 				sensorNode.Source = sensor;
 				sensorNode.Text = sensor.Name + " (" + sensor.SensorType + ") = " + sensor.Value;
+
+				hardwareNode.Nodes.Add(sensorNode);
 			}
 
 			foreach ( IHardware subHardware in hardware.SubHardware )

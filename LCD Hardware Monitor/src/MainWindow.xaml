@@ -4,7 +4,8 @@
 	xmlns:mui="http://firstfloorsoftware.com/ModernUI"
 	ResizeMode="CanMinimize"
 	Title="LCD Hardware Monitor" MinHeight="650" MinWidth="1100"
-	ContentSource="src/Pages/LCDDesignerPage.xaml" >
+	ContentSource="src/Pages/OHMDataPage.xaml">
+	<!--ContentSource="src/Pages/LCDDesignerPage.xaml"-->
 	<!--Style="{StaticResource BlankWindow}"-->
 
 	<mui:ModernWindow.TitleLinks>
