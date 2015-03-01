@@ -3,46 +3,50 @@
 	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 	xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-	xmlns:src="clr-namespace:LCDHardwareMonitor"
-	DataContext="{Binding RelativeSource={RelativeSource Self}}"
+	xmlns:lhm="clr-namespace:LCDHardwareMonitor"
 	mc:Ignorable="d"
-	d:DesignHeight="650" d:DesignWidth="1100">
+	d:DesignHeight="650" d:DesignWidth="1100"
+	MouseRightButtonDown="UserControl_MouseRightButtonDown"
+	DataContext="{Binding RelativeSource={RelativeSource Self}}">
 
 	<Border
 		BorderBrush="{DynamicResource ButtonBorder}"
 		BorderThickness="1">
-		<!-- Works -->
-		<!--DataContext="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}}"-->
 
-		<Grid>
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition />
-				<ColumnDefinition />
-				<ColumnDefinition />
-			</Grid.ColumnDefinitions>
+		<!-- TODO: Implement INotifyCollectionChanged to support dynamic tree -->
+		<!-- TODO: Don't try to bind IsExpanded on SensorNodes -->
+		<!-- TODO: Change unfocused border color to gray matching window color (i.e. invisible) -->
+		<!-- TODO: Change highlight color to match VS (darker blue) -->
+		<!-- TODO: Remember expansion -->
+		<!-- TODO: Expand as mouse rolls over items? -->
+		<TreeView
+			ItemsSource="{Binding HardwareTree.HardwareNodes}">
 
-			<ScrollViewer Grid.Column="0">
-				<!-- TODO: Implement INotifyCollectionChanged to support dynamic tree -->
-				<TreeView
-					ItemsSource="{Binding Root}">
-					<TreeView.ItemTemplate>
-						<HierarchicalDataTemplate
-							DataType="{x:Type src:Node}"
-							ItemsSource="{Binding Root.Nodes}">
-							<TextBlock Text="{Binding Root.Text}" />
-						</HierarchicalDataTemplate>
-					</TreeView.ItemTemplate>
-				</TreeView>
-			</ScrollViewer>
+			<TreeView.Resources>
+				<HierarchicalDataTemplate
+					DataType="{x:Type lhm:HardwareNode}"
+					ItemsSource="{Binding Children}">
+					<TextBlock Text="{Binding Hardware.Name}" />
+				</HierarchicalDataTemplate>
 
-			<ScrollViewer Grid.Column="1">
-				<ListBox ItemsSource="{Binding Root.Nodes}" />
-			</ScrollViewer>
+				<DataTemplate
+					DataType="{x:Type lhm:SensorNode}">
+					<TextBlock Text="{Binding Sensor.Name}" />
+				</DataTemplate>
 
-			<ScrollViewer Grid.Column="2">
-				<ListBox ItemsSource="{Binding stuff}" />
-			</ScrollViewer>
-		</Grid>
+				<Style
+					TargetType="{x:Type TreeViewItem}"
+					BasedOn="{StaticResource {x:Type TreeViewItem}}">
+					<Setter
+						Property="IsExpanded"
+						Value="{Binding IsExpanded}" />
+					<EventSetter
+						Event="PreviewMouseLeftButtonDown"
+						Handler="TreeViewItem_MouseLeftButtonDown" />
+				</Style>
+			</TreeView.Resources>
+
+		</TreeView>
 
 	</Border>
 </UserControl>

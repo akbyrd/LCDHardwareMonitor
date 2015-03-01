@@ -76,7 +76,8 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="src\Node.cs" />
+    <Compile Include="src\ViewModel\INode.cs" />
+    <Compile Include="src\ViewModel\HardwareNode.cs" />
     <Compile Include="src\Pages\LCDDesignerPage.xaml.cs">
       <DependentUpon>LCDDesignerPage.xaml</DependentUpon>
     </Compile>
@@ -86,7 +87,8 @@
     <Compile Include="src\Pages\SettingsPage.xaml.cs">
       <DependentUpon>SettingsPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="src\TreeModel.cs" />
+    <Compile Include="src\ViewModel\OHMHardwareTree.cs" />
+    <Compile Include="src\ViewModel\SensorNode.cs" />
     <Page Include="src\MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

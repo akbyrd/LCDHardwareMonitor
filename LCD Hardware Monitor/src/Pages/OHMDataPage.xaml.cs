@@ -1,89 +1,59 @@
-﻿using System.Windows.Controls;
+﻿using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using LCDHardwareMonitor.ViewModel;
 using OpenHardwareMonitor.Hardware;
 
 namespace LCDHardwareMonitor.Pages
 {
-	public class StringList : System.Collections.Generic.List<string> { }
+	//TODO: Change this to something like "SensorPage", then have a subpage for each provider (e.g. OHM, AIDA, Fraps)
 
 	/// <summary>
 	/// Interaction logic for OHMDataPage.xaml
 	/// </summary>
 	public partial class OHMDataPage : UserControl
 	{
-		private Computer  Computer  { get; set; }
-		private TreeModel TreeModel { get; set; }
-
-		public StringList stuff { get; set; }
+		public OHMHardwareTree HardwareTree { get; private set; }
 
 		public OHMDataPage ()
 		{
-			Computer = InitializeComputer();
-			TreeModel = BuildSensorTree();
-
-			stuff = new StringList();
-			stuff.Add("New String 1");
-			stuff.Add("New String 2");
-			stuff.Add("New String 3");
-			stuff.Add("New String 4");
-			stuff.Add("New String 5");
-			stuff.Add("New String 6");
-
-			//DataContext = this;
+			HardwareTree = new OHMHardwareTree();
 			InitializeComponent();
 		}
 
-		private Computer InitializeComputer ()
+		/// <summary>
+		/// Tap into left mouse clicking and enable single-click expanding.
+		/// </summary>
+		private void TreeViewItem_MouseLeftButtonDown ( object sender, MouseButtonEventArgs e )
 		{
-			Computer computer = new Computer();
-			computer.Open();
-
-			//ENABLE ALL THE THINGS!
-			computer.CPUEnabled = true;
-			computer.FanControllerEnabled = true;
-			computer.GPUEnabled = true;
-			computer.HDDEnabled = true;
-			computer.MainboardEnabled = true;
-			computer.RAMEnabled = true;
-
-			return computer;
+			/* TreeViewItem inherently handles left click and expands on ever
+			 * double click. If we're not careful we'll end up fighting the
+			 * built-in click handling.
+			 */
+			if ( e.ClickCount % 2 != 0 )
+			{
+				TreeViewItem treeViewItem = (TreeViewItem) sender;
+				treeViewItem.IsExpanded = !treeViewItem.IsExpanded;
+			}
 		}
 
-		private TreeModel BuildSensorTree ()
+		/// <summary>
+		/// Purely for providing a place for a breakpoint for easy debugging.
+		/// </summary>
+		private void UserControl_MouseRightButtonDown ( object sender, MouseButtonEventArgs e ) { }
+	}
+
+	public class OHMTreeTemplateSelector : DataTemplateSelector
+	{
+		public HierarchicalDataTemplate HardwareTemplate { get; set; }
+		public             DataTemplate   SensorTemplate { get; set; }
+
+		public override DataTemplate SelectTemplate ( object item, DependencyObject container )
 		{
-			TreeModel treeModel = new TreeModel();
+			     if ( item is IHardware ) return HardwareTemplate;
+			else if ( item is ISensor   ) return   SensorTemplate;
 
-			treeModel.Root.Text = Computer.ToString();
-
-			//TODO: Stack approach
-			foreach ( IHardware hardware in Computer.Hardware )
-			{
-				AddHardwareRecursively(treeModel.Root, hardware);
-			}
-
-			return treeModel;
-		}
-
-		private void AddHardwareRecursively ( Node parent, IHardware hardware, int depth = 0 )
-		{
-			Node hardwareNode = new Node();
-			hardwareNode.Source = hardware;
-			hardwareNode.Text = hardware.Name + " (" + hardware.HardwareType + ")";
-
-			parent.Nodes.Add(hardwareNode);
-
-			foreach ( ISensor sensor in hardware.Sensors )
-			{
-				Node sensorNode = new Node();
-				sensorNode.Source = sensor;
-				sensorNode.Text = sensor.Name + " (" + sensor.SensorType + ") = " + sensor.Value;
-
-				hardwareNode.Nodes.Add(sensorNode);
-			}
-
-			foreach ( IHardware subHardware in hardware.SubHardware )
-			{
-				AddHardwareRecursively(hardwareNode, subHardware);
-			}
+			return base.SelectTemplate(item, container);
 		}
 	}
 }

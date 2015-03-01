@@ -1,4 +1,5 @@
-﻿using FirstFloor.ModernUI.Windows.Controls;
+﻿using System.Windows;
+using FirstFloor.ModernUI.Windows.Controls;
 
 namespace LCDHardwareMonitor
 {
@@ -10,6 +11,11 @@ namespace LCDHardwareMonitor
 		public MainWindow ()
 		{
 			InitializeComponent();
+		}
+
+		private void ModernWindow_KeyDown ( object sender, System.Windows.Input.KeyEventArgs e )
+		{
+			Application.Current.Shutdown();
 		}
 	}
 }
