@@ -18,6 +18,7 @@ namespace LCDHardwareMonitor.Pages
 		public OHMDataPage ()
 		{
 			HardwareTree = new OHMHardwareTree();
+
 			InitializeComponent();
 		}
 
