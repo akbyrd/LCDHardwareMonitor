@@ -4,6 +4,7 @@
 	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 	xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 	xmlns:lhm="clr-namespace:LCDHardwareMonitor"
+	xmlns:page="clr-namespace:LCDHardwareMonitor.Pages"
 	mc:Ignorable="d"
 	d:DesignHeight="650" d:DesignWidth="1100"
 	MouseRightButtonDown="UserControl_MouseRightButtonDown"
@@ -13,6 +14,22 @@
 		BorderBrush="{DynamicResource ButtonBorder}"
 		BorderThickness="1">
 
+		<Border.Resources>
+			<Style
+					x:Key="expandableStyle"
+					TargetType="{x:Type TreeViewItem}"
+					BasedOn="{StaticResource {x:Type TreeViewItem}}">
+				<Setter
+						Property="IsExpanded"
+						Value="{Binding IsExpanded}" />
+				<EventSetter
+						Event="PreviewMouseLeftButtonDown"
+						Handler="TreeViewItem_PreviewMouseLeftButtonDown" />
+			</Style>
+
+			<page:OHMTreeStyleSelector x:Key="styleSelector" HardwareStyle="{StaticResource expandableStyle}" />
+		</Border.Resources>
+
 		<!-- TODO: Implement INotifyCollectionChanged to support dynamic tree -->
 		<!-- TODO: Don't try to bind IsExpanded on SensorNodes -->
 		<!-- TODO: Change unfocused border color to gray matching window color (i.e. invisible) -->
@@ -20,30 +37,23 @@
 		<!-- TODO: Remember expansion -->
 		<!-- TODO: Expand as mouse rolls over items? -->
 		<TreeView
+			ItemContainerStyleSelector="{StaticResource styleSelector}"
 			ItemsSource="{Binding HardwareTree.HardwareNodes}">
 
 			<TreeView.Resources>
 				<HierarchicalDataTemplate
 					DataType="{x:Type lhm:HardwareNode}"
 					ItemsSource="{Binding Children}">
-					<TextBlock Text="{Binding Hardware.Name}" />
+					<!--ItemContainerStyle="{StaticResource expandableStyle}"-->
+					<!--ItemContainerStyleSelector="{StaticResource styleSelector}"-->
+					<TextBlock
+						Text="{Binding Hardware.Name}" />
 				</HierarchicalDataTemplate>
 
 				<DataTemplate
 					DataType="{x:Type lhm:SensorNode}">
 					<TextBlock Text="{Binding Sensor.Name}" />
 				</DataTemplate>
-
-				<Style
-					TargetType="{x:Type TreeViewItem}"
-					BasedOn="{StaticResource {x:Type TreeViewItem}}">
-					<Setter
-						Property="IsExpanded"
-						Value="{Binding IsExpanded}" />
-					<EventSetter
-						Event="PreviewMouseLeftButtonDown"
-						Handler="TreeViewItem_MouseLeftButtonDown" />
-				</Style>
 			</TreeView.Resources>
 
 		</TreeView>

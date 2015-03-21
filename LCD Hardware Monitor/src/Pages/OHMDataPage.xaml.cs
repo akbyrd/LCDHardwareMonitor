@@ -1,6 +1,8 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Media;
 using LCDHardwareMonitor.ViewModel;
 using OpenHardwareMonitor.Hardware;
 
@@ -22,19 +24,41 @@ namespace LCDHardwareMonitor.Pages
 			InitializeComponent();
 		}
 
+		private int lastHandledTimestamp;
 		/// <summary>
 		/// Tap into left mouse clicking and enable single-click expanding.
 		/// </summary>
-		private void TreeViewItem_MouseLeftButtonDown ( object sender, MouseButtonEventArgs e )
+		private void TreeViewItem_PreviewMouseLeftButtonDown ( object sender, MouseButtonEventArgs e )
 		{
-			/* TreeViewItem inherently handles left click and expands on ever
-			 * double click. If we're not careful we'll end up fighting the
-			 * built-in click handling.
+			/* Since Preview clicks aren't Handled, we need to avoid processing
+			 * the event more than once in the tree.
 			 */
-			if ( e.ClickCount % 2 != 0 )
+			if ( e.Timestamp != lastHandledTimestamp )
 			{
-				TreeViewItem treeViewItem = (TreeViewItem) sender;
-				treeViewItem.IsExpanded = !treeViewItem.IsExpanded;
+				lastHandledTimestamp = e.Timestamp;
+
+				/* TreeViewItem inherently handles left click and expands on ever
+				 * double click. If we're not careful we'll end up fighting the
+				 * built-in click handling.
+				 */
+				if ( e.ClickCount % 2 != 0 )
+				{
+					//Find the enclosing TreeViewItem
+					var parent = (DependencyObject) e.OriginalSource;
+					do
+					{
+						/* Abort if a ToggleButton was clicked. They already
+						 * have single click toggling.
+						 */
+						if ( parent is ToggleButton ) { return; }
+
+						parent = VisualTreeHelper.GetParent(parent);
+					} while ( !(parent is TreeViewItem) );
+
+					TreeViewItem treeViewItem = (TreeViewItem) parent;
+
+					treeViewItem.IsExpanded = !treeViewItem.IsExpanded;
+				}
 			}
 		}
 
@@ -44,17 +68,20 @@ namespace LCDHardwareMonitor.Pages
 		private void UserControl_MouseRightButtonDown ( object sender, MouseButtonEventArgs e ) { }
 	}
 
-	public class OHMTreeTemplateSelector : DataTemplateSelector
+	/// <summary>
+	/// This is used to selectively bind properties on
+	/// <see cref="HardareNode"/>s only.
+	/// </summary>
+	public class OHMTreeStyleSelector : StyleSelector
 	{
-		public HierarchicalDataTemplate HardwareTemplate { get; set; }
-		public             DataTemplate   SensorTemplate { get; set; }
+		public Style HardwareStyle { get; set; }
 
-		public override DataTemplate SelectTemplate ( object item, DependencyObject container )
+		public override Style SelectStyle ( object item, DependencyObject container )
 		{
-			     if ( item is IHardware ) return HardwareTemplate;
-			else if ( item is ISensor   ) return   SensorTemplate;
+			if ( item is HardwareNode )
+				return HardwareStyle;
 
-			return base.SelectTemplate(item, container);
+			return base.SelectStyle(item, container);
 		}
 	}
 }
