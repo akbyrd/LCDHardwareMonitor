@@ -1,11 +1,12 @@
 ﻿using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using OpenHardwareMonitor.Hardware;
 
 namespace LCDHardwareMonitor.ViewModel
 {
 	public class OHMHardwareTree
 	{
-		public IReadOnlyCollection<HardwareNode> HardwareNodes { get { return hardwareNodes.AsReadOnly(); } }
+		public ReadOnlyCollection<HardwareNode> HardwareNodes { get { return hardwareNodes.AsReadOnly(); } }
 
 		private List<HardwareNode> hardwareNodes = new List<HardwareNode>();
 

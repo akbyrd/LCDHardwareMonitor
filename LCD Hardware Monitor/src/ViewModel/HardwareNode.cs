@@ -1,19 +1,15 @@
 ﻿using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Windows.Data;
 using OpenHardwareMonitor.Hardware;
 
 namespace LCDHardwareMonitor
 {
-	public class HardwareNode : INode
+	public class HardwareNode : INode, INotifyPropertyChanged
 	{
-		public bool                              IsExpanded  { get; set; }
-		public CompositeCollection               Children    { get; private set; }
-		public IReadOnlyCollection<HardwareNode> SubHardware { get { return subHardware.AsReadOnly(); } }
-		public IReadOnlyCollection<SensorNode>   Sensors     { get { return sensors.AsReadOnly(); } }
-		public IHardware                         Hardware    { get; private set; }
-
-		private List<HardwareNode> subHardware = new List<HardwareNode>();
-		private List<SensorNode> sensors = new List<SensorNode>();
+		#region Constructor
 
 		public HardwareNode ( IHardware hardware )
 		{
@@ -31,5 +27,40 @@ namespace LCDHardwareMonitor
 				new CollectionContainer() { Collection = SubHardware },
 			};
 		}
+
+		#endregion
+
+		#region Public Properties
+
+		public  bool IsExpanded
+		{
+			get { return isExpanded; }
+			set { isExpanded = value; RaisePropertyChanged(); }
+		}
+		private bool isExpanded;
+
+		public IHardware Hardware { get; private set; }
+
+		public ReadOnlyCollection<HardwareNode> SubHardware { get { return subHardware.AsReadOnly(); } }
+		private              List<HardwareNode> subHardware = new List<HardwareNode>();
+
+		public ReadOnlyCollection<SensorNode> Sensors { get { return sensors.AsReadOnly(); } }
+		private              List<SensorNode> sensors = new List<SensorNode>();
+
+		public CompositeCollection Children { get; private set; }
+
+		#endregion
+
+		#region INotifyPropertyChanged Implementation
+
+		public event PropertyChangedEventHandler PropertyChanged;
+
+		private void RaisePropertyChanged ( [CallerMemberName] string propertyName = "" )
+		{
+			if ( PropertyChanged != null )
+				PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
+		}
+
+		#endregion
 	}
 }

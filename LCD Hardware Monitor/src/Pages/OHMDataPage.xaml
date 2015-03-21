@@ -21,7 +21,7 @@
 					BasedOn="{StaticResource {x:Type TreeViewItem}}">
 				<Setter
 						Property="IsExpanded"
-						Value="{Binding IsExpanded}" />
+						Value="{Binding Path=IsExpanded, Mode=TwoWay}" />
 				<EventSetter
 						Event="PreviewMouseLeftButtonDown"
 						Handler="TreeViewItem_PreviewMouseLeftButtonDown" />
@@ -44,8 +44,6 @@
 				<HierarchicalDataTemplate
 					DataType="{x:Type lhm:HardwareNode}"
 					ItemsSource="{Binding Children}">
-					<!--ItemContainerStyle="{StaticResource expandableStyle}"-->
-					<!--ItemContainerStyleSelector="{StaticResource styleSelector}"-->
 					<TextBlock
 						Text="{Binding Hardware.Name}" />
 				</HierarchicalDataTemplate>
