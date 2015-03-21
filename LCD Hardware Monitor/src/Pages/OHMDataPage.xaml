@@ -15,6 +15,7 @@
 		BorderThickness="1">
 
 		<Border.Resources>
+			<!-- Data binding and events for HardwareNodes -->
 			<Style
 					x:Key="expandableStyle"
 					TargetType="{x:Type TreeViewItem}"
@@ -27,11 +28,13 @@
 						Handler="TreeViewItem_PreviewMouseLeftButtonDown" />
 			</Style>
 
-			<page:OHMTreeStyleSelector x:Key="styleSelector" HardwareStyle="{StaticResource expandableStyle}" />
+			<!-- StyleSelector to apply the above style to HardwareNodes -->
+			<page:OHMTreeStyleSelector
+				x:Key="styleSelector"
+				HardwareStyle="{StaticResource expandableStyle}" />
 		</Border.Resources>
 
 		<!-- TODO: Implement INotifyCollectionChanged to support dynamic tree -->
-		<!-- TODO: Don't try to bind IsExpanded on SensorNodes -->
 		<!-- TODO: Change unfocused border color to gray matching window color (i.e. invisible) -->
 		<!-- TODO: Change highlight color to match VS (darker blue) -->
 		<!-- TODO: Remember expansion -->
@@ -41,6 +44,7 @@
 			ItemsSource="{Binding HardwareTree.HardwareNodes}">
 
 			<TreeView.Resources>
+				<!-- HardwareNode template -->
 				<HierarchicalDataTemplate
 					DataType="{x:Type lhm:HardwareNode}"
 					ItemsSource="{Binding Children}">
@@ -48,6 +52,7 @@
 						Text="{Binding Hardware.Name}" />
 				</HierarchicalDataTemplate>
 
+				<!-- SensorNode template -->
 				<DataTemplate
 					DataType="{x:Type lhm:SensorNode}">
 					<TextBlock Text="{Binding Sensor.Name}" />
