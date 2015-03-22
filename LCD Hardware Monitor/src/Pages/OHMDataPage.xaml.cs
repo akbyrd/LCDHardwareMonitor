@@ -19,7 +19,7 @@ namespace LCDHardwareMonitor.Pages
 
 		public OHMDataPage ()
 		{
-			HardwareTree = new OHMHardwareTree();
+			HardwareTree = new OHMHardwareTree(App.Computer);
 
 			InitializeComponent();
 		}
@@ -62,10 +62,14 @@ namespace LCDHardwareMonitor.Pages
 			}
 		}
 
+		#region Debugging
+
 		/// <summary>
 		/// Purely for providing a place for a breakpoint for easy debugging.
 		/// </summary>
 		private void UserControl_MouseRightButtonDown ( object sender, MouseButtonEventArgs e ) { }
+
+		#endregion
 	}
 
 	/// <summary>
@@ -75,11 +79,12 @@ namespace LCDHardwareMonitor.Pages
 	public class OHMTreeStyleSelector : StyleSelector
 	{
 		public Style HardwareStyle { get; set; }
+		public Style   SensorStyle { get; set; }
 
 		public override Style SelectStyle ( object item, DependencyObject container )
 		{
-			if ( item is HardwareNode )
-				return HardwareStyle;
+			     if ( item is HardwareNode ) return HardwareStyle;
+			else if ( item is   SensorNode ) return   SensorStyle;
 
 			return base.SelectStyle(item, container);
 		}

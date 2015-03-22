@@ -1,38 +1,53 @@
-﻿using System.Collections.Generic;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using OpenHardwareMonitor.Hardware;
 
 namespace LCDHardwareMonitor.ViewModel
 {
 	public class OHMHardwareTree
 	{
-		public ReadOnlyCollection<HardwareNode> HardwareNodes { get { return hardwareNodes.AsReadOnly(); } }
+		#region Constructor
 
-		private List<HardwareNode> hardwareNodes = new List<HardwareNode>();
-
-		public OHMHardwareTree ()
+		public OHMHardwareTree ( Computer computer )
 		{
-			IHardware[] hardware = InitializeComputer().Hardware;
+			HardwareNodes = new ReadOnlyObservableCollection<HardwareNode>(hardwareNodes);
 
+			IHardware[] hardware = computer.Hardware;
 			for ( int i = 0; i < hardware.Length; ++i )
 				hardwareNodes.Add(new HardwareNode(hardware[i]));
+
+			computer.HardwareAdded   += OnHardwareAdded;
+			computer.HardwareRemoved += OnHardwareRemoved;
 		}
 
-		private Computer InitializeComputer ()
+		#endregion
+
+		#region Public Properties
+
+		public ReadOnlyObservableCollection<HardwareNode> HardwareNodes { get; private set; }
+		private        ObservableCollection<HardwareNode> hardwareNodes = new ObservableCollection<HardwareNode>();
+
+		#endregion
+
+		#region Adding & Removing Hardware
+
+		private void OnHardwareAdded ( IHardware hardware )
 		{
-			Computer computer = new Computer();
-			computer.Open();
-
-			//TODO: Saved settings fodder
-			//ENABLE ALL THE THINGS!
-			computer.CPUEnabled = true;
-			computer.FanControllerEnabled = true;
-			computer.GPUEnabled = true;
-			computer.HDDEnabled = true;
-			computer.MainboardEnabled = true;
-			computer.RAMEnabled = true;
-
-			return computer;
+			hardwareNodes.Add(new HardwareNode(hardware));
 		}
+
+		private void OnHardwareRemoved ( IHardware hardware )
+		{
+			for ( int i = 0; i < hardwareNodes.Count; ++i )
+			{
+				if ( hardwareNodes[i].Hardware == hardware )
+				{
+					hardwareNodes[i].RemovedFromTree();
+					hardwareNodes.RemoveAt(i);
+					break;
+				}
+			}
+		}
+
+		#endregion
 	}
 }

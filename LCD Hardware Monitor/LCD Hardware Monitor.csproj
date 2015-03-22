@@ -80,6 +80,9 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="..\modules\OpenHardwareMonitor\GUI\UpdateVisitor.cs">
+      <Link>src\OHM Items\UpdateVisitor.cs</Link>
+    </Compile>
     <Compile Include="src\ViewModel\INode.cs" />
     <Compile Include="src\ViewModel\HardwareNode.cs" />
     <Compile Include="src\Pages\LCDDesignerPage.xaml.cs">

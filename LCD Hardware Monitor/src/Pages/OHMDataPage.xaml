@@ -11,37 +11,50 @@
 	DataContext="{Binding RelativeSource={RelativeSource Self}}">
 
 	<Border
+		x:Name="border"
 		BorderBrush="{DynamicResource ButtonBorder}"
 		BorderThickness="1">
 
 		<Border.Resources>
 			<!-- Data binding and events for HardwareNodes -->
 			<Style
-					x:Key="expandableStyle"
-					TargetType="{x:Type TreeViewItem}"
-					BasedOn="{StaticResource {x:Type TreeViewItem}}">
+				x:Key="expandableStyle"
+				TargetType="{x:Type TreeViewItem}"
+				BasedOn="{StaticResource {x:Type TreeViewItem}}">
 				<Setter
-						Property="IsExpanded"
-						Value="{Binding Path=IsExpanded, Mode=TwoWay}" />
+					Property="IsExpanded"
+					Value="{Binding Path=IsExpanded, Mode=TwoWay}" />
 				<EventSetter
-						Event="PreviewMouseLeftButtonDown"
-						Handler="TreeViewItem_PreviewMouseLeftButtonDown" />
+					Event="PreviewMouseLeftButtonDown"
+					Handler="TreeViewItem_PreviewMouseLeftButtonDown" />
+			</Style>
+
+			<!-- Tooltip for SensorNodes -->
+			<Style
+				x:Key="sensorStyle"
+				TargetType="{x:Type TreeViewItem}"
+				BasedOn="{StaticResource {x:Type TreeViewItem}}">
+				<Setter
+					Property="ToolTip"
+					Value="{Binding Sensor.Identifier}" />
 			</Style>
 
 			<!-- StyleSelector to apply the above style to HardwareNodes -->
 			<page:OHMTreeStyleSelector
 				x:Key="styleSelector"
-				HardwareStyle="{StaticResource expandableStyle}" />
+				HardwareStyle="{StaticResource expandableStyle}"
+				SensorStyle="{StaticResource sensorStyle}" />
 		</Border.Resources>
 
-		<!-- TODO: Implement INotifyCollectionChanged to support dynamic tree -->
 		<!-- TODO: Change unfocused border color to gray matching window color (i.e. invisible) -->
 		<!-- TODO: Change highlight color to match VS (darker blue) -->
 		<!-- TODO: Remember expansion -->
 		<!-- TODO: Expand as mouse rolls over items? -->
+		<!-- TODO: Option to hide sensors -->
 		<TreeView
 			ItemContainerStyleSelector="{StaticResource styleSelector}"
-			ItemsSource="{Binding HardwareTree.HardwareNodes}">
+			ItemsSource="{Binding HardwareTree.HardwareNodes}"
+			Grid.IsSharedSizeScope="true">
 
 			<TreeView.Resources>
 				<!-- HardwareNode template -->
@@ -55,7 +68,38 @@
 				<!-- SensorNode template -->
 				<DataTemplate
 					DataType="{x:Type lhm:SensorNode}">
-					<TextBlock Text="{Binding Sensor.Name}" />
+
+					<!-- TODO: Resizable columns? http://www.wpftutorial.net/gridlayout.html#resize (or resizable header that columns align to) -->
+					<!-- TOOD: Merge different sensors for same CPU core into a tree item i.e. CPU 0: Load, Temp, Clock -->
+					<Grid>
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition SharedSizeGroup="Column0" />
+							<ColumnDefinition SharedSizeGroup="Column1" />
+							<ColumnDefinition SharedSizeGroup="Column2" />
+						</Grid.ColumnDefinitions>
+
+						<Grid.Resources>
+							<Style
+								TargetType="TextBlock">
+								<Setter
+									Property="Padding"
+									Value="0, 0, 20, 0" />
+							</Style>
+						</Grid.Resources>
+
+						<TextBlock
+							Grid.Column="0"
+							Text="{Binding Sensor.Name}" />
+
+						<TextBlock
+							Grid.Column="1"
+							Text="{Binding Sensor.SensorType}" />
+
+						<TextBlock
+							Grid.Column="2"
+							Padding="0"
+							Text="{Binding Sensor.Value}" />
+					</Grid>
 				</DataTemplate>
 			</TreeView.Resources>
 
