@@ -1,8 +1,11 @@
-﻿using System.Collections.ObjectModel;
-using OpenHardwareMonitor.Hardware;
+﻿//TODO: This should be destroyed when the page is no longer relevant (minized to tray?)
 
 namespace LCDHardwareMonitor.ViewModel
 {
+	using System;
+	using System.Collections.ObjectModel;
+	using OpenHardwareMonitor.Hardware;
+
 	public class OHMHardwareTree
 	{
 		#region Constructor
@@ -41,7 +44,9 @@ namespace LCDHardwareMonitor.ViewModel
 			{
 				if ( hardwareNodes[i].Hardware == hardware )
 				{
-					hardwareNodes[i].RemovedFromTree();
+					var disposable = (IDisposable) hardwareNodes[i];
+					disposable.Dispose();
+
 					hardwareNodes.RemoveAt(i);
 					break;
 				}

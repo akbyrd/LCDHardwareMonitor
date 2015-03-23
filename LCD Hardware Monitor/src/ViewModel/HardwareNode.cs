@@ -1,16 +1,17 @@
-﻿using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
-using System.Windows.Data;
-using OpenHardwareMonitor.Hardware;
-
-namespace LCDHardwareMonitor
+﻿namespace LCDHardwareMonitor
 {
+	using System;
+	using System.Collections.ObjectModel;
+	using System.ComponentModel;
+	using System.Runtime.CompilerServices;
+	using System.Windows.Data;
+	using OpenHardwareMonitor.Hardware;
+
 	/// <summary>
 	/// Exposes an <see cref="OpenHardwareMonitor.Hardware.IHardware"/> for
 	/// display in XAML.
 	/// </summary>
-	public class HardwareNode : INode, INotifyPropertyChanged
+	public class HardwareNode : INode, INotifyPropertyChanged, IDisposable
 	{
 		#region Constructor
 
@@ -56,16 +57,6 @@ namespace LCDHardwareMonitor
 
 		public CompositeCollection Children { get; private set; }
 
-		/// <summary>
-		/// Cleanup when this node is removed from the tree. Namely, unregister
-		/// from events to prevent memory leaks.
-		/// </summary>
-		public void RemovedFromTree ()
-		{
-			Hardware.SensorAdded   -= OnSensorAdded;
-			Hardware.SensorRemoved -= OnSensorRemoved;
-		}
-
 		#endregion
 
 		#region Adding & Removing Sensors
@@ -81,7 +72,9 @@ namespace LCDHardwareMonitor
 			{
 				if ( sensors[i].Sensor == sensor )
 				{
-					sensors[i].RemovedFromTree();
+					var disposable = (IDisposable) sensors[i];
+					disposable.Dispose();
+
 					sensors.RemoveAt(i);
 					break;
 				}
@@ -97,7 +90,24 @@ namespace LCDHardwareMonitor
 		private void RaisePropertyChanged ( [CallerMemberName] string propertyName = "" )
 		{
 			if ( PropertyChanged != null )
-				PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
+			{
+				var args = new PropertyChangedEventArgs(propertyName);
+				PropertyChanged(this, args);
+			}
+		}
+
+		#endregion
+
+		#region IDisposable Implementation
+
+		/// <summary>
+		/// Cleanup when this node is removed from the tree. Namely, unregister
+		/// from events to prevent memory leaks.
+		/// </summary>
+		void IDisposable.Dispose ()
+		{
+			Hardware.SensorAdded   -= OnSensorAdded;
+			Hardware.SensorRemoved -= OnSensorRemoved;
 		}
 
 		#endregion

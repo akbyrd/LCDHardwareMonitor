@@ -1,0 +1,74 @@
+﻿namespace LCDHardwareMonitor.Drawables
+{
+	using System.ComponentModel;
+	using System.Runtime.CompilerServices;
+	using OpenHardwareMonitor.Hardware;
+
+	public class StaticText : IDrawable
+	{
+		#region Constructor
+
+		public StaticText ()
+		{
+			settings = new SettingsContainer();
+		}
+
+		#endregion
+
+		#region Settings
+
+		public class SettingsContainer : ISettings
+		{
+			public  string Text
+			{
+				get { return text; }
+				set { text = value; RaisePropertyChangedEvent(); }
+			}
+			private string text;
+
+			/// <summary>
+			/// Set default values.
+			/// </summary>
+			public SettingsContainer ()
+			{
+				Text = "Static Text";
+			}
+
+			#region INotifyPropertyChanged Implementation
+
+			public event PropertyChangedEventHandler PropertyChanged;
+
+			private void RaisePropertyChangedEvent ( [CallerMemberName] string propertyName = "" )
+			{
+				if ( PropertyChanged != null )
+				{
+					var args = new PropertyChangedEventArgs(propertyName);
+					PropertyChanged(this, args);
+				}
+			}
+
+			#endregion
+		}
+
+		#endregion
+
+		#region IDrawable Implementation
+
+		public string Name { get { return "Static Text"; } }
+
+		public ISettings Settings { get { return settings; } }
+		private SettingsContainer settings;
+
+		public void GetPreview ( ISensor sensor )
+		{
+			throw new System.NotImplementedException();
+		}
+
+		public void Render ( ISensor sensor )
+		{
+			throw new System.NotImplementedException();
+		}
+
+		#endregion
+	}
+}

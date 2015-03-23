@@ -1,11 +1,13 @@
-﻿using System;
-using System.Windows;
-using System.Windows.Threading;
-using OpenHardwareMonitor.GUI;
-using OpenHardwareMonitor.Hardware;
-
-namespace LCDHardwareMonitor
+﻿namespace LCDHardwareMonitor
 {
+	using System;
+	using System.Collections.ObjectModel;
+	using System.Windows;
+	using System.Windows.Threading;
+	using LCDHardwareMonitor.Drawables;
+	using OpenHardwareMonitor.GUI;
+	using OpenHardwareMonitor.Hardware;
+
 	/// <summary>
 	/// Interaction logic for App.xaml
 	/// </summary>
@@ -14,11 +16,19 @@ namespace LCDHardwareMonitor
 		public static Computer Computer { get; private set; }
 		public static event Action Tick;
 
+		public static ReadOnlyObservableCollection<IWidget> Widgets { get; private set; }
+		public static         ObservableCollection<IWidget> widgets = new ObservableCollection<IWidget>();
+
 		private IVisitor updateVisitor = new UpdateVisitor();
 
 		public App ()
 		{
 			Computer = InitializeComputer();
+
+			//DEBUG
+			widgets.Add(new Widget(new StaticText()));
+
+			Widgets = new ReadOnlyObservableCollection<IWidget>(widgets);
 
 			/* Update the OHM data at a regular interval as long as the
 			 * application is running.
@@ -29,6 +39,8 @@ namespace LCDHardwareMonitor
 			timer.Tick += Update;
 			timer.Start();
 		}
+
+		//TODO: Only update sensors that are actually in use (and make OHMDataPage responsible for its own updates)
 
 		private void Update ( object sender, EventArgs e )
 		{

@@ -1,9 +1,9 @@
-﻿using System.Windows;
-using System.Windows.Input;
-using FirstFloor.ModernUI.Windows.Controls;
-
-namespace LCDHardwareMonitor
+﻿namespace LCDHardwareMonitor
 {
+	using System.Windows;
+	using System.Windows.Input;
+	using FirstFloor.ModernUI.Windows.Controls;
+
 	/// <summary>
 	/// Interaction logic for MainWindow.xaml
 	/// </summary>

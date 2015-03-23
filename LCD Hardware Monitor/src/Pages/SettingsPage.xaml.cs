@@ -1,7 +1,7 @@
-﻿using System.Windows.Controls;
-
-namespace LCDHardwareMonitor.Pages
+﻿namespace LCDHardwareMonitor.Pages
 {
+	using System.Windows.Controls;
+
 	/// <summary>
 	/// Interaction logic for SettingsPage.xaml
 	/// </summary>

@@ -83,6 +83,12 @@
     <Compile Include="..\modules\OpenHardwareMonitor\GUI\UpdateVisitor.cs">
       <Link>src\OHM Items\UpdateVisitor.cs</Link>
     </Compile>
+    <Compile Include="src\Drawables\Interfaces\IDrawable.cs" />
+    <Compile Include="src\Drawables\Interfaces\ISettings.cs" />
+    <Compile Include="src\Drawables\Interfaces\IWidget.cs" />
+    <Compile Include="src\Drawables\StaticText.cs" />
+    <Compile Include="src\Drawables\Widget.cs" />
+    <Compile Include="src\Utility.cs" />
     <Compile Include="src\ViewModel\INode.cs" />
     <Compile Include="src\ViewModel\HardwareNode.cs" />
     <Compile Include="src\Pages\LCDDesignerPage.xaml.cs">
@@ -169,6 +175,7 @@
       <Install>false</Install>
     </BootstrapperPackage>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
