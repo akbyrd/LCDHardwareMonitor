@@ -4,12 +4,31 @@
 	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 	xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 	xmlns:lhm="clr-namespace:LCDHardwareMonitor"
+	xmlns:draw="clr-namespace:LCDHardwareMonitor.Drawables"
 	mc:Ignorable="d" 
 	DataContext="{x:Static Application.Current}"
 	d:DesignHeight="300" d:DesignWidth="300">
 
 	<ListView
 		ItemsSource="{Binding Drawables}">
+
+		<ListView.Resources>
+			<!-- Enable drag & drop on drawables -->
+			<Style
+				TargetType="ListViewItem"
+				BasedOn="{StaticResource {x:Type ListViewItem}}">
+				<EventSetter
+					Event="PreviewMouseLeftButtonDown"
+					Handler="Drawable_MouseLeftButtonDown" />
+				<EventSetter
+					Event="MouseLeftButtonUp"
+					Handler="Drawable_MouseLeftButtonUp" />
+				<EventSetter
+					Event="MouseMove"
+					Handler="Drawable_MouseMove" />
+			</Style>
+		</ListView.Resources>
+
 		<ListView.ItemTemplate>
 			<DataTemplate>
 				<TextBlock

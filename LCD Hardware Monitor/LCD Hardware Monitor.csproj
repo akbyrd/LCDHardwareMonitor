@@ -91,6 +91,9 @@
     <Compile Include="src\Pages\DrawablesList.xaml.cs">
       <DependentUpon>DrawablesList.xaml</DependentUpon>
     </Compile>
+    <Compile Include="src\Pages\LCDPreview.xaml.cs">
+      <DependentUpon>LCDPreview.xaml</DependentUpon>
+    </Compile>
     <Compile Include="src\Utility.cs" />
     <Compile Include="src\ViewModel\INode.cs" />
     <Compile Include="src\ViewModel\HardwareNode.cs" />
@@ -122,6 +125,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="src\Pages\LCDDesignerPage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="src\Pages\LCDPreview.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

@@ -35,10 +35,7 @@
 					Text="LCD Preview" />
 
 				<!-- LCD Preview -->
-				<Canvas
-					Height="240"
-					Width="320"
-					Background="Black" />
+				<page:LCDPreview />
 
 			</StackPanel>
 
@@ -89,8 +86,7 @@
 			<page:DrawablesList
 				Grid.Row="1"
 				BorderBrush="{DynamicResource ButtonBorder}"
-				BorderThickness="1">
-			</page:DrawablesList>
+				BorderThickness="1" />
 			
 		</Grid>
 	</Grid>
