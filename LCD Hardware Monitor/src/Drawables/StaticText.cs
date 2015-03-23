@@ -1,5 +1,6 @@
 ﻿namespace LCDHardwareMonitor.Drawables
 {
+	using System;
 	using System.ComponentModel;
 	using System.Runtime.CompilerServices;
 	using OpenHardwareMonitor.Hardware;
@@ -31,8 +32,18 @@
 			/// </summary>
 			public SettingsContainer ()
 			{
-				Text = "Static Text";
+				int rV = rnd.Next(initialNames.Length);
+				Text = initialNames[rV];
 			}
+
+			private Random rnd = new Random();
+			private string[] initialNames = new string[] {
+				"New Static Text",
+				"Club baby seals",
+				"I <3 John Carmack",
+				"His name was Robert Paulson",
+				"Wrecked him? Damn near killed him!"
+			};
 
 			#region INotifyPropertyChanged Implementation
 

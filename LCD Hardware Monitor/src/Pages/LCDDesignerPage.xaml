@@ -4,77 +4,48 @@
 	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 	xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 	xmlns:mui="http://firstfloorsoftware.com/ModernUI"
+	xmlns:page="clr-namespace:LCDHardwareMonitor.Pages"
 	mc:Ignorable="d"
 	d:DesignHeight="650" d:DesignWidth="1100">
 
-	<!--<Grid-->
+	<Grid>
 		<!--Margin="{StaticResource RootMargin}">-->
-		<Grid>
-			<!--Margin="10,0,10,10">-->
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition MinWidth="320"/>
-				<ColumnDefinition Width="10"/>
-				<ColumnDefinition MinWidth="320"/>
-			</Grid.ColumnDefinitions>
+		<!--Margin="10,0,10,10">-->
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition MinWidth="320"/>
+			<ColumnDefinition Width="10"/>
+			<ColumnDefinition MinWidth="320"/>
+		</Grid.ColumnDefinitions>
 
-			<!-- Left Side -->
-			<Grid Grid.Column="0">
+		<!-- Left Side -->
+		<Grid Grid.Column="0">
+			<Grid.RowDefinitions>
+				<RowDefinition Height="Auto"/>
+				<RowDefinition Height="20"/>
+				<RowDefinition />
+			</Grid.RowDefinitions>
+
+			<!-- LCD Preview Section -->
+			<StackPanel Grid.Row="0">
+
+				<!-- Title -->
+				<TextBlock
+					Style="{StaticResource Title}"
+					Margin="0,0,0,10"
+					Text="LCD Preview" />
+
+				<!-- LCD Preview -->
+				<Canvas
+					Height="240"
+					Width="320"
+					Background="Black" />
+
+			</StackPanel>
+
+			<!-- Element Settings Section -->
+			<Grid Grid.Row="2">
 				<Grid.RowDefinitions>
-					<RowDefinition Height="Auto"/>
-					<RowDefinition Height="20"/>
-					<RowDefinition />
-				</Grid.RowDefinitions>
-
-				<!-- LCD Preview Section -->
-				<StackPanel Grid.Row="0">
-
-					<!-- Title -->
-					<TextBlock
-						Style="{StaticResource Title}"
-						Margin="0,0,0,10"
-						Text="LCD Preview" />
-
-					<!-- LCD Preview -->
-					<Canvas
-						Height="240"
-						Width="320"
-						Background="Black" />
-
-				</StackPanel>
-
-				<!-- Element Settings Section -->
-				<Grid Grid.Row="2">
-					<Grid.RowDefinitions>
-						<RowDefinition Height="Auto" />
-						<RowDefinition />
-					</Grid.RowDefinitions>
-
-					<!-- Title -->
-					<TextBlock
-						Style="{StaticResource Title}"
-						Margin="0,0,0,10"
-						Text="Element Settings" />
-
-					<!-- Element Settings -->
-					<Border
-						Grid.Row="1"
-						BorderBrush="{DynamicResource ButtonBorder}"
-						BorderThickness="1">
-						<mui:ModernFrame
-							Margin="10,6,10,6">
-							<ScrollViewer>
-								<!--TODO: Add settings-->
-							</ScrollViewer>
-						</mui:ModernFrame>
-					</Border>
-
-				</Grid>
-			</Grid>
-
-			<!-- Right Side - Elements Section -->
-			<Grid Grid.Column="2">
-				<Grid.RowDefinitions>
-					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="Auto" />
 					<RowDefinition />
 				</Grid.RowDefinitions>
 
@@ -82,20 +53,46 @@
 				<TextBlock
 					Style="{StaticResource Title}"
 					Margin="0,0,0,10"
-					Text="Elements" />
+					Text="Element Settings" />
 
-				<!-- Elements -->
+				<!-- Element Settings -->
 				<Border
 					Grid.Row="1"
 					BorderBrush="{DynamicResource ButtonBorder}"
 					BorderThickness="1">
-					<ListView>
-						<!-- TODO: Add elements -->
-					</ListView>
+					<mui:ModernFrame
+						Margin="10,6,10,6">
+						<ScrollViewer>
+							<!--TODO: Add settings-->
+						</ScrollViewer>
+					</mui:ModernFrame>
 				</Border>
 
 			</Grid>
 		</Grid>
-	<!--</Grid>-->
+
+		<!-- Right Side - Elements Section -->
+		<Grid Grid.Column="2">
+			<Grid.RowDefinitions>
+				<RowDefinition Height="Auto"/>
+				<RowDefinition />
+			</Grid.RowDefinitions>
+
+			<!-- Title -->
+			<TextBlock
+				Style="{StaticResource Title}"
+				Margin="0,0,0,10"
+				Text="Elements" />
+
+			<!-- TODO: When an item on the screen is selected, this animates away and a list of sensors takes it's place -->
+			<!-- Elements -->
+			<page:DrawablesList
+				Grid.Row="1"
+				BorderBrush="{DynamicResource ButtonBorder}"
+				BorderThickness="1">
+			</page:DrawablesList>
+			
+		</Grid>
+	</Grid>
 
 </UserControl>

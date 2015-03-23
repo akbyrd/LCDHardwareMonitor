@@ -88,6 +88,9 @@
     <Compile Include="src\Drawables\Interfaces\IWidget.cs" />
     <Compile Include="src\Drawables\StaticText.cs" />
     <Compile Include="src\Drawables\Widget.cs" />
+    <Compile Include="src\Pages\DrawablesList.xaml.cs">
+      <DependentUpon>DrawablesList.xaml</DependentUpon>
+    </Compile>
     <Compile Include="src\Utility.cs" />
     <Compile Include="src\ViewModel\INode.cs" />
     <Compile Include="src\ViewModel\HardwareNode.cs" />
@@ -114,6 +117,10 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Page Include="src\Pages\DrawablesList.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="src\Pages\LCDDesignerPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>

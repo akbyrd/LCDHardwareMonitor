@@ -12,9 +12,8 @@
 
 		public Widget ( IDrawable drawable )
 		{
-			int rV = rnd.Next(initialNames.Length);
-			Name = initialNames[rV];
-
+			//TODO: Better name
+			Name = "New Widget";
 			Drawable = drawable;
 		}
 
@@ -24,15 +23,6 @@
 
 		private Computer  computer;
 		private IHardware hardware;
-
-		private Random rnd = new Random();
-		private string[] initialNames = new string[] {
-			"New Static Text",
-			"Club baby seals",
-			"I <3 John Carmack",
-			"His name was Robert Paulson",
-			"Wrecked him? Damn near killed him!"
-		};
 
 		private void HardwareRemoved ( IHardware removedHardware )
 		{

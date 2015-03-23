@@ -16,8 +16,12 @@
 		public static Computer Computer { get; private set; }
 		public static event Action Tick;
 
-		public static ReadOnlyObservableCollection<IWidget> Widgets { get; private set; }
-		public static         ObservableCollection<IWidget> widgets = new ObservableCollection<IWidget>();
+		public static ObservableCollection<IWidget> Widgets { get; private set; }
+
+		//TODO: Read drawables from file
+		//TODO: F5 to reload drawables from file
+		public  static ReadOnlyObservableCollection<IDrawable> Drawables { get; private set; }
+		private static         ObservableCollection<IDrawable> drawables = new ObservableCollection<IDrawable>();
 
 		private IVisitor updateVisitor = new UpdateVisitor();
 
@@ -26,9 +30,9 @@
 			Computer = InitializeComputer();
 
 			//DEBUG
-			widgets.Add(new Widget(new StaticText()));
+			drawables.Add(new StaticText());
 
-			Widgets = new ReadOnlyObservableCollection<IWidget>(widgets);
+			Drawables = new ReadOnlyObservableCollection<IDrawable>(drawables);
 
 			/* Update the OHM data at a regular interval as long as the
 			 * application is running.
