@@ -62,7 +62,7 @@
 		#region IWidget Implementation
 
 		public string     Name       { get; set; }
-		public Vector     Position   { get; set; }
+		public Point      Position   { get; set; }
 		public IDrawable  Drawable   { get; private set; }
 		public ISensor    Sensor     { get; private set; }
 		public Identifier Identifier { get; private set; }
