@@ -9,43 +9,59 @@
 	/// </summary>
 	public partial class DrawablesList : UserControl
 	{
+		#region Constructor
+
 		public DrawablesList ()
 		{
 			InitializeComponent();
 		}
 
+		#endregion
+
 		#region Drag and Drop Functionality
 
-		//TODO: Cleaner way to do this
-		private bool isClicked;
+		/// <summary>
+		/// The format used when stuffing the <see cref="System.Type"/> of an
+		/// <see cref="Drawables.IDrawable"/> into a <see cref="DataObject"/>.
+		/// </summary>
+		public const string DrawableFormat = "Drawable";
 
-		private void Drawable_MouseLeftButtonDown ( object sender, MouseEventArgs e )
+		private ListViewItem clickedItem;
+
+		/// <summary>
+		/// If a drawable in the list is clicked, keep track of it to allow
+		/// subsequent dragging to initiate a drag and drop operation.
+		/// </summary>
+		private void Drawable_PreviewMouseLeftButtonDown ( object sender, MouseEventArgs e )
 		{
-			var lvItem = sender as ListViewItem;
-			if ( lvItem != null && e.LeftButton == MouseButtonState.Pressed )
-			{
-				isClicked = true;
-			}
+			clickedItem = sender as ListViewItem;
 		}
 
-		private void Drawable_MouseLeftButtonUp ( object sender, MouseEventArgs e )
+		/// <summary>
+		/// If the mouse is released, clear the clicked item reference.
+		/// </summary>
+		private void Drawable_PreviewMouseLeftButtonUp ( object sender, MouseEventArgs e )
 		{
-			var lvItem = sender as ListViewItem;
-			if ( lvItem != null )
-			{
-				isClicked = false;
-			}
+			clickedItem = null;
 		}
 
+		/// <summary>
+		/// If the mouse is being dragged on the same item the was initially
+		/// clicked, initiate a drag and drop operation.
+		/// </summary>
 		private void Drawable_MouseMove ( object sender, MouseEventArgs e )
 		{
-			if ( isClicked )
+			if ( clickedItem != null && sender == clickedItem )
 			{
-				var lvItem = sender as ListViewItem;
-				if ( lvItem != null && e.LeftButton == MouseButtonState.Pressed )
-				{
-					DragDrop.DoDragDrop(lvItem, lvItem.Content.GetType(), DragDropEffects.Copy);
-				}
+				var dataObject = new DataObject(DrawableFormat, clickedItem.Content.GetType());
+				DragDrop.DoDragDrop(clickedItem, dataObject, DragDropEffects.Copy);
+
+				/* DoDragDrop is blocking. This is an easy way to know when
+				 * the drag operation is complete. We prevent another drag
+				 * from taking place until the user actually clicks on a
+				 * drawable again.
+				 */
+				clickedItem = null;
 			}
 		}
 

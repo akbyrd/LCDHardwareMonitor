@@ -7,12 +7,47 @@
 	d:DesignHeight="300" d:DesignWidth="300"
 	DataContext="{Binding RelativeSource={RelativeSource Self}}">
 
-	<Canvas Height="240" Width="320"
+	<UserControl.Resources>
+		<!-- TODO: Animate -->
+		<DropShadowEffect
+			x:Key="dropShadowEffect"
+			BlurRadius="8"
+			Color="{DynamicResource AccentColor}"
+			Opacity="{Binding HighlightOpacity}" />
+	</UserControl.Resources>
+
+	<Canvas 
+		Name="LCDCanvas"
+		Height="240" Width="320"
 		Background="Black"
-		Effect="{Binding HighlightEffect}"
+		Effect="{StaticResource dropShadowEffect}"
 		AllowDrop="True"
 		DragEnter="Canvas_DragEnter"
 		DragOver="Canvas_DragOver"
 		DragLeave="Canvas_DragLeave"
-		Drop="Canvas_Drop" />
+		Drop="Canvas_Drop">
+
+		<!--<Ellipse
+			Height="10" Width="10"
+			Canvas.Top="{Binding DropPoint.Y}" Canvas.Left="{Binding DropPoint.X}"
+			IsEnabled="{Binding ShowDropPoint}">
+			<Ellipse.Fill>
+				<SolidColorBrush Color="{DynamicResource AccentColor}" />
+			</Ellipse.Fill>
+		</Ellipse>-->
+
+		<Path
+			IsHitTestVisible="False"
+			Visibility="{Binding DropPointVisibility}">
+			<Path.Data>
+				<EllipseGeometry
+					Center="{Binding DropPoint}"
+					RadiusX="6" RadiusY="6" />
+			</Path.Data>
+
+			<Path.Fill>
+				<SolidColorBrush Color="{DynamicResource AccentColor}" />
+			</Path.Fill>
+		</Path>
+	</Canvas>
 </UserControl>
