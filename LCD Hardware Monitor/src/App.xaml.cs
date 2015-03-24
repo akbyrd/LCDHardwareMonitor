@@ -32,6 +32,7 @@
 			//DEBUG
 			drawables.Add(new StaticText());
 
+			Widgets = new ObservableCollection<IWidget>();
 			Drawables = new ReadOnlyObservableCollection<IDrawable>(drawables);
 
 			/* Update the OHM data at a regular interval as long as the

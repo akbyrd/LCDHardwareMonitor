@@ -19,10 +19,10 @@
 				BasedOn="{StaticResource {x:Type ListViewItem}}">
 				<EventSetter
 					Event="PreviewMouseLeftButtonDown"
-					Handler="Drawable_MouseLeftButtonDown" />
+					Handler="Drawable_PreviewMouseLeftButtonDown" />
 				<EventSetter
-					Event="MouseLeftButtonUp"
-					Handler="Drawable_MouseLeftButtonUp" />
+					Event="PreviewMouseLeftButtonUp"
+					Handler="Drawable_PreviewMouseLeftButtonUp" />
 				<EventSetter
 					Event="MouseMove"
 					Handler="Drawable_MouseMove" />
