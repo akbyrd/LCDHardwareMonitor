@@ -3,6 +3,8 @@
 	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 	xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+	xmlns:lcd="clr-namespace:LCDHardwareMonitor"
+	xmlns:page="clr-namespace:LCDHardwareMonitor.Pages"
 	mc:Ignorable="d"
 	d:DesignHeight="300" d:DesignWidth="300"
 	DataContext="{Binding RelativeSource={RelativeSource Self}}">
@@ -16,38 +18,79 @@
 			Opacity="{Binding HighlightOpacity}" />
 	</UserControl.Resources>
 
-	<Canvas 
-		Name="LCDCanvas"
-		Height="240" Width="320"
-		Background="Black"
-		Effect="{StaticResource dropShadowEffect}"
-		AllowDrop="True"
-		DragEnter="Canvas_DragEnter"
-		DragOver="Canvas_DragOver"
-		DragLeave="Canvas_DragLeave"
-		Drop="Canvas_Drop">
+	<!-- ItemsControl for Widgets -->
+	<ListBox
+		Name="LCDPreviewItemsControl"
+		ItemsSource="{x:Static lcd:App.Widgets}"
+		Loaded="LCDPreviewItemsControl_Loaded"
+		SelectionMode="Extended">
 
-		<!--<Ellipse
-			Height="10" Width="10"
-			Canvas.Top="{Binding DropPoint.Y}" Canvas.Left="{Binding DropPoint.X}"
-			IsEnabled="{Binding ShowDropPoint}">
-			<Ellipse.Fill>
-				<SolidColorBrush Color="{DynamicResource AccentColor}" />
-			</Ellipse.Fill>
-		</Ellipse>-->
+		<!-- Display Widgets on a Canvas -->
+		<ListBox.Template>
+			<ControlTemplate>
+				<!-- TODO: Restructure to get the origin in the center of the canvas -->
+				<Canvas
+					ClipToBounds="True"
+					IsItemsHost="True"
+					Name="LCDCanvas"
+					Height="240" Width="320"
+					Background="Black"
+					Effect="{StaticResource dropShadowEffect}"
+					AllowDrop="True"
+					DragEnter="Canvas_DragEnter" DragLeave="Canvas_DragLeave"
+					DragOver="Canvas_DragOver" Drop="Canvas_Drop">
+					<!--<Path
+						IsHitTestVisible="False"
+						Visibility="{Binding DropPointVisibility}">
+						<Path.Data>
+							<EllipseGeometry
+								Center="{Binding DropPoint}"
+								RadiusX="6" RadiusY="6" />
+						</Path.Data>
 
-		<Path
-			IsHitTestVisible="False"
-			Visibility="{Binding DropPointVisibility}">
-			<Path.Data>
-				<EllipseGeometry
-					Center="{Binding DropPoint}"
-					RadiusX="6" RadiusY="6" />
-			</Path.Data>
+						<Path.Fill>
+							<SolidColorBrush Color="{DynamicResource AccentColor}" />
+						</Path.Fill>
+					</Path>-->
+				</Canvas>
+			</ControlTemplate>
+		</ListBox.Template>
+		
+		<!-- Container Positioning -->
+		<ListBox.ItemContainerStyle>
+			<Style
+				TargetType="{x:Type ListBoxItem}"
+				BasedOn="{StaticResource FlatListBoxItem}">
+				<Setter Property="Canvas.Top"  Value="{Binding Position.Y}" />
+				<Setter Property="Canvas.Left" Value="{Binding Position.X}" />
+			</Style>
+		</ListBox.ItemContainerStyle>
 
-			<Path.Fill>
-				<SolidColorBrush Color="{DynamicResource AccentColor}" />
-			</Path.Fill>
-		</Path>
-	</Canvas>
+		<!-- Widget Template -->
+		<ListBox.ItemTemplate>
+			<DataTemplate>
+				<StackPanel
+					Orientation="Vertical"
+					ToolTip="{Binding Position}">
+					<TextBlock
+						Text="{Binding Name}"
+						HorizontalAlignment="Center">
+					</TextBlock>
+					<TextBlock
+						Text="{Binding Drawable.Name}"
+						HorizontalAlignment="Center" />
+				</StackPanel>
+			</DataTemplate>
+		</ListBox.ItemTemplate>
+	</ListBox>
+
+	<!--<Ellipse
+		IsHitTestVisible="False"
+		Visibility="{Binding DropPointVisibility}"
+		Height="10" Width="10"
+		Canvas.Top="{Binding DropPoint.Y}" Canvas.Left="{Binding DropPoint.X}">
+		<Ellipse.Fill>
+			<SolidColorBrush Color="{DynamicResource AccentColor}" />
+		</Ellipse.Fill>
+	</Ellipse>-->
 </UserControl>

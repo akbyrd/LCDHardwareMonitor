@@ -1,5 +1,7 @@
 ﻿namespace LCDHardwareMonitor.Pages
 {
+	//TODO: Re-implement showing drop point for drawables
+
 	using System;
 	using System.ComponentModel;
 	using System.Runtime.CompilerServices;
@@ -38,12 +40,31 @@
 		}
 		private Visibility dropPointVisibility = Visibility.Hidden;
 
+		public  bool EnableWidgetHitTest
+		{
+			get { return enableWidgetHitTest; }
+			private set { enableWidgetHitTest = value; RaisePropertyChangedEvent(); }
+		}
+		private bool enableWidgetHitTest;
+
 		public  Point DropPoint
 		{
 			get { return dropPoint; }
 			private set { dropPoint = value; RaisePropertyChangedEvent(); }
 		}
 		private Point dropPoint;
+
+		#endregion
+
+		//TODO: Find a better way to do this
+		#region Obtaining Panel Reference
+
+		private Panel lcdPanel;
+
+		private void LCDPreviewItemsControl_Loaded ( object sender, RoutedEventArgs e )
+		{
+			lcdPanel = Utility.FindChild<Panel>(LCDPreviewItemsControl);
+		}
 
 		#endregion
 
@@ -73,7 +94,7 @@
 			/* NOTE: Mouse.GetPosition does not work during drag & drop
 			 * operations.
 			 */
-			Point snapPoint = e.GetPosition(LCDCanvas);
+			Point snapPoint = e.GetPosition(lcdPanel);
 
 			//TODO: Notify the user of the snapping functionality? Maybe text that fades in when dragging
 			int snapAmount = 0;

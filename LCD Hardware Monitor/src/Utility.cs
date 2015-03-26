@@ -1,5 +1,6 @@
 ﻿namespace LCDHardwareMonitor
 {
+	using System.Windows.Media;
 	using OpenHardwareMonitor.Hardware;
 
 	public static class Utility
@@ -22,6 +23,21 @@
 
 			//TODO: Implement
 			throw new System.NotImplementedException();
+		}
+
+		public static T FindChild<T> ( Visual visual ) where T : Visual
+		{
+			int childCount = VisualTreeHelper.GetChildrenCount(visual);
+			for ( int i = 0; i < childCount; ++i )
+			{
+				var child = VisualTreeHelper.GetChild(visual, i) as T;
+				if ( child != null ) { return child; }
+
+				T panel = FindChild<T>(child);
+				if ( panel != null ) { return panel; }
+			}
+
+			return default(T);
 		}
 	}
 }
