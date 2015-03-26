@@ -7,7 +7,6 @@
 	xmlns:page="clr-namespace:LCDHardwareMonitor.Pages"
 	mc:Ignorable="d"
 	d:DesignHeight="650" d:DesignWidth="1100"
-	MouseRightButtonDown="UserControl_MouseRightButtonDown"
 	DataContext="{Binding RelativeSource={RelativeSource Self}}">
 
 	<Border

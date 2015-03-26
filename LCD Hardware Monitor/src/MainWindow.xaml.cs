@@ -19,5 +19,14 @@
 			if ( e.Key == Key.Escape )
 				Application.Current.Shutdown();
 		}
+
+		#region Debugging
+
+		/// <summary>
+		/// Purely for providing a place for a breakpoint for easy debugging.
+		/// </summary>
+		private void MainWindow_MouseRightButtonDown ( object sender, MouseButtonEventArgs e ) { }
+
+		#endregion
 	}
 }
