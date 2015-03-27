@@ -3,86 +3,141 @@
 	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 	xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+	xmlns:mui="http://firstfloorsoftware.com/ModernUI"
 	xmlns:lcd="clr-namespace:LCDHardwareMonitor"
 	xmlns:page="clr-namespace:LCDHardwareMonitor.Pages"
 	mc:Ignorable="d"
 	d:DesignHeight="300" d:DesignWidth="300"
 	DataContext="{Binding RelativeSource={RelativeSource Self}}">
 
-	<UserControl.Resources>
-		<!-- TODO: Animate -->
-		<DropShadowEffect
-			x:Key="dropShadowEffect"
-			BlurRadius="8"
-			Color="{DynamicResource AccentColor}"
-			Opacity="{Binding HighlightOpacity}" />
-	</UserControl.Resources>
+	<Grid Grid.Column="0">
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="20"/>
+			<RowDefinition />
+		</Grid.RowDefinitions>
 
-	<!-- ItemsControl for Widgets -->
-	<ListBox
-		Name="LCDPreviewItemsControl"
-		ItemsSource="{x:Static lcd:App.Widgets}"
-		Loaded="LCDPreviewItemsControl_Loaded"
-		SelectionMode="Extended">
+		<!-- LCD Preview Section -->
+		<StackPanel Grid.Row="0">
 
-		<!-- Display Widgets on a Canvas -->
-		<ListBox.Template>
-			<ControlTemplate>
-				<!-- TODO: Restructure to get the origin in the center of the canvas -->
-				<Canvas
-					ClipToBounds="True"
-					IsItemsHost="True"
-					Name="LCDCanvas"
-					Height="240" Width="320"
-					Background="Black"
-					Effect="{StaticResource dropShadowEffect}"
-					AllowDrop="True"
-					DragEnter="Canvas_DragEnter" DragLeave="Canvas_DragLeave"
-					DragOver="Canvas_DragOver" Drop="Canvas_Drop">
-					<!--<Path
-						IsHitTestVisible="False"
-						Visibility="{Binding DropPointVisibility}">
-						<Path.Data>
-							<EllipseGeometry
-								Center="{Binding DropPoint}"
-								RadiusX="6" RadiusY="6" />
-						</Path.Data>
+			<StackPanel.Resources>
+				<!-- TODO: Animate -->
+				<DropShadowEffect
+					x:Key="dropShadowEffect"
+					BlurRadius="8"
+					Color="{DynamicResource AccentColor}"
+					Opacity="{Binding HighlightOpacity}" />
+			</StackPanel.Resources>
 
-						<Path.Fill>
-							<SolidColorBrush Color="{DynamicResource AccentColor}" />
-						</Path.Fill>
-					</Path>-->
-				</Canvas>
-			</ControlTemplate>
-		</ListBox.Template>
-		
-		<!-- Container Positioning -->
-		<ListBox.ItemContainerStyle>
-			<Style
-				TargetType="{x:Type ListBoxItem}"
-				BasedOn="{StaticResource FlatListBoxItem}">
-				<Setter Property="Canvas.Top"  Value="{Binding Position.Y}" />
-				<Setter Property="Canvas.Left" Value="{Binding Position.X}" />
-			</Style>
-		</ListBox.ItemContainerStyle>
+			<!-- Title -->
+			<TextBlock
+				Style="{StaticResource Title}"
+				Margin="0,0,0,10"
+				Text="LCD Preview" />
 
-		<!-- Widget Template -->
-		<ListBox.ItemTemplate>
-			<DataTemplate>
-				<StackPanel
-					Orientation="Vertical"
-					ToolTip="{Binding Position}">
-					<TextBlock
-						Text="{Binding Name}"
-						HorizontalAlignment="Center">
-					</TextBlock>
-					<TextBlock
-						Text="{Binding Drawable.Name}"
-						HorizontalAlignment="Center" />
-				</StackPanel>
-			</DataTemplate>
-		</ListBox.ItemTemplate>
-	</ListBox>
+			<!-- ItemsControl for Widgets -->
+			<ListBox
+				Name="LCDPreviewItemsControl"
+				ItemsSource="{x:Static lcd:App.Widgets}"
+				Loaded="LCDPreviewItemsControl_Loaded"
+				SelectionMode="Extended">
+
+				<!-- Display Widgets on a Canvas -->
+				<ListBox.Template>
+					<ControlTemplate>
+						<!-- TODO: Restructure to get the origin in the center of the canvas -->
+						<Canvas
+							ClipToBounds="True"
+							IsItemsHost="True"
+							Name="LCDCanvas"
+							Height="240" Width="320"
+							Background="Black"
+							Effect="{StaticResource dropShadowEffect}"
+							AllowDrop="True"
+							DragEnter="Canvas_DragEnter" DragLeave="Canvas_DragLeave"
+							DragOver="Canvas_DragOver" Drop="Canvas_Drop">
+							<!--<Path
+							IsHitTestVisible="False"
+							Visibility="{Binding DropPointVisibility}">
+							<Path.Data>
+								<EllipseGeometry
+									Center="{Binding DropPoint}"
+									RadiusX="6" RadiusY="6" />
+							</Path.Data>
+
+							<Path.Fill>
+								<SolidColorBrush Color="{DynamicResource AccentColor}" />
+							</Path.Fill>
+						</Path>-->
+						</Canvas>
+					</ControlTemplate>
+				</ListBox.Template>
+
+				<!-- Container Positioning -->
+				<ListBox.ItemContainerStyle>
+					<Style
+						TargetType="{x:Type ListBoxItem}"
+						BasedOn="{StaticResource FlatListBoxItem}">
+						<Setter Property="Canvas.Top"  Value="{Binding Position.Y}" />
+						<Setter Property="Canvas.Left" Value="{Binding Position.X}" />
+					</Style>
+				</ListBox.ItemContainerStyle>
+
+				<!-- Widget Template -->
+				<ListBox.ItemTemplate>
+					<DataTemplate>
+						<StackPanel
+							Orientation="Vertical"
+							ToolTip="{Binding Position}">
+							<TextBlock
+								Text="{Binding Name}"
+								HorizontalAlignment="Center">
+							</TextBlock>
+							<TextBlock
+								Text="{Binding Drawable.Name}"
+								HorizontalAlignment="Center" />
+						</StackPanel>
+					</DataTemplate>
+				</ListBox.ItemTemplate>
+			</ListBox>
+
+		</StackPanel>
+
+		<!-- Element Settings Section -->
+		<Grid Grid.Row="2">
+			<Grid.RowDefinitions>
+				<RowDefinition Height="Auto" />
+				<RowDefinition />
+			</Grid.RowDefinitions>
+
+			<!-- Title -->
+			<TextBlock
+				Style="{StaticResource Title}"
+				Margin="0,0,0,10"
+				Text="Element Settings" />
+
+			<!-- Element Settings -->
+			<Border
+				Grid.Row="1"
+				BorderBrush="{DynamicResource ButtonBorder}"
+				BorderThickness="1">
+				<mui:ModernFrame
+						Margin="10,6,10,6">
+					<StackPanel
+						Orientation="Vertical"
+						DataContext="{Binding ElementName=LCDPreviewItemsControl, Path=SelectedItem}">
+						<TextBlock Text="{Binding Name}" />
+						<TextBlock Text="{Binding Position}" />
+						<TextBlock Text="{Binding Sensor}" />
+						<TextBlock Text="{Binding Identifier}" />
+						<TextBlock Text="{Binding Drawable}" />
+						<TextBlock Text="{Binding Drawable.Settings}" />
+					</StackPanel>
+				</mui:ModernFrame>
+			</Border>
+
+		</Grid>
+	</Grid>
 
 	<!--<Ellipse
 		IsHitTestVisible="False"

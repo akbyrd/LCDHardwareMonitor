@@ -68,10 +68,7 @@
 
 		#endregion
 
-		#region Drag & Drop Functionality
-
-		private Type draggedDataType;
-		private DragDropEffects dropEffect;
+		#region Drag & Drop
 
 		private void Canvas_DragEnter ( object sender, DragEventArgs e )
 		{
@@ -135,6 +132,9 @@
 
 			CancelDragAndDrop();
 		}
+
+		private Type draggedDataType;
+		private DragDropEffects dropEffect;
 
 		/// <summary>
 		/// Allow the drag and drop operation to proceed by allowing the Copy
