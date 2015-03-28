@@ -5,26 +5,26 @@
 	ResizeMode="CanMinimize"
 	Title="LCD Hardware Monitor" MinHeight="650" MinWidth="1100"
 	KeyDown="ModernWindow_KeyDown"
-	ContentSource="src/Views/LCDDesignerPage.xaml"
+	ContentSource="src/Views/Designer/LCDDesignerPage.xaml"
 	MouseRightButtonDown="MainWindow_MouseRightButtonDown">
 	<!--ContentSource="src/Views/OHMDataPage.xaml"-->
 	<!--Style="{StaticResource BlankWindow}"-->
 
 	<mui:ModernWindow.TitleLinks>
-		<mui:Link DisplayName="Settings" Source="src/Views/SettingsPage.xaml" />
+		<mui:Link DisplayName="Settings" Source="src/Views/Settings/SettingsPage.xaml" />
 		<mui:Link DisplayName="Source" Source="https://github.com/Sycobob/LCDHardwareMonitor" />
 	</mui:ModernWindow.TitleLinks>
 
 	<mui:ModernWindow.MenuLinkGroups>
 		<mui:LinkGroup DisplayName="LCD Designer">
 			<mui:LinkGroup.Links>
-				<mui:Link Source="src/Views/LCDDesignerPage.xaml" />
+				<mui:Link Source="src/Views/Designer/LCDDesignerPage.xaml" />
 			</mui:LinkGroup.Links>
 		</mui:LinkGroup>
 
 		<mui:LinkGroup DisplayName="OHM Data">
 			<mui:LinkGroup.Links>
-				<mui:Link Source="src/Views/OHMDataPage.xaml" />
+				<mui:Link Source="src/Views/Sources/OHMDataPage.xaml" />
 			</mui:LinkGroup.Links>
 		</mui:LinkGroup>
 	</mui:ModernWindow.MenuLinkGroups>

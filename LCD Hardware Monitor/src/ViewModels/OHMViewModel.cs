@@ -4,27 +4,43 @@ namespace LCDHardwareMonitor.ViewModels
 {
 	using System;
 	using System.Collections.ObjectModel;
+	using System.Windows.Threading;
 	using OpenHardwareMonitor.Hardware;
 
-	public class OHMHardwareTree
+	public class OHMViewModel
 	{
 		#region Constructor
 
-		public OHMHardwareTree ( Computer computer )
+		public OHMViewModel ()
 		{
 			HardwareNodes = new ReadOnlyObservableCollection<HardwareNode>(hardwareNodes);
 
-			IHardware[] hardware = computer.Hardware;
+			IHardware[] hardware = App.Computer.Hardware;
 			for ( int i = 0; i < hardware.Length; ++i )
 				hardwareNodes.Add(new HardwareNode(hardware[i]));
 
-			computer.HardwareAdded   += OnHardwareAdded;
-			computer.HardwareRemoved += OnHardwareRemoved;
+			App.Computer.HardwareAdded   += OnHardwareAdded;
+			App.Computer.HardwareRemoved += OnHardwareRemoved;
+
+			var timer = new DispatcherTimer();
+			timer.Interval = new TimeSpan(0, 0, 0, 0, 800);
+			timer.Tick += OnTick;
+			timer.Start();
 		}
 
 		#endregion
 
-		#region Public Properties
+		#region Update
+
+		private void OnTick ( object sender, EventArgs e )
+		{
+			for ( int i = 0; i < hardwareNodes.Count; ++i )
+				hardwareNodes[i].Update();
+		}
+
+		#endregion
+
+		#region Public Interface
 
 		public ReadOnlyObservableCollection<HardwareNode> HardwareNodes { get; private set; }
 		private        ObservableCollection<HardwareNode> hardwareNodes = new ObservableCollection<HardwareNode>();

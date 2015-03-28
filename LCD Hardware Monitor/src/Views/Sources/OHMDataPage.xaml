@@ -7,8 +7,11 @@
 	xmlns:views="clr-namespace:LCDHardwareMonitor.Views"
 	xmlns:vms="clr-namespace:LCDHardwareMonitor.ViewModels"
 	mc:Ignorable="d"
-	d:DesignHeight="650" d:DesignWidth="1100"
-	DataContext="{Binding RelativeSource={RelativeSource Self}}">
+	d:DesignHeight="650" d:DesignWidth="1100">
+
+	<UserControl.DataContext>
+		<vms:OHMViewModel />
+	</UserControl.DataContext>
 
 	<Border
 		x:Name="border"
@@ -53,7 +56,7 @@
 		<!-- TODO: Option to hide sensors -->
 		<TreeView
 			ItemContainerStyleSelector="{StaticResource styleSelector}"
-			ItemsSource="{Binding HardwareTree.HardwareNodes}"
+			ItemsSource="{Binding HardwareNodes}"
 			Grid.IsSharedSizeScope="true">
 
 			<TreeView.Resources>

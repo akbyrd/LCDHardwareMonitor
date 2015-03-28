@@ -14,12 +14,8 @@
 	/// </summary>
 	public partial class OHMDataPage : UserControl
 	{
-		public OHMHardwareTree HardwareTree { get; private set; }
-
 		public OHMDataPage ()
 		{
-			HardwareTree = new OHMHardwareTree(App.Computer);
-
 			InitializeComponent();
 		}
 

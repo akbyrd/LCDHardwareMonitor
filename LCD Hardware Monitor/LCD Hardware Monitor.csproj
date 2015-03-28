@@ -88,25 +88,25 @@
     <Compile Include="src\Models\Interfaces\IWidget.cs" />
     <Compile Include="src\Models\StaticText.cs" />
     <Compile Include="src\Models\Widget.cs" />
-    <Compile Include="src\Views\DrawablesList.xaml.cs">
+    <Compile Include="src\Views\Designer\DrawablesList.xaml.cs">
       <DependentUpon>DrawablesList.xaml</DependentUpon>
     </Compile>
-    <Compile Include="src\Views\LCDPreview.xaml.cs">
+    <Compile Include="src\Views\Designer\LCDPreview.xaml.cs">
       <DependentUpon>LCDPreview.xaml</DependentUpon>
     </Compile>
     <Compile Include="src\Utility.cs" />
     <Compile Include="src\ViewModels\INode.cs" />
     <Compile Include="src\ViewModels\HardwareNode.cs" />
-    <Compile Include="src\Views\LCDDesignerPage.xaml.cs">
+    <Compile Include="src\Views\Designer\LCDDesignerPage.xaml.cs">
       <DependentUpon>LCDDesignerPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="src\Views\OHMDataPage.xaml.cs">
+    <Compile Include="src\Views\Sources\OHMDataPage.xaml.cs">
       <DependentUpon>OHMDataPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="src\Views\SettingsPage.xaml.cs">
+    <Compile Include="src\Views\Settings\SettingsPage.xaml.cs">
       <DependentUpon>SettingsPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="src\ViewModels\OHMHardwareTree.cs" />
+    <Compile Include="src\ViewModels\OHMViewModel.cs" />
     <Compile Include="src\ViewModels\SensorNode.cs" />
     <Page Include="src\Views\MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
@@ -120,23 +120,23 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Page Include="src\Views\DrawablesList.xaml">
+    <Page Include="src\Views\Designer\DrawablesList.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="src\Views\LCDDesignerPage.xaml">
+    <Page Include="src\Views\Designer\LCDDesignerPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="src\Views\LCDPreview.xaml">
+    <Page Include="src\Views\Designer\LCDPreview.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="src\Views\OHMDataPage.xaml">
+    <Page Include="src\Views\Sources\OHMDataPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="src\Views\SettingsPage.xaml">
+    <Page Include="src\Views\Settings\SettingsPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

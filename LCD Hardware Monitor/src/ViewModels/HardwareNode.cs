@@ -57,6 +57,15 @@
 
 		public CompositeCollection Children { get; private set; }
 
+		public void Update ()
+		{
+			for ( int i = 0; i < subHardware.Count; ++i )
+				subHardware[i].Update();
+
+			for ( int i = 0; i < sensors.Count; ++i )
+				sensors[i].Update();
+		}
+
 		#endregion
 
 		#region Adding & Removing Sensors

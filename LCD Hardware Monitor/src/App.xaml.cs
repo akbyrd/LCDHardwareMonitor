@@ -13,7 +13,6 @@
 	public partial class App : Application
 	{
 		public static Computer Computer { get; private set; }
-		public static event Action Tick;
 
 		public static ObservableCollection<IWidget> Widgets { get; private set; }
 
@@ -40,18 +39,14 @@
 			var timer = new DispatcherTimer();
 			//TODO: Settings
 			timer.Interval = new TimeSpan(0, 0, 0, 0, 800);
-			timer.Tick += Update;
+			timer.Tick += OnTick;
 			timer.Start();
 		}
 
-		//TODO: Only update sensors that are actually in use (and make OHMDataPage responsible for its own updates)
-
-		private void Update ( object sender, EventArgs e )
+		//TODO: Only update sensors that are actually in use
+		private void OnTick ( object sender, EventArgs e )
 		{
 			Computer.Accept(updateVisitor);
-
-			if ( Tick != null )
-				Tick();
 		}
 
 		private Computer InitializeComputer ()

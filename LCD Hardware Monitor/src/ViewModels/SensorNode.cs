@@ -8,15 +8,13 @@
 	/// Exposes an <see cref="OpenHardwareMonitor.Hardware.ISensor"/> for
 	/// display in XAML.
 	/// </summary>
-	public class SensorNode : INode, INotifyPropertyChanged, IDisposable
+	public class SensorNode : INode, INotifyPropertyChanged
 	{
 		#region Constructor
 
 		public SensorNode ( ISensor sensor )
 		{
 			Sensor = sensor;
-
-			App.Tick += OnTick;
 		}
 
 		#endregion
@@ -25,17 +23,11 @@
 
 		public ISensor Sensor { get; private set; }
 
-		#endregion
-
-		#region INotifyPropertyChanged Implementation
-
-		public event PropertyChangedEventHandler PropertyChanged;
-
 		//OPTIMIZE: This is lazy. Not sure if it's a performance issue.
 		/// <summary>
-		/// Just flag the entire sensor as changed every tick.
+		/// Just flag the entire sensor as changed every update.
 		/// </summary>
-		private void OnTick ()
+		public void Update ()
 		{
 			if ( PropertyChanged != null )
 			{
@@ -46,16 +38,9 @@
 
 		#endregion
 
-		#region IDisposable Implementation
+		#region INotifyPropertyChanged Implementation
 
-		/// <summary>
-		/// Cleanup when this node is removed from the tree. Namely, unregister
-		/// from events to prevent memory leaks.
-		/// </summary>
-		void IDisposable.Dispose ()
-		{
-			App.Tick -= OnTick;
-		}
+		public event PropertyChangedEventHandler PropertyChanged;
 
 		#endregion
 	}
