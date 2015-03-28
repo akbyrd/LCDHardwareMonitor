@@ -5,6 +5,7 @@
 	xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 	xmlns:mui="http://firstfloorsoftware.com/ModernUI"
 	xmlns:lcd="clr-namespace:LCDHardwareMonitor"
+	xmlns:views="clr-namespace:LCDHardwareMonitor.Views"
 	mc:Ignorable="d"
 	d:DesignHeight="300" d:DesignWidth="300"
 	DataContext="{Binding RelativeSource={RelativeSource Self}}">
@@ -85,17 +86,7 @@
 				<!-- Widget Template -->
 				<ListBox.ItemTemplate>
 					<DataTemplate>
-						<StackPanel
-							Orientation="Vertical"
-							ToolTip="{Binding Position}">
-							<TextBlock
-								Text="{Binding Name}"
-								HorizontalAlignment="Center">
-							</TextBlock>
-							<TextBlock
-								Text="{Binding Drawable.Name}"
-								HorizontalAlignment="Center" />
-						</StackPanel>
+						<views:WidgetView />
 					</DataTemplate>
 				</ListBox.ItemTemplate>
 			</ListBox>

@@ -60,20 +60,11 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\ModernUI.WPF.1.0.6\lib\net45\FirstFloor.ModernUI.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.Management.Infrastructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>C:\Program Files (x86)\Reference Assemblies\Microsoft\WMI\v1.0\Microsoft.Management.Infrastructure.dll</HintPath>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xaml" />
-    <Reference Include="System.Xml" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
+    <Reference Include="System" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="src\App.xaml">
@@ -88,6 +79,9 @@
     <Compile Include="src\Models\Interfaces\IWidget.cs" />
     <Compile Include="src\Models\StaticText.cs" />
     <Compile Include="src\Models\Widget.cs" />
+    <Compile Include="src\Views\Designer\WidgetView.xaml.cs">
+      <DependentUpon>WidgetView.xaml</DependentUpon>
+    </Compile>
     <Compile Include="src\Views\Designer\DrawablesList.xaml.cs">
       <DependentUpon>DrawablesList.xaml</DependentUpon>
     </Compile>
@@ -108,6 +102,10 @@
     </Compile>
     <Compile Include="src\ViewModels\OHMViewModel.cs" />
     <Compile Include="src\ViewModels\SensorNode.cs" />
+    <Page Include="src\Views\Designer\WidgetView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="src\Views\MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

@@ -5,6 +5,7 @@ namespace LCDHardwareMonitor.ViewModels
 	using System;
 	using System.Collections.ObjectModel;
 	using System.Windows.Threading;
+	using OpenHardwareMonitor.GUI;
 	using OpenHardwareMonitor.Hardware;
 
 	public class OHMViewModel
@@ -32,8 +33,12 @@ namespace LCDHardwareMonitor.ViewModels
 
 		#region Update
 
+		private IVisitor updateVisitor = new UpdateVisitor();
+
 		private void OnTick ( object sender, EventArgs e )
 		{
+			App.Computer.Accept(updateVisitor);
+
 			for ( int i = 0; i < hardwareNodes.Count; ++i )
 				hardwareNodes[i].Update();
 		}

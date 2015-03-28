@@ -1,6 +1,6 @@
 ﻿namespace LCDHardwareMonitor.Views
 {
-	//TODO: Re-implement showing drop point for drawables
+	//TODO: Re-implement showing drop point for drawables (as widget?)
 
 	using System;
 	using System.ComponentModel;

@@ -4,7 +4,6 @@
 	using System.Collections.ObjectModel;
 	using System.Windows;
 	using System.Windows.Threading;
-	using OpenHardwareMonitor.GUI;
 	using OpenHardwareMonitor.Hardware;
 
 	/// <summary>
@@ -20,8 +19,6 @@
 		//TODO: F5 to reload drawables from file
 		public  static ReadOnlyObservableCollection<IDrawable> Drawables { get; private set; }
 		private static         ObservableCollection<IDrawable> drawables = new ObservableCollection<IDrawable>();
-
-		private IVisitor updateVisitor = new UpdateVisitor();
 
 		public App ()
 		{
@@ -46,7 +43,8 @@
 		//TODO: Only update sensors that are actually in use
 		private void OnTick ( object sender, EventArgs e )
 		{
-			Computer.Accept(updateVisitor);
+			for ( int i = 0; i < Widgets.Count; ++i )
+				Widgets[i].Update();
 		}
 
 		private Computer InitializeComputer ()

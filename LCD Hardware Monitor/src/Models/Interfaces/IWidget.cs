@@ -14,5 +14,6 @@
 
 		void SetSensor ( Computer computer, ISensor sensor );
 		void SetSensor ( Computer computer, Identifier identifier );
+		void Update ();
 	}
 }

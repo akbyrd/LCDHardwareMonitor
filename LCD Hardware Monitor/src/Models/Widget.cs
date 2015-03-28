@@ -102,6 +102,9 @@
 				SetSensor(computer, sensor);
 		}
 
+		//TODO: Implement
+		public void Update () { }
+
 		#endregion
 
 		#region IDisposable Implementation
