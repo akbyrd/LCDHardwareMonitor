@@ -1,4 +1,4 @@
-﻿namespace LCDHardwareMonitor.Pages
+﻿namespace LCDHardwareMonitor.Views
 {
 	using System.Windows.Controls;
 

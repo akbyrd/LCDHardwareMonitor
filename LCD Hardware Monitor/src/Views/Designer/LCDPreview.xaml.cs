@@ -1,4 +1,4 @@
-﻿namespace LCDHardwareMonitor.Pages
+﻿namespace LCDHardwareMonitor.Views
 {
 	//TODO: Re-implement showing drop point for drawables
 
@@ -8,7 +8,6 @@
 	using System.Windows;
 	using System.Windows.Controls;
 	using System.Windows.Input;
-	using LCDHardwareMonitor.Drawables;
 
 	/// <summary>
 	/// Interaction logic for LCDPreview.xaml

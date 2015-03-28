@@ -1,4 +1,4 @@
-﻿namespace LCDHardwareMonitor.Drawables
+﻿namespace LCDHardwareMonitor
 {
 	using System;
 	using System.Windows;
@@ -12,7 +12,7 @@
 		ISensor        Sensor { get; }
 		Identifier Identifier { get; }
 
-		void SetSensor ( Computer computer , ISensor sensor );
-		void SetSensor ( Computer computer , Identifier identifier );
+		void SetSensor ( Computer computer, ISensor sensor );
+		void SetSensor ( Computer computer, Identifier identifier );
 	}
 }

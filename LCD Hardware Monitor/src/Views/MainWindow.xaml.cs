@@ -1,4 +1,4 @@
-﻿namespace LCDHardwareMonitor
+﻿namespace LCDHardwareMonitor.Views
 {
 	using System.Windows;
 	using System.Windows.Input;

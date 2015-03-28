@@ -1,4 +1,4 @@
-﻿namespace LCDHardwareMonitor
+﻿namespace LCDHardwareMonitor.ViewModels
 {
 	using System;
 	using System.ComponentModel;

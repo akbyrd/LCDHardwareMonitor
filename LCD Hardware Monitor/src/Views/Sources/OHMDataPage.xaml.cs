@@ -1,11 +1,11 @@
-﻿namespace LCDHardwareMonitor.Pages
+﻿namespace LCDHardwareMonitor.Views
 {
 	using System.Windows;
 	using System.Windows.Controls;
 	using System.Windows.Controls.Primitives;
 	using System.Windows.Input;
 	using System.Windows.Media;
-	using LCDHardwareMonitor.ViewModel;
+	using LCDHardwareMonitor.ViewModels;
 
 	//TODO: Change this to something like "SensorPage", then have a subpage for each provider (e.g. OHM, AIDA, Fraps)
 

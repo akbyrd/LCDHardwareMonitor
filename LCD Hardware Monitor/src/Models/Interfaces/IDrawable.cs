@@ -1,4 +1,4 @@
-﻿namespace LCDHardwareMonitor.Drawables
+﻿namespace LCDHardwareMonitor
 {
 	using OpenHardwareMonitor.Hardware;
 

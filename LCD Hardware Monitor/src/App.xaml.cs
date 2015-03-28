@@ -4,7 +4,6 @@
 	using System.Collections.ObjectModel;
 	using System.Windows;
 	using System.Windows.Threading;
-	using LCDHardwareMonitor.Drawables;
 	using OpenHardwareMonitor.GUI;
 	using OpenHardwareMonitor.Hardware;
 

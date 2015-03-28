@@ -81,34 +81,34 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="..\modules\OpenHardwareMonitor\GUI\UpdateVisitor.cs">
-      <Link>src\OHM Items\UpdateVisitor.cs</Link>
+      <Link>src\OHM Links\UpdateVisitor.cs</Link>
     </Compile>
-    <Compile Include="src\Drawables\Interfaces\IDrawable.cs" />
-    <Compile Include="src\Drawables\Interfaces\ISettings.cs" />
-    <Compile Include="src\Drawables\Interfaces\IWidget.cs" />
-    <Compile Include="src\Drawables\StaticText.cs" />
-    <Compile Include="src\Drawables\Widget.cs" />
-    <Compile Include="src\Pages\DrawablesList.xaml.cs">
+    <Compile Include="src\Models\Interfaces\IDrawable.cs" />
+    <Compile Include="src\Models\Interfaces\ISettings.cs" />
+    <Compile Include="src\Models\Interfaces\IWidget.cs" />
+    <Compile Include="src\Models\StaticText.cs" />
+    <Compile Include="src\Models\Widget.cs" />
+    <Compile Include="src\Views\DrawablesList.xaml.cs">
       <DependentUpon>DrawablesList.xaml</DependentUpon>
     </Compile>
-    <Compile Include="src\Pages\LCDPreview.xaml.cs">
+    <Compile Include="src\Views\LCDPreview.xaml.cs">
       <DependentUpon>LCDPreview.xaml</DependentUpon>
     </Compile>
     <Compile Include="src\Utility.cs" />
-    <Compile Include="src\ViewModel\INode.cs" />
-    <Compile Include="src\ViewModel\HardwareNode.cs" />
-    <Compile Include="src\Pages\LCDDesignerPage.xaml.cs">
+    <Compile Include="src\ViewModels\INode.cs" />
+    <Compile Include="src\ViewModels\HardwareNode.cs" />
+    <Compile Include="src\Views\LCDDesignerPage.xaml.cs">
       <DependentUpon>LCDDesignerPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="src\Pages\OHMDataPage.xaml.cs">
+    <Compile Include="src\Views\OHMDataPage.xaml.cs">
       <DependentUpon>OHMDataPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="src\Pages\SettingsPage.xaml.cs">
+    <Compile Include="src\Views\SettingsPage.xaml.cs">
       <DependentUpon>SettingsPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="src\ViewModel\OHMHardwareTree.cs" />
-    <Compile Include="src\ViewModel\SensorNode.cs" />
-    <Page Include="src\MainWindow.xaml">
+    <Compile Include="src\ViewModels\OHMHardwareTree.cs" />
+    <Compile Include="src\ViewModels\SensorNode.cs" />
+    <Page Include="src\Views\MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
@@ -116,27 +116,27 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="src\MainWindow.xaml.cs">
+    <Compile Include="src\Views\MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Page Include="src\Pages\DrawablesList.xaml">
+    <Page Include="src\Views\DrawablesList.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="src\Pages\LCDDesignerPage.xaml">
+    <Page Include="src\Views\LCDDesignerPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="src\Pages\LCDPreview.xaml">
+    <Page Include="src\Views\LCDPreview.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="src\Pages\OHMDataPage.xaml">
+    <Page Include="src\Views\OHMDataPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="src\Pages\SettingsPage.xaml">
+    <Page Include="src\Views\SettingsPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

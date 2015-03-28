@@ -1,4 +1,4 @@
-﻿namespace LCDHardwareMonitor.Drawables
+﻿namespace LCDHardwareMonitor
 {
 	using System;
 	using System.Windows;

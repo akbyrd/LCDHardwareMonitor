@@ -1,6 +1,6 @@
 ﻿//TODO: This should be destroyed when the page is no longer relevant (minized to tray?)
 
-namespace LCDHardwareMonitor.ViewModel
+namespace LCDHardwareMonitor.ViewModels
 {
 	using System;
 	using System.Collections.ObjectModel;
