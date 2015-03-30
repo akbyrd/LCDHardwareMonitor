@@ -30,11 +30,14 @@
 			int childCount = VisualTreeHelper.GetChildrenCount(visual);
 			for ( int i = 0; i < childCount; ++i )
 			{
-				var child = VisualTreeHelper.GetChild(visual, i) as T;
-				if ( child != null ) { return child; }
+				var child = VisualTreeHelper.GetChild(visual, i);
+				if ( child is T ) { return (T) child; }
 
-				T panel = FindChild<T>(child);
-				if ( panel != null ) { return panel; }
+				if ( child is Visual )
+				{
+					T panel = FindChild<T>((Visual) child);
+					if ( panel != null ) { return panel; }
+				}
 			}
 
 			return default(T);
