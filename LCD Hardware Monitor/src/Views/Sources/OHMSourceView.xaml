@@ -112,55 +112,6 @@
 			</DataGrid.Columns>
 
 		</DataGrid>
-
-		<!-- The border is defined separately to prevent the built-in focus highlighting -->
-		<!--<Border
-			Grid.Column="2"
-			BorderBrush="{DynamicResource ButtonBorder}"
-			BorderThickness="1">
-			
-			<ListView
-				ItemsSource="{Binding Path=SelectedItem.Sensors, ElementName=HardwareList}">
-
-				<ListView.ItemContainerStyle>
-					<Style
-						TargetType="ListViewItem"
-						BasedOn="{StaticResource {x:Type ListViewItem}}">
-						<Setter Property="ToolTip" Value="{Binding Sensor.Identifier}" />
-						--><!--<Setter Property="Padding" Value="10, 0, 50, 0" />-->
-						<!--<Setter Property="Margin" Value="10, 0, 50, 0" />--><!--
-					</Style>
-				</ListView.ItemContainerStyle>
-
-				<ListView.View>
-					<GridView
-						AllowsColumnReorder="False">
-
-						<GridViewColumn
-							Header="Sensor"
-							DisplayMemberBinding="{Binding Sensor.Name}">
-							<GridViewColumn.HeaderContainerStyle>
-								<Style
-									TargetType="GridViewColumnHeader"
-									BasedOn="{StaticResource {x:Type GridViewColumnHeader}}">
-									<Setter Property="Padding" Value="10, 0, 40, 0" />
-								</Style>
-							</GridViewColumn.HeaderContainerStyle>
-						</GridViewColumn>
-
-						<GridViewColumn
-							Header="Type"
-							DisplayMemberBinding="{Binding Sensor.SensorType}" />
-
-						<GridViewColumn
-							Header="Value"
-							DisplayMemberBinding="{Binding Sensor.Value}">
-							</GridViewColumn>
-					</GridView>
-				</ListView.View>
-
-			</ListView>
-		</Border>-->
 	</Grid>
 
 </UserControl>
