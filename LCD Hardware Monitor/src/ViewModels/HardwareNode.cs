@@ -43,7 +43,14 @@
 		public  bool IsExpanded
 		{
 			get { return isExpanded; }
-			set { isExpanded = value; RaisePropertyChanged(); }
+			set
+			{
+				if ( isExpanded != value )
+				{
+					isExpanded = value;
+					RaisePropertyChangedEvent();
+				}
+			}
 		}
 		private bool isExpanded = true;
 
@@ -96,7 +103,7 @@
 
 		public event PropertyChangedEventHandler PropertyChanged;
 
-		private void RaisePropertyChanged ( [CallerMemberName] string propertyName = "" )
+		private void RaisePropertyChangedEvent ( [CallerMemberName] string propertyName = "" )
 		{
 			if ( PropertyChanged != null )
 			{

@@ -8,11 +8,11 @@ namespace LCDHardwareMonitor.ViewModels
 	using OpenHardwareMonitor.GUI;
 	using OpenHardwareMonitor.Hardware;
 
-	public class OHMViewModel
+	public class OHMSourceViewModel
 	{
 		#region Constructor
 
-		public OHMViewModel ()
+		public OHMSourceViewModel ()
 		{
 			HardwareNodes = new ReadOnlyObservableCollection<HardwareNode>(hardwareNodes);
 

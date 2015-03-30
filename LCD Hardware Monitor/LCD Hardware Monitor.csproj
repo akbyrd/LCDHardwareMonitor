@@ -74,6 +74,7 @@
     <Compile Include="..\modules\OpenHardwareMonitor\GUI\UpdateVisitor.cs">
       <Link>src\OHM Links\UpdateVisitor.cs</Link>
     </Compile>
+    <Compile Include="src\Controls\BetterTreeView.cs" />
     <Compile Include="src\Models\Interfaces\IDrawable.cs" />
     <Compile Include="src\Models\Interfaces\ISettings.cs" />
     <Compile Include="src\Models\Interfaces\IWidget.cs" />
@@ -94,14 +95,18 @@
     <Compile Include="src\Views\Designer\LCDDesignerPage.xaml.cs">
       <DependentUpon>LCDDesignerPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="src\Views\Sources\OHMDataPage.xaml.cs">
-      <DependentUpon>OHMDataPage.xaml</DependentUpon>
+    <Compile Include="src\Views\Sources\OHMSourceView.xaml.cs">
+      <DependentUpon>OHMSourceView.xaml</DependentUpon>
     </Compile>
     <Compile Include="src\Views\Settings\SettingsPage.xaml.cs">
       <DependentUpon>SettingsPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="src\ViewModels\OHMViewModel.cs" />
+    <Compile Include="src\ViewModels\OHMSourceViewModel.cs" />
     <Compile Include="src\ViewModels\SensorNode.cs" />
+    <Page Include="src\Controls\Templates.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="src\Views\Designer\WidgetView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -130,7 +135,7 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="src\Views\Sources\OHMDataPage.xaml">
+    <Page Include="src\Views\Sources\OHMSourceView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

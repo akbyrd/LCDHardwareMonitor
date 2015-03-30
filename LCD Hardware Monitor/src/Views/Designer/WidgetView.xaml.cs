@@ -24,14 +24,28 @@
 		public  float HighlightOpacity
 		{
 			get { return highlightOpacity; }
-			private set { highlightOpacity = value; RaisePropertyChangedEvent(); }
+			private set
+			{
+				if ( highlightOpacity != value )
+				{
+					highlightOpacity = value;
+					RaisePropertyChangedEvent();
+				}
+			}
 		}
 		private float highlightOpacity;
 
 		public  bool EnableHitTest
 		{
 			get { return enableHitTest; }
-			private set { enableHitTest = value; RaisePropertyChangedEvent(); }
+			private set
+			{
+				if ( enableHitTest != value )
+				{
+					enableHitTest = value;
+					RaisePropertyChangedEvent();
+				}
+			}
 		}
 		private bool enableHitTest = true;
 

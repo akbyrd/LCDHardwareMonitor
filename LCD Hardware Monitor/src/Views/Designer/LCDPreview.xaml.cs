@@ -28,28 +28,56 @@
 		public  float HighlightOpacity
 		{
 			get { return highlightOpacity; }
-			private set { highlightOpacity = value; RaisePropertyChangedEvent(); }
+			private set
+			{
+				if ( highlightOpacity != value )
+				{
+					highlightOpacity = value;
+					RaisePropertyChangedEvent();
+				}
+			}
 		}
 		private float highlightOpacity;
 
 		public  Visibility DropPointVisibility
 		{
 			get { return dropPointVisibility; }
-			private set { dropPointVisibility = value; RaisePropertyChangedEvent(); }
+			private set
+			{
+				if ( dropPointVisibility != value )
+				{
+					dropPointVisibility = value;
+					RaisePropertyChangedEvent();
+				}
+			}
 		}
 		private Visibility dropPointVisibility = Visibility.Hidden;
 
 		public  bool EnableWidgetHitTest
 		{
 			get { return enableWidgetHitTest; }
-			private set { enableWidgetHitTest = value; RaisePropertyChangedEvent(); }
+			private set
+			{
+				if ( enableWidgetHitTest != value )
+				{
+					enableWidgetHitTest = value;
+					RaisePropertyChangedEvent();
+				}
+			}
 		}
 		private bool enableWidgetHitTest;
 
 		public  Point DropPoint
 		{
 			get { return dropPoint; }
-			private set { dropPoint = value; RaisePropertyChangedEvent(); }
+			private set
+			{
+				if ( dropPoint != value )
+				{
+					dropPoint = value;
+					RaisePropertyChangedEvent();
+				}
+			}
 		}
 		private Point dropPoint;
 

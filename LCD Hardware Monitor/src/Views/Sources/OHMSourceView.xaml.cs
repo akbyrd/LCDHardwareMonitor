@@ -7,14 +7,12 @@
 	using System.Windows.Media;
 	using LCDHardwareMonitor.ViewModels;
 
-	//TODO: Change this to something like "SensorPage", then have a subpage for each provider (e.g. OHM, AIDA, Fraps)
-
 	/// <summary>
-	/// Interaction logic for OHMDataPage.xaml
+	/// Interaction logic for OHMSourceView.xaml
 	/// </summary>
-	public partial class OHMDataPage : UserControl
+	public partial class OHMSourceView : UserControl
 	{
-		public OHMDataPage ()
+		public OHMSourceView ()
 		{
 			InitializeComponent();
 		}
@@ -55,6 +53,18 @@
 					treeViewItem.IsExpanded = !treeViewItem.IsExpanded;
 				}
 			}
+		}
+
+		/// <summary>
+		/// Hack to set the intial selection on the list of hardware.
+		/// </summary>
+		private void HardwareList_Loaded ( object sender, RoutedEventArgs e )
+		{
+			//if ( HardwareList.SelectedItem != null ) { return; }
+
+			//var firstItem = HardwareList.ItemContainerGenerator.ContainerFromIndex(0) as TreeViewItem;
+			//if ( firstItem != null )
+			//	firstItem.IsSelected = true;
 		}
 	}
 

@@ -5,9 +5,9 @@
 	ResizeMode="CanMinimize"
 	Title="LCD Hardware Monitor" MinHeight="650" MinWidth="1100"
 	KeyDown="ModernWindow_KeyDown"
-	ContentSource="src/Views/Designer/LCDDesignerPage.xaml"
+	ContentSource="src/Views/Sources/OHMSourceView.xaml"
 	MouseRightButtonDown="MainWindow_MouseRightButtonDown">
-	<!--ContentSource="src/Views/OHMDataPage.xaml"-->
+	<!--ContentSource="src/Views/Designer/LCDDesignerPage.xaml"-->
 	<!--Style="{StaticResource BlankWindow}"-->
 
 	<mui:ModernWindow.TitleLinks>
@@ -22,9 +22,9 @@
 			</mui:LinkGroup.Links>
 		</mui:LinkGroup>
 
-		<mui:LinkGroup DisplayName="OHM Data">
+		<mui:LinkGroup DisplayName="Sources">
 			<mui:LinkGroup.Links>
-				<mui:Link Source="src/Views/Sources/OHMDataPage.xaml" />
+				<mui:Link DisplayName="OHM" Source="src/Views/Sources/OHMSourceView.xaml" />
 			</mui:LinkGroup.Links>
 		</mui:LinkGroup>
 	</mui:ModernWindow.MenuLinkGroups>

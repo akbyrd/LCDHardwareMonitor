@@ -6,6 +6,9 @@
 	using System.Windows.Threading;
 	using OpenHardwareMonitor.Hardware;
 
+	//TODO: Change unfocused border color to gray matching window color (i.e. invisible)
+	//TODO: Change highlight color to match VS (darker blue)
+
 	/// <summary>
 	/// Interaction logic for App.xaml
 	/// </summary>
