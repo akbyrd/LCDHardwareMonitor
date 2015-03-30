@@ -21,6 +21,7 @@
 			<ColumnDefinition Width="*"/>
 		</Grid.ColumnDefinitions>
 
+		<!-- TODO: Sort by name -->
 		<!-- TODO: Remember expansion -->
 		<!-- TODO: Expand as mouse rolls over items? -->
 		
@@ -57,7 +58,7 @@
 			<!-- HardwareNode template -->
 			<TreeView.ItemTemplate>
 				<HierarchicalDataTemplate
-					DataType="{x:Type vms:HardwareNode}"
+					DataType="{x:Type vms:HardwareViewModel}"
 					ItemsSource="{Binding SubHardware}">
 					<TextBlock
 						Margin="0, 0, 14, 0"
@@ -105,8 +106,14 @@
 
 				<DataGridTextColumn
 					Header="Value"
-					Binding="{Binding Sensor.Value}"
-					IsReadOnly="True" />
+					Binding="{Binding ValueString}"
+					IsReadOnly="True">
+					<DataGridTextColumn.ElementStyle>
+						<Style TargetType="{x:Type TextBlock}">
+							<Setter Property="HorizontalAlignment" Value="Right" />
+						</Style>
+					</DataGridTextColumn.ElementStyle>
+				</DataGridTextColumn>
 
 				<DataGridTextColumn Width="*"/>
 			</DataGrid.Columns>

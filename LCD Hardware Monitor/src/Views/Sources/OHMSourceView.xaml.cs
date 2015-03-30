@@ -67,22 +67,4 @@
 			//	firstItem.IsSelected = true;
 		}
 	}
-
-	/// <summary>
-	/// This is used to selectively bind properties on
-	/// <see cref="HardareNode"/>s only.
-	/// </summary>
-	public class OHMTreeStyleSelector : StyleSelector
-	{
-		public Style HardwareStyle { get; set; }
-		public Style   SensorStyle { get; set; }
-
-		public override Style SelectStyle ( object item, DependencyObject container )
-		{
-			     if ( item is HardwareNode ) return HardwareStyle;
-			else if ( item is   SensorNode ) return   SensorStyle;
-
-			return base.SelectStyle(item, container);
-		}
-	}
 }

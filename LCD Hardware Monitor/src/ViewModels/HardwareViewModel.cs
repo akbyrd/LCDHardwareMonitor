@@ -11,21 +11,21 @@
 	/// Exposes an <see cref="OpenHardwareMonitor.Hardware.IHardware"/> for
 	/// display in XAML.
 	/// </summary>
-	public class HardwareNode : INode, INotifyPropertyChanged, IDisposable
+	public class HardwareViewModel : INode, INotifyPropertyChanged, IDisposable
 	{
 		#region Constructor
 
-		public HardwareNode ( IHardware hardware )
+		public HardwareViewModel ( IHardware hardware )
 		{
 			Hardware = hardware;
 
 			for ( int i = 0; i < hardware.SubHardware.Length; ++i )
-				subHardware.Add(new HardwareNode(hardware.SubHardware[i]));
-			SubHardware = new ReadOnlyObservableCollection<HardwareNode>(subHardware);
+				subHardware.Add(new HardwareViewModel(hardware.SubHardware[i]));
+			SubHardware = new ReadOnlyObservableCollection<HardwareViewModel>(subHardware);
 
 			for ( int i = 0; i < hardware.Sensors.Length; ++i )
-				sensors.Add(new SensorNode(hardware.Sensors[i]));
-			 Sensors = new ReadOnlyObservableCollection<SensorNode>(sensors);
+				sensors.Add(new SensorViewModel(hardware.Sensors[i]));
+			 Sensors = new ReadOnlyObservableCollection<SensorViewModel>(sensors);
 
 			Hardware.SensorAdded   += OnSensorAdded;
 			Hardware.SensorRemoved += OnSensorRemoved;
@@ -56,11 +56,11 @@
 
 		public IHardware Hardware { get; private set; }
 
-		public ReadOnlyObservableCollection<HardwareNode> SubHardware { get; private set; }
-		private        ObservableCollection<HardwareNode> subHardware = new ObservableCollection<HardwareNode>();
+		public ReadOnlyObservableCollection<HardwareViewModel> SubHardware { get; private set; }
+		private        ObservableCollection<HardwareViewModel> subHardware = new ObservableCollection<HardwareViewModel>();
 
-		public ReadOnlyObservableCollection<SensorNode> Sensors { get; private set; }
-		private        ObservableCollection<SensorNode> sensors = new ObservableCollection<SensorNode>();
+		public ReadOnlyObservableCollection<SensorViewModel> Sensors { get; private set; }
+		private        ObservableCollection<SensorViewModel> sensors = new ObservableCollection<SensorViewModel>();
 
 		public CompositeCollection Children { get; private set; }
 
@@ -79,7 +79,7 @@
 
 		private void OnSensorAdded ( ISensor sensor )
 		{
-			sensors.Add(new SensorNode(sensor));
+			sensors.Add(new SensorViewModel(sensor));
 		}
 
 		private void OnSensorRemoved ( ISensor sensor )

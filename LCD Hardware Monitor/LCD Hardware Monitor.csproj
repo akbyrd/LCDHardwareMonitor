@@ -91,7 +91,7 @@
     </Compile>
     <Compile Include="src\Utility.cs" />
     <Compile Include="src\ViewModels\INode.cs" />
-    <Compile Include="src\ViewModels\HardwareNode.cs" />
+    <Compile Include="src\ViewModels\HardwareViewModel.cs" />
     <Compile Include="src\Views\Designer\LCDDesignerPage.xaml.cs">
       <DependentUpon>LCDDesignerPage.xaml</DependentUpon>
     </Compile>
@@ -102,7 +102,7 @@
       <DependentUpon>SettingsPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="src\ViewModels\OHMSourceViewModel.cs" />
-    <Compile Include="src\ViewModels\SensorNode.cs" />
+    <Compile Include="src\ViewModels\SensorViewModel.cs" />
     <Page Include="src\Controls\Templates.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>

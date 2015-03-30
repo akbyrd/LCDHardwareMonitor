@@ -14,11 +14,11 @@ namespace LCDHardwareMonitor.ViewModels
 
 		public OHMSourceViewModel ()
 		{
-			HardwareNodes = new ReadOnlyObservableCollection<HardwareNode>(hardwareNodes);
+			HardwareNodes = new ReadOnlyObservableCollection<HardwareViewModel>(hardwareNodes);
 
 			IHardware[] hardware = App.Computer.Hardware;
 			for ( int i = 0; i < hardware.Length; ++i )
-				hardwareNodes.Add(new HardwareNode(hardware[i]));
+				hardwareNodes.Add(new HardwareViewModel(hardware[i]));
 
 			App.Computer.HardwareAdded   += OnHardwareAdded;
 			App.Computer.HardwareRemoved += OnHardwareRemoved;
@@ -47,8 +47,8 @@ namespace LCDHardwareMonitor.ViewModels
 
 		#region Public Interface
 
-		public ReadOnlyObservableCollection<HardwareNode> HardwareNodes { get; private set; }
-		private        ObservableCollection<HardwareNode> hardwareNodes = new ObservableCollection<HardwareNode>();
+		public ReadOnlyObservableCollection<HardwareViewModel> HardwareNodes { get; private set; }
+		private        ObservableCollection<HardwareViewModel> hardwareNodes = new ObservableCollection<HardwareViewModel>();
 
 		#endregion
 
@@ -56,7 +56,7 @@ namespace LCDHardwareMonitor.ViewModels
 
 		private void OnHardwareAdded ( IHardware hardware )
 		{
-			hardwareNodes.Add(new HardwareNode(hardware));
+			hardwareNodes.Add(new HardwareViewModel(hardware));
 		}
 
 		private void OnHardwareRemoved ( IHardware hardware )
