@@ -8,12 +8,27 @@
 
 	<DockPanel>
 
-		<!-- Title -->
-		<TextBlock
+		<DockPanel
 			DockPanel.Dock="Top"
-			Style="{StaticResource Title}"
-			Margin="0,0,0,10"
-			Text="Sensors" />
+			LastChildFill="False">
+
+			<!-- Title -->
+			<TextBlock
+				DockPanel.Dock="Left"
+				Style="{StaticResource Title}"
+				Margin="0,0,0,10"
+				Text="Sensors" />
+
+			<!-- Drawables Button -->
+			<Button
+				DockPanel.Dock="Right"
+				VerticalAlignment="Bottom"
+				Background="{x:Null}"
+				Content="Widgets"
+				CommandTarget="{Binding ElementName=LCDDesignerRightFrame}"
+				Command="NavigationCommands.GoToPage"
+				CommandParameter="src/Views/Designer/DrawablesView.xaml" />
+		</DockPanel>
 
 		<!-- Sensor List -->
 		<ListView

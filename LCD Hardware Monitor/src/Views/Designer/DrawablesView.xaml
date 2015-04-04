@@ -3,18 +3,33 @@
 	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 	xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-	xmlns:lhm="clr-namespace:LCDHardwareMonitor"
 	mc:Ignorable="d" 
 	d:DesignHeight="300" d:DesignWidth="300">
 
 	<DockPanel>
 
-		<!-- Title -->
-		<TextBlock
+		<DockPanel
 			DockPanel.Dock="Top"
-			Style="{StaticResource Title}"
-			Margin="0,0,0,10"
-			Text="Widgets" />
+			LastChildFill="False">
+
+			<!-- Title -->
+			<TextBlock
+				DockPanel.Dock="Left"
+				Style="{StaticResource Title}"
+				HorizontalAlignment="Stretch"
+				Margin="0,0,0,10"
+				Text="Widgets" />
+			
+			<!-- Sensors Button -->
+			<Button
+				DockPanel.Dock="Right"
+				VerticalAlignment="Bottom"
+				Background="{x:Null}"
+				Content="Sensors"
+				CommandTarget="{Binding ElementName=LCDDesignerRightFrame}"
+				Command="NavigationCommands.GoToPage"
+				CommandParameter="src/Views/Designer/SensorsView.xaml"/>
+		</DockPanel>
 
 		<!-- Drawables List -->
 		<ListView
