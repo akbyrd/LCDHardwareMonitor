@@ -25,9 +25,9 @@
 				VerticalAlignment="Bottom"
 				Background="{x:Null}"
 				Content="Widgets"
-				CommandTarget="{Binding ElementName=LCDDesignerRightFrame}"
 				Command="NavigationCommands.GoToPage"
 				CommandParameter="src/Views/Designer/DrawablesView.xaml" />
+				<!--CommandTarget="{Binding ElementName=LCDDesignerRightFrame}"-->
 		</DockPanel>
 
 		<!-- Sensor List -->
@@ -59,8 +59,6 @@
 						Text="{Binding Name}" />
 				</DataTemplate>
 			</ListView.ItemTemplate>
-
-			<TextBlock Text="Sensors View" />
 		</ListView>
 	</DockPanel>
 </UserControl>

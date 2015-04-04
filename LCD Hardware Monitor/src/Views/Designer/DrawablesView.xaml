@@ -16,7 +16,6 @@
 			<TextBlock
 				DockPanel.Dock="Left"
 				Style="{StaticResource Title}"
-				HorizontalAlignment="Stretch"
 				Margin="0,0,0,10"
 				Text="Widgets" />
 			
@@ -26,9 +25,9 @@
 				VerticalAlignment="Bottom"
 				Background="{x:Null}"
 				Content="Sensors"
-				CommandTarget="{Binding ElementName=LCDDesignerRightFrame}"
 				Command="NavigationCommands.GoToPage"
 				CommandParameter="src/Views/Designer/SensorsView.xaml"/>
+				<!--CommandTarget="{Binding ElementName=LCDDesignerRightFrame}"-->
 		</DockPanel>
 
 		<!-- Drawables List -->
