@@ -100,7 +100,7 @@
 		private void Canvas_DragEnter ( object sender, DragEventArgs e )
 		{
 			//Attempt to grab an IDrawable Type from the DataObject.
-			object data = e.Data.GetData(DrawablesList.DrawableFormat);
+			object data = e.Data.GetData(DrawablesView.DrawableFormat);
 			draggedDataType = data as Type;
 
 			//Ensure a type is received and that it implements IDrawable.

@@ -80,11 +80,14 @@
     <Compile Include="src\Models\Interfaces\IWidget.cs" />
     <Compile Include="src\Models\StaticText.cs" />
     <Compile Include="src\Models\Widget.cs" />
+    <Compile Include="src\Views\Designer\SensorsView.xaml.cs">
+      <DependentUpon>SensorsView.xaml</DependentUpon>
+    </Compile>
     <Compile Include="src\Views\Designer\WidgetView.xaml.cs">
       <DependentUpon>WidgetView.xaml</DependentUpon>
     </Compile>
-    <Compile Include="src\Views\Designer\DrawablesList.xaml.cs">
-      <DependentUpon>DrawablesList.xaml</DependentUpon>
+    <Compile Include="src\Views\Designer\DrawablesView.xaml.cs">
+      <DependentUpon>DrawablesView.xaml</DependentUpon>
     </Compile>
     <Compile Include="src\Views\Designer\LCDPreview.xaml.cs">
       <DependentUpon>LCDPreview.xaml</DependentUpon>
@@ -107,6 +110,10 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="src\Views\Designer\SensorsView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="src\Views\Designer\WidgetView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -123,7 +130,7 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Page Include="src\Views\Designer\DrawablesList.xaml">
+    <Page Include="src\Views\Designer\DrawablesView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

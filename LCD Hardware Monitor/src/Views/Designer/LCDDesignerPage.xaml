@@ -4,6 +4,8 @@
 	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 	xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 	xmlns:views="clr-namespace:LCDHardwareMonitor.Views"
+	xmlns:muicontrols="clr-namespace:FirstFloor.ModernUI.Windows.Controls;assembly=FirstFloor.ModernUI"
+	DataContext="{Binding RelativeSource={RelativeSource Self}}"
 	mc:Ignorable="d"
 	d:DesignHeight="650" d:DesignWidth="1100">
 
@@ -19,26 +21,9 @@
 		<!-- Left Side, LCD Preview -->
 		<views:LCDPreview Grid.Column="0" />
 
-		<!-- Right Side - Elements Section -->
-		<Grid Grid.Column="2">
-			<Grid.RowDefinitions>
-				<RowDefinition Height="Auto"/>
-				<RowDefinition />
-			</Grid.RowDefinitions>
-
-			<!-- Title -->
-			<TextBlock
-				Style="{StaticResource Title}"
-				Margin="0,0,0,10"
-				Text="Elements" />
-
-			<!-- TODO: When an item on the screen is selected, this animates away and a list of sensors takes it's place -->
-			<!-- Elements -->
-			<views:DrawablesList
-				Grid.Row="1"
-				BorderBrush="{DynamicResource ButtonBorder}"
-				BorderThickness="1" />
-		</Grid>
+		<!-- Right Side - Drwables/Sensors Lists -->
+		<muicontrols:ModernFrame x:Name="LCDDesignerRightFrame"
+			Grid.Column="2"
+			Source="src/Views/Designer/DrawablesView.xaml"/>
 	</Grid>
-	
 </UserControl>

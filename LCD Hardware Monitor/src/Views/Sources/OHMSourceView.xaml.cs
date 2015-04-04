@@ -54,17 +54,5 @@
 				}
 			}
 		}
-
-		/// <summary>
-		/// Hack to set the intial selection on the list of hardware.
-		/// </summary>
-		private void HardwareList_Loaded ( object sender, RoutedEventArgs e )
-		{
-			//if ( HardwareList.SelectedItem != null ) { return; }
-
-			//var firstItem = HardwareList.ItemContainerGenerator.ContainerFromIndex(0) as TreeViewItem;
-			//if ( firstItem != null )
-			//	firstItem.IsSelected = true;
-		}
 	}
 }

@@ -21,7 +21,9 @@
 			<ColumnDefinition Width="*"/>
 		</Grid.ColumnDefinitions>
 
-		<!-- TODO: Sort by name -->
+		<!-- TODO: Sort by name 
+		           http://www.zagstudio.com/blog/434#.VRjFO_nF8hV
+		-->
 		<!-- TODO: Remember expansion -->
 		<!-- TODO: Expand as mouse rolls over items? -->
 		
@@ -31,8 +33,7 @@
 			Grid.Column="0"
 			ItemsSource="{Binding HardwareNodes}"
 			BorderBrush="{DynamicResource ButtonBorder}"
-			BorderThickness="1"
-			Loaded="HardwareList_Loaded">
+			BorderThickness="1">
 
 			<TreeView.Resources>
 				<!-- Data binding and events for HardwareNodes -->
