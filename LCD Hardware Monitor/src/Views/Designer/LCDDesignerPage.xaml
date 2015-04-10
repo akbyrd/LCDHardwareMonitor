@@ -19,7 +19,7 @@
 		</Grid.ColumnDefinitions>
 
 		<!-- Left Side, LCD Preview -->
-		<views:LCDPreview Grid.Column="0" />
+		<views:LCDPreviewView Grid.Column="0" />
 
 		<!-- Right Side - Drwables/Sensors Lists -->
 		<muicontrols:ModernFrame x:Name="LCDDesignerRightFrame"

@@ -4,8 +4,7 @@
 
 	public interface IDrawable
 	{
-		string    Name     { get; }
-		ISettings Settings { get; }
+		string Name { get; }
 
 		void GetPreview ( ISensor sensor );
 		void Render ( ISensor sensor );

@@ -1,7 +1,5 @@
 ﻿namespace LCDHardwareMonitor.Views
 {
-	//TODO: Re-implement showing drop point for drawables (as widget?)
-
 	using System;
 	using System.ComponentModel;
 	using System.Runtime.CompilerServices;
@@ -12,11 +10,11 @@
 	/// <summary>
 	/// Interaction logic for LCDPreview.xaml
 	/// </summary>
-	public partial class LCDPreview : UserControl, INotifyPropertyChanged
+	public partial class LCDPreviewView : UserControl, INotifyPropertyChanged
 	{
 		#region Constructor
 
-		public LCDPreview ()
+		public LCDPreviewView ()
 		{
 			InitializeComponent();
 		}
@@ -39,20 +37,11 @@
 		}
 		private float highlightOpacity;
 
-		public  Visibility DropPointVisibility
-		{
-			get { return dropPointVisibility; }
-			private set
-			{
-				if ( dropPointVisibility != value )
-				{
-					dropPointVisibility = value;
-					RaisePropertyChangedEvent();
-				}
-			}
-		}
-		private Visibility dropPointVisibility = Visibility.Hidden;
-
+		/* NOTE: This needs to be outside the widgets themselves. Widgets would
+		 * only be notified that a drag is happening once something is already
+		 * dragged over them. If they disable hit testing, how would they know
+		 * when to turn it back on?
+		 */
 		public  bool EnableWidgetHitTest
 		{
 			get { return enableWidgetHitTest; }
@@ -66,6 +55,23 @@
 			}
 		}
 		private bool enableWidgetHitTest;
+
+		/* NOTE: This drop point shit is going away once widgets provide their
+		 * own preview.
+		 */
+		public  Visibility DropPointVisibility
+		{
+			get { return dropPointVisibility; }
+			private set
+			{
+				if ( dropPointVisibility != value )
+				{
+					dropPointVisibility = value;
+					RaisePropertyChangedEvent();
+				}
+			}
+		}
+		private Visibility dropPointVisibility = Visibility.Hidden;
 
 		public  Point DropPoint
 		{
@@ -88,6 +94,11 @@
 
 		private Panel lcdPanel;
 
+		/// <summary>
+		/// We need a reference to the actual panel the LCD widgets are part of
+		/// so we can transform the mouse position into the panel's local space
+		/// and place new widgets at the point where they were dropped.
+		/// </summary>
 		private void LCDPreviewItemsControl_Loaded ( object sender, RoutedEventArgs e )
 		{
 			lcdPanel = Utility.FindChild<Panel>(LCDPreviewItemsControl);
@@ -145,6 +156,7 @@
 			CancelDragAndDrop();
 		}
 
+		//TODO: The logic here should be in the ViewModel and triggered through a Command
 		private void Canvas_Drop      ( object sender, DragEventArgs e )
 		{
 			//Create a new widget from the dropped drawable.
