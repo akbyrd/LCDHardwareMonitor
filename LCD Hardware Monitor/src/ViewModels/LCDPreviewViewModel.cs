@@ -6,6 +6,9 @@
 	using System.Collections.ObjectModel;
 	using System.ComponentModel;
 	using System.Linq;
+	using System.Windows;
+	using System.Windows.Controls;
+	using LCDHardwareMonitor;
 	using LCDHardwareMonitor.Models;
 	using Microsoft.Practices.Prism.Commands;
 	using Microsoft.Practices.Prism.Mvvm;
@@ -247,6 +250,29 @@
 			}
 
 			#endregion
+		}
+
+		#endregion
+
+		#region DrawableSetting<T> Templates
+
+		private static Dictionary<Type, DataTemplate> drawableSettingTemplates = new Dictionary<Type, DataTemplate>();
+
+		public static void RegisterDrawableSettingsTemplate<T> ( DataTemplate template ) where T : DrawableSetting
+		{
+			drawableSettingTemplates[typeof(T)] = template;
+		}
+
+		public class DrawableSettingTemplateSelector : DataTemplateSelector
+		{
+			public override DataTemplate SelectTemplate ( object item, DependencyObject container )
+			{
+				Type itemType = item.GetType();
+				if ( drawableSettingTemplates.ContainsKey(itemType) )
+					return drawableSettingTemplates[itemType];
+
+				return base.SelectTemplate(item, container);
+			}
 		}
 
 		#endregion

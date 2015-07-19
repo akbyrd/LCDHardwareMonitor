@@ -1,8 +1,9 @@
 ﻿namespace LCDHardwareMonitor
 {
+	using Microsoft.Practices.Prism.Modularity;
 	using OpenHardwareMonitor.Hardware;
 
-	public interface IDrawable
+	public interface IDrawable : IModule
 	{
 		string Name { get; }
 

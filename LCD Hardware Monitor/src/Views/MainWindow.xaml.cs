@@ -1,4 +1,7 @@
-﻿namespace LCDHardwareMonitor.Views
+﻿//TODO: Change unfocused border color to gray matching window color (i.e. invisible)
+//TODO: Change highlight color to match VS (darker blue)
+
+namespace LCDHardwareMonitor.Views
 {
 	using System.Windows;
 	using System.Windows.Input;
@@ -17,7 +20,7 @@
 		private void ModernWindow_KeyDown ( object sender, KeyEventArgs e )
 		{
 			if ( e.Key == Key.Escape )
-				Application.Current.Shutdown();
+				Close();
 		}
 
 		#region Debugging

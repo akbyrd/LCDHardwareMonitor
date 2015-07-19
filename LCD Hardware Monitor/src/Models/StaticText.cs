@@ -1,6 +1,7 @@
 ﻿namespace LCDHardwareMonitor
 {
 	using System;
+	using LCDHardwareMonitor;
 	using LCDHardwareMonitor.Models;
 	using Microsoft.Practices.Prism.Mvvm;
 	using OpenHardwareMonitor.Hardware;
@@ -29,6 +30,15 @@
 			"His name was Robert Paulson",
 			"Wrecked him? Damn near killed him!"
 		};
+
+		#endregion
+
+		#region IModule Implementation
+
+		public void Initialize ()
+		{
+			App.RegisterDrawable(this);
+		}
 
 		#endregion
 

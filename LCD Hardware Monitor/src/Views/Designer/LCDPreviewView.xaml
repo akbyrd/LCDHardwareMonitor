@@ -4,7 +4,8 @@
 	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 	xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 	xmlns:mui="http://firstfloorsoftware.com/ModernUI"
-	xmlns:lcd="clr-namespace:LCDHardwareMonitor"
+	xmlns:lhm="clr-namespace:LCDHardwareMonitor"
+	xmlns:models="clr-namespace:LCDHardwareMonitor.Models"
 	xmlns:views="clr-namespace:LCDHardwareMonitor.Views"
 	xmlns:viewmodels="clr-namespace:LCDHardwareMonitor.ViewModels"
 	xmlns:i="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity"
@@ -45,7 +46,7 @@
 			<!-- ItemsControl for Widgets -->
 			<ListBox
 				x:Name="LCDPreviewItemsControl"
-				ItemsSource="{x:Static lcd:App.Widgets}"
+				ItemsSource="{x:Static lhm:App.Widgets}"
 				DataContext="{Binding Source={StaticResource vm}}"
 				Loaded="LCDPreviewItemsControl_Loaded"
 				SelectionMode="Extended">
@@ -123,38 +124,43 @@
 				Text="Element Settings" />
 
 			<!-- Element Settings -->
-			<Border
+			<mui:ModernFrame
 				Grid.Row="1"
+				Margin="10,6,10,6"
 				BorderBrush="{DynamicResource ButtonBorder}"
 				BorderThickness="1">
-				<mui:ModernFrame
-						Margin="10,6,10,6">
-					<ListBox
-						DataContext="{Binding Source={StaticResource vm}}"
-						ItemsSource="{Binding Settings}">
+				
+				<mui:ModernFrame.Resources>
+					<DataTemplate
+						DataType="{x:Type models:DrawableSetting`1}">
 						
-						<ListBox.ItemTemplate>
-							<DataTemplate>
-								<StackPanel
-									Orientation="Vertical">
-									<TextBlock Text="{Binding Value}" />
-									<CheckBox
-										IsChecked="{Binding IsIndeterminate}"
-										IsEnabled="False"
-										Content="IsMixed" />
-								</StackPanel>
-							</DataTemplate>
-						</ListBox.ItemTemplate>
+					</DataTemplate>
+				</mui:ModernFrame.Resources>
+				<ListBox
+					DataContext="{Binding Source={StaticResource vm}}"
+					ItemsSource="{Binding Settings}">
+
+					<ListBox.ItemTemplate>
+						<DataTemplate>
+							<StackPanel
+								Orientation="Vertical">
+								<TextBlock Text="{Binding Value}" />
+								<CheckBox
+									IsChecked="{Binding IsIndeterminate}"
+									IsEnabled="False"
+									Content="IsMixed" />
+							</StackPanel>
+						</DataTemplate>
+					</ListBox.ItemTemplate>
 						
-						<!--<TextBlock Text="{Binding Name}" />
-						<TextBlock Text="{Binding Position}" />
-						<TextBlock Text="{Binding Sensor}" />
-						<TextBlock Text="{Binding Identifier}" />
-						<TextBlock Text="{Binding Drawable}" />
-						<TextBlock Text="{Binding Drawable.Text.Value}" />-->
-					</ListBox>
-				</mui:ModernFrame>
-			</Border>
+					<!--<TextBlock Text="{Binding Name}" />
+					<TextBlock Text="{Binding Position}" />
+					<TextBlock Text="{Binding Sensor}" />
+					<TextBlock Text="{Binding Identifier}" />
+					<TextBlock Text="{Binding Drawable}" />
+					<TextBlock Text="{Binding Drawable.Text.Value}" />-->
+				</ListBox>
+			</mui:ModernFrame>
 
 		</Grid>
 	</Grid>
