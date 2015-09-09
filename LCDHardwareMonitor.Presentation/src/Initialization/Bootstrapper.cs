@@ -7,6 +7,7 @@ namespace LCDHardwareMonitor.Presentation
 	using System.Diagnostics;
 	using System.IO;
 	using System.Windows;
+	using LCDHardwareMonitor.Presentation.Properties;
 	using LCDHardwareMonitor.Presentation.Views;
 	using Microsoft.Practices.Prism.Logging;
 	using Microsoft.Practices.Prism.MefExtensions;
@@ -16,32 +17,36 @@ namespace LCDHardwareMonitor.Presentation
 	{
 		protected override IModuleCatalog CreateModuleCatalog ()
 		{
-			//TODO: Move to resources
-			const string modulePath = @".\Plugins";
-			const string errorMsg = "Warning: Failed to create plugin directory.";
-
-			Func<Exception, ModuleCatalog> onError = (e) => {
-				Console.WriteLine(errorMsg + Environment.NewLine + e);
-				return new ModuleCatalog();
-			};
+			string pluginDir = @".\\" + Resources.Plugin_DirName;
 
 			//Ensure the module directory exists
 			try
 			{
-				Directory.CreateDirectory(modulePath);
+				Directory.CreateDirectory(pluginDir);
 			}
-			catch ( UnauthorizedAccessException e ) { return onError(e); }
-			catch (  DirectoryNotFoundException e ) { return onError(e); }
-			catch (       ArgumentNullException e ) { return onError(e); }
-			catch (       NotSupportedException e ) { return onError(e); }
-			catch (        PathTooLongException e ) { return onError(e); }
-			catch (           ArgumentException e ) { return onError(e); }
-			catch (                 IOException e ) { return onError(e); }
+			catch ( UnauthorizedAccessException e ) { return OnCreateModuleCatalogFiled(e); }
+			catch (  DirectoryNotFoundException e ) { return OnCreateModuleCatalogFiled(e); }
+			catch (       ArgumentNullException e ) { return OnCreateModuleCatalogFiled(e); }
+			catch (       NotSupportedException e ) { return OnCreateModuleCatalogFiled(e); }
+			catch (        PathTooLongException e ) { return OnCreateModuleCatalogFiled(e); }
+			catch (           ArgumentException e ) { return OnCreateModuleCatalogFiled(e); }
+			catch (                 IOException e ) { return OnCreateModuleCatalogFiled(e); }
 
 			var moduleCatalog = new NestedDirectoryModuleCatalog(Logger);
-			moduleCatalog.ModulePath = modulePath;
+			moduleCatalog.ModulePath = pluginDir;
 
 			return moduleCatalog;
+		}
+
+		[DebuggerHidden]
+		private ModuleCatalog OnCreateModuleCatalogFiled ( Exception e )
+		{
+			string message = string.Format(Resources.Plugin_DirCreateFail, e);
+			Logger.Log(message, Category.Exception, Priority.High);
+
+			Debugger.Break();
+
+			return new ModuleCatalog();
 		}
 
 		protected override DependencyObject CreateShell ()
@@ -68,9 +73,9 @@ namespace LCDHardwareMonitor.Presentation
 			}
 			catch ( Exception e )
 			{
-				const string loadingPluginsFailedMsg = "Failed to load plugins.";
+				string message = string.Format(Resources.Plugin_LoadAllFail, e);
+				Logger.Log(message, Category.Exception, Priority.Medium);
 
-				Logger.Log(loadingPluginsFailedMsg + Environment.NewLine + e, Category.Exception, Priority.Medium);
 				Debugger.Break();
 			}
 		}

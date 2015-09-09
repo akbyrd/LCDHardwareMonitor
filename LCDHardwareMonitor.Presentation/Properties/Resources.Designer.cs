@@ -59,5 +59,83 @@ namespace LCDHardwareMonitor.Presentation.Properties {
                 resourceCulture = value;
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Failed to create plugin directory.
+        ///{0}.
+        /// </summary>
+        internal static string Plugin_DirCreateFail {
+            get {
+                return ResourceManager.GetString("Plugin_DirCreateFail", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Plugins.
+        /// </summary>
+        internal static string Plugin_DirName {
+            get {
+                return ResourceManager.GetString("Plugin_DirName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Failed to scan for plugins.
+        ///{0}.
+        /// </summary>
+        internal static string Plugin_DirScanFail {
+            get {
+                return ResourceManager.GetString("Plugin_DirScanFail", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Forwarding drawable registration. Type: {0}.
+        /// </summary>
+        internal static string Plugin_FwdDrawableReg {
+            get {
+                return ResourceManager.GetString("Plugin_FwdDrawableReg", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Forwarding view registration. Name: {0}, URI: {1}.
+        /// </summary>
+        internal static string Plugin_FwdViewReg {
+            get {
+                return ResourceManager.GetString("Plugin_FwdViewReg", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Failed to load plugins.
+        ///{0}.
+        /// </summary>
+        internal static string Plugin_LoadAllFail {
+            get {
+                return ResourceManager.GetString("Plugin_LoadAllFail", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Failed to load plugin. Path: {0}
+        ///{1}.
+        /// </summary>
+        internal static string Plugin_LoadSingleFail {
+            get {
+                return ResourceManager.GetString("Plugin_LoadSingleFail", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Ignoring plugin because another plugin with the name &apos;{0}&apos; already exists.
+        ///Ignored: {1}
+        ///Existing: {3}.
+        /// </summary>
+        internal static string Plugin_NameConflict {
+            get {
+                return ResourceManager.GetString("Plugin_NameConflict", resourceCulture);
+            }
+        }
     }
 }
