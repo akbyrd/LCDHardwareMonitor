@@ -22,6 +22,12 @@
 			</mui:LinkGroup.Links>
 		</mui:LinkGroup>
 
+		<mui:LinkGroup DisplayName="Direct3D9">
+			<mui:LinkGroup.Links>
+				<mui:Link Source="src/Views/D3D9TestPage.xaml" />
+			</mui:LinkGroup.Links>
+		</mui:LinkGroup>
+
 		<mui:LinkGroup DisplayName="Sources" x:Name="SourcesLinkGroup">
 			<!--
 			<mui:LinkGroup.Links>

@@ -53,6 +53,7 @@
     <Compile Include="src\Interfaces\IWidget.cs" />
     <Compile Include="src\LCDModel.cs" />
     <Compile Include="src\Position.cs" />
+    <Compile Include="src\Renderers\D3D9Renderer.cs" />
     <Compile Include="src\Widget.cs" />
   </ItemGroup>
   <ItemGroup>

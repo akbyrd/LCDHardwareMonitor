@@ -1,0 +1,12 @@
+LIBRARY "LCDHardwareMonitor.Rendering.Direct3D9"
+
+EXPORTS
+
+SetSize
+SetAlpha
+SetNumDesiredSamples
+SetAdapter
+
+GetBackBufferNoRef
+Render
+Destroy

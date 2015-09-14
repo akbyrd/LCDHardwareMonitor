@@ -114,6 +114,9 @@
     <Compile Include="src\PluginInterface.cs" />
     <Compile Include="src\ViewModels\DrawablesViewModel.cs" />
     <Compile Include="src\ViewModels\LCDViewModel.cs" />
+    <Compile Include="src\Views\D3D9TestPage.xaml.cs">
+      <DependentUpon>D3D9TestPage.xaml</DependentUpon>
+    </Compile>
     <Compile Include="src\Views\Designer\SensorsView.xaml.cs">
       <DependentUpon>SensorsView.xaml</DependentUpon>
     </Compile>
@@ -135,6 +138,10 @@
       <DependentUpon>SettingsPage.xaml</DependentUpon>
     </Compile>
     <Page Include="src\Controls\Templates.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="src\Views\D3D9TestPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
