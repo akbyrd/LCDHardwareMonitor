@@ -7,6 +7,7 @@
 	KeyDown="ModernWindow_KeyDown"
 	MouseRightButtonDown="MainWindow_MouseRightButtonDown"
 	ContentSource="src/Views/Designer/LCDDesignerPage.xaml">
+	<!--ContentSource="src/Views/D3D9TestPage.xaml">-->
 	<!--ContentSource="src/Views/Sources/OHMSourceView.xaml">-->
 	<!--Style="{StaticResource BlankWindow}"-->
 
@@ -16,17 +17,21 @@
 	</mui:ModernWindow.TitleLinks>
 
 	<mui:ModernWindow.MenuLinkGroups>
+
 		<mui:LinkGroup DisplayName="LCD Designer">
 			<mui:LinkGroup.Links>
 				<mui:Link Source="src/Views/Designer/LCDDesignerPage.xaml" />
 			</mui:LinkGroup.Links>
 		</mui:LinkGroup>
 
-		<mui:LinkGroup DisplayName="Direct3D9">
+		<!--
+		<mui:LinkGroup DisplayName="Direct3D">
 			<mui:LinkGroup.Links>
-				<mui:Link Source="src/Views/D3D9TestPage.xaml" />
+				<mui:Link DisplayName="Direct3D9"  Source="src/Views/D3D9TestPage.xaml" />
+				<mui:Link DisplayName="Direct3D10" Source="src/Views/D3D9TestPage.xaml" />
 			</mui:LinkGroup.Links>
 		</mui:LinkGroup>
+		-->
 
 		<mui:LinkGroup DisplayName="Sources" x:Name="SourcesLinkGroup">
 			<!--

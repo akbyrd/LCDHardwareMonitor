@@ -11,19 +11,19 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\Renderer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\RendererManager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\TriangleRenderer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\stdafx.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\LCDHardwareMonitor.Rendering.Direct3D9.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Core.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\FileAPI.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Renderer.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Logging.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -31,25 +31,5 @@
     <ClCompile Include="src\dllmain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\LCDHardwareMonitor.Rendering.Direct3D9.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Renderer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\RendererManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\TriangleRenderer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\stdafx.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="src\LCDHardwareMonitor.Rendering.Direct3D9.Content.def">
-      <Filter>Source Files</Filter>
-    </None>
   </ItemGroup>
 </Project>
