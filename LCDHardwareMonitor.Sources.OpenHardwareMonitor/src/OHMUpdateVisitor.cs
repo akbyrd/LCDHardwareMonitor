@@ -5,6 +5,8 @@ namespace LCDHardwareMonitor.Sources.OpenHardwareMonitor
 	using System;
 	using System.Windows.Threading;
 
+	//TODO: Getting PInvokeStackImbalance from OHM. Probably due to a calling convention issue with NvAPI.
+
 	public class OHMUpdateVisitor : IVisitor
 	{
 		public Computer Computer { get { return computer; } }

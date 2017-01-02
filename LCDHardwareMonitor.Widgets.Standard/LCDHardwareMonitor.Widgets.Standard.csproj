@@ -11,6 +11,7 @@
     <AssemblyName>LCDHardwareMonitor.Widgets.Standard</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -75,11 +76,6 @@
     <Compile Include="src\StaticText.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\LCDHardwareMonitor.Core\LCDHardwareMonitor.Core.csproj">
-      <Project>{dc7d125f-54b0-4392-9ade-d29d45c61df4}</Project>
-      <Name>LCDHardwareMonitor.Core</Name>
-      <Private>False</Private>
-    </ProjectReference>
     <ProjectReference Include="..\LCDHardwareMonitor.Presentation\LCDHardwareMonitor.Presentation.csproj">
       <Project>{f0059074-03a7-43d7-b9f7-cdd927de0285}</Project>
       <Name>LCDHardwareMonitor.Presentation</Name>
