@@ -12,5 +12,5 @@
 
 extern "C"
 {
-	LHM_D3D9_API int Render(void);
+	LHM_D3D9_API bool Initialize();
 }

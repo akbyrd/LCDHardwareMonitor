@@ -11,11 +11,11 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{69CF2D9B-C9E3-401B-807E-3B93948DE6B8}</ProjectGuid>
+    <ProjectGuid>{4A86B653-06E4-4677-998D-75F927DB0C33}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>LCDHardwareMonitorRenderingDirect3D9</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.10586.0</WindowsTargetPlatformVersion>
-    <ProjectName>LCDHardwareMonitor.Rendering.Direct3D9</ProjectName>
+    <ProjectName>LCDHardwareMonitor.Rendering.Direct3D11</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -45,11 +45,13 @@
     <LinkIncremental>true</LinkIncremental>
     <OutDir>bin\$(Configuration)\</OutDir>
     <IntDir>obj\$(Configuration)\</IntDir>
+    <PostBuildEventUseInBuild>false</PostBuildEventUseInBuild>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>bin\$(Configuration)\</OutDir>
     <IntDir>obj\$(Configuration)\</IntDir>
+    <PostBuildEventUseInBuild>false</PostBuildEventUseInBuild>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -64,16 +66,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>set copyDir=$(SolutionDir)LCDHardwareMonitor.Core\$(OutDir)Renderers\D3D9\
-del /Q /S "%copyDir%*"
-xcopy /Y "$(TargetDir)*.dll" "%copyDir%"
-xcopy /Y "$(TargetDir)*.pdb" "%copyDir%"
-xcopy /Y "$(TargetDir)*.xml" "%copyDir%"
-set copyDir=$(SolutionDir)LCDHardwareMonitor.Presentation\$(OutDir)Renderers\D3D9\
-del /Q /S "%copyDir%*"
-xcopy /Y "$(TargetDir)*.dll" "%copyDir%"
-xcopy /Y "$(TargetDir)*.pdb" "%copyDir%"
-xcopy /Y "$(TargetDir)*.xml" "%copyDir%"</Command>
+      <Command>"Post Build.bat" $(SolutionDir) $(TargetDir) $(OutDir)</Command>
     </PostBuildEvent>
     <PostBuildEvent>
       <Message>Copy output files to both the core and WPF application output directories</Message>
@@ -96,16 +89,7 @@ xcopy /Y "$(TargetDir)*.xml" "%copyDir%"</Command>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PostBuildEvent>
-      <Command>set copyDir=$(SolutionDir)LCDHardwareMonitor.Core\$(OutDir)Renderers\D3D9\
-del /Q /S "%copyDir%*"
-xcopy /Y "$(TargetDir)*.dll" "%copyDir%"
-xcopy /Y "$(TargetDir)*.pdb" "%copyDir%"
-xcopy /Y "$(TargetDir)*.xml" "%copyDir%"
-set copyDir=$(SolutionDir)LCDHardwareMonitor.Presentation\$(OutDir)Renderers\D3D9\
-del /Q /S "%copyDir%*"
-xcopy /Y "$(TargetDir)*.dll" "%copyDir%"
-xcopy /Y "$(TargetDir)*.pdb" "%copyDir%"
-xcopy /Y "$(TargetDir)*.xml" "%copyDir%"</Command>
+      <Command>"Post Build.bat" $(SolutionDir) $(TargetDir) $(OutDir)</Command>
     </PostBuildEvent>
     <PostBuildEvent>
       <Message>Copy output files to both the core and WPF application output directories</Message>
@@ -127,6 +111,9 @@ xcopy /Y "$(TargetDir)*.xml" "%copyDir%"</Command>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Post Build.bat" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

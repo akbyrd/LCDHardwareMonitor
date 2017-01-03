@@ -21,6 +21,8 @@
 			Widgets   = new ObservableCollection<IWidget>();
 			Drawables = new ObservableCollection<IDrawable>();
 			Sources   = new ObservableCollection<object>();
+
+			bool success = Renderers.D3D11Renderer.Initialize();
 		}
 
 		#endregion
