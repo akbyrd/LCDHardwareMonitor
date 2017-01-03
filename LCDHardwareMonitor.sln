@@ -6,6 +6,9 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenHardwareMonitorLib", "modules\OpenHardwareMonitor\OpenHardwareMonitorLib.csproj", "{B0397530-545A-471D-BB74-027AE456DF1A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LCDHardwareMonitor.Core", "LCDHardwareMonitor.Core\LCDHardwareMonitor.Core.csproj", "{DC7D125F-54B0-4392-9ADE-D29D45C61DF4}"
+	ProjectSection(ProjectDependencies) = postProject
+		{4A86B653-06E4-4677-998D-75F927DB0C33} = {4A86B653-06E4-4677-998D-75F927DB0C33}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LCDHardwareMonitor.Presentation", "LCDHardwareMonitor.Presentation\LCDHardwareMonitor.Presentation.csproj", "{F0059074-03A7-43D7-B9F7-CDD927DE0285}"
 EndProject

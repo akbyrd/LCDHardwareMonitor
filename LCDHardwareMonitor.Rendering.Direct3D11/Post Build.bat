@@ -29,10 +29,10 @@ MKDIR "%COPY_DIR%" > NUL 2>&1
 DEL /Q /S "%COPY_DIR%*.*" > NUL
 
 ECHO **** Copying files
-XCOPY /Y "%TARGET_DIR%*.dll" "%COPY_DIR%"
+XCOPY /Y "%TARGET_DIR%*.dll" "%COPY_DIR%" > NUL
 IF errorlevel 1 GOTO Abort
 
-XCOPY /Y "%TARGET_DIR%*.pdb" "%COPY_DIR%"
+XCOPY /Y "%TARGET_DIR%*.pdb" "%COPY_DIR%" > NUL
 IF errorlevel 1 GOTO Abort
 
 ECHO **** Deployment successful
