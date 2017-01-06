@@ -28,11 +28,15 @@ ECHO **** Creating and clearing directory
 MKDIR "%COPY_DIR%" > NUL 2>&1
 DEL /Q /S "%COPY_DIR%*.*" > NUL
 
+REM TODO FOR loop over file types
 ECHO **** Copying files
 XCOPY /Y "%TARGET_DIR%*.dll" "%COPY_DIR%" > NUL
 IF errorlevel 1 GOTO Abort
 
 XCOPY /Y "%TARGET_DIR%*.pdb" "%COPY_DIR%" > NUL
+IF errorlevel 1 GOTO Abort
+
+XCOPY /Y "%TARGET_DIR%*.cso" "%COPY_DIR%" > NUL
 IF errorlevel 1 GOTO Abort
 
 ECHO **** Deployment successful

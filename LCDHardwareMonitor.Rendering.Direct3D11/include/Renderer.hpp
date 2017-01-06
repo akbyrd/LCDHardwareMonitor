@@ -240,7 +240,7 @@ InitializeRenderer(D3DRendererState* s)
 			renderTextureDesc.Usage              = D3D11_USAGE_DEFAULT;
 			renderTextureDesc.BindFlags          = D3D11_BIND_RENDER_TARGET;
 			renderTextureDesc.CPUAccessFlags     = 0;
-			renderTextureDesc.MiscFlags          = 0;
+			renderTextureDesc.MiscFlags          = D3D11_RESOURCE_MISC_SHARED;
 
 			hr = s->d3dDevice->CreateTexture2D(&renderTextureDesc, nullptr, &s->d3dRenderTexture);
 			if (LOG_HRESULT(hr)) return false;
@@ -308,7 +308,7 @@ InitializeRenderer(D3DRendererState* s)
 		//Load
 		unique_ptr<char[]> vsBytes;
 		size_t vsBytesLength;
-		success = LoadFile(L"Basic Vertex Shader.cso", vsBytes, vsBytesLength);
+		success = LoadFile(L"Renderers\\D3D11\\Basic Vertex Shader.cso", vsBytes, vsBytesLength);
 		if (!success) return false;
 
 		//Create
@@ -352,7 +352,7 @@ InitializeRenderer(D3DRendererState* s)
 		//Load
 		unique_ptr<char[]> psBytes;
 		size_t psBytesLength;
-		success = LoadFile(L"Basic Pixel Shader.cso", psBytes, psBytesLength);
+		success = LoadFile(L"Renderers\\D3D11\\Basic Pixel Shader.cso", psBytes, psBytesLength);
 		if (!success) return false;
 
 		//Create
@@ -558,8 +558,8 @@ PushDrawCall(D3DRendererState* s)
 	return drawCall;
 }
 
-inline bool
-Render(D3DRendererState* s, r64 t)
+bool
+Render(D3DRendererState* s)
 {
 	// TODO: Should we assert things that will immediately crash the program
 	// anyway (e.g. dereferenced below). It probably gives us a better error

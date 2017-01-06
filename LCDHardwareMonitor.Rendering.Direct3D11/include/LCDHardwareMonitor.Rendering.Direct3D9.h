@@ -13,4 +13,9 @@
 extern "C"
 {
 	LHM_D3D9_API bool Initialize();
+	LHM_D3D9_API bool Render();
+	LHM_D3D9_API void Teardown();
+
+	//TODO: Replace
+	LHM_D3D9_API ID3D11Resource* GetD3D9RenderTexture();
 }

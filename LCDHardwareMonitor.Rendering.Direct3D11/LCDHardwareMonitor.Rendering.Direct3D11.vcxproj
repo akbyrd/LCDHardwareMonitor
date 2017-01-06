@@ -64,7 +64,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>"Post Build.bat" $(SolutionDir) $(TargetDir) $(OutDir)</Command>
+      <Command>"res\Post Build.bat" $(SolutionDir) $(TargetDir) $(OutDir)</Command>
     </PostBuildEvent>
     <PostBuildEvent>
       <Message>Copy output files to both the core and WPF application output directories</Message>
@@ -87,7 +87,7 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PostBuildEvent>
-      <Command>"Post Build.bat" $(SolutionDir) $(TargetDir) $(OutDir)</Command>
+      <Command>"res\Post Build.bat" $(SolutionDir) $(TargetDir) $(OutDir)</Command>
     </PostBuildEvent>
     <PostBuildEvent>
       <Message>Copy output files to both the core and WPF application output directories</Message>
@@ -111,7 +111,17 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Post Build.bat" />
+    <FxCompile Include="res\Basic Pixel Shader.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="res\Basic Vertex Shader.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
+    </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="res\Post Build.bat" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
