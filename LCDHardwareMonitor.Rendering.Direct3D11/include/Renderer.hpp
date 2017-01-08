@@ -1,15 +1,18 @@
 #pragma comment(lib, "D3D11.lib")
+#pragma comment(lib,  "D3D9.lib")
 #pragma comment(lib,  "DXGI.lib")
 
 // For some GUID magic in the DirectX/DXGI headers. Must be included before them.
 #include <InitGuid.h>
 
 #ifdef DEBUG
+	#define D3D_DEBUG_INFO
 	#include <d3d11sdklayers.h>
 	#include <dxgidebug.h>
 	#include <dxgi1_3.h>
 #endif
 
+#include <d3d9.h>
 #include <d3d11.h>
 #include <DirectXColors.h>
 using namespace DirectX;
@@ -89,6 +92,15 @@ struct D3DRendererState
 	ComPtr<ID3D11RasterizerState>  d3dRasterizerStateSolid     = nullptr;
 	ComPtr<ID3D11RasterizerState>  d3dRasterizerStateWireframe = nullptr;
 
+	ComPtr<IDirect3D9Ex>           d3d9                        = nullptr;
+	ComPtr<IDirect3DDevice9Ex>     d3d9Device                  = nullptr;
+	ComPtr<IDirect3DTexture9>      d3d9RenderTexture           = nullptr;
+	ComPtr<IDirect3DSurface9>      d3d9RenderSurface0          = nullptr;
+
+	ComPtr<IDXGISwapChain>         DEBUG_dxgiSwapChain         = nullptr;
+	ComPtr<ID3D11Texture2D>        DEBUG_d3dBackBuffer         = nullptr;
+	ComPtr<ID3D11RenderTargetView> DEBUG_d3dBackBufferView     = nullptr;
+
 	XMFLOAT4X4    proj                = {};
 	V2i           renderSize          = {};
 	u32           multisampleCount    = 1;
@@ -113,7 +125,7 @@ DrawCall* PushDrawCall(D3DRendererState*);
 #pragma endregion
 
 bool
-InitializeRenderer(D3DRendererState* s)
+InitializeRenderer(D3DRendererState* s, HWND hwnd, HWND debughwnd)
 {
 	//TODO: Maybe asserts go with the usage site?
 	Assert(s->d3dDevice                   == nullptr);
@@ -128,6 +140,12 @@ InitializeRenderer(D3DRendererState* s)
 	Assert(s->d3dPixelShader              == nullptr);
 	Assert(s->d3dRasterizerStateSolid     == nullptr);
 	Assert(s->d3dRasterizerStateWireframe == nullptr);
+	Assert(s->d3d9                        == nullptr);
+	Assert(s->d3d9Device                  == nullptr);
+	Assert(s->d3d9RenderTexture           == nullptr);
+	Assert(s->d3d9RenderSurface0          == nullptr);
+	Assert(s->DEBUG_dxgiSwapChain         == nullptr);
+
 
 	HRESULT hr;
 	bool success;
@@ -217,24 +235,24 @@ InitializeRenderer(D3DRendererState* s)
 	}
 
 
-	//Create swap chain
+	//Create render texture
+	D3D11_TEXTURE2D_DESC renderTextureDesc = {};
 	{
-		//Create render texture
+		//Create texture
 		{
 			//Query and set MSAA quality levels
 			hr = s->d3dDevice->CheckMultisampleQualityLevels(
-				DXGI_FORMAT_R8G8B8A8_UNORM,
+				DXGI_FORMAT_B8G8R8A8_UNORM,
 				s->multisampleCount,
 				&s->qualityLevelCount
 			);
 			if (LOG_HRESULT(hr)) return false;
 
-			D3D11_TEXTURE2D_DESC renderTextureDesc = {};
-			renderTextureDesc.Width              = 320;
-			renderTextureDesc.Height             = 240;
+			renderTextureDesc.Width              = s->renderSize.x;
+			renderTextureDesc.Height             = s->renderSize.y;
 			renderTextureDesc.MipLevels          = 1;
 			renderTextureDesc.ArraySize          = 1;
-			renderTextureDesc.Format             = DXGI_FORMAT_R8G8B8A8_UNORM;
+			renderTextureDesc.Format             = DXGI_FORMAT_B8G8R8A8_UNORM;
 			renderTextureDesc.SampleDesc.Count   = s->multisampleCount;
 			renderTextureDesc.SampleDesc.Quality = s->qualityLevelCount - 1;
 			renderTextureDesc.Usage              = D3D11_USAGE_DEFAULT;
@@ -253,6 +271,7 @@ InitializeRenderer(D3DRendererState* s)
 
 		//Create depth buffer
 		{
+			//TODO: Use renderTextureDesc?
 			D3D11_TEXTURE2D_DESC depthDesc = {};
 			depthDesc.Width              = s->renderSize.x;
 			depthDesc.Height             = s->renderSize.y;
@@ -299,6 +318,72 @@ InitializeRenderer(D3DRendererState* s)
 		{
 			XMMATRIX P = XMMatrixOrthographicLH(320, 240, 0, 1000);
 			XMStoreFloat4x4(&s->proj, P);
+		}
+	}
+
+
+	//TODO: Optional
+	//Create swap chain
+	if (debughwnd != nullptr)
+	{
+		//Create swap chain
+		DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
+		swapChainDesc.BufferDesc.Width                   = renderTextureDesc.Width;
+		swapChainDesc.BufferDesc.Height                  = renderTextureDesc.Height;
+		swapChainDesc.BufferDesc.RefreshRate.Numerator   = 60; //TODO: Un-hardcode (IDXGIOutput::FindClosestMatchingMode?)
+		swapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
+		swapChainDesc.BufferDesc.Format                  = renderTextureDesc.Format;
+		swapChainDesc.BufferDesc.ScanlineOrdering        = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
+		swapChainDesc.BufferDesc.Scaling                 = DXGI_MODE_SCALING_UNSPECIFIED;
+		swapChainDesc.SampleDesc                         = renderTextureDesc.SampleDesc;
+		swapChainDesc.BufferUsage                        = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+		swapChainDesc.BufferCount                        = 1;
+		swapChainDesc.OutputWindow                       = debughwnd;
+		swapChainDesc.Windowed                           = true;
+		swapChainDesc.SwapEffect                         = DXGI_SWAP_EFFECT_DISCARD;
+		swapChainDesc.Flags                              = 0;
+
+		hr = s->dxgiFactory->CreateSwapChain(s->d3dDevice.Get(), &swapChainDesc, &s->DEBUG_dxgiSwapChain);
+		if (LOG_HRESULT(hr)) return false;
+		SetDebugObjectName(s->DEBUG_dxgiSwapChain, "DEBUG Swap Chain");
+
+
+		//Get back buffer
+		hr = s->DEBUG_dxgiSwapChain->GetBuffer(0, IID_PPV_ARGS(&s->DEBUG_d3dBackBuffer));
+		if (LOG_HRESULT(hr)) return false;
+		SetDebugObjectName(s->DEBUG_d3dBackBuffer, "DEBUG Back Buffer");
+
+
+		//Create a render target view to the back buffer
+		hr = s->d3dDevice->CreateRenderTargetView(s->DEBUG_d3dBackBuffer.Get(), nullptr, &s->DEBUG_d3dBackBufferView);
+		if (LOG_HRESULT(hr)) return false;
+		SetDebugObjectName(s->DEBUG_d3dBackBufferView, "DEBUG Back Buffer View");
+
+
+		//Create depth buffer
+		if (false)
+		{
+			D3D11_TEXTURE2D_DESC depthDesc = {};
+			depthDesc.Width              = s->renderSize.x;
+			depthDesc.Height             = s->renderSize.y;
+			depthDesc.MipLevels          = 1;
+			depthDesc.ArraySize          = 1;
+			depthDesc.Format             = DXGI_FORMAT_D24_UNORM_S8_UINT;
+			depthDesc.SampleDesc.Count   = s->multisampleCount;
+			depthDesc.SampleDesc.Quality = s->qualityLevelCount - 1;
+			depthDesc.Usage              = D3D11_USAGE_DEFAULT;
+			depthDesc.BindFlags          = D3D11_BIND_DEPTH_STENCIL;
+			depthDesc.CPUAccessFlags     = 0;
+			depthDesc.MiscFlags          = 0;
+
+			ComPtr<ID3D11Texture2D> d3dDepthBuffer;
+			hr = s->d3dDevice->CreateTexture2D(&depthDesc, nullptr, &d3dDepthBuffer);
+			if (LOG_HRESULT(hr)) return false;
+			SetDebugObjectName(d3dDepthBuffer, "DEBUG Depth Buffer");
+
+			hr = s->d3dDevice->CreateDepthStencilView(d3dDepthBuffer.Get(), nullptr, &s->d3dDepthBufferView);
+			if (LOG_HRESULT(hr)) return false;
+			SetDebugObjectName(s->d3dDepthBufferView, "DEBUG Depth Buffer View");
 		}
 	}
 
@@ -487,6 +572,59 @@ InitializeRenderer(D3DRendererState* s)
 		XMStoreFloat4x4((XMFLOAT4X4*) &dc->worldM, XMMatrixIdentity());
 	}
 
+
+	//Create D3D9 device and shared surface
+	{
+		//Device
+		hr = Direct3DCreate9Ex(D3D_SDK_VERSION, &s->d3d9);
+		if (LOG_HRESULT(hr)) return false;
+
+		D3DPRESENT_PARAMETERS presentParams = {};
+		presentParams.Windowed             = true;
+		presentParams.SwapEffect           = D3DSWAPEFFECT_DISCARD;
+		presentParams.hDeviceWindow        = nullptr;
+		presentParams.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
+
+		hr = s->d3d9->CreateDeviceEx(
+			D3DADAPTER_DEFAULT,
+			D3DDEVTYPE_HAL,
+			hwnd, //GetDesktopWindow(), //TODO: ???
+			D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED | D3DCREATE_FPU_PRESERVE,
+			&presentParams,
+			nullptr,
+			&s->d3d9Device
+		);
+		if (LOG_HRESULT(hr)) return false;
+
+
+		//Shared surface
+		ComPtr<IDXGIResource> dxgiRenderTexture;
+		hr = s->d3dRenderTexture.As(&dxgiRenderTexture);
+		if (LOG_HRESULT(hr)) return false;
+
+		HANDLE renderTextureSharedHandle;
+		hr = dxgiRenderTexture->GetSharedHandle(&renderTextureSharedHandle);
+		if (LOG_HRESULT(hr)) return false;
+
+		Assert(renderTextureDesc.Format == DXGI_FORMAT_B8G8R8A8_UNORM);
+		hr = s->d3d9Device->CreateTexture(
+			renderTextureDesc.Width,
+			renderTextureDesc.Height,
+			renderTextureDesc.MipLevels,
+			D3DUSAGE_RENDERTARGET,
+			D3DFMT_A8R8G8B8,
+			D3DPOOL_DEFAULT,
+			&s->d3d9RenderTexture,
+			nullptr
+		);
+		if (LOG_HRESULT(hr)) return false;
+
+		hr = s->d3d9RenderTexture->GetSurfaceLevel(0, &s->d3d9RenderSurface0);
+		if (LOG_HRESULT(hr)) return false;
+
+		//SetBackBuffer(D3DResourceType::IDirect3DSurface9, IntPtr(pSurface));
+	}
+
 	return true;
 }
 
@@ -527,6 +665,10 @@ TeardownRenderer(D3DRendererState* s)
 	s->d3dPixelShader             .Reset();
 	s->d3dRasterizerStateSolid    .Reset();
 	s->d3dRasterizerStateWireframe.Reset();
+	s->d3d9                       .Reset();
+	s->d3d9Device                 .Reset();
+	s->d3d9RenderTexture          .Reset();
+	s->d3d9RenderSurface0         .Reset();
 
 
 	//Log live objects
@@ -570,7 +712,7 @@ Render(D3DRendererState* s)
 
 	HRESULT hr;
 
-	s->d3dContext->ClearRenderTargetView(s->d3dRenderTargetView.Get(), DirectX::Colors::Black);
+	s->d3dContext->ClearRenderTargetView(s->d3dRenderTargetView.Get(), DirectX::Colors::Red);
 	s->d3dContext->ClearDepthStencilView(s->d3dDepthBufferView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
 
 	//Update Camera
@@ -599,9 +741,20 @@ Render(D3DRendererState* s)
 
 		s->d3dContext->DrawIndexed(mesh->iCount, 0, mesh->vOffset);
 	}
-	s->drawCallCount = 0;
+	//s->drawCallCount = 0;
 
 	s->d3dContext->Flush();
+
+
+	if (s->DEBUG_dxgiSwapChain != nullptr)
+	{
+		s->d3dContext->CopyResource(s->DEBUG_d3dBackBuffer.Get(), s->d3dRenderTexture.Get());
+
+		//TODO: Optional?
+		//TODO: Handle DXGI_ERROR_DEVICE_RESET, DXGI_ERROR_DEVICE_REMOVED, etc
+		hr = s->DEBUG_dxgiSwapChain->Present(0, 0);
+		if (LOG_HRESULT(hr)) return false;
+	}
 
 	return true;
 }

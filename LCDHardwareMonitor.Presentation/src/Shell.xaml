@@ -6,8 +6,8 @@
 	Title="LCD Hardware Monitor" MinHeight="650" MinWidth="1100"
 	KeyDown="ModernWindow_KeyDown"
 	MouseRightButtonDown="MainWindow_MouseRightButtonDown"
-	ContentSource="src/Views/Designer/LCDDesignerPage.xaml">
-	<!--ContentSource="src/Views/D3D9TestPage.xaml">-->
+	ContentSource="src/Views/D3D11TestPage.xaml">
+	<!--ContentSource="src/Views/Designer/LCDDesignerPage.xaml">-->
 	<!--ContentSource="src/Views/Sources/OHMSourceView.xaml">-->
 	<!--Style="{StaticResource BlankWindow}"-->
 
@@ -26,8 +26,7 @@
 
 		<mui:LinkGroup DisplayName="Direct3D">
 			<mui:LinkGroup.Links>
-				<mui:Link DisplayName="Direct3D9"  Source="src/Views/D3D9TestPage.xaml" />
-				<mui:Link DisplayName="Direct3D10" Source="src/Views/D3D9TestPage.xaml" />
+				<mui:Link Source="src/Views/D3D11TestPage.xaml" />
 			</mui:LinkGroup.Links>
 		</mui:LinkGroup>
 

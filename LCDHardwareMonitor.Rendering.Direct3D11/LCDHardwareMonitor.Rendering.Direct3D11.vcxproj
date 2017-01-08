@@ -55,7 +55,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;DEBUG;_WINDOWS;_USRDLL;LHM_D3D9_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;DEBUG;_WINDOWS;_USRDLL;LHM_D3D11_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(ProjectDir)include</AdditionalIncludeDirectories>
     </ClCompile>
@@ -76,7 +76,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;LHM_D3D9_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;LHM_D3D11_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(ProjectDir)include</AdditionalIncludeDirectories>
     </ClCompile>
@@ -98,7 +98,8 @@
     <ClInclude Include="include\Logging.hpp" />
     <ClInclude Include="include\FileAPI.hpp" />
     <ClInclude Include="include\Renderer.hpp" />
-    <ClInclude Include="include\LCDHardwareMonitor.Rendering.Direct3D9.h" />
+    <ClInclude Include="include\LCDHardwareMonitor.Rendering.Direct3D11.h" />
+    <ClInclude Include="include\win32_window.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\dllmain.cpp">

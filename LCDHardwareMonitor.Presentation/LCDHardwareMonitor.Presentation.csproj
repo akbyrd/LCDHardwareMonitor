@@ -40,6 +40,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>true</Prefer32Bit>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -113,8 +114,8 @@
     <Compile Include="src\PluginInterface.cs" />
     <Compile Include="src\ViewModels\DrawablesViewModel.cs" />
     <Compile Include="src\ViewModels\LCDViewModel.cs" />
-    <Compile Include="src\Views\D3D9TestPage.xaml.cs">
-      <DependentUpon>D3D9TestPage.xaml</DependentUpon>
+    <Compile Include="src\Views\D3D11TestPage.xaml.cs">
+      <DependentUpon>D3D11TestPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="src\Views\Designer\SensorsView.xaml.cs">
       <DependentUpon>SensorsView.xaml</DependentUpon>
@@ -140,7 +141,7 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="src\Views\D3D9TestPage.xaml">
+    <Page Include="src\Views\D3D11TestPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
