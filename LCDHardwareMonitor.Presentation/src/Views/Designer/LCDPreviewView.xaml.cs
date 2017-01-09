@@ -29,9 +29,8 @@
 
 			success = Renderers.D3D11Renderer.Render();
 
-			IntPtr d3dSurface = Renderers.D3D11Renderer.GetD3D9RenderSurface();
 			LCDPreviewTexture.Lock();
-			LCDPreviewTexture.SetBackBuffer(D3DResourceType.IDirect3DSurface9, d3dSurface, true);
+			LCDPreviewTexture.SetBackBuffer(D3DResourceType.IDirect3DSurface9, Shell.StaticLCDModel.RenderSurface, true);
 			LCDPreviewTexture.AddDirtyRect(new Int32Rect(0, 0, LCDPreviewTexture.PixelWidth, LCDPreviewTexture.PixelHeight));
 			LCDPreviewTexture.Unlock();
 		}

@@ -17,16 +17,19 @@
 
 		#endregion
 
-#if false
+#if true
 		public LCDModel()
 		{
 			bool success;
 
 			//TODO: Error checking
 			//TODO: Render loop
-			success = D3D11Renderer.Initialize((UInt16) RenderSize.x, (UInt16) RenderSize.y, out RenderSurface);
+			//success = D3D11Renderer.Initialize((UInt16) RenderSize.x, (UInt16) RenderSize.y, out RenderSurface);
+			success = D3D11Renderer.Initialize();
 			if (!success)
 				throw new Exception("Uh-oh");
+
+			RenderSurface = D3D11Renderer.GetD3D9RenderSurface();
 		}
 
 		~LCDModel()
