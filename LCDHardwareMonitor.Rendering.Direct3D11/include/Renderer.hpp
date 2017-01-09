@@ -646,6 +646,26 @@ Render(D3DRendererState* s)
 	s->d3dContext->ClearRenderTargetView(s->d3dRenderTargetView.Get(), DirectX::Colors::Black);
 	s->d3dContext->ClearDepthStencilView(s->d3dDepthBufferView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
 
+	//DEBUG: Spin
+	{
+		i64 ticks;
+		QueryPerformanceCounter((LARGE_INTEGER*) &ticks);
+
+		i64 frequency;
+		QueryPerformanceFrequency((LARGE_INTEGER*) &frequency);
+
+		r32 t = r32 ((r64) ticks / (r64) frequency);
+
+		static r32 lastT = 0;
+		r32 deltaT = t - lastT;
+		lastT = t;
+
+		XMMATRIX world    = XMLoadFloat4x4((XMFLOAT4X4*) &s->drawCalls[0].worldM);
+		XMMATRIX rotation = XMMatrixRotationZ(deltaT);
+
+		XMStoreFloat4x4((XMFLOAT4X4*) &s->drawCalls[0].worldM, rotation * world);
+	}
+
 	//Update Camera
 	XMVECTOR pos    = {0, 0, 0};
 	XMVECTOR target = {0, 0, 1};

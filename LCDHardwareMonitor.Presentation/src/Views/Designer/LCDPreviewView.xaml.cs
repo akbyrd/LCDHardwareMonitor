@@ -2,6 +2,7 @@
 {
 	using System;
 	using System.ComponentModel;
+	using System.Diagnostics;
 	using System.Runtime.CompilerServices;
 	using System.Windows;
 	using System.Windows.Controls;
@@ -25,9 +26,11 @@
 
 		private void CompositionTarget_Rendering(object sender, EventArgs e)
 		{
+			//TODO: Do something about this
 			bool success;
-
 			success = Renderers.D3D11Renderer.Render();
+			if (!success)
+				throw new Exception("Uh oh");
 
 			LCDPreviewTexture.Lock();
 			LCDPreviewTexture.SetBackBuffer(D3DResourceType.IDirect3DSurface9, Shell.StaticLCDModel.RenderSurface, true);

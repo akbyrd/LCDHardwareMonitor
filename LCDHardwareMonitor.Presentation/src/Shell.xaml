@@ -14,14 +14,13 @@
 	</mui:ModernWindow.TitleLinks>
 
 	<mui:ModernWindow.MenuLinkGroups>
-
-		<mui:LinkGroup DisplayName="LCD Designer">
+		<mui:LinkGroup DisplayName="Designer">
 			<mui:LinkGroup.Links>
 				<mui:Link Source="src/Views/Designer/LCDDesignerPage.xaml" />
 			</mui:LinkGroup.Links>
 		</mui:LinkGroup>
 
-		<mui:LinkGroup DisplayName="Sources" x:Name="SourcesLinkGroup">
+		<mui:LinkGroup DisplayName="Data Sources" x:Name="SourcesLinkGroup">
 			<mui:LinkGroup.Links>
 				<mui:Link DisplayName="OHM" Source="src/Views/Sources/OHMSourceView.xaml" />
 			</mui:LinkGroup.Links>

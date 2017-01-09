@@ -41,17 +41,20 @@ DllMain(HINSTANCE hInstance, DWORD fdwReason, LPVOID lpvReserved)
 }
 
 LHM_D3D11_API bool
-Initialize()
+Initialize(u16 width, u16 height, IDirect3DSurface9** renderSurface)
 {
 	bool success;
 
+	*renderSurface = nullptr;
+
 	//TODO: Real memory
-	//TODO: Pass size
 	rendererState = {};
-	rendererState.renderSize = {320, 240};
+	rendererState.renderSize = {width, height};
 
 	success = InitializeRenderer(&rendererState);
 	if (!success) return false;
+
+	*renderSurface = rendererState.d3d9RenderSurface0.Get();
 
 	return true;
 }
@@ -71,10 +74,4 @@ LHM_D3D11_API void
 Teardown()
 {
 	TeardownRenderer(&rendererState);
-}
-
-LHM_D3D11_API IDirect3DSurface9*
-GetD3D9RenderSurface()
-{
-	return rendererState.d3d9RenderSurface0.Get();
 }

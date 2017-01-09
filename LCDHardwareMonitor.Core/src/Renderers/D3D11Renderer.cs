@@ -9,9 +9,8 @@
 		//TODO: Research and double check calling convention stuff
 		private const CallingConvention CallConv = CallingConvention.Cdecl;
 
-		[DllImport(DLLPath, CallingConvention = CallConv)] public static extern bool   Initialize();
-		[DllImport(DLLPath, CallingConvention = CallConv)] public static extern bool   Render();
-		[DllImport(DLLPath, CallingConvention = CallConv)] public static extern void   Teardown();
-		[DllImport(DLLPath, CallingConvention = CallConv)] public static extern IntPtr GetD3D9RenderSurface();
+		[DllImport(DLLPath, CallingConvention = CallConv)] public static extern bool Initialize(UInt16 width, UInt16 height, out IntPtr renderSurface);
+		[DllImport(DLLPath, CallingConvention = CallConv)] public static extern bool Render();
+		[DllImport(DLLPath, CallingConvention = CallConv)] public static extern void Teardown();
 	}
 }

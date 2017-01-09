@@ -12,10 +12,7 @@
 
 extern "C"
 {
-	LHM_D3D11_API bool Initialize();
+	LHM_D3D11_API bool Initialize(u16 width, u16 height, IDirect3DSurface9** renderSurface);
 	LHM_D3D11_API bool Render();
 	LHM_D3D11_API void Teardown();
-
-	//TODO: Convert to an out parameter/return value of Initialize
-	LHM_D3D11_API IDirect3DSurface9* GetD3D9RenderSurface();
 }
