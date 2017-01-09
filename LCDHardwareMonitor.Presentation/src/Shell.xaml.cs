@@ -27,8 +27,6 @@ namespace LCDHardwareMonitor.Presentation.Views
 			{
 				var helper = new System.Windows.Interop.WindowInteropHelper(this);
 				Renderers.D3D11Renderer.Initialize(helper.Handle);
-
-				Renderers.D3D9Renderer.Initialize();
 			};
 
 			InitializeComponent();

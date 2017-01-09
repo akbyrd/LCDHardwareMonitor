@@ -8,7 +8,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LCDHardwareMonitor.Core", "LCDHardwareMonitor.Core\LCDHardwareMonitor.Core.csproj", "{DC7D125F-54B0-4392-9ADE-D29D45C61DF4}"
 	ProjectSection(ProjectDependencies) = postProject
 		{4A86B653-06E4-4677-998D-75F927DB0C33} = {4A86B653-06E4-4677-998D-75F927DB0C33}
-		{555F2EB8-D09A-46CC-8E89-CCD5A8DF86FE} = {555F2EB8-D09A-46CC-8E89-CCD5A8DF86FE}
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LCDHardwareMonitor.Presentation", "LCDHardwareMonitor.Presentation\LCDHardwareMonitor.Presentation.csproj", "{F0059074-03A7-43D7-B9F7-CDD927DE0285}"
@@ -18,8 +17,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LCDHardwareMonitor.Sources.OpenHardwareMonitor", "LCDHardwareMonitor.Sources.OpenHardwareMonitor\LCDHardwareMonitor.Sources.OpenHardwareMonitor.csproj", "{D4C53FA4-170B-4199-A43C-3C5EB1A65F6B}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LCDHardwareMonitor.Rendering.Direct3D11", "LCDHardwareMonitor.Rendering.Direct3D11\LCDHardwareMonitor.Rendering.Direct3D11.vcxproj", "{4A86B653-06E4-4677-998D-75F927DB0C33}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "D3D9 Content", "D3D9 Content\D3D9 Content.vcxproj", "{555F2EB8-D09A-46CC-8E89-CCD5A8DF86FE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -113,20 +110,6 @@ Global
 		{4A86B653-06E4-4677-998D-75F927DB0C33}.Release|Win32.ActiveCfg = Release|Win32
 		{4A86B653-06E4-4677-998D-75F927DB0C33}.Release|Win32.Build.0 = Release|Win32
 		{4A86B653-06E4-4677-998D-75F927DB0C33}.Release|x64.ActiveCfg = Release|Win32
-		{555F2EB8-D09A-46CC-8E89-CCD5A8DF86FE}.Debug|Any CPU.ActiveCfg = Debug|Win32
-		{555F2EB8-D09A-46CC-8E89-CCD5A8DF86FE}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
-		{555F2EB8-D09A-46CC-8E89-CCD5A8DF86FE}.Debug|Mixed Platforms.Build.0 = Debug|Win32
-		{555F2EB8-D09A-46CC-8E89-CCD5A8DF86FE}.Debug|Win32.ActiveCfg = Debug|Win32
-		{555F2EB8-D09A-46CC-8E89-CCD5A8DF86FE}.Debug|Win32.Build.0 = Debug|Win32
-		{555F2EB8-D09A-46CC-8E89-CCD5A8DF86FE}.Debug|x64.ActiveCfg = Debug|x64
-		{555F2EB8-D09A-46CC-8E89-CCD5A8DF86FE}.Debug|x64.Build.0 = Debug|x64
-		{555F2EB8-D09A-46CC-8E89-CCD5A8DF86FE}.Release|Any CPU.ActiveCfg = Release|Win32
-		{555F2EB8-D09A-46CC-8E89-CCD5A8DF86FE}.Release|Mixed Platforms.ActiveCfg = Release|Win32
-		{555F2EB8-D09A-46CC-8E89-CCD5A8DF86FE}.Release|Mixed Platforms.Build.0 = Release|Win32
-		{555F2EB8-D09A-46CC-8E89-CCD5A8DF86FE}.Release|Win32.ActiveCfg = Release|Win32
-		{555F2EB8-D09A-46CC-8E89-CCD5A8DF86FE}.Release|Win32.Build.0 = Release|Win32
-		{555F2EB8-D09A-46CC-8E89-CCD5A8DF86FE}.Release|x64.ActiveCfg = Release|x64
-		{555F2EB8-D09A-46CC-8E89-CCD5A8DF86FE}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

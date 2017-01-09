@@ -117,9 +117,6 @@
     <Compile Include="src\Views\D3D11TestPage.xaml.cs">
       <DependentUpon>D3D11TestPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="src\Views\D3D9TestPage.xaml.cs">
-      <DependentUpon>D3D9TestPage.xaml</DependentUpon>
-    </Compile>
     <Compile Include="src\Views\Designer\SensorsView.xaml.cs">
       <DependentUpon>SensorsView.xaml</DependentUpon>
     </Compile>
@@ -145,10 +142,6 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="src\Views\D3D11TestPage.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="src\Views\D3D9TestPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

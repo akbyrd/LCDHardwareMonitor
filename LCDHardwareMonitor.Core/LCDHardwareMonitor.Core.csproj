@@ -56,7 +56,6 @@
     <Compile Include="src\LCDModel.cs" />
     <Compile Include="src\Position.cs" />
     <Compile Include="src\Renderers\D3D11Renderer.cs" />
-    <Compile Include="src\Renderers\D3D9Renderer.cs" />
     <Compile Include="src\Widget.cs" />
   </ItemGroup>
   <ItemGroup>
