@@ -5,7 +5,7 @@
 	public interface IWidget : IDisposable
 	{
 		string           Name { get; set; }
-		Position     Position { get; set; }
+		Vector2I     Position { get; set; }
 		IDrawable    Drawable { get; }
 		//ISensor        Sensor { get; }
 		//Identifier Identifier { get; }

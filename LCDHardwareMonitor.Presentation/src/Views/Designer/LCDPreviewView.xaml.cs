@@ -6,6 +6,8 @@
 	using System.Windows;
 	using System.Windows.Controls;
 	using System.Windows.Input;
+	using System.Windows.Interop;
+	using System.Windows.Media;
 
 	/// <summary>
 	/// Interaction logic for LCDPreview.xaml
@@ -17,6 +19,21 @@
 		public LCDPreviewView ()
 		{
 			InitializeComponent();
+
+			CompositionTarget.Rendering += CompositionTarget_Rendering;
+		}
+
+		private void CompositionTarget_Rendering(object sender, EventArgs e)
+		{
+			bool success;
+
+			success = Renderers.D3D11Renderer.Render();
+
+			IntPtr d3dSurface = Renderers.D3D11Renderer.GetD3D9RenderSurface();
+			LCDPreviewTexture.Lock();
+			LCDPreviewTexture.SetBackBuffer(D3DResourceType.IDirect3DSurface9, d3dSurface, true);
+			LCDPreviewTexture.AddDirtyRect(new Int32Rect(0, 0, LCDPreviewTexture.PixelWidth, LCDPreviewTexture.PixelHeight));
+			LCDPreviewTexture.Unlock();
 		}
 
 		#endregion
@@ -99,9 +116,9 @@
 		/// so we can transform the mouse position into the panel's local space
 		/// and place new widgets at the point where they were dropped.
 		/// </summary>
-		private void LCDPreviewItemsControl_Loaded ( object sender, RoutedEventArgs e )
+		private void LCDPreviewContainer_Loaded ( object sender, RoutedEventArgs e )
 		{
-			lcdPanel = Utility.FindChild<Panel>(LCDPreviewItemsControl);
+			lcdPanel = Utility.FindChild<Panel>(LCDPreviewContainer);
 		}
 
 		#endregion
@@ -164,7 +181,7 @@
 			var newWidget = new Widget(newDrawable);
 
 			//Position the new widget where it was dropped.
-			newWidget.Position = new Position((int) DropPoint.X, (int) DropPoint.Y);
+			newWidget.Position = new Vector2I((int) DropPoint.X, (int) DropPoint.Y);
 
 			//Add it to the list.
 			Shell.StaticLCDModel.Widgets.Add(newWidget);

@@ -1,14 +1,14 @@
 ﻿namespace LCDHardwareMonitor
 {
-	public struct Position
+	public struct Vector2I
 	{
-		public int X { get; set; }
-		public int Y { get; set; }
+		public int x;
+		public int y;
 
-		public Position ( int x, int y ) : this()
+		public Vector2I ( int x, int y )
 		{
-			X = x;
-			Y = y;
+			this.x = x;
+			this.y = y;
 		}
 	}
 }

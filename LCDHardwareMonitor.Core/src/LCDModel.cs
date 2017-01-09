@@ -1,27 +1,16 @@
 ﻿namespace LCDHardwareMonitor
 {
-	using System;
-	using System.Collections.ObjectModel;
+	using System.Collections.Generic;
 
+	//TODO: Make this a standalone application. The WPF application should be separate and simply talk to this application.
 	public class LCDModel
 	{
 		#region Public Interface
 
-		public ObservableCollection<IWidget>   Widgets       { get; private set; }
-		public ObservableCollection<IDrawable> Drawables     { get; private set; }
-		public ObservableCollection<object>    Sources       { get; private set; }
-		public IntPtr                          RenderTexture { get; set; }
-
-		#endregion
-
-		#region Constructor
-
-		public LCDModel ()
-		{
-			Widgets   = new ObservableCollection<IWidget>();
-			Drawables = new ObservableCollection<IDrawable>();
-			Sources   = new ObservableCollection<object>();
-		}
+		public Vector2I        DisplaySize = new Vector2I(320, 240);
+		public List<IWidget>   Widgets     = new List<IWidget>();
+		public List<IDrawable> Drawables   = new List<IDrawable>();
+		public List<object>    Sources     = new List<object>();
 
 		#endregion
 	}
