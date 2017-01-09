@@ -122,7 +122,7 @@ DrawCall* PushDrawCall(D3DRendererState*);
 #pragma endregion
 
 bool
-InitializeRenderer(D3DRendererState* s, HWND hwnd, HWND debughwnd)
+InitializeRenderer(D3DRendererState* s)
 {
 	//TODO: Maybe asserts go with the usage site?
 	Assert(s->d3dDevice                   == nullptr);
@@ -519,7 +519,7 @@ InitializeRenderer(D3DRendererState* s, HWND hwnd, HWND debughwnd)
 		hr = s->d3d9->CreateDeviceEx(
 			D3DADAPTER_DEFAULT,
 			D3DDEVTYPE_HAL,
-			hwnd, //GetDesktopWindow(), //TODO: ???
+			GetDesktopWindow(), //TODO: Ensure this is ok
 			D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED | D3DCREATE_FPU_PRESERVE,
 			&presentParams,
 			nullptr,

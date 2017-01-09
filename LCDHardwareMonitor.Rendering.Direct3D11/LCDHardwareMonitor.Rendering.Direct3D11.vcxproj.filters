@@ -29,9 +29,6 @@
     <ClInclude Include="include\LCDHardwareMonitor.Rendering.Direct3D11.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\win32_window.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\dllmain.cpp">

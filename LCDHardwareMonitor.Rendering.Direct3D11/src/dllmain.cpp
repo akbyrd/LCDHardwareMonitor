@@ -5,20 +5,16 @@
 #include "Core.h"
 #include "FileAPI.hpp"
 #include "Renderer.hpp"
-#include "win32_window.hpp"
 #include "LCDHardwareMonitor.Rendering.Direct3D11.h"
 
 //TODO: Logging
 
 D3DRendererState rendererState;
-Win32State windowState;
 
 BOOL WINAPI
 DllMain(HINSTANCE hInstance, DWORD fdwReason, LPVOID lpvReserved)
 {
 	bool success;
-
-	windowState.hInstance = hInstance;
 
 	switch (fdwReason)
 	{
@@ -45,26 +41,16 @@ DllMain(HINSTANCE hInstance, DWORD fdwReason, LPVOID lpvReserved)
 }
 
 LHM_D3D11_API bool
-Initialize(HWND hwnd)
+Initialize()
 {
 	bool success;
 
 	//TODO: Real memory
 	//TODO: Pass size
-	//TODO: Remove hwnd
 	rendererState = {};
 	rendererState.renderSize = {320, 240};
 
-	#if false
-	HINSTANCE hInstance = windowState.hInstance;
-	windowState = {};
-	//windowState.hInstance = hInstance;
-
-	success = InitializeWindow(&windowState, L"LHM Window", rendererState.renderSize);
-	if (!success) return false;
-	#endif
-
-	success = InitializeRenderer(&rendererState, hwnd, windowState.hwnd);
+	success = InitializeRenderer(&rendererState);
 	if (!success) return false;
 
 	return true;

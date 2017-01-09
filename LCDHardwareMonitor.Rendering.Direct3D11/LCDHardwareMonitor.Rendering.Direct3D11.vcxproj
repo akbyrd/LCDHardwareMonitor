@@ -99,7 +99,6 @@
     <ClInclude Include="include\FileAPI.hpp" />
     <ClInclude Include="include\Renderer.hpp" />
     <ClInclude Include="include\LCDHardwareMonitor.Rendering.Direct3D11.h" />
-    <ClInclude Include="include\win32_window.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\dllmain.cpp">

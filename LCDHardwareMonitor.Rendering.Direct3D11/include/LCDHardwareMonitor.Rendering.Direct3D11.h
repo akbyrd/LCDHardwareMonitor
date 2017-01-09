@@ -12,7 +12,7 @@
 
 extern "C"
 {
-	LHM_D3D11_API bool Initialize(HWND hwnd);
+	LHM_D3D11_API bool Initialize();
 	LHM_D3D11_API bool Render();
 	LHM_D3D11_API void Teardown();
 

@@ -23,10 +23,8 @@ namespace LCDHardwareMonitor.Presentation.Views
 
 			LCDModel = new LCDModel();
 			StaticLCDModel = LCDModel;
-			Loaded += (sender, e) =>
-			{
-				var helper = new System.Windows.Interop.WindowInteropHelper(this);
-				Renderers.D3D11Renderer.Initialize(helper.Handle);
+			Loaded += (sender, e) => {
+				Renderers.D3D11Renderer.Initialize();
 			};
 
 			InitializeComponent();
