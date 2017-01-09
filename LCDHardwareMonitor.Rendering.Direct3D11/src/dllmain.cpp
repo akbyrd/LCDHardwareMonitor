@@ -55,7 +55,7 @@ Initialize(HWND hwnd)
 	rendererState = {};
 	rendererState.renderSize = {320, 240};
 
-	#if true
+	#if false
 	HINSTANCE hInstance = windowState.hInstance;
 	windowState = {};
 	//windowState.hInstance = hInstance;

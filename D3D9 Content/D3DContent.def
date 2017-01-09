@@ -1,0 +1,10 @@
+LIBRARY "D3DContent"
+
+EXPORTS
+
+Initialize
+Render
+Teardown
+
+GetD3D9BackBuffer
+GetD3D11BackBuffer

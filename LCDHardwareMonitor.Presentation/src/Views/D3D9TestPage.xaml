@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="LCDHardwareMonitor.Presentation.Views.D3D11TestPage"
+﻿<UserControl x:Class="LCDHardwareMonitor.Presentation.Views.D3D9TestPage"
 	xmlns   ="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 	xmlns:x ="http://schemas.microsoft.com/winfx/2006/xaml"
 	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"

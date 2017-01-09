@@ -107,7 +107,7 @@ struct D3DRendererState
 	u32           qualityLevelCount   = 0;
 
 	MeshData      meshes[Mesh::Count] = {};
-	bool          isWireframeEnabled  = true;
+	bool          isWireframeEnabled  = false;
 
 	DrawCall      drawCalls[32]       = {};
 	u32           drawCallCount       = 0;
@@ -195,6 +195,7 @@ InitializeRenderer(D3DRendererState* s, HWND hwnd, HWND debughwnd)
 		if (LOG_HRESULT(hr)) return false;
 		SetDebugObjectName(dxgiAdapter, "DXGI Adapter");
 
+		//TODO: Only needed for the swap chain
 		hr = dxgiAdapter->GetParent(IID_PPV_ARGS(&s->dxgiFactory));
 		if (LOG_HRESULT(hr)) return false;
 		SetDebugObjectName(s->dxgiFactory, "DXGI Factory");
@@ -256,7 +257,7 @@ InitializeRenderer(D3DRendererState* s, HWND hwnd, HWND debughwnd)
 			renderTextureDesc.SampleDesc.Count   = s->multisampleCount;
 			renderTextureDesc.SampleDesc.Quality = s->qualityLevelCount - 1;
 			renderTextureDesc.Usage              = D3D11_USAGE_DEFAULT;
-			renderTextureDesc.BindFlags          = D3D11_BIND_RENDER_TARGET;
+			renderTextureDesc.BindFlags          = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
 			renderTextureDesc.CPUAccessFlags     = 0;
 			renderTextureDesc.MiscFlags          = D3D11_RESOURCE_MISC_SHARED;
 
@@ -316,7 +317,7 @@ InitializeRenderer(D3DRendererState* s, HWND hwnd, HWND debughwnd)
 
 		//Initialize projection matrix
 		{
-			XMMATRIX P = XMMatrixOrthographicLH(320, 240, 0, 1000);
+			XMMATRIX P = XMMatrixOrthographicLH(s->renderSize.x, s->renderSize.y, 0, 1000);
 			XMStoreFloat4x4(&s->proj, P);
 		}
 	}
@@ -495,10 +496,10 @@ InitializeRenderer(D3DRendererState* s, HWND hwnd, HWND debughwnd)
 		//Create vertices
 		Vertex vertices[4];
 
-		vertices[0].position = XMFLOAT3(-.5f, -.5f, 0);
-		vertices[1].position = XMFLOAT3(-.5f,  .5f, 0);
-		vertices[2].position = XMFLOAT3( .5f,  .5f, 0);
-		vertices[3].position = XMFLOAT3( .5f, -.5f, 0);
+		vertices[0].position = XMFLOAT3(-.5f * 160, -.5f * 160, 0);
+		vertices[1].position = XMFLOAT3(-.5f * 160,  .5f * 160, 0);
+		vertices[2].position = XMFLOAT3( .5f * 160,  .5f * 160, 0);
+		vertices[3].position = XMFLOAT3( .5f * 160, -.5f * 160, 0);
 
 		XMStoreFloat4(&vertices[0].color, Colors::Red);
 		XMStoreFloat4(&vertices[1].color, Colors::Green);
@@ -615,7 +616,7 @@ InitializeRenderer(D3DRendererState* s, HWND hwnd, HWND debughwnd)
 			D3DFMT_A8R8G8B8,
 			D3DPOOL_DEFAULT,
 			&s->d3d9RenderTexture,
-			nullptr
+			&renderTextureSharedHandle
 		);
 		if (LOG_HRESULT(hr)) return false;
 

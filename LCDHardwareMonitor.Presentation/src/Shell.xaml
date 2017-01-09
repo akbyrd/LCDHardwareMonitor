@@ -26,7 +26,8 @@
 
 		<mui:LinkGroup DisplayName="Direct3D">
 			<mui:LinkGroup.Links>
-				<mui:Link Source="src/Views/D3D11TestPage.xaml" />
+				<!--<mui:Link DisplayName="Direct3D9" Source="src/Views/D3D9TestPage.xaml" />-->
+				<mui:Link DisplayName="Direct3D11" Source="src/Views/D3D11TestPage.xaml" />
 			</mui:LinkGroup.Links>
 		</mui:LinkGroup>
 

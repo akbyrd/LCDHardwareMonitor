@@ -19,8 +19,8 @@ SET SOLUTION_DIR=%~1
 SET TARGET_DIR=%~2
 SET OUT_DIR=%~3
 
-REM SET COPY_DIR=%SOLUTION_DIR%LCDHardwareMonitor.Core\%OUT_DIR%Renderers\D3D11\
-SET COPY_DIR=%SOLUTION_DIR%LCDHardwareMonitor.Presentation\%OUT_DIR%Renderers\D3D11\
+REM SET COPY_DIR=%SOLUTION_DIR%LCDHardwareMonitor.Core\%OUT_DIR%Renderers\D3D9\
+SET COPY_DIR=%SOLUTION_DIR%LCDHardwareMonitor.Presentation\%OUT_DIR%Renderers\D3D9\
 ECHO **** Copying out to: "%COPY_DIR%"
 
 REM Create target directories if necessary and empty them
@@ -33,10 +33,10 @@ ECHO **** Copying files
 XCOPY /Y "%TARGET_DIR%*.dll" "%COPY_DIR%" > NUL
 IF errorlevel 1 GOTO Abort
 
-XCOPY /Y "%TARGET_DIR%*.pdb" "%COPY_DIR%" > NUL
+XCOPY /Y "%TARGET_DIR%*.pdb" "%COPY_DIR%" > NUL 2>&1
 IF errorlevel 1 GOTO Abort
 
-XCOPY /Y "%TARGET_DIR%*.cso" "%COPY_DIR%" > NUL
+XCOPY /Y "%TARGET_DIR%*.cso" "%COPY_DIR%" > NUL 2>&1
 IF errorlevel 1 GOTO Abort
 
 ECHO **** Deployment successful
