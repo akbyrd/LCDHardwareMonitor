@@ -313,7 +313,7 @@ InitializeRenderer(D3DRendererState* s)
 
 		//Initialize projection matrix
 		{
-			XMMATRIX P = XMMatrixOrthographicLH(s->renderSize.x, s->renderSize.y, 0, 1000);
+			XMMATRIX P = XMMatrixOrthographicLH((r32) s->renderSize.x, (r32) s->renderSize.y, 0, 1000);
 			XMStoreFloat4x4(&s->proj, P);
 		}
 	}

@@ -77,15 +77,28 @@ namespace LCDHardwareMonitor.Sources.OpenHardwareMonitor.ViewModels
 			{ SensorType.Level      , "{0:F1} %"   },
 			{ SensorType.Power      , "{0:F1} W"   },
 			{ SensorType.Data       , "{0:F1} GB"  },
+			//{ SensorType.SmallData  , "{0:F1} MB"  },
 			{ SensorType.Factor     , "{0:F3}"     }
 		};
 
 		private void UpdateValueString ()
 		{
 			if ( Value.HasValue )
-				ValueString = string.Format(sensorValueFormats[Sensor.SensorType], Value.Value);
+			{
+				if (sensorValueFormats.TryGetValue(Sensor.SensorType, out string formatString))
+				{
+					ValueString = string.Format(formatString, Value.Value);
+				}
+				else
+				{
+					//TODO: Handle error
+					ValueString = string.Format("<missing format for '{0}'>", Sensor.SensorType);
+				}
+			}
 			else
+			{
 				ValueString = "null";
+			}
 		}
 
 		#endregion
