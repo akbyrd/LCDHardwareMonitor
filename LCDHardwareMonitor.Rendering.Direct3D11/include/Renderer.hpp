@@ -625,7 +625,7 @@ TeardownRenderer(D3DRendererState* s)
 DrawCall*
 PushDrawCall(D3DRendererState* s)
 {
-	Assert(s->drawCallCount < ArraySize(s->drawCalls));
+	Assert(s->drawCallCount < ArrayCount(s->drawCalls));
 
 	DrawCall* drawCall = &s->drawCalls[s->drawCallCount++];
 	return drawCall;
