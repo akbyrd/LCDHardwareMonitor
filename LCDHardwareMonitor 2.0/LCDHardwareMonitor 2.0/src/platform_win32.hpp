@@ -16,20 +16,30 @@ LogHRESULT(c16* message, Severity severity, HRESULT hr, c16* file, i32 line, c16
 }
 
 #define LOG_LAST_ERROR(message, severity) LogLastError(message, severity, WIDE(__FILE__), __LINE__, WIDE(__FUNCTION__))
-void
+#define LOG_LAST_ERROR_IF(expression, message, severity, ...) IF(expression, LOG_LAST_ERROR(message, severity); __VA_ARGS__)
+b32
 LogLastError(c16* message, Severity severity, c16* file, i32 line, c16* function)
 {
-	i32 error = GetLastError();
-	Log(message, severity, file, line, function);
+	c16 windowsMessage[256];
+	u32 uResult = FormatMessageW(
+		FORMAT_MESSAGE_FROM_SYSTEM,
+		nullptr,
+		GetLastError(),
+		0,
+		windowsMessage,
+		ArrayCount(windowsMessage),
+		nullptr
+	);
+	LOG_LAST_ERROR_IF(uResult == 0, L"FormatMessage failed", Severity::Warning);
+
+	//TODO: Check for swprintf failure (overflow).
+	c16 combinedMessage[256];
+	swprintf(combinedMessage, ArrayCount(combinedMessage), L"%s: %s", message, windowsMessage);
+
+	Log(combinedMessage, severity, file, line, function);
+
+	return true;
 }
-
-#define LOG_LAST_ERROR_IF(expression, string, reaction) \
-if (expression)                                         \
-{                                                       \
-	LOG_LAST_ERROR(string, Severity::Error);            \
-	reaction;                                           \
-}                                                       \
-
 
 //
 // File handling

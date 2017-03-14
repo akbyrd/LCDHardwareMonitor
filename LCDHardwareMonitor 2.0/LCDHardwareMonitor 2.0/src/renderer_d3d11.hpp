@@ -167,7 +167,7 @@ InitializeRenderer(D3DRendererState* s, V2i renderSize)
 			&featureLevel,
 			&s->d3dContext
 		);
-		LOG_IF(FAILED(hr), L"", return false);
+		LOG_IF(FAILED(hr), L"", Severity::Error, return false);
 		SetDebugObjectName(s->d3dDevice,  "Device");
 		SetDebugObjectName(s->d3dContext, "Device Context");
 
@@ -181,25 +181,25 @@ InitializeRenderer(D3DRendererState* s, V2i renderSize)
 		//Obtain the DXGI factory used to create the current device.
 		ComPtr<IDXGIDevice1> dxgiDevice;
 		hr = s->d3dDevice.As(&dxgiDevice);
-		LOG_IF(FAILED(hr), L"", return false);
+		LOG_IF(FAILED(hr), L"", Severity::Error, return false);
 		// NOTE: It looks like the IDXGIDevice is actually the same object as
 		// the ID3D11Device. Using SetPrivateData to set its name clobbers the
 		// D3D device name and outputs a warning.
 
 		ComPtr<IDXGIAdapter> dxgiAdapter;
 		hr = dxgiDevice->GetAdapter(&dxgiAdapter);
-		LOG_IF(FAILED(hr), L"", return false);
+		LOG_IF(FAILED(hr), L"", Severity::Error, return false);
 		SetDebugObjectName(dxgiAdapter, "DXGI Adapter");
 
 		//TODO: Only needed for the swap chain
 		hr = dxgiAdapter->GetParent(IID_PPV_ARGS(&s->dxgiFactory));
-		LOG_IF(FAILED(hr), L"", return false);
+		LOG_IF(FAILED(hr), L"", Severity::Error, return false);
 		SetDebugObjectName(s->dxgiFactory, "DXGI Factory");
 
 		//Check for the WARP driver
 		DXGI_ADAPTER_DESC desc = {};
 		hr = dxgiAdapter->GetDesc(&desc);
-		LOG_IF(FAILED(hr), L"", return false);
+		LOG_IF(FAILED(hr), L"", Severity::Error, return false);
 
 		if ( (desc.VendorId == 0x1414) && (desc.DeviceId == 0x8c) )
 		{
@@ -217,18 +217,18 @@ InitializeRenderer(D3DRendererState* s, V2i renderSize)
 		#ifdef DEBUG
 		ComPtr<IDXGIDebug1> dxgiDebug;
 		hr = DXGIGetDebugInterface1(0, IID_PPV_ARGS(&dxgiDebug));
-		LOG_IF(FAILED(hr), L"", return false);
+		LOG_IF(FAILED(hr), L"", Severity::Error, return false);
 
 		dxgiDebug->EnableLeakTrackingForThread();
 
 		ComPtr<IDXGIInfoQueue> dxgiInfoQueue;
 		hr = DXGIGetDebugInterface1(0, IID_PPV_ARGS(&dxgiInfoQueue));
-		LOG_IF(FAILED(hr), L"", return false);
+		LOG_IF(FAILED(hr), L"", Severity::Error, return false);
 
 		hr = dxgiInfoQueue->SetBreakOnSeverity(DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE_SEVERITY_ERROR,      true);
-		LOG_IF(FAILED(hr), L"", NOTHING);
+		LOG_IF(FAILED(hr), L"", Severity::Warning);
 		hr = dxgiInfoQueue->SetBreakOnSeverity(DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE_SEVERITY_CORRUPTION, true);
-		LOG_IF(FAILED(hr), L"", NOTHING);
+		LOG_IF(FAILED(hr), L"", Severity::Warning);
 		#endif
 	}
 
@@ -244,12 +244,20 @@ InitializeRenderer(D3DRendererState* s, V2i renderSize)
 				s->multisampleCount,
 				&s->qualityLevelCount
 			);
-			LOG_IF(FAILED(hr), L"", return false);
+			LOG_IF(FAILED(hr), L"", Severity::Error, return false);
 
 			renderTextureDesc.Width              = renderSize.x;
 			renderTextureDesc.Height             = renderSize.y;
 			renderTextureDesc.MipLevels          = 1;
 			renderTextureDesc.ArraySize          = 1;
+			/* TODO: Switch to DXGI_FORMAT_B8G8R8A8_UNORM_SRGB for linear rendering
+			 * DirectXMath colors are defined in sRGB colorspace. Update the clear:
+			 * color.v = XMColorSRGBToRGB(Colors::CornflowerBlue);
+			 * context->ClearRenderTargetView(renderTarget, color);
+			 * https://blog.molecular-matters.com/2011/11/21/gamma-correct-rendering/
+			 * http://http.developer.nvidia.com/GPUGems3/gpugems3_ch24.html
+			 * http://filmicgames.com/archives/299
+			 */
 			renderTextureDesc.Format             = DXGI_FORMAT_B8G8R8A8_UNORM;
 			renderTextureDesc.SampleDesc.Count   = s->multisampleCount;
 			renderTextureDesc.SampleDesc.Quality = s->qualityLevelCount - 1;
@@ -259,11 +267,11 @@ InitializeRenderer(D3DRendererState* s, V2i renderSize)
 			renderTextureDesc.MiscFlags          = D3D11_RESOURCE_MISC_SHARED;
 
 			hr = s->d3dDevice->CreateTexture2D(&renderTextureDesc, nullptr, &s->d3dRenderTexture);
-			LOG_IF(FAILED(hr), L"", return false);
+			LOG_IF(FAILED(hr), L"", Severity::Error, return false);
 			SetDebugObjectName(s->d3dRenderTexture, "Render Texture");
 
 			hr = s->d3dDevice->CreateRenderTargetView(s->d3dRenderTexture.Get(), nullptr, &s->d3dRenderTargetView);
-			LOG_IF(FAILED(hr), L"", return false);
+			LOG_IF(FAILED(hr), L"", Severity::Error, return false);
 			SetDebugObjectName(s->d3dRenderTargetView, "Render Target View");
 
 			s->renderSize = renderSize;
@@ -288,11 +296,11 @@ InitializeRenderer(D3DRendererState* s, V2i renderSize)
 
 			ComPtr<ID3D11Texture2D> d3dDepthBuffer;
 			hr = s->d3dDevice->CreateTexture2D(&depthDesc, nullptr, &d3dDepthBuffer);
-			LOG_IF(FAILED(hr), L"", return false);
+			LOG_IF(FAILED(hr), L"", Severity::Error, return false);
 			SetDebugObjectName(d3dDepthBuffer, "Depth Buffer");
 
 			hr = s->d3dDevice->CreateDepthStencilView(d3dDepthBuffer.Get(), nullptr, &s->d3dDepthBufferView);
-			LOG_IF(FAILED(hr), L"", return false);
+			LOG_IF(FAILED(hr), L"", Severity::Error, return false);
 			SetDebugObjectName(s->d3dDepthBufferView, "Depth Buffer View");
 		}
 
@@ -333,7 +341,7 @@ InitializeRenderer(D3DRendererState* s, V2i renderSize)
 
 		//Create
 		hr = s->d3dDevice->CreateVertexShader(vsBytes.get(), vsBytesLength, nullptr, &s->d3dVertexShader);
-		LOG_IF(FAILED(hr), L"", return false);
+		LOG_IF(FAILED(hr), L"", Severity::Error, return false);
 		SetDebugObjectName(s->d3dVertexShader, "Vertex Shader");
 
 		//Set
@@ -349,7 +357,7 @@ InitializeRenderer(D3DRendererState* s, V2i renderSize)
 		vsConstBuffDes.StructureByteStride = 0;
 
 		hr = s->d3dDevice->CreateBuffer(&vsConstBuffDes, nullptr, &s->d3dVSConstBuffer);
-		LOG_IF(FAILED(hr), L"", return false);
+		LOG_IF(FAILED(hr), L"", Severity::Error, return false);
 		SetDebugObjectName(s->d3dVSConstBuffer, "VS Constant Buffer (Per-Object)");
 
 		//Input layout
@@ -359,7 +367,7 @@ InitializeRenderer(D3DRendererState* s, V2i renderSize)
 		};
 
 		hr = s->d3dDevice->CreateInputLayout(vsInputDescs, ArrayCount(vsInputDescs), vsBytes.get(), vsBytesLength, &s->d3dVSInputLayout);
-		LOG_IF(FAILED(hr), L"", return false);
+		LOG_IF(FAILED(hr), L"", Severity::Error, return false);
 		SetDebugObjectName(s->d3dVSInputLayout, "Input Layout");
 
 		s->d3dContext->IASetInputLayout(s->d3dVSInputLayout.Get());
@@ -377,7 +385,7 @@ InitializeRenderer(D3DRendererState* s, V2i renderSize)
 
 		//Create
 		hr = s->d3dDevice->CreatePixelShader(psBytes.get(), psBytesLength, nullptr, &s->d3dPixelShader);
-		LOG_IF(FAILED(hr), L"", return false);
+		LOG_IF(FAILED(hr), L"", Severity::Error, return false);
 		SetDebugObjectName(s->d3dPixelShader, "Pixel Shader");
 
 		//Set
@@ -410,14 +418,14 @@ InitializeRenderer(D3DRendererState* s, V2i renderSize)
 		rasterizerDesc.AntialiasedLineEnable = s->multisampleCount > 1;
 
 		hr = s->d3dDevice->CreateRasterizerState(&rasterizerDesc, &s->d3dRasterizerStateSolid);
-		LOG_IF(FAILED(hr), L"", return false);
+		LOG_IF(FAILED(hr), L"", Severity::Error, return false);
 		SetDebugObjectName(s->d3dRasterizerStateSolid, "Rasterizer State (Solid)");
 
 		//Wireframe
 		rasterizerDesc.FillMode = D3D11_FILL_WIREFRAME;
 
 		hr = s->d3dDevice->CreateRasterizerState(&rasterizerDesc, &s->d3dRasterizerStateWireframe);
-		LOG_IF(FAILED(hr), L"", return false);
+		LOG_IF(FAILED(hr), L"", Severity::Error, return false);
 		SetDebugObjectName(s->d3dRasterizerStateWireframe, "Rasterizer State (Wireframe)");
 
 		//Start off in correct state
@@ -460,7 +468,7 @@ InitializeRenderer(D3DRendererState* s, V2i renderSize)
 
 		ComPtr<ID3D11Buffer> vBuffer;
 		hr = s->d3dDevice->CreateBuffer(&vertBuffDesc, &vertBuffInitData, &vBuffer);
-		LOG_IF(FAILED(hr), L"", return false);
+		LOG_IF(FAILED(hr), L"", Severity::Error, return false);
 		SetDebugObjectName(vBuffer, "Quad Vertices");
 
 		s->d3dContext->IASetVertexBuffers(0, 1, vBuffer.GetAddressOf(), &mesh->vStride, &mesh->vOffset);
@@ -492,7 +500,7 @@ InitializeRenderer(D3DRendererState* s, V2i renderSize)
 
 		ComPtr<ID3D11Buffer> iBuffer;
 		hr = s->d3dDevice->CreateBuffer(&indexBuffDesc, &indexBuffInitData, &iBuffer);
-		LOG_IF(FAILED(hr), L"", return false);
+		LOG_IF(FAILED(hr), L"", Severity::Error, return false);
 		SetDebugObjectName(iBuffer, "Quad Indices");
 
 		s->d3dContext->IASetIndexBuffer(iBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
@@ -512,7 +520,7 @@ InitializeRenderer(D3DRendererState* s, V2i renderSize)
 	{
 		//Device
 		hr = Direct3DCreate9Ex(D3D_SDK_VERSION, &s->d3d9);
-		LOG_IF(FAILED(hr), L"", return false);
+		LOG_IF(FAILED(hr), L"", Severity::Error, return false);
 
 		D3DPRESENT_PARAMETERS presentParams = {};
 		presentParams.Windowed             = true;
@@ -529,17 +537,17 @@ InitializeRenderer(D3DRendererState* s, V2i renderSize)
 			nullptr,
 			&s->d3d9Device
 		);
-		LOG_IF(FAILED(hr), L"", return false);
+		LOG_IF(FAILED(hr), L"", Severity::Error, return false);
 
 
 		//Shared surface
 		ComPtr<IDXGIResource> dxgiRenderTexture;
 		hr = s->d3dRenderTexture.As(&dxgiRenderTexture);
-		LOG_IF(FAILED(hr), L"", return false);
+		LOG_IF(FAILED(hr), L"", Severity::Error, return false);
 
 		HANDLE renderTextureSharedHandle;
 		hr = dxgiRenderTexture->GetSharedHandle(&renderTextureSharedHandle);
-		LOG_IF(FAILED(hr), L"", return false);
+		LOG_IF(FAILED(hr), L"", Severity::Error, return false);
 
 		Assert(renderTextureDesc.Format == DXGI_FORMAT_B8G8R8A8_UNORM);
 		hr = s->d3d9Device->CreateTexture(
@@ -552,10 +560,10 @@ InitializeRenderer(D3DRendererState* s, V2i renderSize)
 			&s->d3d9RenderTexture,
 			&renderTextureSharedHandle
 		);
-		LOG_IF(FAILED(hr), L"", return false);
+		LOG_IF(FAILED(hr), L"", Severity::Error, return false);
 
 		hr = s->d3d9RenderTexture->GetSurfaceLevel(0, &s->d3d9RenderSurface0);
-		LOG_IF(FAILED(hr), L"", return false);
+		LOG_IF(FAILED(hr), L"", Severity::Error, return false);
 
 		//SetBackBuffer(D3DResourceType::IDirect3DSurface9, IntPtr(pSurface));
 	}
@@ -613,23 +621,37 @@ AttachPreviewWindow(D3DRendererState* s, PreviewWindowState* previewWindow)
 	//Create the swap chain
 	HRESULT hr;
 	hr = s->dxgiFactory->CreateSwapChain(s->d3dDevice.Get(), &swapChainDesc, &previewWindow->swapChain);
-	LOG_IF(FAILED(hr), L"", return false);
+	LOG_IF(FAILED(hr), L"", Severity::Error, return false);
 	SetDebugObjectName(previewWindow->swapChain, "Swap Chain");
 
 	//Get the back buffer
 	hr = previewWindow->swapChain->GetBuffer(0, IID_PPV_ARGS(&previewWindow->backBuffer));
-	LOG_IF(FAILED(hr), L"", return false);
+	LOG_IF(FAILED(hr), L"", Severity::Error, return false);
 	SetDebugObjectName(previewWindow->backBuffer, "Back Buffer");
 
 	//Create a render target view to the back buffer
 	//ComPtr<ID3D11RenderTargetView> renderTargetView;
 	//hr = s->d3dDevice->CreateRenderTargetView(previewWindow->backBuffer.Get(), nullptr, &renderTargetView);
-	//LOG_IF(FAILED(hr), L"", return false);
+	//LOG_IF(FAILED(hr), L"", Severity::Error, return false);
 	//SetDebugObjectName(renderTargetView, "Render Target View");
 
 	//Associate the window
 	hr = s->dxgiFactory->MakeWindowAssociation(previewWindow->hwnd, DXGI_MWA_NO_ALT_ENTER);
-	LOG_IF(FAILED(hr), L"", return false);
+	LOG_IF(FAILED(hr), L"", Severity::Error, return false);
+
+	return true;
+}
+
+b32
+DetachPreviewWindow(D3DRendererState* s, PreviewWindowState* previewWindow)
+{
+	HRESULT hr;
+
+	previewWindow->backBuffer.Reset();
+	previewWindow->swapChain .Reset();
+
+	hr = s->dxgiFactory->MakeWindowAssociation(previewWindow->hwnd, DXGI_MWA_NO_ALT_ENTER);
+	LOG_IF(FAILED(hr), L"", Severity::Error, return false);
 
 	return true;
 }
@@ -682,14 +704,14 @@ TeardownRenderer(D3DRendererState* s)
 		#ifdef DEBUG
 		ComPtr<IDXGIDebug1> dxgiDebug;
 		hr = DXGIGetDebugInterface1(0, IID_PPV_ARGS(&dxgiDebug));
-		LOG_IF(FAILED(hr), L"", return);
+		LOG_IF(FAILED(hr), L"", Severity::Warning, return);
 
 		//TODO: Test the differences in the output
 		//DXGI_DEBUG_RLO_ALL
 		//DXGI_DEBUG_RLO_SUMMARY
 		//DXGI_DEBUG_RLO_DETAIL
 		hr = dxgiDebug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_IGNORE_INTERNAL);
-		LOG_IF(FAILED(hr), L"", return);
+		LOG_IF(FAILED(hr), L"", Severity::Warning, return);
 
 		OutputDebugStringW(L"\n");
 		#endif
@@ -760,7 +782,7 @@ Render(D3DRendererState* s, PreviewWindowState* previewWindow)
 		//Update VS cbuffer
 		D3D11_MAPPED_SUBRESOURCE vsConstBuffMap = {};
 		hr = s->d3dContext->Map(s->d3dVSConstBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &vsConstBuffMap);
-		LOG_IF(FAILED(hr), L"", return false);
+		LOG_IF(FAILED(hr), L"", Severity::Error, return false);
 
 		memcpy(vsConstBuffMap.pData, &WVP, sizeof(WVP));
 		s->d3dContext->Unmap(s->d3dVSConstBuffer.Get(), 0);
@@ -772,8 +794,13 @@ Render(D3DRendererState* s, PreviewWindowState* previewWindow)
 	//TODO: Why is this here again? I think it's for the WPF app
 	//s->d3dContext->Flush();
 
-	if (previewWindow)
+	if (previewWindow->hwnd)
 	{
+		/* TODO: Handle DXGI_ERROR_DEVICE_RESET and DXGI_ERROR_DEVICE_REMOVED
+		 * Developer Command Prompt for Visual Studio as an administrator, and
+		 * typing dxcap -forcetdr which will immediately cause all currently running
+		 * Direct3D apps to get a DXGI_ERROR_DEVICE_REMOVED event.
+		 */
 		s->d3dContext->CopyResource(previewWindow->backBuffer.Get(), s->d3dRenderTexture.Get());
 		hr = previewWindow->swapChain->Present(0, 0);
 	}

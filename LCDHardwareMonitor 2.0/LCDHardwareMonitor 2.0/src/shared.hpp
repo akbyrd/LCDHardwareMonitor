@@ -27,6 +27,13 @@ typedef size_t index;
 #define ArrayCount(x) sizeof(x) / sizeof(x[0])
 #define ArraySize(x) sizeof(x);
 
+//Named varargs sure would be nice...
+#define IF(expression, ...) \
+if (expression)             \
+{                           \
+	__VA_ARGS__;            \
+}
+
 /* NOTE: Raise a compiler error when switching over
  * an enum and any enum values are missing a case.
  * https://msdn.microsoft.com/en-us/library/fdt9w8tf.aspx
