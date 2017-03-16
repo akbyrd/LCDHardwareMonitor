@@ -18,10 +18,14 @@ Clamp(i64 value, i64 min, i64 max)
 	return value;
 }
 
-struct V2i
+union V2i
 {
-	i32 x;
-	i32 y;
+	struct
+	{
+		i32 x;
+		i32 y;
+	};
+	i32 arr[2];
 };
 
 //Operators
@@ -50,7 +54,7 @@ operator- (V2i lhs, V2i rhs)
 }
 
 inline V2i
-operator* (V2i v, i32 multiplier)
+operator* (i32 multiplier, V2i v)
 {
 	return {multiplier * v.x, multiplier * v.y};
 }
@@ -120,7 +124,7 @@ operator- (V3 lhs, V3 rhs)
 }
 
 inline V3
-operator* (V3 v, r32 multiplier)
+operator* (r32 multiplier, V3 v)
 {
 	return {multiplier * v.x, multiplier * v.y, multiplier * v.z};
 }

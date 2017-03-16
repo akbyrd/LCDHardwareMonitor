@@ -573,9 +573,13 @@ InitializeRenderer(D3DRendererState* s, V2i renderSize)
 
 struct PreviewWindowState
 {
-	HWND                    hwnd       = nullptr;
-	ComPtr<IDXGISwapChain>  swapChain  = nullptr;
-	ComPtr<ID3D11Texture2D> backBuffer = nullptr;
+	HWND                    hwnd                  = nullptr;
+	ComPtr<IDXGISwapChain>  swapChain             = nullptr;
+	ComPtr<ID3D11Texture2D> backBuffer            = nullptr;
+	V2i                     renderSize            = {};
+	V2i                     nonClientSize         = {};
+	u16                     zoomFactor            = 1;
+	i16                     mouseWheelAccumulator = 0;
 };
 
 b32
@@ -591,19 +595,23 @@ AttachPreviewWindow(D3DRendererState* s, PreviewWindowState* previewWindow)
 	* 
 	* NOTE:
 	* If the DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH flag is used, the display mode that most
-	* closely matches the back buffer will be used when entering fullscreen. If this happens to be
-	* the same size as the back buffer, no WM_SIZE event is sent to the application (I'm only
+	* closely matches the back buffer will be used when entering fullscreen. If this happens to
+	* be the same size as the back buffer, no WM_SIZE event is sent to the application (I'm only
 	* assuming it *does* get sent if the size changes, I haven't tested it). If the flag is not
 	* used, the display mode will be changed to match that of the desktop (usually the monitors
 	* native display mode). This generally results in a WM_SIZE event (again, I'm only assuming
-	* one will not be sent if the window happens to already be the same size as the desktop). For
-	* now, I think it makes the most sense to use the native display mode when entering
+	* one will not be sent if the window happens to already be the same size as the desktop).
+	* For now, I think it makes the most sense to use the native display mode when entering
 	* fullscreen, so I'm removing the flag.
+	* 
+	* If we use a flip presentation swap chain, explicitly force destruction of any previous
+	* swap chains before creating a new one.
+	* https://msdn.microsoft.com/en-us/library/windows/desktop/ff476425(v=vs.85).aspx#Defer_Issues_with_Flip
 	*/
 	DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
 	swapChainDesc.BufferDesc.Width                   = s->renderSize.x;
 	swapChainDesc.BufferDesc.Height                  = s->renderSize.y;
-	//TODO: Get values from system
+	//TODO: Get values from system (match desktop. what happens if it changes?)
 	swapChainDesc.BufferDesc.RefreshRate.Numerator   = 60;
 	swapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
 	swapChainDesc.BufferDesc.Format                  = DXGI_FORMAT_B8G8R8A8_UNORM;
@@ -617,6 +625,8 @@ AttachPreviewWindow(D3DRendererState* s, PreviewWindowState* previewWindow)
 	swapChainDesc.Windowed                           = true;
 	swapChainDesc.SwapEffect                         = DXGI_SWAP_EFFECT_DISCARD;
 	swapChainDesc.Flags                              = 0;//DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+
+	//NOTE: IDXGISwapChain::ResizeTarget to resize window if render target changes
 
 	//Create the swap chain
 	HRESULT hr;

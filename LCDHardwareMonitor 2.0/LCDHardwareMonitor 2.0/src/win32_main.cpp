@@ -16,6 +16,13 @@
 //      LOG_IF(FAILED(hr), L"", return false);
 //TODO: Probably want to use this as some point so frame debugger works without the preview window
 //      https://msdn.microsoft.com/en-us/library/hh780905.aspx
+//TODO: Research hosting a CLR instance in-process (CorBindToRuntime is deprecated).
+/* TODO: Interop options so far:
+ *  - Reverse P/Invoke (has to start from .NET delegate passed as callback, so this is only good if the “action” begins in your .NET code)
+ *    https://blogs.msdn.microsoft.com/junfeng/2008/01/28/reverse-pinvoke-and-exception/
+ *  - COM interop (every .NET class can also be a COM object, with or without explicit interfaces)
+ *  - C++/CLI wrapper
+ */
 
 //TODO: Move to PreviewWindowState if it doesn't increase the struct size
 const c16 PreviewWindowClass[] = L"LCDHardwareMonitor Preview Class";
@@ -25,7 +32,7 @@ const i32 togglePreviewWindowID = 0;
 LRESULT CALLBACK
 PreviewWndProc(HWND, u32, WPARAM, LPARAM);
 
-b32 CreatePreviewWindow(PreviewWindowState*, D3DRendererState*, V2i, HINSTANCE, i32);
+b32 CreatePreviewWindow(PreviewWindowState*, D3DRendererState*, HINSTANCE, i32);
 b32 DestroyPreviewWindow(PreviewWindowState*, D3DRendererState*, HINSTANCE);
 
 i32 CALLBACK
@@ -52,7 +59,7 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, i32 nCmdS
 	//Debug
 	{
 		//TODO: Do this through a system tray icon and command line
-		CreatePreviewWindow(&previewState, &rendererState, simulationState.renderSize, hInstance, nCmdShow);
+		CreatePreviewWindow(&previewState, &rendererState, hInstance, nCmdShow);
 		b32 success = RegisterHotKey(nullptr, togglePreviewWindowID, MOD_NOREPEAT, VK_F1);
 		if (!success) LOG_LAST_ERROR(L"RegisterHotKey failed", Severity::Warning);
 	}
@@ -83,7 +90,7 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, i32 nCmdS
 						{
 							if (!previewState.hwnd)
 							{
-								CreatePreviewWindow(&previewState, &rendererState, simulationState.renderSize, hInstance, nCmdShow);
+								CreatePreviewWindow(&previewState, &rendererState, hInstance, nCmdShow);
 							}
 							else
 							{
@@ -124,10 +131,9 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, i32 nCmdS
 }
 
 b32
-CreatePreviewWindow(PreviewWindowState* s, D3DRendererState* rendererState, V2i renderSize, HINSTANCE hInstance, i32 nCmdShow)
+CreatePreviewWindow(PreviewWindowState* s, D3DRendererState* rendererState, HINSTANCE hInstance, i32 nCmdShow)
 {
-	//TODO: Eat beep when using alt enter
-	//TODO: Snap resizing (add WS_THICKFRAME and handle the message)
+	//TODO: If the window didn't have focus the last time it was destroyed, it won't have focus when created
 	//TODO: Handle partial creation
 
 	WNDCLASSW windowClass = {};
@@ -145,14 +151,26 @@ CreatePreviewWindow(PreviewWindowState* s, D3DRendererState* rendererState, V2i 
 	ATOM classAtom = RegisterClassW(&windowClass);
 	LOG_LAST_ERROR_IF(classAtom == INVALID_ATOM, L"RegisterClass failed", Severity::Error, return false);
 
+	auto windowStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX;
+
+	b32 success;
+	RECT windowRect = { 0, 0, rendererState->renderSize.x, rendererState->renderSize.y };
+	success = AdjustWindowRect(&windowRect, windowStyle, false);
+	LOG_LAST_ERROR_IF(!success, L"AdjustWindowRect failed", Severity::Warning);
+
+	s->renderSize = rendererState->renderSize;
+
+	s->nonClientSize.x = (windowRect.right - windowRect.left) - s->renderSize.x;
+	s->nonClientSize.y = (windowRect.bottom - windowRect.top) - s->renderSize.y;
+
 	s->hwnd = CreateWindowW(
 		windowClass.lpszClassName,
 		L"LCDHardwareMonitor Preview Window",
-		WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
-		//TODO: Center of screen
+		windowStyle,
+		//TODO: Center of screen (or remember last position?)
 		CW_USEDEFAULT, CW_USEDEFAULT,
-		renderSize.x,
-		renderSize.y,
+		s->renderSize.x + s->nonClientSize.x,
+		s->renderSize.y + s->nonClientSize.y,
 		nullptr,
 		nullptr,
 		hInstance,
@@ -160,12 +178,12 @@ CreatePreviewWindow(PreviewWindowState* s, D3DRendererState* rendererState, V2i 
 	);
 	if (s->hwnd == INVALID_HANDLE_VALUE)
 	{
-		s->hwnd = nullptr;
 		LOG_LAST_ERROR(L"CreateWindowEx failed", Severity::Error);
+		s->hwnd = nullptr;
 		return false;
 	}
 
-	b32 success = AttachPreviewWindow(rendererState, s);
+	success = AttachPreviewWindow(rendererState, s);
 	if (!success)
 	{
 		LOG(L"Failed to create a preview window", Severity::Error);
@@ -197,20 +215,22 @@ DestroyPreviewWindow(PreviewWindowState* s, D3DRendererState* rendererState, HIN
 LRESULT CALLBACK
 PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 {
-	auto state = (PreviewWindowState*) GetWindowLongPtrW(hwnd, GWLP_USERDATA);
+	auto s = (PreviewWindowState*) GetWindowLongPtrW(hwnd, GWLP_USERDATA);
+
+	static POINT cursorStartPos;
 
 	switch (uMsg)
 	{
 		case WM_NCCREATE:
 		{
 			auto createStruct = (CREATESTRUCT*) lParam;
-			state = (PreviewWindowState*) createStruct->lpCreateParams;
+			s = (PreviewWindowState*) createStruct->lpCreateParams;
 
 			//NOTE: Because Windows is dumb. See Return value section:
 			//https://msdn.microsoft.com/en-us/library/windows/desktop/ms644898.aspx
 			SetLastError(0);
 
-			i64 iResult = SetWindowLongPtrW(hwnd, GWLP_USERDATA, (LPARAM) state);
+			i64 iResult = SetWindowLongPtrW(hwnd, GWLP_USERDATA, (LPARAM) s);
 			if (iResult == 0 && GetLastError() != 0)
 			{
 				LOG_LAST_ERROR(L"SetWindowLongPtr failed", Severity::Error);
@@ -219,13 +239,83 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 			break;
 		}
 
+		case WM_MOUSEWHEEL:
+		{
+			//TODO: Is it worth trying to make things portable?
+			s->mouseWheelAccumulator += GET_WHEEL_DELTA_WPARAM(wParam);
+			i16 newZoomFactor = s->zoomFactor;
+			while (s->mouseWheelAccumulator >= WHEEL_DELTA)
+			{
+				s->mouseWheelAccumulator -= WHEEL_DELTA;
+				newZoomFactor++;
+			}
+			while (s->mouseWheelAccumulator <= -WHEEL_DELTA)
+			{
+				s->mouseWheelAccumulator += WHEEL_DELTA;
+				newZoomFactor--;
+			}
+			if (newZoomFactor < 1) newZoomFactor = 1;
+
+			if (newZoomFactor != s->zoomFactor)
+			{
+				RECT windowRect;
+				b32 success = GetWindowRect(s->hwnd, &windowRect);
+				LOG_LAST_ERROR_IF(!success, L"GetWindowRect failed", Severity::Warning, break);
+
+				V2i windowCenter;
+				windowCenter.x = (windowRect.right + windowRect.left) / 2;
+				windowCenter.y = (windowRect.bottom + windowRect.top) / 2;
+
+				V2i newClientSize = newZoomFactor * s->renderSize;
+
+				RECT usableDesktopRect;
+				success = SystemParametersInfoW(SPI_GETWORKAREA, 0, &usableDesktopRect, 0);
+				LOG_LAST_ERROR_IF(!success, L"SystemParametersInfo failed", Severity::Warning, break);
+
+				V2i usableDesktopSize;
+				usableDesktopSize.x = usableDesktopRect.right - usableDesktopRect.left;
+				usableDesktopSize.y = usableDesktopRect.bottom - usableDesktopRect.top;
+
+				V2i newWindowSize = newClientSize + s->nonClientSize;
+				if (newWindowSize.x > usableDesktopSize.x || newWindowSize.y > usableDesktopSize.y)
+				{
+					if (newZoomFactor > s->zoomFactor)
+						break;
+				}
+
+				V2i newWindowTopLeft;
+				newWindowTopLeft.x = windowCenter.x - (newClientSize.x / 2);
+				newWindowTopLeft.y = windowCenter.y - (newClientSize.y / 2);
+
+				if (newWindowTopLeft.x < 0) newWindowTopLeft.x = 0;
+				if (newWindowTopLeft.y < 0) newWindowTopLeft.y = 0;
+
+				success = SetWindowPos(
+					s->hwnd,
+					nullptr,
+					newWindowTopLeft.x,
+					newWindowTopLeft.y,
+					newClientSize.x,
+					newClientSize.y,
+					0
+				);
+				LOG_LAST_ERROR_IF(!success, L"SetWindowPos failed", Severity::Warning, break);
+
+				s->zoomFactor = newZoomFactor;
+			}
+
+			return 0;
+		}
+
 		case WM_KEYDOWN:
 		{
 			if (wParam == VK_ESCAPE)
 			{
-				b32 success = PostMessageW(nullptr, WM_PREVIEWWINDOWCLOSED, 0, 0);
-				LOG_LAST_ERROR_IF(!success, L"PostMessage failed", Severity::Warning);
-				return 0;
+				if (IsDebuggerPresent())
+				{
+					PostQuitMessage(0);
+					return 0;
+				}
 			}
 			break;
 		}
