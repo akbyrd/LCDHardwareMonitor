@@ -32,7 +32,7 @@ const i32 togglePreviewWindowID = 0;
 LRESULT CALLBACK
 PreviewWndProc(HWND, u32, WPARAM, LPARAM);
 
-b32 CreatePreviewWindow(PreviewWindowState*, D3DRendererState*, HINSTANCE, i32);
+b32 CreatePreviewWindow(PreviewWindowState*, D3DRendererState*, HINSTANCE);
 b32 DestroyPreviewWindow(PreviewWindowState*, D3DRendererState*, HINSTANCE);
 
 i32 CALLBACK
@@ -59,7 +59,7 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, i32 nCmdS
 	//Debug
 	{
 		//TODO: Do this through a system tray icon and command line
-		CreatePreviewWindow(&previewState, &rendererState, hInstance, nCmdShow);
+		CreatePreviewWindow(&previewState, &rendererState, hInstance);
 		b32 success = RegisterHotKey(nullptr, togglePreviewWindowID, MOD_NOREPEAT, VK_F1);
 		if (!success) LOG_LAST_ERROR(L"RegisterHotKey failed", Severity::Warning);
 	}
@@ -90,7 +90,7 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, i32 nCmdS
 						{
 							if (!previewState.hwnd)
 							{
-								CreatePreviewWindow(&previewState, &rendererState, hInstance, nCmdShow);
+								CreatePreviewWindow(&previewState, &rendererState, hInstance);
 							}
 							else
 							{
@@ -131,9 +131,8 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, i32 nCmdS
 }
 
 b32
-CreatePreviewWindow(PreviewWindowState* s, D3DRendererState* rendererState, HINSTANCE hInstance, i32 nCmdShow)
+CreatePreviewWindow(PreviewWindowState* s, D3DRendererState* rendererState, HINSTANCE hInstance)
 {
-	//TODO: If the window didn't have focus the last time it was destroyed, it won't have focus when created
 	//TODO: Handle partial creation
 
 	WNDCLASSW windowClass = {};
@@ -151,7 +150,7 @@ CreatePreviewWindow(PreviewWindowState* s, D3DRendererState* rendererState, HINS
 	ATOM classAtom = RegisterClassW(&windowClass);
 	LOG_LAST_ERROR_IF(classAtom == INVALID_ATOM, L"RegisterClass failed", Severity::Error, return false);
 
-	auto windowStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX;
+	auto windowStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE;
 
 	b32 success;
 	RECT windowRect = { 0, 0, rendererState->renderSize.x, rendererState->renderSize.y };
@@ -191,7 +190,8 @@ CreatePreviewWindow(PreviewWindowState* s, D3DRendererState* rendererState, HINS
 		return false;
 	}
 
-	ShowWindow(s->hwnd, nCmdShow);
+	success = SetForegroundWindow(s->hwnd);
+	LOG_LAST_ERROR_IF(!success, L"SetForegroundWindow failed", Severity::Warning);
 
 	return true;
 }
@@ -217,7 +217,6 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 {
 	auto s = (PreviewWindowState*) GetWindowLongPtrW(hwnd, GWLP_USERDATA);
 
-	static POINT cursorStartPos;
 
 	switch (uMsg)
 	{
@@ -258,9 +257,11 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 
 			if (newZoomFactor != s->zoomFactor)
 			{
+				b32 success;
+
 				RECT windowRect;
-				b32 success = GetWindowRect(s->hwnd, &windowRect);
-				LOG_LAST_ERROR_IF(!success, L"GetWindowRect failed", Severity::Warning, break);
+				success = GetWindowRect(s->hwnd, &windowRect);
+				LOG_LAST_ERROR_IF(!success, L"GetWindowRect failed", Severity::Warning, return 0);
 
 				V2i windowCenter;
 				windowCenter.x = (windowRect.right + windowRect.left) / 2;
@@ -270,7 +271,7 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 
 				RECT usableDesktopRect;
 				success = SystemParametersInfoW(SPI_GETWORKAREA, 0, &usableDesktopRect, 0);
-				LOG_LAST_ERROR_IF(!success, L"SystemParametersInfo failed", Severity::Warning, break);
+				LOG_LAST_ERROR_IF(!success, L"SystemParametersInfo failed", Severity::Warning, return 0);
 
 				V2i usableDesktopSize;
 				usableDesktopSize.x = usableDesktopRect.right - usableDesktopRect.left;
@@ -299,9 +300,12 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 					newClientSize.y,
 					0
 				);
-				LOG_LAST_ERROR_IF(!success, L"SetWindowPos failed", Severity::Warning, break);
+				LOG_LAST_ERROR_IF(!success, L"SetWindowPos failed", Severity::Warning, return 0);
 
 				s->zoomFactor = newZoomFactor;
+
+				success = SetForegroundWindow(s->hwnd);
+				LOG_LAST_ERROR_IF(!success, L"SetForegroundWindow failed", Severity::Warning);
 			}
 
 			return 0;
