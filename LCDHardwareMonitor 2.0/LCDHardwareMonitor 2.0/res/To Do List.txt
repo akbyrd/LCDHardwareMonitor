@@ -1,0 +1,4 @@
+Central deployment (VC++ redistributables) or static linking to VCRT?
+Writing a tutorial for creating plugins.
+Create a template C++ /CLI project and a tutorial for writing .NET plugins.
+Ensure debugging for both native and managed plugins is reasonable.

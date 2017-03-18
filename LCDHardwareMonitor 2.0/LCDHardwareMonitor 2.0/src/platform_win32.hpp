@@ -20,6 +20,8 @@ LogHRESULT(c16* message, Severity severity, HRESULT hr, c16* file, i32 line, c16
 b32
 LogLastError(c16* message, Severity severity, c16* file, i32 line, c16* function)
 {
+	i32 lastError = GetLastError();
+
 	c16 windowsMessage[256];
 	u32 uResult = FormatMessageW(
 		FORMAT_MESSAGE_FROM_SYSTEM,
@@ -30,11 +32,19 @@ LogLastError(c16* message, Severity severity, c16* file, i32 line, c16* function
 		ArrayCount(windowsMessage),
 		nullptr
 	);
-	LOG_LAST_ERROR_IF(uResult == 0, L"FormatMessage failed", Severity::Warning);
 
-	//TODO: Check for swprintf failure (overflow).
+	//TODO: Check for swprintf failures (overflow).
 	c16 combinedMessage[256];
-	swprintf(combinedMessage, ArrayCount(combinedMessage), L"%s: %s", message, windowsMessage);
+	if (uResult == 0)
+	{
+		LOG_LAST_ERROR(L"FormatMessage failed", Severity::Warning);
+		swprintf(combinedMessage, ArrayCount(combinedMessage), L"%s: %i", message, lastError);
+	}
+	else
+	{
+		windowsMessage[uResult - 1] = '\0';
+		swprintf(combinedMessage, ArrayCount(combinedMessage), L"%s: %s", message, windowsMessage);
+	}
 
 	Log(combinedMessage, severity, file, line, function);
 

@@ -689,8 +689,6 @@ TeardownRenderer(D3DRendererState* s)
 {
 	if (s == nullptr) return;
 
-	HRESULT hr;
-
 	s->d3dDevice                  .Reset();
 	s->d3dContext                 .Reset();
 	s->dxgiFactory                .Reset();
@@ -712,6 +710,8 @@ TeardownRenderer(D3DRendererState* s)
 	//Log live objects
 	{
 		#ifdef DEBUG
+		HRESULT hr;
+
 		ComPtr<IDXGIDebug1> dxgiDebug;
 		hr = DXGIGetDebugInterface1(0, IID_PPV_ARGS(&dxgiDebug));
 		LOG_IF(FAILED(hr), L"", Severity::Warning, return);

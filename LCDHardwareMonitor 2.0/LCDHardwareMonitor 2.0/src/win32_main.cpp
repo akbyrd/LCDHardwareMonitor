@@ -44,7 +44,7 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, i32 nCmdS
 	D3DRendererState rendererState = {};
 	{
 		b32 success = InitializeRenderer(&rendererState, simulationState.renderSize);
-		if (!success) LOG(L"InitializeRenderer failed to initialize", Severity::Error);
+		LOG_IF(!success, L"InitializeRenderer failed to initialize", Severity::Error);
 	}
 
 
@@ -52,7 +52,7 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, i32 nCmdS
 	PreviewWindowState previewState = {};
 	{
 		b32 success = SetPriorityClass(GetCurrentProcess(), BELOW_NORMAL_PRIORITY_CLASS);
-		if (!success) LOG_LAST_ERROR(L"SetPriorityClass failed", Severity::Warning);
+		LOG_LAST_ERROR_IF(!success, L"SetPriorityClass failed", Severity::Warning);
 	}
 
 
@@ -61,7 +61,23 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, i32 nCmdS
 		//TODO: Do this through a system tray icon and command line
 		CreatePreviewWindow(&previewState, &rendererState, hInstance);
 		b32 success = RegisterHotKey(nullptr, togglePreviewWindowID, MOD_NOREPEAT, VK_F1);
-		if (!success) LOG_LAST_ERROR(L"RegisterHotKey failed", Severity::Warning);
+		LOG_LAST_ERROR_IF(!success, L"RegisterHotKey failed", Severity::Warning);
+	}
+
+
+	//TESTING
+	{
+		//The search path can be altered using the SetDllDirectory function. This solution is recommended instead of using SetCurrentDirectory or hard-coding the full path to the DLL.
+		HMODULE plugin = LoadLibraryW(L"D:\\Dev\\Github\\LCDHardwareMonitor\\LCDHardwareMonitor 2.0\\OpenHardwareMonitor Plugin\\bin\\Debug\\OpenHardwareMonitor Plugin.dll");
+		LOG_LAST_ERROR_IF(plugin == nullptr, L"LoadLibrary failed", Severity::Warning);
+
+		typedef void (*Initialize)();
+		auto initialize = (Initialize) GetProcAddress(plugin, "Initialize");
+		LOG_LAST_ERROR_IF(initialize == nullptr, L"GetProcAddress failed", Severity::Warning);
+
+		initialize();
+
+		int i = 0;
 	}
 
 
@@ -114,7 +130,7 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, i32 nCmdS
 
 			//Simulate and render!
 			b32 success = Render(&rendererState, &previewState);
-			if (!success) LOG(L"Render failed", Severity::Error);
+			LOG_IF(!success, L"Render failed", Severity::Error);
 
 			Sleep(10);
 		}
@@ -164,9 +180,8 @@ CreatePreviewWindow(PreviewWindowState* s, D3DRendererState* rendererState, HINS
 
 	s->hwnd = CreateWindowW(
 		windowClass.lpszClassName,
-		L"LCDHardwareMonitor Preview Window",
+		L"LHM Preview",
 		windowStyle,
-		//TODO: Center of screen (or remember last position?)
 		CW_USEDEFAULT, CW_USEDEFAULT,
 		s->renderSize.x + s->nonClientSize.x,
 		s->renderSize.y + s->nonClientSize.y,
@@ -240,6 +255,7 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 
 		case WM_MOUSEWHEEL:
 		{
+			//TODO: Fix mouse cursor
 			//TODO: Is it worth trying to make things portable?
 			s->mouseWheelAccumulator += GET_WHEEL_DELTA_WPARAM(wParam);
 			i16 newZoomFactor = s->zoomFactor;
@@ -284,6 +300,9 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 						break;
 				}
 
+				//TODO: Try expanding from top left only
+				//TODO: Maybe account for the shadow? (window - client - border)
+				// or DwmGetWindowAttribute(hWnd, DWMWA_EXTENDED_FRAME_BOUNDS, &extendedRect, sizeof(extendedRect));
 				V2i newWindowTopLeft;
 				newWindowTopLeft.x = windowCenter.x - (newClientSize.x / 2);
 				newWindowTopLeft.y = windowCenter.y - (newClientSize.y / 2);
