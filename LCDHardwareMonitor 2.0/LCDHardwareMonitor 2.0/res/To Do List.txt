@@ -1,4 +1,7 @@
 Central deployment (VC++ redistributables) or static linking to VCRT?
 Writing a tutorial for creating plugins.
+	Warn about loader lock.
+	Warn about using version/strong name for dependencies so you don't end up with the wrong one because the name matched.
 Create a template C++ /CLI project and a tutorial for writing .NET plugins.
 Ensure debugging for both native and managed plugins is reasonable.
+Is it possible to catch managed exceptions from the native side? Can't have them crash the application.

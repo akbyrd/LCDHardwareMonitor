@@ -1,0 +1,6 @@
+.exp
+.ilk
+.lib
+.metagen
+.iobj
+.ipdb

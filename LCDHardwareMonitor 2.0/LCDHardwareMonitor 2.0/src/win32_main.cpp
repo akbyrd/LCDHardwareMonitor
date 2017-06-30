@@ -11,26 +11,16 @@
 #include "platform_win32.hpp"
 #include "renderer_d3d11.hpp"
 
-//TODO: Can an existing texture be associated with a swap chain?
+//TODO: Support x86 and x64
+//TODO: Reduce link dependencies
 //TODO: Fix the following so hr gets stringified
 //      LOG_IF(FAILED(hr), L"", return false);
 //TODO: Probably want to use this as some point so frame debugger works without the preview window
 //      https://msdn.microsoft.com/en-us/library/hh780905.aspx
-//TODO: Research hosting a CLR instance in-process (CorBindToRuntime is deprecated).
-/* TODO: Interop options so far:
- *  - Reverse P/Invoke (has to start from .NET delegate passed as callback, so this is only good if the “action” begins in your .NET code)
- *    https://blogs.msdn.microsoft.com/junfeng/2008/01/28/reverse-pinvoke-and-exception/
- *  - COM interop (every .NET class can also be a COM object, with or without explicit interfaces)
- *  - C++/CLI wrapper
- */
 
-//TODO: Move to PreviewWindowState if it doesn't increase the struct size
-const c16 PreviewWindowClass[] = L"LCDHardwareMonitor Preview Class";
+const c16 previewWindowClass[] = L"LCDHardwareMonitor Preview Class";
 const u32 WM_PREVIEWWINDOWCLOSED = WM_USER + 0;
 const i32 togglePreviewWindowID = 0;
-
-LRESULT CALLBACK
-PreviewWndProc(HWND, u32, WPARAM, LPARAM);
 
 b32 CreatePreviewWindow(PreviewWindowState*, D3DRendererState*, HINSTANCE);
 b32 DestroyPreviewWindow(PreviewWindowState*, D3DRendererState*, HINSTANCE);
@@ -47,6 +37,7 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, i32 nCmdS
 		LOG_IF(!success, L"InitializeRenderer failed to initialize", Severity::Error);
 	}
 
+	int size = sizeof(PreviewWindowState);
 
 	//Misc
 	PreviewWindowState previewState = {};
@@ -67,17 +58,60 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, i32 nCmdS
 
 	//TESTING
 	{
-		//The search path can be altered using the SetDllDirectory function. This solution is recommended instead of using SetCurrentDirectory or hard-coding the full path to the DLL.
-		HMODULE plugin = LoadLibraryW(L"D:\\Dev\\Github\\LCDHardwareMonitor\\LCDHardwareMonitor 2.0\\OpenHardwareMonitor Plugin\\bin\\Debug\\OpenHardwareMonitor Plugin.dll");
-		LOG_LAST_ERROR_IF(plugin == nullptr, L"LoadLibrary failed", Severity::Warning);
+		//TODO: Implement a C++/CLI helper that uses AssemblyResolve to search for
+		//dependencies in the folder of the DLL being loaded recursively.
+		//(Setting path would probably require plugins to load their dependencies immediately)
 
-		typedef void (*Initialize)();
-		auto initialize = (Initialize) GetProcAddress(plugin, "Initialize");
-		LOG_LAST_ERROR_IF(initialize == nullptr, L"GetProcAddress failed", Severity::Warning);
+		//TODO: Search for plugins
+		//TODO: Disable Windows DLL searching when loading a plugin
+		//TODO: Check if a DLL is managed or mixed
+		//  http://stackoverflow.com/a/5276019/986007
+		//  http://stackoverflow.com/a/1366517/986007
+		//TODO: Load plugins without locking the file. (If the user deletes a plugin just unload it)
+		//TODO: Watch plugin directories for changes
+		//TODO: Unload and reload plugins
+		//TODO: Fix debugging across boundaries (can't step into managed functions, but breakpoints work)
+		//TODO: Handle plugin exceptions
+		//  Consider sticking each plugin in a different app domain.
+		//  Is it possible to load a DLL into a specific app domain immediately?
+		//  Can plugins share dependencies across AppDomains?
+		//TODO: Clean step
+		//TODO: Allow plugins to interact with the log
 
-		initialize();
+		//NOTE: Each loaded DLL appears to load into the .exe process.
 
-		int i = 0;
+		//TODO: Put loader lock info in plugin tutorial (maybe write into save file
+		//when starting to load a DLL and when finishing so if a deadlock occurs we
+		//can disable the DLL the next time the app runs).
+		//  https://msdn.microsoft.com/en-us/library/aa290048(v=vs.71).aspx
+		//TODO: Two ways to write managed plugins: C++/CLI and DLLExport (via unamaged exports)
+
+
+		//TODO: Research hosting a CLR instance in-process (CorBindToRuntime is deprecated).
+
+		//HMODULE plugin = LoadLibraryW(L"Data Sources\\OpenHardwareMonitor Source\\OpenHardwareMonitor Plugin.dll");
+		//LOG_LAST_ERROR_IF(!plugin, L"LoadLibrary failed", Severity::Warning);
+		//TODO: FreeLibrary
+
+		//typedef void (*Initialize)();
+		//auto initialize = (Initialize) GetProcAddress(plugin, "Initialize");
+		//LOG_LAST_ERROR_IF(!initialize, L"GetProcAddress failed", Severity::Warning);
+
+		//initialize();
+
+		//TODO: Static link?
+		HMODULE cliHelper = LoadLibraryW(L"LCDHardwareMonitor CLI Helper.dll");
+
+		typedef HMODULE (*HelperInit)(c16*, c16*);
+		auto helperInitialize = (HelperInit) GetProcAddress(cliHelper, "Initialize");
+		HMODULE plugin = helperInitialize(L"Data Sources\\OpenHardwareMonitor Source\\", L"OpenHardwareMonitor Plugin");
+
+		typedef void (*HelperTeardown)();
+		auto helperTeardown = (HelperTeardown) GetProcAddress(cliHelper, "Teardown");
+		helperTeardown();
+
+		FreeLibrary(cliHelper);
+		cliHelper = nullptr;
 	}
 
 
@@ -151,6 +185,9 @@ CreatePreviewWindow(PreviewWindowState* s, D3DRendererState* rendererState, HINS
 {
 	//TODO: Handle partial creation
 
+	LRESULT CALLBACK
+	PreviewWndProc(HWND, u32, WPARAM, LPARAM);
+
 	WNDCLASSW windowClass = {};
 	windowClass.style         = 0;
 	windowClass.lpfnWndProc   = PreviewWndProc;
@@ -161,7 +198,7 @@ CreatePreviewWindow(PreviewWindowState* s, D3DRendererState* rendererState, HINS
 	windowClass.hCursor       = nullptr;
 	windowClass.hbrBackground = nullptr;
 	windowClass.lpszMenuName  = nullptr;
-	windowClass.lpszClassName = PreviewWindowClass;
+	windowClass.lpszClassName = previewWindowClass;
 
 	ATOM classAtom = RegisterClassW(&windowClass);
 	LOG_LAST_ERROR_IF(classAtom == INVALID_ATOM, L"RegisterClass failed", Severity::Error, return false);
@@ -219,7 +256,7 @@ DestroyPreviewWindow(PreviewWindowState* s, D3DRendererState* rendererState, HIN
 	success = DestroyWindow(s->hwnd);
 	LOG_LAST_ERROR_IF(!success, L"DestroyWindow failed", Severity::Error, return false);
 
-	success = UnregisterClassW(PreviewWindowClass, hInstance);
+	success = UnregisterClassW(previewWindowClass, hInstance);
 	LOG_LAST_ERROR_IF(!success, L"UnregisterClass failed", Severity::Warning);
 
 	*s = {};

@@ -56,13 +56,12 @@ LogLastError(c16* message, Severity severity, c16* file, i32 line, c16* function
 //
 
 #include <fstream>
-using namespace std;
 
 b32
-LoadFile(c16* fileName, unique_ptr<c8[]>& data, u64& dataSize)
+LoadFile(c16* fileName, unique_ptr<c8[]>& data, size& dataSize)
 {
 	//TODO: Add cwd to error
-	ifstream inFile(fileName, ios::binary | ios::ate);
+	std::ifstream inFile(fileName, std::ios::binary | std::ios::ate);
 	if (!inFile.is_open())
 	{
 		//LOG(L"Failed to open file: " + fileName, Severity::Error);
@@ -70,8 +69,8 @@ LoadFile(c16* fileName, unique_ptr<c8[]>& data, u64& dataSize)
 		return false;
 	}
 
-	dataSize = (size_t) inFile.tellg();
-	data = make_unique<char[]>(dataSize);
+	dataSize = (size) inFile.tellg();
+	data = std::make_unique<char[]>(dataSize);
 
 	inFile.seekg(0);
 	inFile.read(data.get(), dataSize);

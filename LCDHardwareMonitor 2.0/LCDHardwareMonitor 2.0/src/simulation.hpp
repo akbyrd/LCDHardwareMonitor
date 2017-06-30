@@ -19,7 +19,7 @@ Log(c16* message, Severity severity, c16* file, i32 line, c16* function)
 	//TODO: Decide on logging allocation policy
 	//TODO: Check for swprintf failure (overflow).
 	c16 buffer[512];
-	swprintf(buffer, ArrayCount(buffer), L"%s - %s\n\t%s:%i\n", function, message, file, line);
+	swprintf(buffer, ArrayCount(buffer), L"%s - %s\n\t%s(%i)\n", function, message, file, line);
 	ConsolePrint(buffer);
 
 	if (severity > Severity::Info)

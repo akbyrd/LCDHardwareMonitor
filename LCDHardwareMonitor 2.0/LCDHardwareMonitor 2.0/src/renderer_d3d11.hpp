@@ -26,7 +26,7 @@ namespace HLSLSemantic
 	const c8* Color    = "COLOR";
 }
 
-template<UINT TNameLength>
+template<u32 TNameLength>
 inline void
 SetDebugObjectName(const ComPtr<ID3D11Device> &resource, const c8 (&name)[TNameLength])
 {
@@ -35,7 +35,7 @@ SetDebugObjectName(const ComPtr<ID3D11Device> &resource, const c8 (&name)[TNameL
 	#endif
 }
 
-template<UINT TNameLength>
+template<u32 TNameLength>
 inline void
 SetDebugObjectName(const ComPtr<ID3D11DeviceChild> &resource, const c8 (&name)[TNameLength])
 {
@@ -44,7 +44,7 @@ SetDebugObjectName(const ComPtr<ID3D11DeviceChild> &resource, const c8 (&name)[T
 	#endif
 }
 
-template<UINT TNameLength>
+template<u32 TNameLength>
 inline void
 SetDebugObjectName(const ComPtr<IDXGIObject> &resource, const c8 (&name)[TNameLength])
 {
@@ -335,8 +335,8 @@ InitializeRenderer(D3DRendererState* s, V2i renderSize)
 	{
 		//Load
 		unique_ptr<c8[]> vsBytes;
-		size_t vsBytesLength;
-		success = LoadFile(L"Basic Vertex Shader.cso", vsBytes, vsBytesLength);
+		size vsBytesLength;
+		success = LoadFile(L"Shaders/Basic Vertex Shader.cso", vsBytes, vsBytesLength);
 		if (!success) return false;
 
 		//Create
@@ -379,8 +379,8 @@ InitializeRenderer(D3DRendererState* s, V2i renderSize)
 	{
 		//Load
 		unique_ptr<c8[]> psBytes;
-		size_t psBytesLength;
-		success = LoadFile(L"Basic Pixel Shader.cso", psBytes, psBytesLength);
+		size psBytesLength;
+		success = LoadFile(L"Shaders/Basic Pixel Shader.cso", psBytes, psBytesLength);
 		if (!success) return false;
 
 		//Create
@@ -780,7 +780,7 @@ Render(D3DRendererState* s, PreviewWindowState* previewWindow)
 
 	XMMATRIX V = XMMatrixLookAtLH(pos, target, up);
 
-	for (size_t i = 0; i < s->drawCallCount; i++)
+	for (u32 i = 0; i < s->drawCallCount; i++)
 	{
 		DrawCall* dc   = &s->drawCalls[i];
 		MeshData* mesh = &s->meshes[dc->mesh];

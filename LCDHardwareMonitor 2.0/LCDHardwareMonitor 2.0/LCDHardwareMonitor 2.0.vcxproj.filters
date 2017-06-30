@@ -49,9 +49,4 @@
       <Filter>Resources</Filter>
     </FxCompile>
   </ItemGroup>
-  <ItemGroup>
-    <None Include="res\Post Build.bat">
-      <Filter>Resources</Filter>
-    </None>
-  </ItemGroup>
 </Project>
