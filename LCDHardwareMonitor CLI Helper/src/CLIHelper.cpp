@@ -1,3 +1,8 @@
+#pragma unmanaged
+#define EXPORTING 1
+#include "CLIHelper.h"
+//#include "LHMDataSource.h"
+
 #pragma managed
 
 /* NOTE: This is in a separate project because it's going to get loaded into
@@ -11,9 +16,6 @@
 
 #include <wtypes.h>
 #include <msclr/gcroot.h>
-
-#include "CLIHelper.h"
-#include "LHMDataSource.h"
 
 using namespace msclr;
 using namespace System;
@@ -45,7 +47,7 @@ ref struct DomainProxy : MarshalByRefObject
 };
 
 Plugin
-ManagedPlugin_Load(c16* assemblyDirectory, c16* assemblyName)
+ManagedPlugin_LoadImpl(c16* assemblyDirectory, c16* assemblyName)
 {
 	String^ assemblyNameString = gcnew String(assemblyName);
 
@@ -56,7 +58,7 @@ ManagedPlugin_Load(c16* assemblyDirectory, c16* assemblyName)
 
 	auto appDomain = AppDomain::CreateDomain("Plugin AppDomain", nullptr, appDomainSetup);
 
-	auto proxy = (DomainProxy^) appDomain->CreateInstanceAndUnwrap("CLIHelper", nameof(DomainProxy));
+	auto proxy = (DomainProxy^) appDomain->CreateInstanceAndUnwrap("LCDHardwareMonitor CLI Helper", nameof(DomainProxy));
 	Plugin plugin = proxy->LoadAssembly(assemblyDirectory, assemblyName);
 
 	cliHelperState.appDomain = appDomain;
@@ -65,11 +67,26 @@ ManagedPlugin_Load(c16* assemblyDirectory, c16* assemblyName)
 }
 
 void
-ManagedPlugin_Unload(Plugin plugin)
+ManagedPlugin_UnloadImpl(Plugin plugin)
 {
 	if (plugin.initialize == cliHelperState.plugin.initialize)
 	{
 		AppDomain::Unload(cliHelperState.appDomain);
 		cliHelperState = {};
 	}
+}
+
+#pragma unmanaged
+Plugin
+_cdecl
+ManagedPlugin_Load(c16* assemblyDirectory, c16* assemblyName)
+{
+	return ManagedPlugin_LoadImpl(assemblyDirectory, assemblyName);
+}
+
+void
+_cdecl
+ManagedPlugin_Unload(Plugin plugin)
+{
+	ManagedPlugin_UnloadImpl(plugin);
 }

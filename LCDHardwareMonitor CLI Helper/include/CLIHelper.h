@@ -2,15 +2,16 @@
 
 #include "shared.hpp"
 
-typedef void (__stdcall *InitializePtr)();
-typedef void (__stdcall *UpdatePtr)();
-typedef void (__stdcall *TeardownPtr)();
+typedef void (_cdecl *InitializePtr)();
+typedef void (_cdecl *UpdatePtr)();
+typedef void (_cdecl *TeardownPtr)();
 
+//@TODO: Using field initializers causes C4190
 struct Plugin
 {
-	InitializePtr initialize = nullptr;
-	UpdatePtr     update     = nullptr;
-	TeardownPtr   teardown   = nullptr;
+	InitializePtr initialize;
+	UpdatePtr     update;
+	TeardownPtr   teardown;
 };
 
 LHM_API Plugin ManagedPlugin_Load(c16* assemblyDirectory, c16* assemblyName);

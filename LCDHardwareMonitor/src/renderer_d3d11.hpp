@@ -720,8 +720,10 @@ TeardownRenderer(D3DRendererState* s)
 		//DXGI_DEBUG_RLO_ALL
 		//DXGI_DEBUG_RLO_SUMMARY
 		//DXGI_DEBUG_RLO_DETAIL
-		hr = dxgiDebug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_IGNORE_INTERNAL);
-		LOG_IF(FAILED(hr), L"", Severity::Warning, return);
+		//NOTE: Only available with the Windows SDK installed. That's not unituitive or lead to cryptic errors or anything. Fuck you, Microsoft.
+		//TODO: Re-enable this
+		//hr = dxgiDebug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_IGNORE_INTERNAL);
+		//LOG_IF(FAILED(hr), L"", Severity::Warning, return);
 
 		OutputDebugStringW(L"\n");
 		#endif

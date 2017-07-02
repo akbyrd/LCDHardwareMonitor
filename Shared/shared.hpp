@@ -29,7 +29,11 @@ typedef size_t ptrsize;
 #define Megabyte 1024LL * Kilobyte
 #define Gigabyte 1024LL * Megabyte
 
-#define LHM_API extern "C"
+#if EXPORTING
+	#define LHM_API extern "C" __declspec(dllexport)
+#else
+	#define LHM_API extern "C" __declspec(dllimport)
+#endif
 
 #define Assert(condition) if (!(condition)) { *((u8 *) 0) = 0; }
 #define nameof(x) #x
