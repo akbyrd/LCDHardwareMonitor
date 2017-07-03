@@ -19,6 +19,29 @@
 //TODO: Probably want to use this as some point so frame debugger works without the preview window
 //      https://msdn.microsoft.com/en-us/library/hh780905.aspx
 
+/* @NOTE: Plugins
+ * Ok, here's (part of) the deal. Managed plugins bring in a lot of complexity.
+ * 
+ * Option 1: Call managed plugins through GetProcAddress.
+ *  - This will always call into the default AppDomain. And the Fusion Loader will fail to find other managed dependencies (that aren't in the GAC) because they aren't in the bin path. We'll need to use AssemblyResolve to handle this. Will need a CLI Helper for this.
+ *  - * The catch here is that assemblies are loaded on-demand. So we can't know which folder to search in based on *when* the load occurs. However, we can make a reasonable guess at which folder to search based on the name of the requesting assembly. We'll need to keep a cache of loads that have occured because Assembly A and load B which then loads C and we need to know to use A's folder.
+ *  - It's very appealing to be able to simply call every plugin through a uniform C interface. It means we don't have to care whether a plugin is managed or unmanaged.
+ *  - However, it also leaves the onus of doing good interop on the plugin author (e.g. using a delegate to skirt the x64 performance hit and an instance method for a bit more speed). Can maybe provide a 'template' or some such to simplify it.
+ *  - Enabling or disabling plugins means unloading and reloading the entire CLR. This probably isn't a very big deal, but I don't actually know how to do it yet. We can update the UI as plugins are loaded one-by-one and we can provide timing information for load times on each plugin.
+ *  - Plugin dependencies could end up loading out of some other folder in the bin path. Probably not a big issue. Plugin authors can use strong naming.
+ *  - ~Info~ Specifying the full path won't work for indirectly loaded assemblies (e.g. dependencies).
+ *  - ~Unnessesary~ This can maybe be overcome by creating a .config file on the fly and modifying the bin path from there. This is untested so I'm not actually sure the CLR will notice a .config that gets updated on the fly (though, now that I think about it, I suppose we can write out a .config with all necessary paths before we load the first plugin).
+ * 
+ * Option 2: Load plugins into a separate AppDomain
+ *  - Means we can load and unload plugins independently of one another.
+ *  - We'll have to call into the managed side of each plugin. If we call into native and the plugin calls into managed it's going to use the default AppDomain.
+ *  - This adds code complexity, as we need a separate "Managed Helper" dll.
+ *  - We take a 10x performance hit for calling across AppDomains.
+ * 
+ * Option 3: Host the CLR from native
+ *  - I've not looked into this at all. No idea how well it will work in terms of code complexity or performance.
+ */
+
 const c16 previewWindowClass[] = L"LCDHardwareMonitor Preview Class";
 const u32 WM_PREVIEWWINDOWCLOSED = WM_USER + 0;
 const i32 togglePreviewWindowID = 0;
@@ -59,9 +82,16 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, i32 nCmdS
 
 	//TESTING
 	{
-		Plugin plugin = ManagedPlugin_Load(L"Data Sources\\OpenHardwareMonitor Source\\", L"OpenHardwareMonitor Plugin");
-		plugin.initialize();
-		plugin.teardown();
+		//Plugin plugin = ManagedPlugin_Load(L"Data Sources\\OpenHardwareMonitor Source\\", L"OpenHardwareMonitor Plugin");
+		//ManagedPlugin_UpdateAllPlugins();
+		//ManagedPlugin_Unload(plugin);
+
+		HMODULE module = LoadLibraryW(L"Data Sources\\OpenHardwareMonitor Source\\OpenHardwareMonitor Plugin");
+		auto initialize = (InitializePtr) GetProcAddress(module, "Initialize");
+		auto teardown   = (TeardownPtr)   GetProcAddress(module, "Teardown");
+
+		initialize();
+		//teardown();
 	}
 
 

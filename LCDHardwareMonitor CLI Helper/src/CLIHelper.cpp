@@ -4,14 +4,9 @@
 //#include "LHMDataSource.h"
 
 #pragma managed
-
 /* NOTE: This is in a separate project because it's going to get loaded into
  * the AppDomain for every plugin. This happens because we create a new domain
  * then run code defined in this file to lead the actual plugin assembly.
- */
-
-/* TODO:
- *  - Do we support calling native functions in the plugin assembly? What about exported managed functions?
  */
 
 #include <wtypes.h>
@@ -38,17 +33,21 @@ ref struct DomainProxy : MarshalByRefObject
 		SetDllDirectoryW(assemblyDirectory);
 		HMODULE module = LoadLibraryW(assemblyName);
 
-		plugin.initialize = (InitializePtr) GetProcAddress(module, "ManagedInitialize");
-		plugin.update     = (UpdatePtr)     GetProcAddress(module, "ManagedUpdate");
-		plugin.teardown   = (TeardownPtr)   GetProcAddress(module, "ManagedTeardown");
+		plugin.initialize = (InitializePtr) GetProcAddress(module, "Initialize");
+		plugin.update     = (UpdatePtr)     GetProcAddress(module, "Update");
+		plugin.teardown   = (TeardownPtr)   GetProcAddress(module, "Teardown");
 
 		return plugin;
 	}
 };
 
+//@TODO: Probably get rid of this
 Plugin
-ManagedPlugin_LoadImpl(c16* assemblyDirectory, c16* assemblyName)
+_cdecl
+ManagedPlugin_Load(c16* assemblyDirectory, c16* assemblyName)
 {
+	//@NOTE: fuslogvw is _amaaaaaazing_....
+
 	String^ assemblyNameString = gcnew String(assemblyName);
 
 	AppDomainSetup^ appDomainSetup = gcnew AppDomainSetup();
@@ -66,27 +65,23 @@ ManagedPlugin_LoadImpl(c16* assemblyDirectory, c16* assemblyName)
 	return plugin;
 }
 
-void
-ManagedPlugin_UnloadImpl(Plugin plugin)
-{
-	if (plugin.initialize == cliHelperState.plugin.initialize)
-	{
-		AppDomain::Unload(cliHelperState.appDomain);
-		cliHelperState = {};
-	}
-}
 
-#pragma unmanaged
-Plugin
+void
 _cdecl
-ManagedPlugin_Load(c16* assemblyDirectory, c16* assemblyName)
+ManagedPlugin_UpdateAllPlugins()
 {
-	return ManagedPlugin_LoadImpl(assemblyDirectory, assemblyName);
+	cliHelperState.plugin.initialize();
+	//cliHelperState.plugin.update();
+	cliHelperState.plugin.teardown();
 }
 
 void
 _cdecl
 ManagedPlugin_Unload(Plugin plugin)
 {
-	ManagedPlugin_UnloadImpl(plugin);
+	if (plugin.initialize == cliHelperState.plugin.initialize)
+	{
+		AppDomain::Unload(cliHelperState.appDomain);
+		cliHelperState = {};
+	}
 }
