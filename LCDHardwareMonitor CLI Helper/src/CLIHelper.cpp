@@ -1,14 +1,8 @@
 #pragma unmanaged
 #define EXPORTING 1
 #include "CLIHelper.h"
-//#include "LHMDataSource.h"
 
 #pragma managed
-/* NOTE: This is in a separate project because it's going to get loaded into
- * the AppDomain for every plugin. This happens because we create a new domain
- * then run code defined in this file to lead the actual plugin assembly.
- */
-
 #include <wtypes.h>
 #include <msclr/gcroot.h>
 
@@ -16,72 +10,60 @@ using namespace msclr;
 using namespace System;
 using namespace System::Reflection;
 
-struct CLIHelperState
+value struct State
 {
-	gcroot<AppDomain^> appDomain = nullptr;
-	Plugin plugin;
-};
-CLIHelperState cliHelperState;
-
-ref struct DomainProxy : MarshalByRefObject
-{
-	Plugin
-	LoadAssembly(c16* assemblyDirectory, c16* assemblyName)
-	{
-		Plugin plugin = {};
-
-		SetDllDirectoryW(assemblyDirectory);
-		HMODULE module = LoadLibraryW(assemblyName);
-
-		plugin.initialize = (InitializePtr) GetProcAddress(module, "Initialize");
-		plugin.update     = (UpdatePtr)     GetProcAddress(module, "Update");
-		plugin.teardown   = (TeardownPtr)   GetProcAddress(module, "Teardown");
-
-		return plugin;
-	}
+	static ResolveEventHandler^ resolveDelegate;
+	static String^ pluginDirectory;
+	static String^ pluginName;
 };
 
-//@TODO: Probably get rid of this
-Plugin
-_cdecl
-ManagedPlugin_Load(c16* assemblyDirectory, c16* assemblyName)
+Assembly^
+AssemblyResolveHandler(Object^ sender, ResolveEventArgs^ args)
 {
-	//@NOTE: fuslogvw is _amaaaaaazing_....
-
-	String^ assemblyNameString = gcnew String(assemblyName);
-
-	AppDomainSetup^ appDomainSetup = gcnew AppDomainSetup();
-	appDomainSetup->ApplicationName    = assemblyNameString;
-	appDomainSetup->PrivateBinPath     = gcnew String(assemblyDirectory);
-	appDomainSetup->LoaderOptimization = LoaderOptimization::MultiDomainHost;
-
-	auto appDomain = AppDomain::CreateDomain("Plugin AppDomain", nullptr, appDomainSetup);
-
-	auto proxy = (DomainProxy^) appDomain->CreateInstanceAndUnwrap("LCDHardwareMonitor CLI Helper", nameof(DomainProxy));
-	Plugin plugin = proxy->LoadAssembly(assemblyDirectory, assemblyName);
-
-	cliHelperState.appDomain = appDomain;
-	cliHelperState.plugin    = plugin;
-	return plugin;
-}
-
-
-void
-_cdecl
-ManagedPlugin_UpdateAllPlugins()
-{
-	cliHelperState.plugin.initialize();
-	//cliHelperState.plugin.update();
-	cliHelperState.plugin.teardown();
-}
-
-void
-_cdecl
-ManagedPlugin_Unload(Plugin plugin)
-{
-	if (plugin.initialize == cliHelperState.plugin.initialize)
+	//TODO: RequestingAssembly is null. Maybe because we're still loading the plugin?
+	//AssemblyName^ loadingAssembly = args->RequestingAssembly->GetName();
+	//if (loadingAssembly->Name == State::pluginName)
 	{
-		AppDomain::Unload(cliHelperState.appDomain);
-		cliHelperState = {};
+		/* NOTE: Looks like we have to use LoadFrom here. Load caching causes a
+		 * Load here to insta-fail. The docs also warn about recursive AssemblyResolve
+		 * events, though that doesn't seem to happen in practice because of the
+		 * caching. This doesn't feel very robust, but evenutally we'll be moving
+		 * to separate AppDomains with appropriate bin paths anyway. Not worth
+		 * spending more time on right now.
+		 */
+		AssemblyName^ dependencyAssembly = gcnew AssemblyName(args->Name);
+		String^ path = String::Format("{0}\\{1}.dll", State::pluginDirectory, dependencyAssembly->Name);
+		return Assembly::LoadFrom(path);
 	}
+	return nullptr;
+}
+
+void _cdecl
+PluginHelper_Initialize()
+{
+	State::resolveDelegate = gcnew ResolveEventHandler(AssemblyResolveHandler);
+	AppDomain::CurrentDomain->AssemblyResolve += State::resolveDelegate;
+}
+
+void PluginHelper_PluginLoaded(c16* pluginDirectory, c16* pluginName)
+{
+	State::pluginDirectory = gcnew String(pluginDirectory);
+	State::pluginName = gcnew String(pluginName);
+}
+
+void PluginHelper_PluginUnloaded(c16* pluginDirectory, c16* pluginName)
+{
+	if (State::pluginName == gcnew String(pluginName))
+	{
+		State::pluginDirectory = nullptr;
+		State::pluginName = nullptr;
+	}
+}
+
+void _cdecl
+PluginHelper_Teardown()
+{
+	//TODO: Unload the current AppDomain
+	AppDomain::CurrentDomain->AssemblyResolve -= State::resolveDelegate;
+	//TODO: Reset State
 }

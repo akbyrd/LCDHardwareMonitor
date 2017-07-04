@@ -1,55 +1,32 @@
 #pragma managed
-namespace Managed
+using namespace System::Diagnostics;
+using namespace OpenHardwareMonitor;
+using namespace OpenHardwareMonitor::Hardware;
+
+ref struct State
 {
-	using namespace System::Diagnostics;
-	using namespace OpenHardwareMonitor;
-	using namespace OpenHardwareMonitor::Hardware;
-	using namespace System;
-	using namespace System::Reflection;
+	static Computer computer;
+};
 
-	ref struct Managed_Memory
-	{
-		Computer computer;
-	};
-	//Managed_Memory state;
+#define EXPORTING 1
+#include "LHMDataSource.h"
 
-	Assembly^ AssemblyResolveHandler(Object^ sender, ResolveEventArgs^ args)
-	{
-		if (args->Name->Contains("OpenHardwareMonitorLib"))
-			return Assembly::LoadFrom("Data Sources\\OpenHardwareMonitor Source\\OpenHardwareMonitorLib.dll");
-		return nullptr;
-	}
+void
+Initialize()
+{
+	Debug::WriteLine(L"Plugin Initialize!\n");
 
-	void OHM_Initialize()
-	{
-		Debug::WriteLine(L"Managed Initialize!\n");
-		AppDomain::CurrentDomain->AssemblyResolve += gcnew ResolveEventHandler(AssemblyResolveHandler);
-
-		Managed_Memory state;
-	}
+	State::computer.Open();
 }
 
-#pragma unmanaged
-//@TODO: Research how exporting works with namespaces
-#include <wtypes.h>
-//#define EXPORTING 1
-//#include "LHMDataSource.h"
-
-namespace Native
+void
+Update()
 {
-	extern "C" __declspec(dllexport)
-	void _cdecl
-	Initialize()
-	{
-		OutputDebugStringW(L"Native Initialize!\n");
+	Debug::WriteLine(L"Plugin Update!\n");
+}
 
-		Managed::OHM_Initialize();
-	}
-
-	extern "C" __declspec(dllexport)
-	void _cdecl
-	Teardown()
-	{
-		OutputDebugStringW(L"Native Teardown!\n");
-	}
+void
+Teardown()
+{
+	Debug::WriteLine(L"Plugin Teardown!\n");
 }

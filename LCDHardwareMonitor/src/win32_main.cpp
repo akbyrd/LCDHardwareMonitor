@@ -1,5 +1,7 @@
-#include "CLIHelper.h"
 #include "shared.hpp"
+#include "CLIHelper.h"
+#include "LHMDataSource.h"
+
 #include "math.hpp"
 #include "platform.h"
 #include "renderer.h"
@@ -12,34 +14,39 @@
 #include "platform_win32.hpp"
 #include "renderer_d3d11.hpp"
 
+//TODO: Remove winow clamping
 //TODO: Support x86 and x64
 //TODO: Reduce link dependencies
 //TODO: Fix the following so hr gets stringified
 //      LOG_IF(FAILED(hr), L"", return false);
 //TODO: Probably want to use this as some point so frame debugger works without the preview window
 //      https://msdn.microsoft.com/en-us/library/hh780905.aspx
+//@NOTE: fuslogvw is _amaaaaaazing_....
 
 /* @NOTE: Plugins
  * Ok, here's (part of) the deal. Managed plugins bring in a lot of complexity.
+ * Ultimately, I'm leaning toward Option 3. I don't like having to call into managed code, so maybe there's a way around that. However, for now I'm sticking with the simplicity of Option 1. Once we're up and running I'll revisit the issue.
  * 
  * Option 1: Call managed plugins through GetProcAddress.
  *  - This will always call into the default AppDomain. And the Fusion Loader will fail to find other managed dependencies (that aren't in the GAC) because they aren't in the bin path. We'll need to use AssemblyResolve to handle this. Will need a CLI Helper for this.
  *  - * The catch here is that assemblies are loaded on-demand. So we can't know which folder to search in based on *when* the load occurs. However, we can make a reasonable guess at which folder to search based on the name of the requesting assembly. We'll need to keep a cache of loads that have occured because Assembly A and load B which then loads C and we need to know to use A's folder.
  *  - It's very appealing to be able to simply call every plugin through a uniform C interface. It means we don't have to care whether a plugin is managed or unmanaged.
  *  - However, it also leaves the onus of doing good interop on the plugin author (e.g. using a delegate to skirt the x64 performance hit and an instance method for a bit more speed). Can maybe provide a 'template' or some such to simplify it.
- *  - Enabling or disabling plugins means unloading and reloading the entire CLR. This probably isn't a very big deal, but I don't actually know how to do it yet. We can update the UI as plugins are loaded one-by-one and we can provide timing information for load times on each plugin.
+ *  - Enabling or disabling plugins would require unloading and reloading the entire CLR. This doesn't look possible.
  *  - Plugin dependencies could end up loading out of some other folder in the bin path. Probably not a big issue. Plugin authors can use strong naming.
- *  - ~Info~ Specifying the full path won't work for indirectly loaded assemblies (e.g. dependencies).
- *  - ~Unnessesary~ This can maybe be overcome by creating a .config file on the fly and modifying the bin path from there. This is untested so I'm not actually sure the CLR will notice a .config that gets updated on the fly (though, now that I think about it, I suppose we can write out a .config with all necessary paths before we load the first plugin).
+ *  - ~NOTE~ Specifying the full path won't work for indirectly loaded assemblies (e.g. dependencies).
+ *  - ~NOTE~ Could use a .config file for resolving dependencies, but AssemblyResolve is simpler.
  * 
  * Option 2: Load plugins into a separate AppDomain
  *  - Means we can load and unload plugins independently of one another.
  *  - We'll have to call into the managed side of each plugin. If we call into native and the plugin calls into managed it's going to use the default AppDomain.
- *  - This adds code complexity, as we need a separate "Managed Helper" dll.
  *  - We take a 10x performance hit for calling across AppDomains.
+ *  - I think we can return a function pointer back to the native side to hide the 'have to call into managed code' issue from native side.
  * 
  * Option 3: Host the CLR from native
- *  - I've not looked into this at all. No idea how well it will work in terms of code complexity or performance.
+ *  - I haven't looked into this heavily, but currently it looks like it might be the right choice.
+ *  - Basically it's Option 2 without a separate C++/CLI assembly. It should streamline things a bit.
+ *  - What is perfomrmance like in this case?
  */
 
 const c16 previewWindowClass[] = L"LCDHardwareMonitor Preview Class";
@@ -48,6 +55,59 @@ const i32 togglePreviewWindowID = 0;
 
 b32 CreatePreviewWindow(PreviewWindowState*, D3DRendererState*, HINSTANCE);
 b32 DestroyPreviewWindow(PreviewWindowState*, D3DRendererState*, HINSTANCE);
+
+typedef void (*InitializePtr)();
+typedef void (*UpdatePtr)();
+typedef void (*TeardownPtr)();
+
+//@TODO: Using field initializers causes C4190
+struct Plugin
+{
+	HMODULE       module;
+	c16*          directory;
+	c16*          name;
+	InitializePtr initialize;
+	UpdatePtr     update;
+	TeardownPtr   teardown;
+};
+
+Plugin
+LoadPlugin(c16* pluginDirectory, c16* pluginName)
+{
+	Plugin plugin;
+
+	//TODO: ?
+	SetDllDirectoryW(pluginDirectory);
+
+	plugin.directory = pluginDirectory;
+	plugin.name      = pluginName;
+	plugin.module    = LoadLibraryW(pluginName);
+	if (plugin.module)
+	{
+		plugin.initialize = (InitializePtr) GetProcAddress(plugin.module, "Initialize");
+		plugin.update     = (UpdatePtr)     GetProcAddress(plugin.module, "Update");
+		plugin.teardown   = (TeardownPtr)   GetProcAddress(plugin.module, "Teardown");
+
+		//TODO: Handle missing functions
+		//TODO: Handle plugin types
+		//TODO: Support more than one plugin
+		//TODO: Better failure return
+		PluginHelper_PluginLoaded(pluginDirectory, pluginName);
+	}
+
+	return plugin;
+}
+
+void
+UnloadPlugin(Plugin* plugin)
+{
+	//TODO: Does this varargs return actually work?
+	b32 success = FreeLibrary(plugin->module);
+	LOG_LAST_ERROR_IF(!success, L"UnloadPlugin failed", Severity::Error, return);
+
+	PluginHelper_PluginUnloaded(plugin->directory, plugin->name);
+	*plugin = {};
+}
 
 i32 CALLBACK
 wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, i32 nCmdShow)
@@ -61,7 +121,6 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, i32 nCmdS
 		LOG_IF(!success, L"InitializeRenderer failed to initialize", Severity::Error);
 	}
 
-	int size = sizeof(PreviewWindowState);
 
 	//Misc
 	PreviewWindowState previewState = {};
@@ -80,18 +139,16 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, i32 nCmdS
 	}
 
 
-	//TESTING
+	//Plugins
 	{
-		//Plugin plugin = ManagedPlugin_Load(L"Data Sources\\OpenHardwareMonitor Source\\", L"OpenHardwareMonitor Plugin");
-		//ManagedPlugin_UpdateAllPlugins();
-		//ManagedPlugin_Unload(plugin);
+		Plugin plugin;
 
-		HMODULE module = LoadLibraryW(L"Data Sources\\OpenHardwareMonitor Source\\OpenHardwareMonitor Plugin");
-		auto initialize = (InitializePtr) GetProcAddress(module, "Initialize");
-		auto teardown   = (TeardownPtr)   GetProcAddress(module, "Teardown");
-
-		initialize();
-		//teardown();
+		PluginHelper_Initialize();
+		plugin = LoadPlugin(L"Data Sources\\OpenHardwareMonitor Source", L"OpenHardwareMonitor Plugin");
+		plugin.initialize();
+		plugin.teardown();
+		UnloadPlugin(&plugin);
+		PluginHelper_Teardown();
 	}
 
 
