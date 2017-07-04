@@ -143,6 +143,10 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, i32 nCmdS
 	{
 		Plugin plugin;
 
+		/* TODO: Seeing some exceptions here when using the Native/Mixed debugger.
+		 * They seem like first chance exceptions, but it's hard to say.
+		 */
+		//TODO: Try adding the extension here
 		PluginHelper_Initialize();
 		plugin = LoadPlugin(L"Data Sources\\OpenHardwareMonitor Source", L"OpenHardwareMonitor Plugin");
 		plugin.initialize();

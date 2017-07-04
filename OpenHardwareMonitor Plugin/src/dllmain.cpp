@@ -14,7 +14,7 @@ ref struct State
 void
 Initialize()
 {
-	Debug::WriteLine(L"Plugin Initialize!\n");
+	Debug::Write(L"Plugin Initialize!\n");
 
 	State::computer.Open();
 }
@@ -22,11 +22,11 @@ Initialize()
 void
 Update()
 {
-	Debug::WriteLine(L"Plugin Update!\n");
+	Debug::Write(L"Plugin Update!\n");
 }
 
 void
 Teardown()
 {
-	Debug::WriteLine(L"Plugin Teardown!\n");
+	Debug::Write(L"Plugin Teardown!\n");
 }

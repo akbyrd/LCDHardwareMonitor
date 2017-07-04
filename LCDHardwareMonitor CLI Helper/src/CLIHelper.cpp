@@ -1,12 +1,10 @@
-#pragma unmanaged
+#pragma managed
+
 #define EXPORTING 1
 #include "CLIHelper.h"
 
-#pragma managed
 #include <wtypes.h>
-#include <msclr/gcroot.h>
 
-using namespace msclr;
 using namespace System;
 using namespace System::Reflection;
 
@@ -38,20 +36,22 @@ AssemblyResolveHandler(Object^ sender, ResolveEventArgs^ args)
 	return nullptr;
 }
 
-void _cdecl
+void
 PluginHelper_Initialize()
 {
 	State::resolveDelegate = gcnew ResolveEventHandler(AssemblyResolveHandler);
 	AppDomain::CurrentDomain->AssemblyResolve += State::resolveDelegate;
 }
 
-void PluginHelper_PluginLoaded(c16* pluginDirectory, c16* pluginName)
+void
+PluginHelper_PluginLoaded(c16* pluginDirectory, c16* pluginName)
 {
 	State::pluginDirectory = gcnew String(pluginDirectory);
 	State::pluginName = gcnew String(pluginName);
 }
 
-void PluginHelper_PluginUnloaded(c16* pluginDirectory, c16* pluginName)
+void
+PluginHelper_PluginUnloaded(c16* pluginDirectory, c16* pluginName)
 {
 	if (State::pluginName == gcnew String(pluginName))
 	{
@@ -60,7 +60,7 @@ void PluginHelper_PluginUnloaded(c16* pluginDirectory, c16* pluginName)
 	}
 }
 
-void _cdecl
+void
 PluginHelper_Teardown()
 {
 	//TODO: Unload the current AppDomain
