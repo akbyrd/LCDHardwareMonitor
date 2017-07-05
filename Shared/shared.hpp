@@ -22,8 +22,8 @@ typedef int  b32;
 
 //TODO: Settle on a convention
 typedef size_t size;
-typedef size_t index;
-typedef size_t ptrsize;
+//typedef size_t index;
+//typedef size_t ptrsize;
 
 #define Kilobyte 1024LL
 #define Megabyte 1024LL * Kilobyte
@@ -36,20 +36,74 @@ typedef size_t ptrsize;
 	#define LHM_API extern "C" __declspec(dllimport)
 #endif
 
-#define Assert(condition) if (!(condition)) { *((u8 *) 0) = 0; }
+#if DEBUG
+	#define Assert(condition) if (!(condition)) { *((u8 *) 0) = 0; }
+#else
+	#define Assert(condition)
+#endif
+
 #define nameof(x) #x
 
-template<typename T, size S>
-inline size ArrayCount(const T (&arr)[S])
+template<typename T, i32 S>
+inline i32 ArrayCount(const T(&arr)[S])
 {
 	return S;
 }
 
-template<typename T, size S>
-inline size ArraySize(const T (&arr)[S])
+template<typename T, i32 S>
+inline i32 ArraySize(const T(&arr)[S])
 {
 	return S * sizeof(T);
 }
+
+//struct String
+//{
+//	i32 length;
+//	c16* items;
+//};
+
+template<typename T>
+struct List
+{
+	//TODO: bracket operator
+	i32 length;
+	i32 capacity;
+	T*  items;
+};
+
+template<typename T>
+List<T>
+List_Create(i32 capacity = 0)
+{
+	List<T> list;
+
+	list.length   = 0;
+	list.capacity = capacity;
+	list.items    = (T*) malloc(sizeof(T) * capacity);
+
+	return list;
+}
+
+template<typename T>
+void
+List_Append(List<T>& list, T& item)
+{
+	if (list.length == list.capacity)
+	{
+		list.capacity = list.capacity ? 2*list.capacity : 4;
+		list.items = (T*) realloc(list.items, sizeof(T) * list.capacity);
+	}
+	list.items[list.length++] = item;
+}
+
+template<typename T>
+void
+List_Free(List<T>& list)
+{
+	free(list.items);
+	list = {};
+}
+
 //Named varargs sure would be nice...
 #define IF(expression, ...) \
 if (expression)             \

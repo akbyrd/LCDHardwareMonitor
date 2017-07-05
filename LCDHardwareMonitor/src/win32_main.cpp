@@ -56,19 +56,15 @@ const i32 togglePreviewWindowID = 0;
 b32 CreatePreviewWindow(PreviewWindowState*, D3DRendererState*, HINSTANCE);
 b32 DestroyPreviewWindow(PreviewWindowState*, D3DRendererState*, HINSTANCE);
 
-typedef void (*InitializePtr)();
-typedef void (*UpdatePtr)();
-typedef void (*TeardownPtr)();
-
 //@TODO: Using field initializers causes C4190
 struct Plugin
 {
-	HMODULE       module;
-	c16*          directory;
-	c16*          name;
-	InitializePtr initialize;
-	UpdatePtr     update;
-	TeardownPtr   teardown;
+	HMODULE              module;
+	c16*                 directory;
+	c16*                 name;
+	DataSourceInitialize initialize;
+	DataSourceUpdate     update;
+	DataSourceTeardown   teardown;
 };
 
 Plugin
@@ -84,9 +80,9 @@ LoadPlugin(c16* pluginDirectory, c16* pluginName)
 	plugin.module    = LoadLibraryW(pluginName);
 	if (plugin.module)
 	{
-		plugin.initialize = (InitializePtr) GetProcAddress(plugin.module, "Initialize");
-		plugin.update     = (UpdatePtr)     GetProcAddress(plugin.module, "Update");
-		plugin.teardown   = (TeardownPtr)   GetProcAddress(plugin.module, "Teardown");
+		plugin.initialize = (DataSourceInitialize) GetProcAddress(plugin.module, "Initialize");
+		plugin.update     = (DataSourceUpdate)     GetProcAddress(plugin.module, "Update");
+		plugin.teardown   = (DataSourceTeardown)   GetProcAddress(plugin.module, "Teardown");
 
 		//TODO: Handle missing functions
 		//TODO: Handle plugin types
@@ -148,11 +144,21 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, i32 nCmdS
 		 */
 		//TODO: Try adding the extension here
 		PluginHelper_Initialize();
+
 		plugin = LoadPlugin(L"Data Sources\\OpenHardwareMonitor Source", L"OpenHardwareMonitor Plugin");
-		plugin.initialize();
+		//TODO: Rename Plugin and dataSources to be more specific to DataSourcePlugins
+		List<c16*> dataSources = List_Create<c16*>(2);
+		plugin.initialize(dataSources);
 		plugin.teardown();
 		UnloadPlugin(&plugin);
+
 		PluginHelper_Teardown();
+
+		for (i32 i = 0; i < dataSources.length; i++)
+		{
+			OutputDebugStringW(dataSources.items[i]);
+			OutputDebugStringW(L"\n");
+		}
 	}
 
 
