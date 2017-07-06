@@ -70,7 +70,7 @@ struct Plugin
 };
 
 Plugin
-LoadPlugin(c16* pluginDirectory, c16* pluginName)
+LoadPlugin(c16* directory, c16* pluginName)
 {
 	//TODO: Handle missing functions
 	//TODO: Handle plugin types
@@ -80,9 +80,9 @@ LoadPlugin(c16* pluginDirectory, c16* pluginName)
 	Plugin plugin;
 
 	//TODO: ?
-	SetDllDirectoryW(pluginDirectory);
+	SetDllDirectoryW(directory);
 
-	plugin.directory = pluginDirectory;
+	plugin.directory = directory;
 	plugin.name      = pluginName;
 	plugin.module    = LoadLibraryW(pluginName);
 	if (plugin.module)
@@ -91,7 +91,7 @@ LoadPlugin(c16* pluginDirectory, c16* pluginName)
 		plugin.update     = (DataSourceUpdate)     GetProcAddress(plugin.module, "Update");
 		plugin.teardown   = (DataSourceTeardown)   GetProcAddress(plugin.module, "Teardown");
 
-		PluginHelper_PluginLoaded(pluginDirectory, pluginName);
+		PluginHelper_PluginLoaded(directory, pluginName);
 
 		plugin.sensors = List_Create<Sensor>(12);
 		plugin.initialize(plugin.sensors);
@@ -151,18 +151,19 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, i32 nCmdS
 		/* TODO: Seeing some exceptions here when using the Native/Mixed debugger.
 		 * They seem like first chance exceptions, but it's hard to say.
 		 */
-		//TODO: Try adding the extension here
 		PluginHelper_Initialize();
 
+		//TODO: Try adding the extension here
 		plugin = LoadPlugin(L"Data Sources\\OpenHardwareMonitor Source", L"OpenHardwareMonitor Plugin");
-		for (i32 i = 0; i < plugin.sensors.length; i++)
+		plugin.update(plugin.sensors);
+		for (i32 i = 0; i < plugin.sensors.count; i++)
 		{
-			OutputDebugStringW(plugin.sensors.items[i].name);
-			OutputDebugStringW(L" - ");
-			OutputDebugStringW(plugin.sensors.items[i].identifier);
-			OutputDebugStringW(L" - ");
-			OutputDebugStringW(plugin.sensors.items[i].displayFormat);
-			OutputDebugStringW(L"\n");
+			Sensor& sensor = plugin.sensors.items[i];
+
+			c16 buffer[128];
+			swprintf(buffer, ArrayCount(buffer), L"%ls - %ls - %ls - %f\n",
+				sensor.name, sensor.identifier, sensor.displayFormat, sensor.value);
+			OutputDebugStringW(buffer);
 		}
 		UnloadPlugin(&plugin);
 

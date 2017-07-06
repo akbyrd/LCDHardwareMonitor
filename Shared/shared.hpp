@@ -58,7 +58,7 @@ inline i32 ArraySize(const T(&arr)[S])
 
 //struct String
 //{
-//	i32 length;
+//	i32 count;
 //	c16* items;
 //};
 
@@ -66,7 +66,7 @@ template<typename T>
 struct List
 {
 	//TODO: bracket operator
-	i32 length;
+	i32 count;
 	i32 capacity;
 	T*  items;
 };
@@ -77,7 +77,7 @@ List_Create(i32 capacity = 0)
 {
 	List<T> list;
 
-	list.length   = 0;
+	list.count   = 0;
 	list.capacity = capacity;
 	list.items    = (T*) malloc(sizeof(T) * capacity);
 
@@ -88,19 +88,19 @@ template<typename T>
 inline void
 List_Append(List<T>& list, T& item)
 {
-	if (list.length == list.capacity)
+	if (list.count == list.capacity)
 	{
 		list.capacity = list.capacity ? 2*list.capacity : 4;
 		list.items = (T*) realloc(list.items, sizeof(T) * list.capacity);
 	}
-	list.items[list.length++] = item;
+	list.items[list.count++] = item;
 }
 
 template<typename T>
 inline void
 List_Clear(List<T>& list)
 {
-	list.length = 0;
+	list.count = 0;
 }
 
 template<typename T>
