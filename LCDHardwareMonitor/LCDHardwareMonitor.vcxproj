@@ -191,9 +191,11 @@
   <ItemGroup>
     <ProjectReference Include="..\LCDHardwareMonitor CLI Helper\LCDHardwareMonitor CLI Helper.vcxproj">
       <Project>{4cf4bf35-2c27-4969-bfd7-34149a9cbf12}</Project>
+      <Private>false</Private>
     </ProjectReference>
     <ProjectReference Include="..\OpenHardwareMonitor Plugin\OpenHardwareMonitor Plugin.vcxproj">
       <Project>{2585baf1-e85b-4fd3-9a91-abcb8ccf685a}</Project>
+      <Private>false</Private>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

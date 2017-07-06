@@ -56,12 +56,14 @@ const i32 togglePreviewWindowID = 0;
 b32 CreatePreviewWindow(PreviewWindowState*, D3DRendererState*, HINSTANCE);
 b32 DestroyPreviewWindow(PreviewWindowState*, D3DRendererState*, HINSTANCE);
 
-//@TODO: Using field initializers causes C4190
 struct Plugin
 {
+	//TODO: Rename Plugin to be more specific to DataSourcePlugins
+
 	HMODULE              module;
 	c16*                 directory;
 	c16*                 name;
+	List<Sensor>         sensors;
 	DataSourceInitialize initialize;
 	DataSourceUpdate     update;
 	DataSourceTeardown   teardown;
@@ -70,6 +72,11 @@ struct Plugin
 Plugin
 LoadPlugin(c16* pluginDirectory, c16* pluginName)
 {
+	//TODO: Handle missing functions
+	//TODO: Handle plugin types
+	//TODO: Support more than one plugin
+	//TODO: Better failure return
+
 	Plugin plugin;
 
 	//TODO: ?
@@ -84,11 +91,10 @@ LoadPlugin(c16* pluginDirectory, c16* pluginName)
 		plugin.update     = (DataSourceUpdate)     GetProcAddress(plugin.module, "Update");
 		plugin.teardown   = (DataSourceTeardown)   GetProcAddress(plugin.module, "Teardown");
 
-		//TODO: Handle missing functions
-		//TODO: Handle plugin types
-		//TODO: Support more than one plugin
-		//TODO: Better failure return
 		PluginHelper_PluginLoaded(pluginDirectory, pluginName);
+
+		plugin.sensors = List_Create<Sensor>(12);
+		plugin.initialize(plugin.sensors);
 	}
 
 	return plugin;
@@ -97,6 +103,9 @@ LoadPlugin(c16* pluginDirectory, c16* pluginName)
 void
 UnloadPlugin(Plugin* plugin)
 {
+	plugin->teardown(plugin->sensors);
+	List_Free(plugin->sensors);
+
 	//TODO: Does this varargs return actually work?
 	b32 success = FreeLibrary(plugin->module);
 	LOG_LAST_ERROR_IF(!success, L"UnloadPlugin failed", Severity::Error, return);
@@ -146,19 +155,18 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, i32 nCmdS
 		PluginHelper_Initialize();
 
 		plugin = LoadPlugin(L"Data Sources\\OpenHardwareMonitor Source", L"OpenHardwareMonitor Plugin");
-		//TODO: Rename Plugin and dataSources to be more specific to DataSourcePlugins
-		List<c16*> dataSources = List_Create<c16*>(2);
-		plugin.initialize(dataSources);
-		plugin.teardown();
+		for (i32 i = 0; i < plugin.sensors.length; i++)
+		{
+			OutputDebugStringW(plugin.sensors.items[i].name);
+			OutputDebugStringW(L" - ");
+			OutputDebugStringW(plugin.sensors.items[i].identifier);
+			OutputDebugStringW(L" - ");
+			OutputDebugStringW(plugin.sensors.items[i].displayFormat);
+			OutputDebugStringW(L"\n");
+		}
 		UnloadPlugin(&plugin);
 
 		PluginHelper_Teardown();
-
-		for (i32 i = 0; i < dataSources.length; i++)
-		{
-			OutputDebugStringW(dataSources.items[i]);
-			OutputDebugStringW(L"\n");
-		}
 	}
 
 

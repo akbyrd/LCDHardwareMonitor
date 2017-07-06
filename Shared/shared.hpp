@@ -72,7 +72,7 @@ struct List
 };
 
 template<typename T>
-List<T>
+inline List<T>
 List_Create(i32 capacity = 0)
 {
 	List<T> list;
@@ -85,7 +85,7 @@ List_Create(i32 capacity = 0)
 }
 
 template<typename T>
-void
+inline void
 List_Append(List<T>& list, T& item)
 {
 	if (list.length == list.capacity)
@@ -97,7 +97,14 @@ List_Append(List<T>& list, T& item)
 }
 
 template<typename T>
-void
+inline void
+List_Clear(List<T>& list)
+{
+	list.length = 0;
+}
+
+template<typename T>
+inline void
 List_Free(List<T>& list)
 {
 	free(list.items);
