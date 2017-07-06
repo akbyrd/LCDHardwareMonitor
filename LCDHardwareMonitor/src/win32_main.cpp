@@ -61,6 +61,7 @@ struct Plugin
 	//TODO: Rename Plugin to be more specific to DataSourcePlugins
 
 	HMODULE              module;
+	DLL_DIRECTORY_COOKIE cookie;
 	c16*                 directory;
 	c16*                 name;
 	List<Sensor>         sensors;
@@ -70,7 +71,7 @@ struct Plugin
 };
 
 Plugin
-LoadPlugin(c16* directory, c16* pluginName)
+LoadPlugin(c16* directory, c16* name)
 {
 	//TODO: Handle missing functions
 	//TODO: Handle plugin types
@@ -79,19 +80,33 @@ LoadPlugin(c16* directory, c16* pluginName)
 
 	Plugin plugin;
 
-	//TODO: ?
-	SetDllDirectoryW(directory);
+	//Add the plugin directory to the DLL search path so its dependencies will be found.
+	b32 success = SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
+	LOG_LAST_ERROR_IF(!success, L"SetDefaultDllDirectories failed", Severity::Warning, return {});
+
+
+	c16 path[MAX_PATH];
+	i32 cwdLen = GetCurrentDirectoryW(ArrayCount(path), path);
+	LOG_LAST_ERROR_IF(cwdLen == 0, L"GetCurrentDirectory failed", Severity::Warning, return {});
+	path[cwdLen++] = '\\';
+	errno_t err = wcscpy_s(path + cwdLen, ArrayCount(path) - cwdLen, directory);
+	LOG_IF(err, L"wcscpy_s failed", Severity::Warning, return {});
+
+	plugin.cookie = AddDllDirectory(path);
+	LOG_LAST_ERROR_IF(!plugin.cookie, L"AddDllDirectory failed", Severity::Warning, return {});
 
 	plugin.directory = directory;
-	plugin.name      = pluginName;
-	plugin.module    = LoadLibraryW(pluginName);
+	plugin.name      = name;
+	//TODO: Does this load dependencies?
+	plugin.module    = LoadLibraryW(name);
+
 	if (plugin.module)
 	{
 		plugin.initialize = (DataSourceInitialize) GetProcAddress(plugin.module, "Initialize");
 		plugin.update     = (DataSourceUpdate)     GetProcAddress(plugin.module, "Update");
 		plugin.teardown   = (DataSourceTeardown)   GetProcAddress(plugin.module, "Teardown");
 
-		PluginHelper_PluginLoaded(directory, pluginName);
+		PluginHelper_PluginLoaded(directory, name);
 
 		plugin.sensors = List_Create<Sensor>(12);
 		plugin.initialize(plugin.sensors);
@@ -108,14 +123,17 @@ UnloadPlugin(Plugin* plugin)
 
 	//TODO: Does this varargs return actually work?
 	b32 success = FreeLibrary(plugin->module);
-	LOG_LAST_ERROR_IF(!success, L"UnloadPlugin failed", Severity::Error, return);
+	LOG_LAST_ERROR_IF(!success, L"FreeLibrary failed", Severity::Warning);
+
+	success = RemoveDllDirectory(plugin->cookie);
+	LOG_LAST_ERROR_IF(!success, L"RemoveDllDirectory failed", Severity::Warning);
 
 	PluginHelper_PluginUnloaded(plugin->directory, plugin->name);
 	*plugin = {};
 }
 
 i32 CALLBACK
-wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, i32 nCmdShow)
+wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, c16* pCmdLine, i32 nCmdShow)
 {
 	SimulationState simulationState = {};
 
