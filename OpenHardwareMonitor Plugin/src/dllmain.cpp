@@ -65,20 +65,19 @@ Initialize(::List<Sensor>& sensors)
 			String^ format;
 			switch (ohmSensor->SensorType)
 			{
-				case SensorType::Clock:       format = L"%i MHz"; break;
-				case SensorType::Control:     format = L"%s%%";   break;
-				case SensorType::Data:        format = L"%f";     break;
-				case SensorType::Factor:      format = L"%f";     break;
-				case SensorType::Fan:         format = L"%f RPM"; break;
-				case SensorType::Flow:        format = L"%f L/h"; break;
-				case SensorType::Level:       format = L"%f%%";   break;
-				case SensorType::Load:        format = L"%f%%";   break;
-				case SensorType::Power:       format = L"%f W";   break;
-				case SensorType::SmallData:   format = L"%s";     break;
-				case SensorType::Temperature: format = L"%f C";   break;
-				case SensorType::Voltage:     format = L"%f V";   break;
-				//TODO: Print actual sensor type
-				default:                      format = L"Unknown Sensor Type"; break;
+				case SensorType::Clock:       format = L"%i MHz";   break;
+				case SensorType::Control:     format = L"%s%%";     break;
+				case SensorType::Data:        format = L"%f";       break;
+				case SensorType::Factor:      format = L"%.2f";     break;
+				case SensorType::Fan:         format = L"%.0f RPM"; break;
+				case SensorType::Flow:        format = L"%.2f L/h"; break;
+				case SensorType::Level:       format = L"%.0f%%";   break;
+				case SensorType::Load:        format = L"%.0f%%";   break;
+				case SensorType::Power:       format = L"%.1f W";   break;
+				case SensorType::SmallData:   format = L"%s";       break;
+				case SensorType::Temperature: format = L"%.0f C";   break;
+				case SensorType::Voltage:     format = L"%.2f V";   break;
+				default:                      format = L"Unknown SensorType: " + ohmSensor->SensorType.ToString(); break;
 			}
 
 			Sensor sensor = {};

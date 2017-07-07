@@ -2,6 +2,21 @@
 #include "CLIHelper.h"
 #include "LHMDataSource.h"
 
+//TODO: Move
+struct Plugin
+{
+	//TODO: Rename Plugin to be more specific to DataSourcePlugins
+
+	HMODULE              module;
+	DLL_DIRECTORY_COOKIE cookie;
+	c16*                 directory;
+	c16*                 name;
+	List<Sensor>         sensors;
+	DataSourceInitialize initialize;
+	DataSourceUpdate     update;
+	DataSourceTeardown   teardown;
+};
+
 #include "math.hpp"
 #include "platform.h"
 #include "renderer.h"
@@ -49,26 +64,13 @@
  *  - What is perfomrmance like in this case?
  */
 
+//TODO: Move
 const c16 previewWindowClass[] = L"LCDHardwareMonitor Preview Class";
 const u32 WM_PREVIEWWINDOWCLOSED = WM_USER + 0;
 const i32 togglePreviewWindowID = 0;
 
 b32 CreatePreviewWindow(PreviewWindowState*, D3DRendererState*, HINSTANCE);
 b32 DestroyPreviewWindow(PreviewWindowState*, D3DRendererState*, HINSTANCE);
-
-struct Plugin
-{
-	//TODO: Rename Plugin to be more specific to DataSourcePlugins
-
-	HMODULE              module;
-	DLL_DIRECTORY_COOKIE cookie;
-	c16*                 directory;
-	c16*                 name;
-	List<Sensor>         sensors;
-	DataSourceInitialize initialize;
-	DataSourceUpdate     update;
-	DataSourceTeardown   teardown;
-};
 
 Plugin
 LoadPlugin(c16* directory, c16* name)
@@ -135,7 +137,10 @@ UnloadPlugin(Plugin* plugin)
 i32 CALLBACK
 wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, c16* pCmdLine, i32 nCmdShow)
 {
+	//Simulation
 	SimulationState simulationState = {};
+	Simulation_Initialize(&simulationState);
+
 
 	//Renderer
 	D3DRendererState rendererState = {};
@@ -164,7 +169,7 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, c16* pCmdLine, i32 nCmdSh
 
 	//Plugins
 	{
-		Plugin plugin;
+		Plugin& plugin = simulationState.plugin;
 
 		/* TODO: Seeing some exceptions here when using the Native/Mixed debugger.
 		 * They seem like first chance exceptions, but it's hard to say.
@@ -173,19 +178,6 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, c16* pCmdLine, i32 nCmdSh
 
 		//TODO: Try adding the extension here
 		plugin = LoadPlugin(L"Data Sources\\OpenHardwareMonitor Source", L"OpenHardwareMonitor Plugin");
-		plugin.update(plugin.sensors);
-		for (i32 i = 0; i < plugin.sensors.count; i++)
-		{
-			Sensor& sensor = plugin.sensors.items[i];
-
-			c16 buffer[128];
-			swprintf(buffer, ArrayCount(buffer), L"%ls - %ls - %ls - %f\n",
-				sensor.name, sensor.identifier, sensor.displayFormat, sensor.value);
-			OutputDebugStringW(buffer);
-		}
-		UnloadPlugin(&plugin);
-
-		PluginHelper_Teardown();
 	}
 
 
@@ -236,7 +228,10 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, c16* pCmdLine, i32 nCmdSh
 			if (quit) break;
 
 
-			//Simulate and render!
+			//Simulate
+			Simulation_Update(&simulationState, &rendererState);
+
+			//Render
 			b32 success = Render(&rendererState, &previewState);
 			LOG_IF(!success, L"Render failed", Severity::Error);
 
@@ -247,6 +242,9 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, c16* pCmdLine, i32 nCmdSh
 
 	//Cleanup
 	{
+		UnloadPlugin(&simulationState.plugin);
+		PluginHelper_Teardown();
+
 		//Leak all the things!
 		//(Windows destroys everything automatically)
 

@@ -438,10 +438,11 @@ InitializeRenderer(D3DRendererState* s, V2i renderSize)
 		//Create vertices
 		Vertex vertices[4];
 
-		vertices[0].position = XMFLOAT3(-.5f * 160, -.5f * 160, 0);
-		vertices[1].position = XMFLOAT3(-.5f * 160,  .5f * 160, 0);
-		vertices[2].position = XMFLOAT3( .5f * 160,  .5f * 160, 0);
-		vertices[3].position = XMFLOAT3( .5f * 160, -.5f * 160, 0);
+		//TODO: Real equilateral triangle
+		vertices[0].position = XMFLOAT3(-.5f, -.5f, 0);
+		vertices[1].position = XMFLOAT3(-.5f,  .5f, 0);
+		vertices[2].position = XMFLOAT3( .5f,  .5f, 0);
+		vertices[3].position = XMFLOAT3( .5f, -.5f, 0);
 
 		XMStoreFloat4(&vertices[0].color, Colors::Red);
 		XMStoreFloat4(&vertices[1].color, Colors::Green);
@@ -512,7 +513,7 @@ InitializeRenderer(D3DRendererState* s, V2i renderSize)
 		if (dc == nullptr) return false;
 
 		dc->mesh = Mesh::Quad;
-		XMStoreFloat4x4((XMFLOAT4X4*) &dc->worldM, XMMatrixIdentity());
+		XMStoreFloat4x4((XMFLOAT4X4*) &dc->worldM, XMMatrixScaling(160, 160, 160) * XMMatrixIdentity());
 	}
 
 
@@ -754,26 +755,6 @@ Render(D3DRendererState* s, PreviewWindowState* previewWindow)
 
 	s->d3dContext->ClearRenderTargetView(s->d3dRenderTargetView.Get(), DirectX::Colors::Black);
 	s->d3dContext->ClearDepthStencilView(s->d3dDepthBufferView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
-
-	//DEBUG: Spin
-	{
-		i64 ticks;
-		QueryPerformanceCounter((LARGE_INTEGER*) &ticks);
-
-		i64 frequency;
-		QueryPerformanceFrequency((LARGE_INTEGER*) &frequency);
-
-		r32 t = r32 ((r64) ticks / (r64) frequency);
-
-		static r32 lastT = 0;
-		r32 deltaT = t - lastT;
-		lastT = t;
-
-		XMMATRIX world    = XMLoadFloat4x4((XMFLOAT4X4*) &s->drawCalls[0].worldM);
-		XMMATRIX rotation = XMMatrixRotationZ(deltaT);
-
-		XMStoreFloat4x4((XMFLOAT4X4*) &s->drawCalls[0].worldM, rotation * world);
-	}
 
 	//Update Camera
 	XMVECTOR pos    = {0, 0, 0};
