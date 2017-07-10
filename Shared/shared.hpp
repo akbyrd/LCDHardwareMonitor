@@ -65,10 +65,14 @@ inline i32 ArraySize(const T(&arr)[S])
 template<typename T>
 struct List
 {
-	//TODO: bracket operator
 	i32 count;
 	i32 capacity;
 	T*  items;
+
+	T& operator[](i32 index)
+	{
+		return items[index];
+	}
 };
 
 template<typename T>
@@ -77,23 +81,79 @@ List_Create(i32 capacity = 0)
 {
 	List<T> list;
 
-	list.count   = 0;
-	list.capacity = capacity;
+	list.count    = 0;
 	list.items    = (T*) malloc(sizeof(T) * capacity);
+	list.capacity = list.items ? capacity : 0;
 
 	return list;
 }
 
+//TODO: Handle cases where this may fail
 template<typename T>
-inline void
+inline T*
 List_Append(List<T>& list, T& item)
+{
+	if (list.count == list.capacity)
+	{
+		i32 newCapacity = list.capacity ? 2*list.capacity : 4;
+		T*  newItems    = (T*) realloc(list.items, sizeof(T) * list.capacity);
+
+		if (newItems)
+		{
+			list.capacity = newCapacity;
+			list.items    = newItems;
+		}
+		else
+		{
+			return nullptr;
+		}
+	}
+
+	T* element = &list.items[list.count++];
+	*element = item;
+	return element;
+}
+
+template<typename T>
+inline T*
+List_Append(List<T>& list)
 {
 	if (list.count == list.capacity)
 	{
 		list.capacity = list.capacity ? 2*list.capacity : 4;
 		list.items = (T*) realloc(list.items, sizeof(T) * list.capacity);
 	}
-	list.items[list.count++] = item;
+
+	T* element = &list.items[list.count++];
+	return element;
+}
+
+template<typename T>
+inline b32
+List_Contains(List<T>& list, T* item)
+{
+	if (list.count == 0)
+		return false;
+
+	return item >= &list[0] && item < &list[list.count];
+}
+
+template<typename T>
+inline T*
+List_GetLastPtr(List<T>& list)
+{
+	if (list.count == 0)
+		return nullptr;
+
+	return &list[list.count - 1];
+}
+
+template<typename T>
+inline void
+List_RemoveLast(List<T>& list)
+{
+	if (list.count > 0)
+		list.count--;
 }
 
 template<typename T>

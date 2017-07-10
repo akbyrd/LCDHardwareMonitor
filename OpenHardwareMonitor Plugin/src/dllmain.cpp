@@ -123,7 +123,7 @@ Update(::List<Sensor>& sensors)
 
 	for (i32 i = 0; i < sensors.count; i++)
 	{
-		Sensor& sensor = sensors.items[i];
+		Sensor& sensor = sensors[i];
 
 		String^ sensorName = gcnew String(sensor.name);
 		for (i32 j = 0; j < State::activeSensors->Count; j++)
@@ -143,7 +143,7 @@ Teardown(::List<Sensor>& sensors)
 {
 	for (i32 i = 0; i < sensors.count; i++)
 	{
-		Sensor& sensor = sensors.items[i];
+		Sensor& sensor = sensors[i];
 
 		Marshal::FreeHGlobal((IntPtr) sensor.name);
 		Marshal::FreeHGlobal((IntPtr) sensor.identifier);

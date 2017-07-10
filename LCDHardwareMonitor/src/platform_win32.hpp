@@ -1,3 +1,5 @@
+//TODO: Rename to win32_platform
+
 //
 // Logging
 //
@@ -52,6 +54,42 @@ LogLastError(c16* message, Severity severity, c16* file, i32 line, c16* function
 }
 
 //
+// Init and Teardown
+//
+
+struct PlatformState
+{
+	List<Plugin> plugins;
+};
+
+b32
+InitializePlatform(PlatformState* s)
+{
+	b32 success = SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
+	//TODO: Does this varargs return actually work?
+	LOG_LAST_ERROR_IF(!success, L"SetDefaultDllDirectories failed", Severity::Warning, return false);
+
+	s->plugins = List_Create<Plugin>(16);
+	LOG_IF(!s->plugins.items, L"Plugin allocation failed", Severity::Error, return false);
+
+	/* TODO: Seeing some exceptions here when using the Native/Mixed debugger.
+	* They seem like first chance exceptions, but it's hard to say.
+	*/
+	PluginHelper_Initialize();
+
+	return true;
+}
+
+void
+TeardownPlatform(PlatformState* s)
+{
+	PluginHelper_Teardown();
+
+	List_Free(s->plugins);
+}
+
+
+//
 // File handling
 //
 
@@ -85,5 +123,77 @@ LoadFile(c16* fileName, unique_ptr<c8[]>& data, size& dataSize)
 		return false;
 	}
 
+	return true;
+}
+
+//
+// Plugins
+//
+
+struct Plugin
+{
+	HMODULE              module;
+	DLL_DIRECTORY_COOKIE cookie;
+	c16*                 directory;
+	c16*                 name;
+};
+
+Plugin*
+LoadPlugin(PlatformState* s, c16* directory, c16* name)
+{
+	//NOTE: fuslogvw is great for debugging managed assembly loading.
+
+	Plugin plugin = {};
+	plugin.directory = directory;
+	plugin.name = name;
+
+	c16 path[MAX_PATH];
+	i32 cwdLen = GetCurrentDirectoryW(ArrayCount(path), path);
+	LOG_LAST_ERROR_IF(cwdLen == 0, L"GetCurrentDirectory failed", Severity::Warning, return {});
+	path[cwdLen++] = '\\';
+	errno_t err = wcscpy_s(path + cwdLen, ArrayCount(path) - cwdLen, directory);
+	LOG_IF(err, L"wcscpy_s failed", Severity::Warning, return {});
+
+	//Add the plugin directory to the DLL search path so its dependencies will be found.
+	plugin.cookie = AddDllDirectory(path);
+	LOG_LAST_ERROR_IF(!plugin.cookie, L"AddDllDirectory failed", Severity::Warning, return {});
+
+	//TODO: Does this load dependencies?
+	plugin.module = LoadLibraryW(name);
+	PluginHelper_PluginLoaded(directory, name);
+
+	//Reuse any empty spots left by unloading plugins
+	for (i32 i = 0; i < s->plugins.count; i++)
+	{
+		Plugin* pluginSlot = &s->plugins[i];
+		if (!pluginSlot->module)
+		{
+			*pluginSlot = plugin;
+			return pluginSlot;
+		}
+	}
+	return List_Append(s->plugins, plugin);
+}
+
+void*
+GetPluginSymbol(Plugin* plugin, c8* symbol)
+{
+	return GetProcAddress(plugin->module, symbol);
+}
+
+b32
+UnloadPlugin(PlatformState* s, Plugin* plugin)
+{
+	LOG_IF(!List_Contains(s->plugins, plugin), L"Attempting to unload a plugin that is not loaded", Severity::Warning, return false);
+
+	b32 success = FreeLibrary(plugin->module);
+	LOG_LAST_ERROR_IF(!success, L"FreeLibrary failed", Severity::Warning, return false);
+
+	PluginHelper_PluginUnloaded(plugin->directory, plugin->name);
+
+	success = RemoveDllDirectory(plugin->cookie);
+	LOG_LAST_ERROR_IF(!success, L"RemoveDllDirectory failed", Severity::Warning);
+
+	*plugin = {};
 	return true;
 }

@@ -1,23 +1,7 @@
 #include "shared.hpp"
+#include "math.hpp"
 #include "CLIHelper.h"
 #include "LHMDataSource.h"
-
-//TODO: Move
-struct Plugin
-{
-	//TODO: Rename Plugin to be more specific to DataSourcePlugins
-
-	HMODULE              module;
-	DLL_DIRECTORY_COOKIE cookie;
-	c16*                 directory;
-	c16*                 name;
-	List<Sensor>         sensors;
-	DataSourceInitialize initialize;
-	DataSourceUpdate     update;
-	DataSourceTeardown   teardown;
-};
-
-#include "math.hpp"
 #include "platform.h"
 #include "renderer.h"
 #include "simulation.hpp"
@@ -36,7 +20,6 @@ struct Plugin
 //      LOG_IF(FAILED(hr), L"", return false);
 //TODO: Probably want to use this as some point so frame debugger works without the preview window
 //      https://msdn.microsoft.com/en-us/library/hh780905.aspx
-//@NOTE: fuslogvw is _amaaaaaazing_....
 
 /* @NOTE: Plugins
  * Ok, here's (part of) the deal. Managed plugins bring in a lot of complexity.
@@ -69,81 +52,24 @@ const c16 previewWindowClass[] = L"LCDHardwareMonitor Preview Class";
 const u32 WM_PREVIEWWINDOWCLOSED = WM_USER + 0;
 const i32 togglePreviewWindowID = 0;
 
-b32 CreatePreviewWindow(PreviewWindowState*, D3DRendererState*, HINSTANCE);
-b32 DestroyPreviewWindow(PreviewWindowState*, D3DRendererState*, HINSTANCE);
-
-Plugin
-LoadPlugin(c16* directory, c16* name)
-{
-	//TODO: Handle missing functions
-	//TODO: Handle plugin types
-	//TODO: Support more than one plugin
-	//TODO: Better failure return
-
-	Plugin plugin;
-
-	//Add the plugin directory to the DLL search path so its dependencies will be found.
-	b32 success = SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
-	LOG_LAST_ERROR_IF(!success, L"SetDefaultDllDirectories failed", Severity::Warning, return {});
-
-
-	c16 path[MAX_PATH];
-	i32 cwdLen = GetCurrentDirectoryW(ArrayCount(path), path);
-	LOG_LAST_ERROR_IF(cwdLen == 0, L"GetCurrentDirectory failed", Severity::Warning, return {});
-	path[cwdLen++] = '\\';
-	errno_t err = wcscpy_s(path + cwdLen, ArrayCount(path) - cwdLen, directory);
-	LOG_IF(err, L"wcscpy_s failed", Severity::Warning, return {});
-
-	plugin.cookie = AddDllDirectory(path);
-	LOG_LAST_ERROR_IF(!plugin.cookie, L"AddDllDirectory failed", Severity::Warning, return {});
-
-	plugin.directory = directory;
-	plugin.name      = name;
-	//TODO: Does this load dependencies?
-	plugin.module    = LoadLibraryW(name);
-
-	if (plugin.module)
-	{
-		plugin.initialize = (DataSourceInitialize) GetProcAddress(plugin.module, "Initialize");
-		plugin.update     = (DataSourceUpdate)     GetProcAddress(plugin.module, "Update");
-		plugin.teardown   = (DataSourceTeardown)   GetProcAddress(plugin.module, "Teardown");
-
-		PluginHelper_PluginLoaded(directory, name);
-
-		plugin.sensors = List_Create<Sensor>(12);
-		plugin.initialize(plugin.sensors);
-	}
-
-	return plugin;
-}
-
-void
-UnloadPlugin(Plugin* plugin)
-{
-	plugin->teardown(plugin->sensors);
-	List_Free(plugin->sensors);
-
-	//TODO: Does this varargs return actually work?
-	b32 success = FreeLibrary(plugin->module);
-	LOG_LAST_ERROR_IF(!success, L"FreeLibrary failed", Severity::Warning);
-
-	success = RemoveDllDirectory(plugin->cookie);
-	LOG_LAST_ERROR_IF(!success, L"RemoveDllDirectory failed", Severity::Warning);
-
-	PluginHelper_PluginUnloaded(plugin->directory, plugin->name);
-	*plugin = {};
-}
+b32 CreatePreviewWindow(PreviewWindowState*, RendererState*, HINSTANCE);
+b32 DestroyPreviewWindow(PreviewWindowState*, RendererState*, HINSTANCE);
 
 i32 CALLBACK
 wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, c16* pCmdLine, i32 nCmdShow)
 {
+	//Platform
+	PlatformState platformState = {};
+	InitializePlatform(&platformState);
+
+
 	//Simulation
 	SimulationState simulationState = {};
 	Simulation_Initialize(&simulationState);
 
 
 	//Renderer
-	D3DRendererState rendererState = {};
+	RendererState rendererState = {};
 	{
 		b32 success = InitializeRenderer(&rendererState, simulationState.renderSize);
 		LOG_IF(!success, L"InitializeRenderer failed to initialize", Severity::Error);
@@ -168,16 +94,9 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, c16* pCmdLine, i32 nCmdSh
 
 
 	//Plugins
+	DataSource* ohmDataSource;
 	{
-		Plugin& plugin = simulationState.plugin;
-
-		/* TODO: Seeing some exceptions here when using the Native/Mixed debugger.
-		 * They seem like first chance exceptions, but it's hard to say.
-		 */
-		PluginHelper_Initialize();
-
-		//TODO: Try adding the extension here
-		plugin = LoadPlugin(L"Data Sources\\OpenHardwareMonitor Source", L"OpenHardwareMonitor Plugin");
+		ohmDataSource = LoadDataSource(&simulationState, &platformState, L"Data Sources\\OpenHardwareMonitor Source", L"OpenHardwareMonitor Plugin");
 	}
 
 
@@ -242,7 +161,7 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, c16* pCmdLine, i32 nCmdSh
 
 	//Cleanup
 	{
-		UnloadPlugin(&simulationState.plugin);
+		UnloadDataSource(&simulationState, &platformState, ohmDataSource);
 		PluginHelper_Teardown();
 
 		//Leak all the things!
@@ -253,7 +172,7 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, c16* pCmdLine, i32 nCmdSh
 }
 
 b32
-CreatePreviewWindow(PreviewWindowState* s, D3DRendererState* rendererState, HINSTANCE hInstance)
+CreatePreviewWindow(PreviewWindowState* s, RendererState* rendererState, HINSTANCE hInstance)
 {
 	//TODO: Handle partial creation
 
@@ -321,7 +240,7 @@ CreatePreviewWindow(PreviewWindowState* s, D3DRendererState* rendererState, HINS
 }
 
 b32
-DestroyPreviewWindow(PreviewWindowState* s, D3DRendererState* rendererState, HINSTANCE hInstance)
+DestroyPreviewWindow(PreviewWindowState* s, RendererState* rendererState, HINSTANCE hInstance)
 {
 	b32 success;
 

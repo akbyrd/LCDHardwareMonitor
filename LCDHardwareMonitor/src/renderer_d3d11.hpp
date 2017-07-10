@@ -56,7 +56,7 @@ SetDebugObjectName(const ComPtr<IDXGIObject> &resource, const c8 (&name)[TNameLe
 // NOTES:
 // - Assume there's only one set of shaders and buffers so we don't need to
 //   know which ones to use.
-// - Shaders and buffers can be shoved in a list in D3DRendererState, referenced
+// - Shaders and buffers can be shoved in a list in RendererState, referenced
 //   here as raw pointers.
 struct MeshData
 {
@@ -68,13 +68,7 @@ struct MeshData
 	XMFLOAT4X4  world   = {};
 };
 
-struct DrawCall
-{
-	Mesh mesh         = Mesh::Null;
-	r32  worldM[4][4] = {};
-};
-
-struct D3DRendererState
+struct RendererState
 {
 	ComPtr<ID3D11Device>           d3dDevice                   = nullptr;
 	ComPtr<ID3D11DeviceContext>    d3dContext                  = nullptr;
@@ -117,12 +111,12 @@ struct Vertex
 };
 
 #pragma region Foward Declarations
-void UpdateRasterizeState(D3DRendererState*);
-DrawCall* PushDrawCall(D3DRendererState*);
+void UpdateRasterizeState(RendererState*);
+DrawCall* PushDrawCall(RendererState*);
 #pragma endregion
 
 b32
-InitializeRenderer(D3DRendererState* s, V2i renderSize)
+InitializeRenderer(RendererState* s, V2i renderSize)
 {
 	//TODO: Maybe asserts go with the usage site?
 	Assert(s->d3dDevice                   == nullptr);
@@ -584,7 +578,7 @@ struct PreviewWindowState
 };
 
 b32
-AttachPreviewWindow(D3DRendererState* s, PreviewWindowState* previewWindow)
+AttachPreviewWindow(RendererState* s, PreviewWindowState* previewWindow)
 {
 	/* TODO: When using fullscreen, the display mode should be chosen by enumerating supported
 	* modes. If a mode is chosen that isn't supported, a performance penalty will be incurred due
@@ -654,7 +648,7 @@ AttachPreviewWindow(D3DRendererState* s, PreviewWindowState* previewWindow)
 }
 
 b32
-DetachPreviewWindow(D3DRendererState* s, PreviewWindowState* previewWindow)
+DetachPreviewWindow(RendererState* s, PreviewWindowState* previewWindow)
 {
 	HRESULT hr;
 
@@ -668,7 +662,7 @@ DetachPreviewWindow(D3DRendererState* s, PreviewWindowState* previewWindow)
 }
 
 void
-UpdateRasterizeState(D3DRendererState* s)
+UpdateRasterizeState(RendererState* s)
 {
 	Assert(s->d3dContext                  != nullptr);
 	Assert(s->d3dRasterizerStateSolid     != nullptr);
@@ -686,7 +680,7 @@ UpdateRasterizeState(D3DRendererState* s)
 }
 
 void
-TeardownRenderer(D3DRendererState* s)
+TeardownRenderer(RendererState* s)
 {
 	if (s == nullptr) return;
 
@@ -733,7 +727,7 @@ TeardownRenderer(D3DRendererState* s)
 
 
 DrawCall*
-PushDrawCall(D3DRendererState* s)
+PushDrawCall(RendererState* s)
 {
 	Assert(s->drawCallCount < (u32) ArrayCount(s->drawCalls));
 
@@ -742,7 +736,7 @@ PushDrawCall(D3DRendererState* s)
 }
 
 b32
-Render(D3DRendererState* s, PreviewWindowState* previewWindow)
+Render(RendererState* s, PreviewWindowState* previewWindow)
 {
 	// TODO: Should we assert things that will immediately crash the program
 	// anyway (e.g. dereferenced below)? It probably gives us a better error
