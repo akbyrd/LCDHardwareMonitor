@@ -88,6 +88,7 @@ List_Create(i32 capacity = 0)
 	return list;
 }
 
+//TODO: Maybe return references instead of pointers?
 //TODO: Handle cases where this may fail
 template<typename T>
 inline T*

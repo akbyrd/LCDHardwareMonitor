@@ -58,14 +58,11 @@ b32 DestroyPreviewWindow(PreviewWindowState*, RendererState*, HINSTANCE);
 i32 CALLBACK
 wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, c16* pCmdLine, i32 nCmdShow)
 {
+	SimulationState simulationState = {};
+
 	//Platform
 	PlatformState platformState = {};
 	InitializePlatform(&platformState);
-
-
-	//Simulation
-	SimulationState simulationState = {};
-	Simulation_Initialize(&simulationState);
 
 
 	//Renderer
@@ -74,6 +71,12 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, c16* pCmdLine, i32 nCmdSh
 		b32 success = InitializeRenderer(&rendererState, simulationState.renderSize);
 		LOG_IF(!success, L"InitializeRenderer failed to initialize", Severity::Error);
 	}
+
+
+	//Simulation
+	simulationState.platform = &platformState;
+	simulationState.renderer = &rendererState;
+	Simulation_Initialize(&simulationState);
 
 
 	//Misc
@@ -90,13 +93,6 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, c16* pCmdLine, i32 nCmdSh
 		CreatePreviewWindow(&previewState, &rendererState, hInstance);
 		b32 success = RegisterHotKey(nullptr, togglePreviewWindowID, MOD_NOREPEAT, VK_F1);
 		LOG_LAST_ERROR_IF(!success, L"RegisterHotKey failed", Severity::Warning);
-	}
-
-
-	//Plugins
-	DataSource* ohmDataSource;
-	{
-		ohmDataSource = LoadDataSource(&simulationState, &platformState, L"Data Sources\\OpenHardwareMonitor Source", L"OpenHardwareMonitor Plugin");
 	}
 
 
@@ -148,7 +144,7 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, c16* pCmdLine, i32 nCmdSh
 
 
 			//Simulate
-			Simulation_Update(&simulationState, &rendererState);
+			Simulation_Update(&simulationState);
 
 			//Render
 			b32 success = Render(&rendererState, &previewState);
@@ -161,7 +157,6 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, c16* pCmdLine, i32 nCmdSh
 
 	//Cleanup
 	{
-		UnloadDataSource(&simulationState, &platformState, ohmDataSource);
 		PluginHelper_Teardown();
 
 		//Leak all the things!

@@ -1,4 +1,5 @@
 const float PI = 3.141592654f;
+//TODO: Maaaaybe just use templates and the array thing?
 
 i32
 Clamp(i32 value, i32 min, i32 max)
@@ -141,4 +142,72 @@ Clamp(V3 v, V3 maxSize)
 	if (v.x > maxSize.x) v.x = maxSize.x;
 	if (v.y > maxSize.y) v.y = maxSize.y;
 	if (v.z > maxSize.z) v.y = maxSize.z;
+}
+
+
+union V4
+{
+	struct
+	{
+		r32 x;
+		r32 y;
+		r32 z;
+		r32 w;
+	};
+
+	//Aliases
+	struct
+	{
+		r32 r;
+		r32 g;
+		r32 b;
+		r32 a;
+	};
+	r32 arr[4];
+};
+
+//Operators
+inline b32
+operator== (V4 lhs, V4 rhs)
+{
+	return lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z && lhs.w == rhs.w;
+}
+
+inline b32
+operator!= (V4 lhs, V4 rhs)
+{
+	return !(lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z && lhs.w == rhs.w);
+}
+
+inline V4
+operator+ (V4 lhs, V4 rhs)
+{
+	return {lhs.x + rhs.x, lhs.y + rhs.y, lhs.z + rhs.z, lhs.w + rhs.w};
+}
+
+inline V4
+operator- (V4 lhs, V4 rhs)
+{
+	return {lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z, lhs.w - rhs.w};
+}
+
+inline V4
+operator* (r32 multiplier, V4 v)
+{
+	return {multiplier * v.x, multiplier * v.y, multiplier * v.z, multiplier * v.w};
+}
+
+inline V4
+operator/ (V4 v, r32 dividend)
+{
+	return {v.x / dividend, v.y / dividend, v.z / dividend, v.w / dividend};
+}
+
+inline void
+Clamp(V4 v, V4 maxSize)
+{
+	if (v.x > maxSize.x) v.x = maxSize.x;
+	if (v.y > maxSize.y) v.y = maxSize.y;
+	if (v.z > maxSize.z) v.z = maxSize.z;
+	if (v.w > maxSize.w) v.w = maxSize.w;
 }

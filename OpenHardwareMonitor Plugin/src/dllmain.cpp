@@ -79,11 +79,14 @@ Initialize(::List<Sensor>& sensors)
 				case SensorType::Voltage:     format = L"%.2f V";   break;
 				default:                      format = L"Unknown SensorType: " + ohmSensor->SensorType.ToString(); break;
 			}
+			//TODO: Format in C
+			//TODO: Don't update unless changed
+			String^ value  = String::Format(format, ohmSensor->Value);
 
 			Sensor sensor = {};
-			sensor.name          = (c16*) Marshal::StringToHGlobalUni(ohmSensor->Name).ToPointer();
-			sensor.identifier    = (c16*) Marshal::StringToHGlobalUni(ohmSensor->Identifier->ToString()).ToPointer();
-			sensor.displayFormat = (c16*) Marshal::StringToHGlobalUni(format).ToPointer();
+			sensor.name       = (c16*) Marshal::StringToHGlobalUni(ohmSensor->Name).ToPointer();
+			sensor.identifier = (c16*) Marshal::StringToHGlobalUni(ohmSensor->Identifier->ToString()).ToPointer();
+			sensor.string     = (c16*) Marshal::StringToHGlobalUni(value).ToPointer();
 
 			List_Append(sensors, sensor);
 		}
@@ -147,7 +150,7 @@ Teardown(::List<Sensor>& sensors)
 
 		Marshal::FreeHGlobal((IntPtr) sensor.name);
 		Marshal::FreeHGlobal((IntPtr) sensor.identifier);
-		Marshal::FreeHGlobal((IntPtr) sensor.displayFormat);
+		Marshal::FreeHGlobal((IntPtr) sensor.string);
 
 		sensor = {};
 	}

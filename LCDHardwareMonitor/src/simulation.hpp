@@ -26,20 +26,6 @@ Log(c16* message, Severity severity, c16* file, i32 line, c16* function)
 		__debugbreak();
 }
 
-struct Widget
-{
-	//TODO: This pointer will break when the list resizes
-	//Eventually we'll want to store something more indirect than a pointer.
-	//Maybe a plugin id and sensor id pair?  Maybe ids are never reused or invalid
-	//This will tie closely into how we save layouts between sessions
-	Sensor* sensor;
-	Mesh    mesh;
-	V2i     size;
-	float   minValue;
-	float   maxValue;
-	//c16*    displayFormat;
-};
-
 struct DataSource
 {
 	//TODO: This pointer will break when the list resizes
@@ -51,19 +37,53 @@ struct DataSource
 	DataSourceTeardown   teardown;
 };
 
+//TODO: Maybe this is a BarWidget?
+struct Widget
+{
+	//TODO: This pointer will break when the list resizes (or sensors are added/removed)
+	//Eventually we'll want to store something more indirect than a pointer.
+	//Maybe a plugin id and sensor id pair? Maybe ids are never reused or invalid
+	//This will tie closely into how we save layouts between sessions
+	//Plugin* plugin;
+	Sensor* sensor;
+
+	V2i     position;
+	V2i     size;
+	V4      backgrounColor;
+	i32     outline;
+	V4      outlineColor;
+	//TODO: Sub-pixel fill
+	r32     fill;
+	V4      fillColor;
+
+	Mesh    mesh;
+	//TODO: Maybe string and range overrides?
+	//TODO: drawFn? Widget type to function map?
+};
+
+void
+DrawWidget(Widget& w, RendererState* renderer)
+{
+
+}
+
 struct SimulationState
 {
+	PlatformState*   platform;
+	RendererState*   renderer;
+
 	V2i              renderSize = {320, 240};
 	List<DataSource> dataSources;
+	List<Widget>     widgets;
 };
 
 DataSource*
-LoadDataSource(SimulationState* s, PlatformState* platformState, c16* directory, c16* name)
+LoadDataSource(SimulationState* s, c16* directory, c16* name)
 {
 	DataSource dataSource = {};
 	dataSource.name = name;
 
-	dataSource.plugin = LoadPlugin(platformState, directory, name);
+	dataSource.plugin = LoadPlugin(s->platform, directory, name);
 	LOG_IF(!dataSource.plugin, L"Failed to load plugin", Severity::Warning, return {});
 
 	dataSource.initialize = (DataSourceInitialize) GetPluginSymbol(dataSource.plugin, "Initialize");
@@ -81,7 +101,7 @@ LoadDataSource(SimulationState* s, PlatformState* platformState, c16* directory,
 }
 
 b32
-UnloadDataSource(SimulationState* s, PlatformState* platformState, DataSource* dataSource)
+UnloadDataSource(SimulationState* s, DataSource* dataSource)
 {
 	//TODO: try/catch?
 	if (dataSource->teardown)
@@ -95,7 +115,7 @@ UnloadDataSource(SimulationState* s, PlatformState* platformState, DataSource* d
 	//TODO: Widgets will be referencing these sensors.
 	List_Free(dataSource->sensors);
 
-	b32 success = UnloadPlugin(platformState, dataSource->plugin);
+	b32 success = UnloadPlugin(s->platform, dataSource->plugin);
 	LOG_IF(!success, L"UnloadPlugin failed", Severity::Warning, return false);
 
 	return true;
@@ -105,29 +125,40 @@ void
 Simulation_Initialize(SimulationState* s)
 {
 	s->dataSources = List_Create<DataSource>(8);
+	s->widgets     = List_Create<Widget>(8);
+
+	DataSource* ohmDataSource = LoadDataSource(s, L"Data Sources\\OpenHardwareMonitor Source", L"OpenHardwareMonitor Plugin");
+
+	Widget& w = *List_Append(s->widgets);
+	w.mesh   = Mesh::Quad;
+	w.sensor = &s->dataSources[0].sensors[0];
+	w.size   = {240, 12};
 }
 
 void
 Simulation_Teardown(SimulationState* s)
 {
+	for (i32 i = 0; i < s->dataSources.count; i++)
+	  UnloadDataSource(s, &s->dataSources[i]);
+
+	//TODO: Decide how much we really care about simulation level teardown
+	List_Free(s->widgets);
 	List_Free(s->dataSources);
 }
 
 //TODO: Do something about D3DRenderState being known here.
 void
-Simulation_Update(SimulationState* s, RendererState* rendererState)
+Simulation_Update(SimulationState* s)
 {
+	//TODO: Only update data sources that are actually being used
 	for (i32 i = 0; i < s->dataSources.count; i++)
 		s->dataSources[i].update(s->dataSources[i].sensors);
 
-	Widget w = {};
-	w.sensor   = &s->dataSources[0].sensors[0];
-	w.mesh     = Mesh::Quad;
-	w.minValue = 0;
-	w.maxValue = 100;
-
-	//DrawCall* dc = PushDrawCall(rendererState);
-	//dc->mesh = w.mesh;
-	//float sizeX = w.size.x * (w.sensor->value - w.minValue) / (w.maxValue - w.minValue);
-	//XMStoreFloat4x4((XMFLOAT4X4*) &dc->worldM, XMMatrixScaling(sizeX, w.size.y, 1) * XMMatrixIdentity());
+	/* NOTES:
+	 * Build a command list of things to draw.
+	 * Let the renderer handle sorting and iterating the list.
+	 * Here, we should just be parameters that go with the command.
+	 */
+	for (i32 i = 0; i < s->widgets.count; i++)
+		;
 }
