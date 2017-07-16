@@ -43,12 +43,18 @@
     <ClInclude Include="..\Shared\shared.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\widget_filledbar.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="res\Basic Vertex Shader.hlsl">
       <Filter>Resources</Filter>
     </FxCompile>
     <FxCompile Include="res\Basic Pixel Shader.hlsl">
+      <Filter>Resources</Filter>
+    </FxCompile>
+    <FxCompile Include="res\Filled Bar Pixel Shader.hlsl">
       <Filter>Resources</Filter>
     </FxCompile>
   </ItemGroup>

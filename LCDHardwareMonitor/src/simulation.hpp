@@ -10,9 +10,7 @@ enum struct Severity
 
 #define LOG(message, severity) Log(message, severity, WIDE(__FILE__), __LINE__, WIDE(__FUNCTION__))
 #define LOG_IF(expression, message, severity, ...) IF(expression, LOG(message, severity); __VA_ARGS__)
-//#define LOGI_IF(expression, message, ...) LOG_IF(expression, message, Severity::Info,    ##__VA_ARGS__)
-//#define LOGW_IF(expression, message, ...) LOG_IF(expression, message, Severity::Warning, ##__VA_ARGS__)
-//#define LOGE_IF(expression, message, ...) LOG_IF(expression, message, Severity::Error,   ##__VA_ARGS__)
+
 void
 Log(c16* message, Severity severity, c16* file, i32 line, c16* function)
 {
@@ -36,36 +34,6 @@ struct DataSource
 	DataSourceUpdate     update;
 	DataSourceTeardown   teardown;
 };
-
-//TODO: Maybe this is a BarWidget?
-struct Widget
-{
-	//TODO: This pointer will break when the list resizes (or sensors are added/removed)
-	//Eventually we'll want to store something more indirect than a pointer.
-	//Maybe a plugin id and sensor id pair? Maybe ids are never reused or invalid
-	//This will tie closely into how we save layouts between sessions
-	//Plugin* plugin;
-	Sensor* sensor;
-
-	V2i     position;
-	V2i     size;
-	V4      backgrounColor;
-	i32     outline;
-	V4      outlineColor;
-	//TODO: Sub-pixel fill
-	r32     fill;
-	V4      fillColor;
-
-	Mesh    mesh;
-	//TODO: Maybe string and range overrides?
-	//TODO: drawFn? Widget type to function map?
-};
-
-void
-DrawWidget(Widget& w, RendererState* renderer)
-{
-
-}
 
 struct SimulationState
 {
@@ -146,7 +114,6 @@ Simulation_Teardown(SimulationState* s)
 	List_Free(s->dataSources);
 }
 
-//TODO: Do something about D3DRenderState being known here.
 void
 Simulation_Update(SimulationState* s)
 {

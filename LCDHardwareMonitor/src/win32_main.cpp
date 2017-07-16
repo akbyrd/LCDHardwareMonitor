@@ -4,6 +4,7 @@
 #include "LHMDataSource.h"
 #include "platform.h"
 #include "renderer.h"
+#include "widget_filledbar.hpp"
 #include "simulation.hpp"
 
 #define VC_EXTRALEAN

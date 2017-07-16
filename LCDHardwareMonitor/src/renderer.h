@@ -4,10 +4,10 @@ enum Mesh
 {
 	Null,
 	Quad,
-	Sphere,
-	Cube,
-	Cylinder,
-	Grid,
+	//Sphere,
+	//Cube,
+	//Cylinder,
+	//Grid,
 
 	Count
 };

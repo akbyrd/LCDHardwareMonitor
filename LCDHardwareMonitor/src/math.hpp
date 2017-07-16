@@ -26,7 +26,11 @@ union V2i
 		i32 x;
 		i32 y;
 	};
+
+	//Aliases
 	i32 arr[2];
+
+	i32 operator[] (i32 index);
 };
 
 //Operators
@@ -66,6 +70,12 @@ operator/ (V2i v, i32 dividend)
 	return {v.x / dividend, v.y / dividend};
 }
 
+inline i32
+V2i::operator[] (i32 index)
+{
+	return arr[index];
+}
+
 inline void
 Clamp(V2i v, V2i maxSize)
 {
@@ -97,6 +107,8 @@ union V3
 		r32 phi;
 	};
 	r32 arr[3];
+
+	r32 operator[] (i32 index);
 };
 
 //Operators
@@ -136,6 +148,12 @@ operator/ (V3 v, r32 dividend)
 	return {v.x / dividend, v.y / dividend, v.z / dividend};
 }
 
+inline r32
+V3::operator[] (i32 index)
+{
+	return arr[index];
+}
+
 inline void
 Clamp(V3 v, V3 maxSize)
 {
@@ -164,6 +182,8 @@ union V4
 		r32 a;
 	};
 	r32 arr[4];
+
+	r32 operator[] (i32 index);
 };
 
 //Operators
@@ -202,6 +222,13 @@ operator/ (V4 v, r32 dividend)
 {
 	return {v.x / dividend, v.y / dividend, v.z / dividend, v.w / dividend};
 }
+
+inline r32
+V4::operator[] (i32 index)
+{
+	return arr[index];
+}
+
 
 inline void
 Clamp(V4 v, V4 maxSize)
