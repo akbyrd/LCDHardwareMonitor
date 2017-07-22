@@ -1,3 +1,5 @@
+//TODO: What happens if we call random renderer api and the device is disconnected? Presumably it can happen at anytime, not just during an update?
+
 #pragma comment(lib, "D3D11.lib")
 #pragma comment(lib,  "D3D9.lib")
 #pragma comment(lib,  "DXGI.lib")
@@ -26,6 +28,7 @@ namespace HLSLSemantic
 	const c8* Color    = "COLOR";
 }
 
+//TODO: Merge these?
 template<u32 TNameLength>
 inline void
 SetDebugObjectName(const ComPtr<ID3D11Device> &resource, const c8 (&name)[TNameLength])
@@ -68,6 +71,27 @@ struct MeshData
 	XMFLOAT4X4  world   = {};
 };
 
+struct Vertex
+{
+	XMFLOAT3 position;
+	XMFLOAT4 color;
+};
+
+struct InputLayout
+{
+	List<VertexAttribute>     attibutes      = {};
+	ComPtr<ID3D11InputLayout> d3dInputLayout = nullptr;
+};
+
+struct VertexShader
+{
+	String                     name;
+	InputLayout*               inputLayout;
+	//TODO: Better names?
+	ComPtr<ID3D11VertexShader> d3dVertexShader;
+	ComPtr<ID3D11Buffer>       d3dConstantBuffer;
+};
+
 struct RendererState
 {
 	ComPtr<ID3D11Device>           d3dDevice                   = nullptr;
@@ -76,12 +100,7 @@ struct RendererState
 
 	ComPtr<ID3D11Texture2D>        d3dRenderTexture            = nullptr;
 	ComPtr<ID3D11RenderTargetView> d3dRenderTargetView         = nullptr;
-	//TODO: Do we need a depth buffer?
 	ComPtr<ID3D11DepthStencilView> d3dDepthBufferView          = nullptr;
-
-	ComPtr<ID3D11VertexShader>     d3dVertexShader             = nullptr;
-	ComPtr<ID3D11Buffer>           d3dVSConstBuffer            = nullptr;
-	ComPtr<ID3D11InputLayout>      d3dVSInputLayout            = nullptr;
 
 	ComPtr<ID3D11PixelShader>      d3dPixelShader              = nullptr;
 	ComPtr<ID3D11RasterizerState>  d3dRasterizerStateSolid     = nullptr;
@@ -92,23 +111,120 @@ struct RendererState
 	ComPtr<IDirect3DTexture9>      d3d9RenderTexture           = nullptr;
 	ComPtr<IDirect3DSurface9>      d3d9RenderSurface0          = nullptr;
 
-	XMFLOAT4X4    proj                = {};
-	V2i           renderSize          = {};
-	u32           multisampleCount    = 1;
-	u32           qualityLevelCount   = 0;
+	List<VertexShader> vertexShaders       = {};
+	List<InputLayout>  inputLayouts        = {};
 
-	MeshData      meshes[Mesh::Count] = {};
-	b32           isWireframeEnabled  = false;
+	XMFLOAT4X4         proj                = {};
+	V2i                renderSize          = {};
+	u32                multisampleCount    = 1;
+	u32                qualityLevelCount   = 0;
 
-	DrawCall      drawCalls[32]       = {};
-	u32           drawCallCount       = 0;
+	MeshData           meshes[Mesh::Count] = {};
+	b32                isWireframeEnabled  = false;
+
+	DrawCall           drawCalls[32]       = {};
+	u32                drawCallCount       = 0;
 };
 
-struct Vertex
+//TODO: Initialize lists
+//TODO: Set shaders before use
+//TODO: Debug shader!
+//TODO: We're not really handling errors cases. Going to end up partially initialized. Reference counting might be a robust solution?
+//TODO: Handle unloading assets (will require reference counting, I think)
+//TODO: This pointer will move
+VertexShader* LoadVertexShader(RendererState* s, c16* path, List<VertexAttribute> attributes, ConstantBufferDesc cBufDesc)
 {
-	XMFLOAT3 position;
-	XMFLOAT4 color;
-};
+	b32 success;
+	HRESULT hr;
+
+	//TODO: Hash names?
+	//Use Existing
+	for (i32 i = 0; i < s->vertexShaders.count; i++)
+	{
+		if (wcscmp(s->vertexShaders[i].name, path) == 0)
+			return &s->vertexShaders[i];
+	}
+
+
+	//Vertex Shader
+	VertexShader* vs = nullptr;
+	unique_ptr<c8[]> vsBytes;
+	size vsBytesLength;
+	{
+		VertexShader v = {};
+		vs = List_Append(s->vertexShaders, v);
+		LOG_IF(!vs, L"Failed to allocate space for vertex shader", Severity::Warning, return nullptr);
+
+		//Load
+		success = LoadFile(path, vsBytes, vsBytesLength);
+		if (!success) return nullptr;
+
+		//Create
+		hr = s->d3dDevice->CreateVertexShader(vsBytes.get(), vsBytesLength, nullptr, &vs->d3dVertexShader);
+		//TODO: Proper error and name
+		LOG_IF(FAILED(hr), L"", Severity::Error, return nullptr);
+		SetDebugObjectName(vs->d3dVertexShader, "Vertex Shader");
+
+		//Per-object constant buffer
+		D3D11_BUFFER_DESC vsConstBuffDes = {};
+		vsConstBuffDes.ByteWidth           = cBufDesc.size;
+		vsConstBuffDes.Usage               = D3D11_USAGE_DYNAMIC;
+		vsConstBuffDes.BindFlags           = D3D11_BIND_CONSTANT_BUFFER;
+		vsConstBuffDes.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
+		vsConstBuffDes.MiscFlags           = 0;
+		vsConstBuffDes.StructureByteStride = 0;
+
+		hr = s->d3dDevice->CreateBuffer(&vsConstBuffDes, nullptr, &vs->d3dConstantBuffer);
+		//TODO: Proper error and name
+		LOG_IF(FAILED(hr), L"", Severity::Error, return nullptr);
+		SetDebugObjectName(vs->d3dConstantBuffer, "VS Constant Buffer (Per-Object)");
+	}
+
+
+	//Input layout
+	InputLayout* il = nullptr;
+	{
+		il = List_Append(s->inputLayouts);
+		LOG_IF(!il, L"Failed to allocate space for input layout", Severity::Warning, return nullptr);
+		il->attibutes = List_Duplicate(attributes);
+
+		auto vsInputDescs = List_Create<D3D11_INPUT_ELEMENT_DESC>(attributes.count);
+		for (i32 i = 0; i < attributes.count; i++)
+		{
+			const c8* semantic;
+			switch (attributes[i].semantic)
+			{
+				case VertexAttributeSemantic::Position: semantic = HLSLSemantic::Position; break;
+				case VertexAttributeSemantic::Color:    semantic = HLSLSemantic::Color;    break;
+
+				default:
+					//TODO: Include semantic value
+					LOG_IF(true, L"Unrecognized VS attribute semantic", Severity::Warning, return nullptr);
+			}
+
+			DXGI_FORMAT format;
+			switch (attributes[i].format)
+			{
+				case VertexAttributeFormat::Float3: format = DXGI_FORMAT_R32G32B32_FLOAT;    break;
+				case VertexAttributeFormat::Float4: format = DXGI_FORMAT_R32G32B32A32_FLOAT; break;
+
+				default:
+					//TODO: Include format value
+					LOG_IF(true, L"Unrecognized VS attribute format", Severity::Warning, return nullptr);
+			}
+
+			vsInputDescs[i] = { semantic, 0, format, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 };
+		}
+
+		hr = s->d3dDevice->CreateInputLayout(vsInputDescs.items, vsInputDescs.count, vsBytes.get(), vsBytesLength, &il->d3dInputLayout);
+		//TODO: Proper error and name
+		LOG_IF(FAILED(hr), L"", Severity::Error, return nullptr);
+		SetDebugObjectName(il->d3dInputLayout, "Input Layout");
+	}
+
+	vs->inputLayout = il;
+	return vs;
+}
 
 #pragma region Foward Declarations
 void UpdateRasterizeState(RendererState*);
@@ -125,9 +241,6 @@ InitializeRenderer(RendererState* s, V2i renderSize)
 	Assert(s->d3dRenderTexture            == nullptr);
 	Assert(s->d3dRenderTargetView         == nullptr);
 	Assert(s->d3dDepthBufferView          == nullptr);
-	Assert(s->d3dVertexShader             == nullptr);
-	Assert(s->d3dVSConstBuffer            == nullptr);
-	Assert(s->d3dVSInputLayout            == nullptr);
 	Assert(s->d3dPixelShader              == nullptr);
 	Assert(s->d3dRasterizerStateSolid     == nullptr);
 	Assert(s->d3dRasterizerStateWireframe == nullptr);
@@ -327,44 +440,12 @@ InitializeRenderer(RendererState* s, V2i renderSize)
 
 	//Create vertex shader
 	{
-		//Load
-		unique_ptr<c8[]> vsBytes;
-		size vsBytesLength;
-		success = LoadFile(L"Shaders/Basic Vertex Shader.cso", vsBytes, vsBytesLength);
-		if (!success) return false;
+		auto vsAttributes = List_Create<VertexAttribute>(2);
+		List_Append(vsAttributes, VertexAttribute { VertexAttributeSemantic::Position, VertexAttributeFormat::Float3 });
+		List_Append(vsAttributes, VertexAttribute { VertexAttributeSemantic::Color,    VertexAttributeFormat::Float4 });
+		VertexShader* vs = LoadVertexShader(s, L"Shaders/Basic Vertex Shader.cso", vsAttributes, { sizeof(XMFLOAT4X4) });
 
-		//Create
-		hr = s->d3dDevice->CreateVertexShader(vsBytes.get(), vsBytesLength, nullptr, &s->d3dVertexShader);
-		LOG_IF(FAILED(hr), L"", Severity::Error, return false);
-		SetDebugObjectName(s->d3dVertexShader, "Vertex Shader");
-
-		//Set
-		s->d3dContext->VSSetShader(s->d3dVertexShader.Get(), nullptr, 0);
-
-		//Per-object constant buffer
-		D3D11_BUFFER_DESC vsConstBuffDes = {};
-		vsConstBuffDes.ByteWidth           = sizeof(XMFLOAT4X4);
-		vsConstBuffDes.Usage               = D3D11_USAGE_DYNAMIC;
-		vsConstBuffDes.BindFlags           = D3D11_BIND_CONSTANT_BUFFER;
-		vsConstBuffDes.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
-		vsConstBuffDes.MiscFlags           = 0;
-		vsConstBuffDes.StructureByteStride = 0;
-
-		hr = s->d3dDevice->CreateBuffer(&vsConstBuffDes, nullptr, &s->d3dVSConstBuffer);
-		LOG_IF(FAILED(hr), L"", Severity::Error, return false);
-		SetDebugObjectName(s->d3dVSConstBuffer, "VS Constant Buffer (Per-Object)");
-
-		//Input layout
-		D3D11_INPUT_ELEMENT_DESC vsInputDescs[] = {
-			{ HLSLSemantic::Position, 0, DXGI_FORMAT_R32G32B32_FLOAT   , 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-			{ HLSLSemantic::Color   , 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
-		};
-
-		hr = s->d3dDevice->CreateInputLayout(vsInputDescs, ArrayCount(vsInputDescs), vsBytes.get(), vsBytesLength, &s->d3dVSInputLayout);
-		LOG_IF(FAILED(hr), L"", Severity::Error, return false);
-		SetDebugObjectName(s->d3dVSInputLayout, "Input Layout");
-
-		s->d3dContext->IASetInputLayout(s->d3dVSInputLayout.Get());
+		//TODO: Move this
 		s->d3dContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	}
 
@@ -466,8 +547,9 @@ InitializeRenderer(RendererState* s, V2i renderSize)
 		LOG_IF(FAILED(hr), L"", Severity::Error, return false);
 		SetDebugObjectName(vBuffer, "Quad Vertices");
 
+		//TODO: Move
+		//Set
 		s->d3dContext->IASetVertexBuffers(0, 1, vBuffer.GetAddressOf(), &mesh->vStride, &mesh->vOffset);
-		s->d3dContext->VSSetConstantBuffers(0, 1, s->d3dVSConstBuffer.GetAddressOf());
 
 		//Create indices
 		UINT indices[] = {
@@ -684,15 +766,21 @@ TeardownRenderer(RendererState* s)
 {
 	if (s == nullptr) return;
 
+	for (i32 i = 0; i < s->vertexShaders.count; i++)
+	{
+		s->vertexShaders[i].d3dVertexShader.Reset();
+		s->vertexShaders[i].d3dConstantBuffer.Reset();
+	}
+
+	for (i32 i = 0; i < s->inputLayouts.count; i++)
+		s->inputLayouts[i].d3dInputLayout.Reset();
+
 	s->d3dDevice                  .Reset();
 	s->d3dContext                 .Reset();
 	s->dxgiFactory                .Reset();
 	s->d3dRenderTexture           .Reset();
 	s->d3dRenderTargetView        .Reset();
 	s->d3dDepthBufferView         .Reset();
-	s->d3dVertexShader            .Reset();
-	s->d3dVSConstBuffer           .Reset();
-	s->d3dVSInputLayout           .Reset();
 	s->d3dPixelShader             .Reset();
 	s->d3dRasterizerStateSolid    .Reset();
 	s->d3dRasterizerStateWireframe.Reset();
@@ -757,22 +845,30 @@ Render(RendererState* s, PreviewWindowState* previewWindow)
 
 	XMMATRIX V = XMMatrixLookAtLH(pos, target, up);
 
+	//TODO: Sort draws
 	for (u32 i = 0; i < s->drawCallCount; i++)
 	{
-		DrawCall* dc   = &s->drawCalls[i];
-		MeshData* mesh = &s->meshes[dc->mesh];
+		DrawCall*     dc   = &s->drawCalls[i];
+		MeshData*     mesh = &s->meshes[dc->mesh];
+		VertexShader* vs   = dc->vs;
 
 		XMMATRIX W = XMMATRIX((r32*) &dc->worldM);
 		XMMATRIX P = XMLoadFloat4x4(&s->proj);
 		XMMATRIX WVP = XMMatrixTranspose(W * V * P);
 
+		//Set
+		s->d3dContext->VSSetShader(vs->d3dVertexShader.Get(), nullptr, 0);
+		s->d3dContext->VSSetConstantBuffers(0, 1, vs->d3dConstantBuffer.GetAddressOf());
+		s->d3dContext->IASetInputLayout(vs->inputLayout->d3dInputLayout.Get());
+		//s->d3dContext->IASetVertexBuffers(0, 1, vBuffer.GetAddressOf(), &mesh->vStride, &mesh->vOffset);
+
 		//Update VS cbuffer
 		D3D11_MAPPED_SUBRESOURCE vsConstBuffMap = {};
-		hr = s->d3dContext->Map(s->d3dVSConstBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &vsConstBuffMap);
+		hr = s->d3dContext->Map(vs->d3dConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &vsConstBuffMap);
 		LOG_IF(FAILED(hr), L"", Severity::Error, return false);
 
 		memcpy(vsConstBuffMap.pData, &WVP, sizeof(WVP));
-		s->d3dContext->Unmap(s->d3dVSConstBuffer.Get(), 0);
+		s->d3dContext->Unmap(vs->d3dConstantBuffer.Get(), 0);
 
 		s->d3dContext->DrawIndexed(mesh->iCount, 0, mesh->vOffset);
 	}

@@ -157,8 +157,11 @@
     <ClCompile Include="src\win32_main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\Shared\LHMAPI.h" />
+    <ClInclude Include="..\Shared\LHMCommon.h" />
     <ClInclude Include="..\Shared\LHMDataSource.h" />
-    <ClInclude Include="..\Shared\shared.hpp" />
+    <ClInclude Include="..\Shared\LHMList.h" />
+    <ClInclude Include="..\Shared\LHMString.h" />
     <ClInclude Include="src\widget_filledbar.hpp" />
     <ClInclude Include="src\math.hpp" />
     <ClInclude Include="src\platform.h" />
@@ -208,6 +211,9 @@
       <Project>{2585baf1-e85b-4fd3-9a91-abcb8ccf685a}</Project>
       <Private>false</Private>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="res\style.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

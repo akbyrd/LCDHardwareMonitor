@@ -1,7 +1,24 @@
-#include "shared.hpp"
+#include "LHMAPI.h"
+#include "LHMString.h"
+
+//Named varargs sure would be nice...
+#define IF(expression, ...) \
+if (expression)             \
+{                           \
+	__VA_ARGS__;            \
+}
+
+/* NOTE: Raise a compiler error when switching over
+* an enum and any enum values are missing a case.
+* https://msdn.microsoft.com/en-us/library/fdt9w8tf.aspx
+*/
+#pragma warning (error: 4062)
+
+//TODO: Remove?
+using std::unique_ptr;
+
 #include "math.hpp"
 #include "CLIHelper.h"
-#include "LHMDataSource.h"
 #include "platform.h"
 #include "renderer.h"
 #include "widget_filledbar.hpp"
@@ -21,6 +38,7 @@
 //      LOG_IF(FAILED(hr), L"", return false);
 //TODO: Probably want to use this as some point so frame debugger works without the preview window
 //      https://msdn.microsoft.com/en-us/library/hh780905.aspx
+//TODO: Decide what we're really doing with wide characters/i18n
 
 /* @NOTE: Plugins
  * Ok, here's (part of) the deal. Managed plugins bring in a lot of complexity.

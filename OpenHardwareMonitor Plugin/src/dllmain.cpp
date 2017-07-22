@@ -1,7 +1,7 @@
 #pragma managed
 
 #define EXPORTING 1
-#include "LHMDataSource.h"
+#include "LHMAPI.h"
 #include <string.h>
 
 using namespace System;

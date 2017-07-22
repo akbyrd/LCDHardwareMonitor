@@ -12,6 +12,9 @@
     <Filter Include="Resources">
       <UniqueIdentifier>{1c232f4b-c112-4dc7-a42e-0b40c7deb54e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="API">
+      <UniqueIdentifier>{1f790c82-a1e8-48df-ae14-1ff8be05cacb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\win32_main.cpp">
@@ -37,14 +40,23 @@
     <ClInclude Include="src\platform_win32.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\Shared\LHMDataSource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Shared\shared.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\widget_filledbar.hpp">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Shared\LHMDataSource.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Shared\LHMAPI.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Shared\LHMCommon.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Shared\LHMList.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Shared\LHMString.h">
+      <Filter>API</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -57,5 +69,10 @@
     <FxCompile Include="res\Filled Bar Pixel Shader.hlsl">
       <Filter>Resources</Filter>
     </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="res\style.txt">
+      <Filter>Resources</Filter>
+    </Text>
   </ItemGroup>
 </Project>
