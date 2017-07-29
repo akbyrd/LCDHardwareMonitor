@@ -3,7 +3,9 @@ struct PlatformState;
 b32     InitializePlatform (PlatformState*);
 void    TeardownPlatform   (PlatformState*);
 
-b32     LoadFile           (c16* fileName, unique_ptr<c8[]>& data, size& dataSize);
+Bytes   LoadFileBytes      (c16* fileName);
+String  LoadFileString     (c16* fileName);
+WString LoadFileWString    (c16* fileName);
 void    ConsolePrint       (c16* message);
 
 struct Plugin;

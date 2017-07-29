@@ -124,7 +124,7 @@ Update(::List<Sensor>& sensors)
 	for (i32 i = 0; i < State::activeHardware->Count; i++)
 		State::activeHardware[i]->Update();
 
-	for (i32 i = 0; i < sensors.count; i++)
+	for (i32 i = 0; i < sensors.length; i++)
 	{
 		Sensor& sensor = sensors[i];
 
@@ -144,7 +144,7 @@ Update(::List<Sensor>& sensors)
 void
 Teardown(::List<Sensor>& sensors)
 {
-	for (i32 i = 0; i < sensors.count; i++)
+	for (i32 i = 0; i < sensors.length; i++)
 	{
 		Sensor& sensor = sensors[i];
 

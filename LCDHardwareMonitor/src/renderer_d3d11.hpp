@@ -85,7 +85,8 @@ struct InputLayout
 
 struct VertexShader
 {
-	String                     name;
+	WString                    name;
+	//TODO: Needs to be ref counted
 	InputLayout*               inputLayout;
 	//TODO: Better names?
 	ComPtr<ID3D11VertexShader> d3dVertexShader;
@@ -132,38 +133,38 @@ struct RendererState
 //TODO: We're not really handling errors cases. Going to end up partially initialized. Reference counting might be a robust solution?
 //TODO: Handle unloading assets (will require reference counting, I think)
 //TODO: This pointer will move
+//TODO: Start passing WStrings instead of c16*?
 VertexShader* LoadVertexShader(RendererState* s, c16* path, List<VertexAttribute> attributes, ConstantBufferDesc cBufDesc)
 {
-	b32 success;
 	HRESULT hr;
 
 	//TODO: Hash names?
 	//Use Existing
-	for (i32 i = 0; i < s->vertexShaders.count; i++)
+	for (i32 i = 0; i < s->vertexShaders.length; i++)
 	{
 		if (wcscmp(s->vertexShaders[i].name, path) == 0)
 			return &s->vertexShaders[i];
 	}
 
 
+	//TODO: Copy name
 	//Vertex Shader
 	VertexShader* vs = nullptr;
-	unique_ptr<c8[]> vsBytes;
-	size vsBytesLength;
+	Bytes vsBytes = {};
 	{
-		VertexShader v = {};
-		vs = List_Append(s->vertexShaders, v);
+		vs = List_Append(s->vertexShaders, VertexShader {});
 		LOG_IF(!vs, L"Failed to allocate space for vertex shader", Severity::Warning, return nullptr);
 
 		//Load
-		success = LoadFile(path, vsBytes, vsBytesLength);
-		if (!success) return nullptr;
+		vsBytes = LoadFileBytes(path);
+		if (!vsBytes) return nullptr;
 
 		//Create
-		hr = s->d3dDevice->CreateVertexShader(vsBytes.get(), vsBytesLength, nullptr, &vs->d3dVertexShader);
+		hr = s->d3dDevice->CreateVertexShader(vsBytes.data, vsBytes.length, nullptr, &vs->d3dVertexShader);
 		//TODO: Proper error and name
 		LOG_IF(FAILED(hr), L"", Severity::Error, return nullptr);
 		SetDebugObjectName(vs->d3dVertexShader, "Vertex Shader");
+		List_Free(vsBytes);
 
 		//Per-object constant buffer
 		D3D11_BUFFER_DESC vsConstBuffDes = {};
@@ -188,8 +189,8 @@ VertexShader* LoadVertexShader(RendererState* s, c16* path, List<VertexAttribute
 		LOG_IF(!il, L"Failed to allocate space for input layout", Severity::Warning, return nullptr);
 		il->attibutes = List_Duplicate(attributes);
 
-		auto vsInputDescs = List_Create<D3D11_INPUT_ELEMENT_DESC>(attributes.count);
-		for (i32 i = 0; i < attributes.count; i++)
+		auto vsInputDescs = List_Create<D3D11_INPUT_ELEMENT_DESC>(attributes.length);
+		for (i32 i = 0; i < attributes.length; i++)
 		{
 			const c8* semantic;
 			switch (attributes[i].semantic)
@@ -216,7 +217,7 @@ VertexShader* LoadVertexShader(RendererState* s, c16* path, List<VertexAttribute
 			vsInputDescs[i] = { semantic, 0, format, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 };
 		}
 
-		hr = s->d3dDevice->CreateInputLayout(vsInputDescs.items, vsInputDescs.count, vsBytes.get(), vsBytesLength, &il->d3dInputLayout);
+		hr = s->d3dDevice->CreateInputLayout(vsInputDescs.data, vsInputDescs.length, vsBytes.data, vsBytes.length, &il->d3dInputLayout);
 		//TODO: Proper error and name
 		LOG_IF(FAILED(hr), L"", Severity::Error, return nullptr);
 		SetDebugObjectName(il->d3dInputLayout, "Input Layout");
@@ -224,6 +225,25 @@ VertexShader* LoadVertexShader(RendererState* s, c16* path, List<VertexAttribute
 
 	vs->inputLayout = il;
 	return vs;
+
+Cleanup:
+	//TODO: Initialize all values
+	List_Free(vsBytes);
+
+	if (il)
+	{
+		il->d3dInputLayout.Reset();
+		List_RemoveLast(s->inputLayouts);
+	}
+
+	if (vs)
+	{
+		vs->d3dConstantBuffer.Reset();
+		vs->d3dVertexShader.Reset();
+		List_RemoveLast(s->vertexShaders);
+	}
+
+	return nullptr;
 }
 
 #pragma region Foward Declarations
@@ -251,7 +271,6 @@ InitializeRenderer(RendererState* s, V2i renderSize)
 
 
 	HRESULT hr;
-	b32 success;
 
 	//Create device
 	{
@@ -453,13 +472,11 @@ InitializeRenderer(RendererState* s, V2i renderSize)
 	//Create pixel shader
 	{
 		//Load
-		unique_ptr<c8[]> psBytes;
-		size psBytesLength;
-		success = LoadFile(L"Shaders/Basic Pixel Shader.cso", psBytes, psBytesLength);
-		if (!success) return false;
+		Bytes psBytes = LoadFileBytes(L"Shaders/Basic Pixel Shader.cso");
+		if (!psBytes) return false;
 
 		//Create
-		hr = s->d3dDevice->CreatePixelShader(psBytes.get(), psBytesLength, nullptr, &s->d3dPixelShader);
+		hr = s->d3dDevice->CreatePixelShader(psBytes.data, psBytes.length, nullptr, &s->d3dPixelShader);
 		LOG_IF(FAILED(hr), L"", Severity::Error, return false);
 		SetDebugObjectName(s->d3dPixelShader, "Pixel Shader");
 
@@ -559,7 +576,7 @@ InitializeRenderer(RendererState* s, V2i renderSize)
 
 		//Create index buffer
 		mesh->iBase   = 0;
-		mesh->iCount  = ArrayCount(indices);
+		mesh->iCount  = ArrayLength(indices);
 		mesh->iFormat = DXGI_FORMAT_R32_UINT;
 
 		D3D11_BUFFER_DESC indexBuffDesc = {};
@@ -766,13 +783,13 @@ TeardownRenderer(RendererState* s)
 {
 	if (s == nullptr) return;
 
-	for (i32 i = 0; i < s->vertexShaders.count; i++)
+	for (i32 i = 0; i < s->vertexShaders.length; i++)
 	{
 		s->vertexShaders[i].d3dVertexShader.Reset();
 		s->vertexShaders[i].d3dConstantBuffer.Reset();
 	}
 
-	for (i32 i = 0; i < s->inputLayouts.count; i++)
+	for (i32 i = 0; i < s->inputLayouts.length; i++)
 		s->inputLayouts[i].d3dInputLayout.Reset();
 
 	s->d3dDevice                  .Reset();
@@ -817,7 +834,7 @@ TeardownRenderer(RendererState* s)
 DrawCall*
 PushDrawCall(RendererState* s)
 {
-	Assert(s->drawCallCount < (u32) ArrayCount(s->drawCalls));
+	Assert(s->drawCallCount < (u32) ArrayLength(s->drawCalls));
 
 	DrawCall* drawCall = &s->drawCalls[s->drawCallCount++];
 	return drawCall;

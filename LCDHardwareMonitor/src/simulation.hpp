@@ -17,7 +17,7 @@ Log(c16* message, Severity severity, c16* file, i32 line, c16* function)
 	//TODO: Decide on logging allocation policy
 	//TODO: Check for swprintf failure (overflow).
 	c16 buffer[512];
-	swprintf(buffer, ArrayCount(buffer), L"%s - %s\n\t%s(%i)\n", function, message, file, line);
+	swprintf(buffer, ArrayLength(buffer), L"%s - %s\n\t%s(%i)\n", function, message, file, line);
 	ConsolePrint(buffer);
 
 	if (severity > Severity::Info)
@@ -59,7 +59,7 @@ LoadDataSource(SimulationState* s, c16* directory, c16* name)
 	dataSource.teardown   = (DataSourceTeardown)   GetPluginSymbol(dataSource.plugin, "Teardown");
 
 	dataSource.sensors = List_Create<Sensor>(128);
-	LOG_IF(!dataSource.sensors.items, L"Sensor allocation failed", Severity::Error, return {});
+	LOG_IF(!dataSource.sensors, L"Sensor allocation failed", Severity::Error, return {});
 
 	//TODO: try/catch?
 	if (dataSource.initialize)
@@ -106,7 +106,7 @@ Simulation_Initialize(SimulationState* s)
 void
 Simulation_Teardown(SimulationState* s)
 {
-	for (i32 i = 0; i < s->dataSources.count; i++)
+	for (i32 i = 0; i < s->dataSources.length; i++)
 	  UnloadDataSource(s, &s->dataSources[i]);
 
 	//TODO: Decide how much we really care about simulation level teardown
@@ -118,7 +118,7 @@ void
 Simulation_Update(SimulationState* s)
 {
 	//TODO: Only update data sources that are actually being used
-	for (i32 i = 0; i < s->dataSources.count; i++)
+	for (i32 i = 0; i < s->dataSources.length; i++)
 		s->dataSources[i].update(s->dataSources[i].sensors);
 
 	/* NOTES:
@@ -126,6 +126,6 @@ Simulation_Update(SimulationState* s)
 	 * Let the renderer handle sorting and iterating the list.
 	 * Here, we should just be parameters that go with the command.
 	 */
-	for (i32 i = 0; i < s->widgets.count; i++)
+	for (i32 i = 0; i < s->widgets.length; i++)
 		;
 }

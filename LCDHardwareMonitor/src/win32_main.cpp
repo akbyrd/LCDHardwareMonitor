@@ -14,9 +14,6 @@ if (expression)             \
 */
 #pragma warning (error: 4062)
 
-//TODO: Remove?
-using std::unique_ptr;
-
 #include "math.hpp"
 #include "CLIHelper.h"
 #include "platform.h"
