@@ -73,6 +73,7 @@
     <OutDir>bin\$(Configuration)_$(Platform)\</OutDir>
     <IntDir>obj\$(Configuration)_$(Platform)\</IntDir>
     <IncludePath>$(ProjectDir)include;$(SolutionDir)Shared;$(SolutionDir)LCDHardwareMonitor CLI Helper\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)LCDHardwareMonitor CLI Helper\$(OutDir);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>bin\$(Configuration)_$(Platform)\</OutDir>
@@ -84,6 +85,7 @@
     <OutDir>bin\$(Configuration)_$(Platform)\</OutDir>
     <IntDir>obj\$(Configuration)_$(Platform)\</IntDir>
     <IncludePath>$(ProjectDir)include;$(SolutionDir)Shared;$(SolutionDir)LCDHardwareMonitor CLI Helper\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)LCDHardwareMonitor CLI Helper\$(OutDir);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>bin\$(Configuration)_$(Platform)\</OutDir>

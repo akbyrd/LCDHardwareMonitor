@@ -70,7 +70,8 @@ InitializePlatform(PlatformState* s)
 	//TODO: Does this varargs return actually work?
 	LOG_LAST_ERROR_IF(!success, L"SetDefaultDllDirectories failed", Severity::Warning, return false);
 
-	s->plugins = List_Create<Plugin>(16);
+	s->plugins = {};
+	List_Reserve(s->plugins, 16);
 	LOG_IF(!s->plugins, L"Plugin allocation failed", Severity::Error, return false);
 
 	/* TODO: Seeing some exceptions here when using the Native/Mixed debugger.
@@ -108,7 +109,7 @@ LoadFile(c16* fileName, u32 padding = 0)
 	std::ifstream inFile(fileName, std::ios::binary | std::ios::ate);
 	LOG_IF(!inFile.is_open(), L"Failed to open file: <file>. Working Directory: <cwd>", Severity::Error, goto Cleanup);
 
-	result.length   = (size) inFile.tellg();
+	result.length   = (i32) inFile.tellg();
 	result.capacity = result.length + padding;
 	LOG_IF(result.capacity < result.length, L"Failed to add padding bytes when loading file: <file>", Severity::Error, goto Cleanup);
 

@@ -58,8 +58,9 @@ LoadDataSource(SimulationState* s, c16* directory, c16* name)
 	dataSource.update     = (DataSourceUpdate)     GetPluginSymbol(dataSource.plugin, "Update");
 	dataSource.teardown   = (DataSourceTeardown)   GetPluginSymbol(dataSource.plugin, "Teardown");
 
-	dataSource.sensors = List_Create<Sensor>(128);
-	LOG_IF(!dataSource.sensors, L"Sensor allocation failed", Severity::Error, return {});
+	dataSource.sensors = {};
+	List_Reserve(dataSource.sensors, 128);
+	LOG_IF(!dataSource.sensors, L"Sensor allocation failed", Severity::Error, return nullptr);
 
 	//TODO: try/catch?
 	if (dataSource.initialize)
@@ -92,8 +93,13 @@ UnloadDataSource(SimulationState* s, DataSource* dataSource)
 void
 Simulation_Initialize(SimulationState* s)
 {
-	s->dataSources = List_Create<DataSource>(8);
-	s->widgets     = List_Create<Widget>(8);
+	s->dataSources = {};
+	List_Reserve(s->dataSources, 8);
+	LOG_IF(!s->dataSources, L"Failed to allocate data sources list", Severity::Error, return false);
+
+	s->widgets = {};
+	List_Reserve(s->widgets, 8);
+	LOG_IF(!s->dataSources, L"Failed to allocate widgets list", Severity::Error, return false);
 
 	DataSource* ohmDataSource = LoadDataSource(s, L"Data Sources\\OpenHardwareMonitor Source", L"OpenHardwareMonitor Plugin");
 

@@ -164,7 +164,6 @@ VertexShader* LoadVertexShader(RendererState* s, c16* path, List<VertexAttribute
 		//TODO: Proper error and name
 		LOG_IF(FAILED(hr), L"", Severity::Error, return nullptr);
 		SetDebugObjectName(vs->d3dVertexShader, "Vertex Shader");
-		List_Free(vsBytes);
 
 		//Per-object constant buffer
 		D3D11_BUFFER_DESC vsConstBuffDes = {};
@@ -189,7 +188,8 @@ VertexShader* LoadVertexShader(RendererState* s, c16* path, List<VertexAttribute
 		LOG_IF(!il, L"Failed to allocate space for input layout", Severity::Warning, return nullptr);
 		il->attibutes = List_Duplicate(attributes);
 
-		auto vsInputDescs = List_Create<D3D11_INPUT_ELEMENT_DESC>(attributes.length);
+		List<D3D11_INPUT_ELEMENT_DESC> vsInputDescs = {};
+		List_Reserve(vsInputDescs, attributes.length);
 		for (i32 i = 0; i < attributes.length; i++)
 		{
 			const c8* semantic;
@@ -606,6 +606,7 @@ InitializeRenderer(RendererState* s, V2i renderSize)
 		if (dc == nullptr) return false;
 
 		dc->mesh = Mesh::Quad;
+		dc->vs   = &s->vertexShaders[0];
 		XMStoreFloat4x4((XMFLOAT4X4*) &dc->worldM, XMMatrixScaling(160, 160, 160) * XMMatrixIdentity());
 	}
 
