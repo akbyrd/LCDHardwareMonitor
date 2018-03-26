@@ -75,8 +75,8 @@ InitializePlatform(PlatformState* s)
 	LOG_IF(!s->plugins, L"Plugin allocation failed", Severity::Error, return false);
 
 	/* TODO: Seeing some exceptions here when using the Native/Mixed debugger.
-	* They seem like first chance exceptions, but it's hard to say.
-	*/
+	 * They seem like first chance exceptions, but it's hard to say.
+	 */
 	PluginHelper_Initialize();
 
 	return true;
@@ -223,7 +223,8 @@ GetPluginSymbol(Plugin* plugin, c8* symbol)
 b32
 UnloadPlugin(PlatformState* s, Plugin* plugin)
 {
-	LOG_IF(!List_Contains(s->plugins, plugin), L"Attempting to unload a plugin that is not loaded", Severity::Warning, return false);
+	b32 loaded = List_Contains(s->plugins, plugin);
+	LOG_IF(!loaded, L"Attempting to unload a plugin that is not loaded", Severity::Warning, return false);
 
 	b32 success = FreeLibrary(plugin->module);
 	LOG_LAST_ERROR_IF(!success, L"FreeLibrary failed", Severity::Warning, return false);

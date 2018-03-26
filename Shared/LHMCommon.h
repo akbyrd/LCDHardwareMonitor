@@ -30,7 +30,7 @@ typedef size_t size;
 #define Megabyte 1024LL * Kilobyte
 #define Gigabyte 1024LL * Megabyte
 
-//@OTODO: Can _cdecl be added here? Seems like it needs to be after the return type
+//TODO: Can _cdecl be added here? Seems like it needs to be after the return type
 #if EXPORTING
 #define LHM_API extern "C" __declspec(dllexport)
 #else

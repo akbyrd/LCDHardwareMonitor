@@ -52,7 +52,7 @@ LoadDataSource(SimulationState* s, c16* directory, c16* name)
 	dataSource.name = name;
 
 	dataSource.plugin = LoadPlugin(s->platform, directory, name);
-	LOG_IF(!dataSource.plugin, L"Failed to load plugin", Severity::Warning, return {});
+	LOG_IF(!dataSource.plugin, L"Failed to load plugin", Severity::Warning, return nullptr);
 
 	dataSource.initialize = (DataSourceInitialize) GetPluginSymbol(dataSource.plugin, "Initialize");
 	dataSource.update     = (DataSourceUpdate)     GetPluginSymbol(dataSource.plugin, "Update");
@@ -90,7 +90,7 @@ UnloadDataSource(SimulationState* s, DataSource* dataSource)
 	return true;
 }
 
-void
+bool
 Simulation_Initialize(SimulationState* s)
 {
 	s->dataSources = {};
@@ -107,6 +107,8 @@ Simulation_Initialize(SimulationState* s)
 	w.mesh   = Mesh::Quad;
 	w.sensor = &s->dataSources[0].sensors[0];
 	w.size   = {240, 12};
+
+	return true;
 }
 
 void

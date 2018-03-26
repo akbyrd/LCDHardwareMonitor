@@ -9,9 +9,9 @@ if (expression)             \
 }
 
 /* NOTE: Raise a compiler error when switching over
-* an enum and any enum values are missing a case.
-* https://msdn.microsoft.com/en-us/library/fdt9w8tf.aspx
-*/
+ * an enum and any enum values are missing a case.
+ * https://msdn.microsoft.com/en-us/library/fdt9w8tf.aspx
+ */
 #pragma warning (error: 4062)
 
 #include "math.hpp"
@@ -29,37 +29,64 @@ if (expression)             \
 #include "renderer_d3d11.hpp"
 
 //TODO: Remove winow clamping
+//TODO: Think about having a fixed size for plugins, widgets, etc
 //TODO: Support x86 and x64
 //TODO: Reduce link dependencies
-//TODO: Fix the following so hr gets stringified
-//      LOG_IF(FAILED(hr), L"", return false);
-//TODO: Probably want to use this as some point so frame debugger works without the preview window
-//      https://msdn.microsoft.com/en-us/library/hh780905.aspx
+/* TODO: Fix the following so hr gets stringified
+ * LOG_IF(FAILED(hr), L"", return false); */
+/* TODO: Probably want to use this as some point so frame debugger works without
+ * the preview window
+ * https://msdn.microsoft.com/en-us/library/hh780905.aspx */
 //TODO: Decide what we're really doing with wide characters/i18n
 
-/* @NOTE: Plugins
+/* NOTE: Plugins
  * Ok, here's (part of) the deal. Managed plugins bring in a lot of complexity.
- * Ultimately, I'm leaning toward Option 3. I don't like having to call into managed code, so maybe there's a way around that. However, for now I'm sticking with the simplicity of Option 1. Once we're up and running I'll revisit the issue.
- * 
+ * Ultimately, I'm leaning toward Option 3. I don't like having to call into
+ * managed code, so maybe there's a way around that. However, for now I'm
+ * sticking with the simplicity of Option 1. Once we're up and running I'll
+ * revisit the issue.
+ *
  * Option 1: Call managed plugins through GetProcAddress.
- *  - This will always call into the default AppDomain. And the Fusion Loader will fail to find other managed dependencies (that aren't in the GAC) because they aren't in the bin path. We'll need to use AssemblyResolve to handle this. Will need a CLI Helper for this.
- *  - * The catch here is that assemblies are loaded on-demand. So we can't know which folder to search in based on *when* the load occurs. However, we can make a reasonable guess at which folder to search based on the name of the requesting assembly. We'll need to keep a cache of loads that have occured because Assembly A and load B which then loads C and we need to know to use A's folder.
- *  - It's very appealing to be able to simply call every plugin through a uniform C interface. It means we don't have to care whether a plugin is managed or unmanaged.
- *  - However, it also leaves the onus of doing good interop on the plugin author (e.g. using a delegate to skirt the x64 performance hit and an instance method for a bit more speed). Can maybe provide a 'template' or some such to simplify it.
- *  - Enabling or disabling plugins would require unloading and reloading the entire CLR. This doesn't look possible.
- *  - Plugin dependencies could end up loading out of some other folder in the bin path. Probably not a big issue. Plugin authors can use strong naming.
- *  - ~NOTE~ Specifying the full path won't work for indirectly loaded assemblies (e.g. dependencies).
- *  - ~NOTE~ Could use a .config file for resolving dependencies, but AssemblyResolve is simpler.
- * 
+ *  - This will always call into the default AppDomain. And the Fusion Loader
+ *    will fail to find other managed dependencies (that aren't in the GAC)
+ *    because they aren't in the bin path. We'll need to use AssemblyResolve to
+ *    handle this. Will need a CLI Helper for this.
+ * *- The catch here is that assemblies are loaded on-demand. So we can't know
+ *    which folder to search in based on *when* the load occurs. However, we can
+ *    make a reasonable guess at which folder to search based on the name of the
+ *    requesting assembly. We'll need to keep a cache of loads that have occured
+ *    because Assembly A and load B which then loads C and we need to know to
+ *    use A's folder.
+ *  - It's very appealing to be able to simply call every plugin through a
+ *    uniform C interface. It means we don't have to care whether a plugin is
+ *    managed or unmanaged.
+ *  - However, it also leaves the onus of doing good interop on the plugin
+ *    author (e.g. using a delegate to skirt the x64 performance hit and an
+ *    instance method for a bit more speed). Can maybe provide a 'template' or
+ *    some such to simplify it.
+ *  - Enabling or disabling plugins would require unloading and reloading the
+ *    entire CLR. This doesn't look possible.
+ *  - Plugin dependencies could end up loading out of some other folder in the
+ *    bin path. Probably not a big issue. Plugin authors can use strong naming.
+ *  - ~NOTE~ Specifying the full path won't work for indirectly loaded
+ *    assemblies (e.g. dependencies).
+ *  - ~NOTE~ Could use a .config file for resolving dependencies, but
+ *    AssemblyResolve is simpler.
+ *
  * Option 2: Load plugins into a separate AppDomain
  *  - Means we can load and unload plugins independently of one another.
- *  - We'll have to call into the managed side of each plugin. If we call into native and the plugin calls into managed it's going to use the default AppDomain.
+ *  - We'll have to call into the managed side of each plugin. If we call into
+ *    native and the plugin calls into managed it's going to use the default
+ *    AppDomain.
  *  - We take a 10x performance hit for calling across AppDomains.
- *  - I think we can return a function pointer back to the native side to hide the 'have to call into managed code' issue from native side.
- * 
+ *  - I think we can return a function pointer back to the native side to hide
+ *    the 'have to call into managed code' issue from native side.
+ *
  * Option 3: Host the CLR from native
- *  - I haven't looked into this heavily, but currently it looks like it might be the right choice.
- *  - Basically it's Option 2 without a separate C++/CLI assembly. It should streamline things a bit.
+ *  - I haven't looked into this heavily, but currently it looks like it might
+ *    be the right choice.
+ *  - Basically it's Option 2 without a separate C++/CLI assembly. It should
+ *    streamline things a bit.
  *  - What is perfomrmance like in this case?
  */
 
@@ -74,29 +101,34 @@ b32 DestroyPreviewWindow(PreviewWindowState*, RendererState*, HINSTANCE);
 i32 CALLBACK
 wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, c16* pCmdLine, i32 nCmdShow)
 {
-	SimulationState simulationState = {};
+	//TODO: Deal with goto's skipping variable initialization
+	int returnValue = -1;
+	SimulationState    simulationState = {};
+	PlatformState      platformState   = {};
+	RendererState      rendererState   = {};
+	PreviewWindowState previewState    = {};
 
 	//Platform
-	PlatformState platformState = {};
 	InitializePlatform(&platformState);
 
 
 	//Renderer
-	RendererState rendererState = {};
 	{
 		b32 success = InitializeRenderer(&rendererState, simulationState.renderSize);
-		LOG_IF(!success, L"InitializeRenderer failed to initialize", Severity::Error);
+		LOG_IF(!success, L"InitializeRenderer failed to initialize", Severity::Error, goto Cleanup);
 	}
 
 
 	//Simulation
-	simulationState.platform = &platformState;
-	simulationState.renderer = &rendererState;
-	Simulation_Initialize(&simulationState);
+	{
+		simulationState.platform = &platformState;
+		simulationState.renderer = &rendererState;
+		b32 success = Simulation_Initialize(&simulationState);
+		LOG_IF(!success, L"Failed to initialize simulation", Severity::Error, goto Cleanup);
+	}
 
 
 	//Misc
-	PreviewWindowState previewState = {};
 	{
 		b32 success = SetPriorityClass(GetCurrentProcess(), BELOW_NORMAL_PRIORITY_CLASS);
 		LOG_LAST_ERROR_IF(!success, L"SetPriorityClass failed", Severity::Warning);
@@ -113,7 +145,6 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, c16* pCmdLine, i32 nCmdSh
 
 
 	//Main loop
-	int returnValue = -1;
 	{
 		b32 quit = false;
 		while (!quit)
@@ -171,7 +202,7 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, c16* pCmdLine, i32 nCmdSh
 	}
 
 
-	//Cleanup
+	Cleanup:
 	{
 		PluginHelper_Teardown();
 

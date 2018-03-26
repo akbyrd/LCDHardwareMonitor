@@ -5,3 +5,17 @@ Writing a tutorial for creating plugins.
 Create a template C++ /CLI project and a tutorial for writing .NET plugins.
 Ensure debugging for both native and managed plugins is reasonable.
 Is it possible to catch managed exceptions from the native side? Can't have them crash the application.
+
+Refactoring
+	Use self or this as parameter name for 'methods'
+	Should const be used on parameters and locals?
+	Should reference parameters be passed by reference or pointer?
+		Pointers: Arrow/dot refactoring, slightly more obvious at callsite (still can't distinguish between pointer for efficiency vs pointer for modifications. Const isn't as visible at callsite)
+		Reference: Don't have to refactor dot/arrow, less obvious that the parameter may be modified
+		Truthfully, the different syntax between pointers and references is more annoying than the modification thing. There are lots of things that aren't communicated at the callsite, so why special case for this?
+	Include 'out' in out parameter names
+	Array and String slices?
+	Stop using wide characters. That's not the right path to unicode support.
+	Decide on comment style
+	Drop some of the variable name prefixes, such as d3d
+	Pick strict C++ and VS versions

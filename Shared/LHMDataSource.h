@@ -1,7 +1,9 @@
 #pragma once
 
 //TODO: This could be detected with a 'shim' of some sort (accessor function?)
-/* You may *ONLY* access application provided services during scope of the function to which the services were passed. Basically, don't save a reference and access services from a separate thread.
+/* You may *ONLY* access application provided services during scope of the
+ * function to which the services were passed. Basically, don't save a reference
+ * and access services from a separate thread.
  */
 
 struct Sensor

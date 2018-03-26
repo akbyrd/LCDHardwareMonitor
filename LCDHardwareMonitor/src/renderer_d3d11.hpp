@@ -1,4 +1,6 @@
-//TODO: What happens if we call random renderer api and the device is disconnected? Presumably it can happen at anytime, not just during an update?
+/* TODO: What happens if we call random renderer api and the device is
+ * disconnected? Presumably it can happen at anytime, not just during an update?
+ */
 
 #pragma comment(lib, "D3D11.lib")
 #pragma comment(lib,  "D3D9.lib")
@@ -127,6 +129,7 @@ struct RendererState
 	u32                drawCallCount       = 0;
 };
 
+//TODO: Asset loading system
 //TODO: Initialize lists
 //TODO: Set shaders before use
 //TODO: Debug shader!
@@ -157,7 +160,7 @@ VertexShader* LoadVertexShader(RendererState* s, c16* path, List<VertexAttribute
 
 		//Load
 		vsBytes = LoadFileBytes(path);
-		if (!vsBytes) return nullptr;
+		LOG_IF(!vsBytes, L"Failed to load vertex shader file", Severity::Warning, return nullptr);
 
 		//Create
 		hr = s->d3dDevice->CreateVertexShader(vsBytes.data, vsBytes.length, nullptr, &vs->d3dVertexShader);
@@ -190,6 +193,7 @@ VertexShader* LoadVertexShader(RendererState* s, c16* path, List<VertexAttribute
 
 		List<D3D11_INPUT_ELEMENT_DESC> vsInputDescs = {};
 		List_Reserve(vsInputDescs, attributes.length);
+		LOG_IF(!vsInputDescs, L"Input description allocation failed", Severity::Warning, return nullptr);
 		for (i32 i = 0; i < attributes.length; i++)
 		{
 			const c8* semantic;
@@ -214,7 +218,15 @@ VertexShader* LoadVertexShader(RendererState* s, c16* path, List<VertexAttribute
 					LOG_IF(true, L"Unrecognized VS attribute format", Severity::Warning, return nullptr);
 			}
 
-			vsInputDescs[i] = { semantic, 0, format, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 };
+			D3D11_INPUT_ELEMENT_DESC inputDesc = {};
+			inputDesc.SemanticName         = semantic;
+			inputDesc.SemanticIndex        = 0;
+			inputDesc.Format               = format;
+			inputDesc.InputSlot            = 0;
+			inputDesc.AlignedByteOffset    = D3D11_APPEND_ALIGNED_ELEMENT;
+			inputDesc.InputSlotClass       = D3D11_INPUT_PER_VERTEX_DATA;
+			inputDesc.InstanceDataStepRate = 0;
+			List_Append(vsInputDescs, inputDesc);
 		}
 
 		hr = s->d3dDevice->CreateInputLayout(vsInputDescs.data, vsInputDescs.length, vsBytes.data, vsBytes.length, &il->d3dInputLayout);
@@ -226,7 +238,7 @@ VertexShader* LoadVertexShader(RendererState* s, c16* path, List<VertexAttribute
 	vs->inputLayout = il;
 	return vs;
 
-Cleanup:
+//Cleanup:
 	//TODO: Initialize all values
 	List_Free(vsBytes);
 
@@ -247,7 +259,7 @@ Cleanup:
 }
 
 #pragma region Foward Declarations
-void UpdateRasterizeState(RendererState*);
+void UpdateRasterizerState(RendererState*);
 DrawCall* PushDrawCall(RendererState*);
 #pragma endregion
 
@@ -327,7 +339,7 @@ InitializeRenderer(RendererState* s, V2i renderSize)
 		hr = dxgiAdapter->GetDesc(&desc);
 		LOG_IF(FAILED(hr), L"", Severity::Error, return false);
 
-		if ( (desc.VendorId == 0x1414) && (desc.DeviceId == 0x8c) )
+		if ((desc.VendorId == 0x1414) && (desc.DeviceId == 0x8c))
 		{
 			// WARNING: Microsoft Basic Render Driver is active. Performance of this
 			// application may be unsatisfactory. Please ensure that your video card is
@@ -459,7 +471,10 @@ InitializeRenderer(RendererState* s, V2i renderSize)
 
 	//Create vertex shader
 	{
-		auto vsAttributes = List_Create<VertexAttribute>(2);
+		List<VertexAttribute> vsAttributes = {};
+		List_Reserve(vsAttributes, 2);
+		LOG_IF(!vsAttributes, L"Failed to allocate fallback vertex shader attributes", Severity::Error, return false);
+
 		List_Append(vsAttributes, VertexAttribute { VertexAttributeSemantic::Position, VertexAttributeFormat::Float3 });
 		List_Append(vsAttributes, VertexAttribute { VertexAttributeSemantic::Color,    VertexAttributeFormat::Float4 });
 		VertexShader* vs = LoadVertexShader(s, L"Shaders/Basic Vertex Shader.cso", vsAttributes, { sizeof(XMFLOAT4X4) });
@@ -473,16 +488,17 @@ InitializeRenderer(RendererState* s, V2i renderSize)
 	{
 		//Load
 		Bytes psBytes = LoadFileBytes(L"Shaders/Basic Pixel Shader.cso");
-		if (!psBytes) return false;
+		LOG_IF(!psBytes, L"Failed to load fallback pixel shader file", Severity::Error, return false);
 
 		//Create
 		hr = s->d3dDevice->CreatePixelShader(psBytes.data, psBytes.length, nullptr, &s->d3dPixelShader);
-		LOG_IF(FAILED(hr), L"", Severity::Error, return false);
+		LOG_IF(FAILED(hr), L"Failed to create fallback pixel shader", Severity::Error, return false);
 		SetDebugObjectName(s->d3dPixelShader, "Pixel Shader");
 
 		//Set
 		s->d3dContext->PSSetShader(s->d3dPixelShader.Get(), nullptr, 0);
 	}
+	LOG(L"Past Problem Area", Severity::Info);
 
 
 	//Initialize rasterizer state
@@ -492,7 +508,7 @@ InitializeRenderer(RendererState* s, V2i renderSize)
 		// (negligible for the mesh drawn here). Visually, it's hard to tell the difference between
 		// quadrilateral AA on and off in this demo. Alpha AA on the other hand is more obvious. It
 		// causes the wireframe to draw lines 2 px wide instead of 1.
-		// 
+		//
 		// See remarks: https://msdn.microsoft.com/en-us/library/windows/desktop/ff476198(v=vs.85).aspx
 		const b32 useQuadrilateralLineAA = true;
 
@@ -521,7 +537,7 @@ InitializeRenderer(RendererState* s, V2i renderSize)
 		SetDebugObjectName(s->d3dRasterizerStateWireframe, "Rasterizer State (Wireframe)");
 
 		//Start off in correct state
-		UpdateRasterizeState(s);
+		UpdateRasterizerState(s);
 	}
 
 
@@ -687,7 +703,7 @@ AttachPreviewWindow(RendererState* s, PreviewWindowState* previewWindow)
 	*/
 
 	/* Set swap chain properties
-	* 
+	*
 	* NOTE:
 	* If the DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH flag is used, the display mode that most
 	* closely matches the back buffer will be used when entering fullscreen. If this happens to
@@ -698,7 +714,7 @@ AttachPreviewWindow(RendererState* s, PreviewWindowState* previewWindow)
 	* one will not be sent if the window happens to already be the same size as the desktop).
 	* For now, I think it makes the most sense to use the native display mode when entering
 	* fullscreen, so I'm removing the flag.
-	* 
+	*
 	* If we use a flip presentation swap chain, explicitly force destruction of any previous
 	* swap chains before creating a new one.
 	* https://msdn.microsoft.com/en-us/library/windows/desktop/ff476425(v=vs.85).aspx#Defer_Issues_with_Flip
@@ -762,14 +778,14 @@ DetachPreviewWindow(RendererState* s, PreviewWindowState* previewWindow)
 }
 
 void
-UpdateRasterizeState(RendererState* s)
+UpdateRasterizerState(RendererState* s)
 {
 	Assert(s->d3dContext                  != nullptr);
 	Assert(s->d3dRasterizerStateSolid     != nullptr);
 	Assert(s->d3dRasterizerStateWireframe != nullptr);
 
 
-	if ( s->isWireframeEnabled )
+	if (s->isWireframeEnabled)
 	{
 		s->d3dContext->RSSetState(s->d3dRasterizerStateWireframe.Get());
 	}
@@ -830,7 +846,6 @@ TeardownRenderer(RendererState* s)
 		#endif
 	}
 }
-
 
 DrawCall*
 PushDrawCall(RendererState* s)
