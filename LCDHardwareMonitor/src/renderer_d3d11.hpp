@@ -30,34 +30,6 @@ namespace HLSLSemantic
 	const c8* Color    = "COLOR";
 }
 
-//TODO: Merge these?
-template<u32 TNameLength>
-inline void
-SetDebugObjectName(const ComPtr<ID3D11Device> &resource, const c8 (&name)[TNameLength])
-{
-	#if defined(DEBUG)
-	resource->SetPrivateData(WKPDID_D3DDebugObjectName, TNameLength - 1, name);
-	#endif
-}
-
-template<u32 TNameLength>
-inline void
-SetDebugObjectName(const ComPtr<ID3D11DeviceChild> &resource, const c8 (&name)[TNameLength])
-{
-	#if defined(DEBUG)
-	resource->SetPrivateData(WKPDID_D3DDebugObjectName, TNameLength - 1, name);
-	#endif
-}
-
-template<u32 TNameLength>
-inline void
-SetDebugObjectName(const ComPtr<IDXGIObject> &resource, const c8 (&name)[TNameLength])
-{
-	#if defined(DEBUG)
-	resource->SetPrivateData(WKPDID_D3DDebugObjectName, TNameLength - 1, name);
-	#endif
-}
-
 // NOTES:
 // - Assume there's only one set of shaders and buffers so we don't need to
 //   know which ones to use.
@@ -137,7 +109,37 @@ struct RendererState
 //TODO: Handle unloading assets (will require reference counting, I think)
 //TODO: This pointer will move
 //TODO: Start passing WStrings instead of c16*?
-VertexShader* LoadVertexShader(RendererState* s, c16* path, List<VertexAttribute> attributes, ConstantBufferDesc cBufDesc)
+
+//TODO: Merge these?
+template<u32 TNameLength>
+static inline void
+SetDebugObjectName(const ComPtr<ID3D11Device> &resource, const c8 (&name)[TNameLength])
+{
+	#if defined(DEBUG)
+	resource->SetPrivateData(WKPDID_D3DDebugObjectName, TNameLength - 1, name);
+	#endif
+}
+
+template<u32 TNameLength>
+static inline void
+SetDebugObjectName(const ComPtr<ID3D11DeviceChild> &resource, const c8 (&name)[TNameLength])
+{
+	#if defined(DEBUG)
+	resource->SetPrivateData(WKPDID_D3DDebugObjectName, TNameLength - 1, name);
+	#endif
+}
+
+template<u32 TNameLength>
+static inline void
+SetDebugObjectName(const ComPtr<IDXGIObject> &resource, const c8 (&name)[TNameLength])
+{
+	#if defined(DEBUG)
+	resource->SetPrivateData(WKPDID_D3DDebugObjectName, TNameLength - 1, name);
+	#endif
+}
+
+static VertexShader*
+LoadVertexShader(RendererState* s, c16* path, List<VertexAttribute> attributes, ConstantBufferDesc cBufDesc)
 {
 	HRESULT hr;
 
@@ -258,13 +260,10 @@ VertexShader* LoadVertexShader(RendererState* s, c16* path, List<VertexAttribute
 	return nullptr;
 }
 
-#pragma region Foward Declarations
-void UpdateRasterizerState(RendererState*);
-DrawCall* PushDrawCall(RendererState*);
-#pragma endregion
+static void UpdateRasterizerState(RendererState* s);
 
 b32
-InitializeRenderer(RendererState* s, V2i renderSize)
+Renderer_Initialize(RendererState* s, V2i renderSize)
 {
 	//TODO: Maybe asserts go with the usage site?
 	Assert(s->d3dDevice                   == nullptr);
@@ -498,7 +497,6 @@ InitializeRenderer(RendererState* s, V2i renderSize)
 		//Set
 		s->d3dContext->PSSetShader(s->d3dPixelShader.Get(), nullptr, 0);
 	}
-	LOG(L"Past Problem Area", Severity::Info);
 
 
 	//Initialize rasterizer state
@@ -537,6 +535,7 @@ InitializeRenderer(RendererState* s, V2i renderSize)
 		SetDebugObjectName(s->d3dRasterizerStateWireframe, "Rasterizer State (Wireframe)");
 
 		//Start off in correct state
+		//void UpdateRasterizerState(RendererState* s);
 		UpdateRasterizerState(s);
 	}
 
@@ -618,7 +617,7 @@ InitializeRenderer(RendererState* s, V2i renderSize)
 		//TODO: Remove
 		//Draw call
 		DrawCall* dc;
-		dc = PushDrawCall(s);
+		dc = Renderer_PushDrawCall(s);
 		if (dc == nullptr) return false;
 
 		dc->mesh = Mesh::Quad;
@@ -682,102 +681,7 @@ InitializeRenderer(RendererState* s, V2i renderSize)
 	return true;
 }
 
-struct PreviewWindowState
-{
-	HWND                    hwnd                  = nullptr;
-	ComPtr<IDXGISwapChain>  swapChain             = nullptr;
-	ComPtr<ID3D11Texture2D> backBuffer            = nullptr;
-	V2i                     renderSize            = {};
-	V2i                     nonClientSize         = {};
-	u16                     zoomFactor            = 1;
-	i16                     mouseWheelAccumulator = 0;
-};
-
-b32
-AttachPreviewWindow(RendererState* s, PreviewWindowState* previewWindow)
-{
-	/* TODO: When using fullscreen, the display mode should be chosen by enumerating supported
-	* modes. If a mode is chosen that isn't supported, a performance penalty will be incurred due
-	* to Present performing a blit instead of a swap (does this apply to incorrect refresh rates
-	* or only incorrect resolutions?).
-	*/
-
-	/* Set swap chain properties
-	*
-	* NOTE:
-	* If the DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH flag is used, the display mode that most
-	* closely matches the back buffer will be used when entering fullscreen. If this happens to
-	* be the same size as the back buffer, no WM_SIZE event is sent to the application (I'm only
-	* assuming it *does* get sent if the size changes, I haven't tested it). If the flag is not
-	* used, the display mode will be changed to match that of the desktop (usually the monitors
-	* native display mode). This generally results in a WM_SIZE event (again, I'm only assuming
-	* one will not be sent if the window happens to already be the same size as the desktop).
-	* For now, I think it makes the most sense to use the native display mode when entering
-	* fullscreen, so I'm removing the flag.
-	*
-	* If we use a flip presentation swap chain, explicitly force destruction of any previous
-	* swap chains before creating a new one.
-	* https://msdn.microsoft.com/en-us/library/windows/desktop/ff476425(v=vs.85).aspx#Defer_Issues_with_Flip
-	*/
-	DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
-	swapChainDesc.BufferDesc.Width                   = s->renderSize.x;
-	swapChainDesc.BufferDesc.Height                  = s->renderSize.y;
-	//TODO: Get values from system (match desktop. what happens if it changes?)
-	swapChainDesc.BufferDesc.RefreshRate.Numerator   = 60;
-	swapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
-	swapChainDesc.BufferDesc.Format                  = DXGI_FORMAT_B8G8R8A8_UNORM;
-	swapChainDesc.BufferDesc.ScanlineOrdering        = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
-	swapChainDesc.BufferDesc.Scaling                 = DXGI_MODE_SCALING_UNSPECIFIED;
-	swapChainDesc.SampleDesc.Count                   = s->multisampleCount;
-	swapChainDesc.SampleDesc.Quality                 = s->qualityLevelCount - 1;
-	swapChainDesc.BufferUsage                        = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	swapChainDesc.BufferCount                        = 1;
-	swapChainDesc.OutputWindow                       = previewWindow->hwnd;
-	swapChainDesc.Windowed                           = true;
-	swapChainDesc.SwapEffect                         = DXGI_SWAP_EFFECT_DISCARD;
-	swapChainDesc.Flags                              = 0;//DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
-
-	//NOTE: IDXGISwapChain::ResizeTarget to resize window if render target changes
-
-	//Create the swap chain
-	HRESULT hr;
-	hr = s->dxgiFactory->CreateSwapChain(s->d3dDevice.Get(), &swapChainDesc, &previewWindow->swapChain);
-	LOG_IF(FAILED(hr), L"", Severity::Error, return false);
-	SetDebugObjectName(previewWindow->swapChain, "Swap Chain");
-
-	//Get the back buffer
-	hr = previewWindow->swapChain->GetBuffer(0, IID_PPV_ARGS(&previewWindow->backBuffer));
-	LOG_IF(FAILED(hr), L"", Severity::Error, return false);
-	SetDebugObjectName(previewWindow->backBuffer, "Back Buffer");
-
-	//Create a render target view to the back buffer
-	//ComPtr<ID3D11RenderTargetView> renderTargetView;
-	//hr = s->d3dDevice->CreateRenderTargetView(previewWindow->backBuffer.Get(), nullptr, &renderTargetView);
-	//LOG_IF(FAILED(hr), L"", Severity::Error, return false);
-	//SetDebugObjectName(renderTargetView, "Render Target View");
-
-	//Associate the window
-	hr = s->dxgiFactory->MakeWindowAssociation(previewWindow->hwnd, DXGI_MWA_NO_ALT_ENTER);
-	LOG_IF(FAILED(hr), L"", Severity::Error, return false);
-
-	return true;
-}
-
-b32
-DetachPreviewWindow(RendererState* s, PreviewWindowState* previewWindow)
-{
-	HRESULT hr;
-
-	previewWindow->backBuffer.Reset();
-	previewWindow->swapChain .Reset();
-
-	hr = s->dxgiFactory->MakeWindowAssociation(previewWindow->hwnd, DXGI_MWA_NO_ALT_ENTER);
-	LOG_IF(FAILED(hr), L"", Severity::Error, return false);
-
-	return true;
-}
-
-void
+static void
 UpdateRasterizerState(RendererState* s)
 {
 	Assert(s->d3dContext                  != nullptr);
@@ -796,7 +700,7 @@ UpdateRasterizerState(RendererState* s)
 }
 
 void
-TeardownRenderer(RendererState* s)
+Renderer_Teardown(RendererState* s)
 {
 	if (s == nullptr) return;
 
@@ -848,7 +752,7 @@ TeardownRenderer(RendererState* s)
 }
 
 DrawCall*
-PushDrawCall(RendererState* s)
+Renderer_PushDrawCall(RendererState* s)
 {
 	Assert(s->drawCallCount < (u32) ArrayLength(s->drawCalls));
 
@@ -857,7 +761,7 @@ PushDrawCall(RendererState* s)
 }
 
 b32
-Render(RendererState* s, PreviewWindowState* previewWindow)
+Renderer_Render(RendererState* s)
 {
 	// TODO: Should we assert things that will immediately crash the program
 	// anyway (e.g. dereferenced below)? It probably gives us a better error
@@ -909,17 +813,6 @@ Render(RendererState* s, PreviewWindowState* previewWindow)
 
 	//TODO: Why is this here again? I think it's for the WPF app
 	//s->d3dContext->Flush();
-
-	if (previewWindow->hwnd)
-	{
-		/* TODO: Handle DXGI_ERROR_DEVICE_RESET and DXGI_ERROR_DEVICE_REMOVED
-		 * Developer Command Prompt for Visual Studio as an administrator, and
-		 * typing dxcap -forcetdr which will immediately cause all currently running
-		 * Direct3D apps to get a DXGI_ERROR_DEVICE_REMOVED event.
-		 */
-		s->d3dContext->CopyResource(previewWindow->backBuffer.Get(), s->d3dRenderTexture.Get());
-		hr = previewWindow->swapChain->Present(0, 0);
-	}
 
 	return true;
 }

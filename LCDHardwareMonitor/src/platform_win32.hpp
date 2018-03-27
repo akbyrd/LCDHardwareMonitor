@@ -64,7 +64,7 @@ struct PlatformState
 };
 
 b32
-InitializePlatform(PlatformState* s)
+Platform_Initialize(PlatformState* s)
 {
 	b32 success = SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
 	//TODO: Does this varargs return actually work?
@@ -83,7 +83,7 @@ InitializePlatform(PlatformState* s)
 }
 
 void
-TeardownPlatform(PlatformState* s)
+Platform_Teardown(PlatformState* s)
 {
 	PluginHelper_Teardown();
 

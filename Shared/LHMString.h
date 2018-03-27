@@ -5,7 +5,7 @@
 //TODO: String views or slices (they need to know they don't own the string. Actually, the 'static string' concept will work here I think).
 //TODO: Maybe compress them to u16? Really should need strings that long, eh?
 
-/* NOTES:
+/* NOTE:
  * - Null terminated for C compatibility
  */
 

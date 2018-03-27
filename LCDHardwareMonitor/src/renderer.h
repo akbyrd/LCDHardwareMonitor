@@ -50,5 +50,7 @@ struct DrawCall
 	r32           worldM[4][4] = {};
 };
 
-VertexShader* LoadVertexShader (RendererState*, c16* path, List<VertexAttribute>, ConstantBufferDesc);
-DrawCall*     PushDrawCall     (RendererState*);
+b32       Renderer_Initialize   (RendererState*, V2i renderSize);
+void      Renderer_Teardown     (RendererState*);
+DrawCall* Renderer_PushDrawCall (RendererState*);
+b32       Renderer_Render       (RendererState*);
