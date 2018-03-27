@@ -1,0 +1,89 @@
+Style Notes
+
+- These notes are as much for me as anyone else.
+
+- I find the type_t convention rather pointless, so I typedef that stuff away.
+  In particular, I like the basic types being as brief as possible. i32 is a
+  32-bit integer number, u32 is a 32-bit unsigned integer, and r32 is a
+  32-bit real number. Notice that I name things based on their semantics, not
+  their representation. Calling a real number a 'floating point number' is no
+  less silly than calling an unsigned integer a 'two's complement number'.
+
+- Don't introduce complexity that isn't *required* by the problem being solved.
+  Move semantics is a ridiculous feature that exists only to solve problems
+  introduced by other ridiculous features that came before it. Yes, this
+  precludes the use of the vast majority of C++ and the STL and I'm ok with
+  that. I end up writing C with operator/function overloading, rare templates,
+  and occasional constructors/destructors to enable scope-based behavior.
+
+- I quite like the 'null-object pattern'. e.g. If a shader fails to load,
+  substitute a valid fallback shader and return an error code. Don't propogate
+  the need to check null/invalid values through the entire program. Handle them
+  at the first opportunity and use a valid fallback value if a failure occurs.
+  I also ensure that zero is always an invalid value. e.g. Always start enums
+  with a None or Null value equal to zero. This ensures the zeroed structures
+  never get interpreted as valid objects. This is a debugging aid, not a
+  runtime aid.
+
+- On the topic of error handling, here are my rules: 1) return a value that
+  can be used a boolean for success/failure, 2) when appropriate ensure there's
+  a way for the caller to know what *why* the failure occurred, 3) for
+  procedures with multiuple failure points ensure that from the callers point
+  of view either everything succeeds or everything fails, and 4) log the
+  failure. Regarding 3) If you acquire resources and a later acquisition fails
+  be sure you release all your resources. Don't leave them hanging and end up
+  in some mixed state. Currently, I think this is best implemented with a
+  C-style 'goto Cleanup' pattern. Something like ScopeGuard or defer would
+  maybe be acceptable, but I haven't fully bought into that complexity.
+  Regarding 4) I pass a logging context around that should be used to log any
+  failure without having to worry about the details of logging. It may go to
+  a file, or to a buffer that can be displayed in the application, or to a
+  server, it doesn't matter. This can be wrapped up in macros or functions to
+  simplify. I'm also ok with sloppy allocation/deallocation in logging
+  functions because it should be happening rarely. This is also the perfect
+  place for a custom 'stack allocator' so the allocation is practically free.
+  After any statement that can fail I have something like:
+      LOG_IF(FAILED(hr), L"D3D11CreateDevice", Severity::Error, return false);
+
+- I think I prefer passing by reference rather than by pointer. This is purely
+  for uniformity and refactoring. Having to change between -> and . is a
+  nuisance and wasted time. If I change a function from pass-by-value to
+  pass-by-reference I don't want to make a bunch of tedious syntax changes.
+  This might bite me in the ass eventually. For example, a Create function
+  that returns a new object can fail so it needs to be able to return a null
+  value, which is more difficult when returning references. I may eventually
+  return structs with a reference, bool operator, and error info which will
+  solve that problem. For now, I'm returning a pointer and immediately
+  assigning it to a local reference:
+      Type& foo = *Create();
+
+- Don't create more functions than are necessary. The only time something
+  becomes a new function is when it needs to be called multiple times from
+  multiple places. I really don't care how large a function becomes, it's not
+  somehow harder to read code because it's inside the same set of curly braces.
+  It's significantly easier to read linear code than a tree structure of
+  function calls. It also forces you to have at least some awareness of what
+  is *actually* going on, not just what you *think* is going on. Which in
+  turn lets you write better code because you can reuse intermediate results,
+  avoid slow-path behavior, and refactor much more easily. Further, the time
+  for new people to get comfortable with a codebase also scales with the
+  number of functions and files. Anonymous local scopes and Ctrl+F are your
+  friend.
+
+- Comments that should exist: 1) *why* this not-immediately-obvious piece of
+  code exists and 2) 1-2 word section headers to visually break up chunks of
+  code. Comments that should not exist: explaining *what* this code is doing.
+  If you want to know what a piece of code does, read the code. This only
+  needs to be explained with a comment when the code is extremely difficult
+  to understand, highly optimized, or contains important subtlties. Section
+  headers should mostly be used with local scopes:
+      //Initialize Rasterizer State
+      {
+          //...
+      }
+
+- Prefer plain old data and functions over objects.
+
+- Don't include header files from other header files.
+
+- Namespaces?

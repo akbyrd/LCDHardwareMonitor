@@ -19,3 +19,14 @@ Refactoring
 	Decide on comment style
 	Drop some of the variable name prefixes, such as d3d
 	Pick strict C++ and VS versions
+
+Figure out the current exceptions
+Load the OHM plugin
+Load default/fallback resources
+Catalog the current state of things
+	Shared contains the LHM API headers
+	win32_main
+		init platform
+		init renderer
+		init preview window
+	CLIHelper
