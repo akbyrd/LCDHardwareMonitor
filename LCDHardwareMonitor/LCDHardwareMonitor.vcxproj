@@ -164,6 +164,7 @@
     <ClInclude Include="..\Shared\LHMDataSource.h" />
     <ClInclude Include="..\Shared\LHMList.h" />
     <ClInclude Include="..\Shared\LHMString.h" />
+    <ClInclude Include="src\previewwindow_win32_d3d11.hpp" />
     <ClInclude Include="src\widget_filledbar.hpp" />
     <ClInclude Include="src\math.hpp" />
     <ClInclude Include="src\platform.h" />

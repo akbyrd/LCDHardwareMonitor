@@ -82,9 +82,6 @@ Platform_Initialize(PlatformState* s)
 	List_Reserve(s->plugins, 16);
 	LOG_IF(!s->plugins, L"Plugin allocation failed", Severity::Error, return false);
 
-	/* TODO: Seeing some exceptions here when using the Native/Mixed debugger.
-	 * They seem like first chance exceptions, but it's hard to say.
-	 */
 	PluginHelper_Initialize();
 
 	return true;

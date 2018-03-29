@@ -156,12 +156,14 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, c16* pCmdLine, i32 nCmdSh
 
 	Cleanup:
 	{
+		//NOTE: Only tearing these things down so we can check for D3D leaks.
 		PreviewWindow_Teardown(&previewState, &rendererState, hInstance);
 		Renderer_DestroySharedD3D9RenderTarget(&rendererState);
 		Renderer_Teardown(&rendererState);
+		//TODO: I don't think this is necessary
 		Platform_Teardown(&platformState);
 
-		//Leak all the things!
+		//Leak most of the things!
 		//(Windows destroys everything automatically)
 
 		return returnValue;

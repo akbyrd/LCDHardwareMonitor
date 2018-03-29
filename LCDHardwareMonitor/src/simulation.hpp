@@ -101,6 +101,10 @@ Simulation_Initialize(SimulationState* s)
 	List_Reserve(s->widgets, 8);
 	LOG_IF(!s->dataSources, L"Failed to allocate widgets list", Severity::Error, return false);
 
+	/* TODO: Exceptions are being raised due to OpenHardwareLib and
+	 * OpenHardware Plugin failing to load. It looks like they fail and then we
+	 * use AssemblyResolve to find them using the full path.
+	 */
 	DataSource* ohmDataSource = LoadDataSource(s, L"Data Sources\\OpenHardwareMonitor Source", L"OpenHardwareMonitor Plugin");
 
 	Widget& w = *List_Append(s->widgets);

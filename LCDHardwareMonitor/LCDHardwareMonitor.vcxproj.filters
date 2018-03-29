@@ -58,6 +58,9 @@
     <ClInclude Include="..\Shared\LHMString.h">
       <Filter>API</Filter>
     </ClInclude>
+    <ClInclude Include="src\previewwindow_win32_d3d11.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="res\Basic Vertex Shader.hlsl">
