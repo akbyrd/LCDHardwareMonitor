@@ -1,17 +1,18 @@
-#include "LHMAPI.h"
-#include "LHMString.h"
+/* NOTE: Raise a compiler error when switching over
+ * an enum and any enum values are missing a case.
+ * https://msdn.microsoft.com/en-us/library/fdt9w8tf.aspx
+ */
+#pragma warning (error: 4062)
 
+//TODO: Can this be moved somewhere?
 #define IF(expression, ...) \
 if (expression)             \
 {                           \
 	__VA_ARGS__;              \
 }
 
-/* NOTE: Raise a compiler error when switching over
- * an enum and any enum values are missing a case.
- * https://msdn.microsoft.com/en-us/library/fdt9w8tf.aspx
- */
-#pragma warning (error: 4062)
+#include "LHMAPI.h"
+#include "LHMString.h"
 
 #include "math.hpp"
 #include "CLIHelper.h"
@@ -37,7 +38,6 @@ if (expression)             \
 /* TODO: Probably want to use this as some point so frame debugger works without
  * the preview window
  * https://msdn.microsoft.com/en-us/library/hh780905.aspx */
-//TODO: Decide what we're really doing with wide characters/i18n
 
 const i32 togglePreviewWindowID = 0;
 
@@ -52,13 +52,21 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, c16* pCmdLine, i32 nCmdSh
 	PreviewWindowState previewState    = {};
 
 	//Platform
-	Platform_Initialize(&platformState);
+	{
+		b32 success = Platform_Initialize(&platformState);
+		if (!success) goto Cleanup;
+	}
 
 
 	//Renderer
 	{
-		b32 success = Renderer_Initialize(&rendererState, simulationState.renderSize);
-		LOG_IF(!success, L"InitializeRenderer failed to initialize", Severity::Error, goto Cleanup);
+		b32 success;
+
+		success = Renderer_Initialize(&rendererState, simulationState.renderSize);
+		if (!success) goto Cleanup;
+
+		success = Renderer_CreateSharedD3D9RenderTexture(&rendererState);
+		if (!success) goto Cleanup;
 	}
 
 
@@ -149,6 +157,7 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, c16* pCmdLine, i32 nCmdSh
 	Cleanup:
 	{
 		PreviewWindow_Teardown(&previewState, &rendererState, hInstance);
+		Renderer_DestroySharedD3D9RenderTarget(&rendererState);
 		Renderer_Teardown(&rendererState);
 		Platform_Teardown(&platformState);
 

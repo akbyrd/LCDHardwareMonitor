@@ -1,5 +1,12 @@
-const float PI = 3.141592654f;
-//TODO: Maaaaybe just use templates and the array thing?
+const i32 i32Min = -2147483647 - 1;
+const i32 i32Max = 2147483647;
+const u32 u32Max = 4294967295;
+const r32 r32Min = 1.175494351e-38f;
+const r32 r32Max = 3.402823466e+38f;
+
+const r32 r32Epsilon = 31.192092896e-07f;
+const r32 r32Pi      = 3.141592654f;
+
 
 i32
 Clamp(i32 value, i32 min, i32 max)

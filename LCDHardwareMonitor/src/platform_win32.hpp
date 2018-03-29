@@ -1,5 +1,3 @@
-//TODO: Rename to win32_platform
-
 //
 // Logging
 //
@@ -10,48 +8,59 @@ ConsolePrint(c16* message)
 	OutputDebugStringW(message);
 }
 
-//TODO: Finish
-#define LOG_HRESULT(message, severity, hr) LogHRESULT(message, severity, hr, WIDE(__FILE__), __LINE__, WIDE(__FUNCTION__))
 void
-LogHRESULT(c16* message, Severity severity, HRESULT hr, c16* file, i32 line, c16* function)
+LogFormatMessage(c16* message, Severity severity, u32 messageID, c16* file, i32 line, c16* function)
 {
-	Log(message, severity, file, line, function);
-}
-
-#define LOG_LAST_ERROR(message, severity) LogLastError(message, severity, WIDE(__FILE__), __LINE__, WIDE(__FUNCTION__))
-#define LOG_LAST_ERROR_IF(expression, message, severity, ...) IF(expression, LOG_LAST_ERROR(message, severity); __VA_ARGS__)
-b32
-LogLastError(c16* message, Severity severity, c16* file, i32 line, c16* function)
-{
-	i32 lastError = GetLastError();
-
 	c16 windowsMessage[256];
 	u32 uResult = FormatMessageW(
 		FORMAT_MESSAGE_FROM_SYSTEM,
 		nullptr,
-		GetLastError(),
+		messageID,
 		0,
 		windowsMessage,
-		ArrayLength(windowsMessage),
+		ArrayLength(windowsMessage) - 1,
 		nullptr
 	);
 
-	//TODO: Check for swprintf failures (overflow).
+	//NOTE: If we fail this far down, just...fuck it.
 	c16 combinedMessage[256];
 	if (uResult == 0)
 	{
-		LOG_LAST_ERROR(L"FormatMessage failed", Severity::Warning);
-		swprintf(combinedMessage, ArrayLength(combinedMessage), L"%s: %i", message, lastError);
+		i32 iResult = swprintf(combinedMessage, ArrayLength(combinedMessage), L"%s: %i", message, messageID);
+		if (iResult < 0)
+		{
+			Log(L"swprintf failed", Severity::Warning, WIDE(__FILE__), __LINE__, WIDE(__FUNCTION__));
+			Log(message, severity, file, line, function);
+		}
 	}
 	else
 	{
 		windowsMessage[uResult - 1] = '\0';
-		swprintf(combinedMessage, ArrayLength(combinedMessage), L"%s: %s", message, windowsMessage);
+		i32 iResult = swprintf(combinedMessage, ArrayLength(combinedMessage), L"%s: %s", message, windowsMessage);
+		if (iResult < 0)
+		{
+			Log(L"swprintf failed", Severity::Warning, WIDE(__FILE__), __LINE__, WIDE(__FUNCTION__));
+			Log(message, severity, file, line, function);
+		}
 	}
 
 	Log(combinedMessage, severity, file, line, function);
+}
 
-	return true;
+#define LOG_HRESULT(message, severity, hr) LogHRESULT(message, severity, hr, WIDE(__FILE__), __LINE__, WIDE(__FUNCTION__))
+void
+LogHRESULT(c16* message, Severity severity, HRESULT hr, c16* file, i32 line, c16* function)
+{
+	LogFormatMessage(message, severity, hr, file, line, function);
+}
+
+#define LOG_LAST_ERROR(message, severity) LogLastError(message, severity, WIDE(__FILE__), __LINE__, WIDE(__FUNCTION__))
+#define LOG_LAST_ERROR_IF(expression, message, severity, ...) IF(expression, LOG_LAST_ERROR(message, severity); __VA_ARGS__)
+void
+LogLastError(c16* message, Severity severity, c16* file, i32 line, c16* function)
+{
+	u32 lastError = GetLastError();
+	LogFormatMessage(message, severity, lastError, file, line, function);
 }
 
 //
@@ -67,7 +76,6 @@ b32
 Platform_Initialize(PlatformState* s)
 {
 	b32 success = SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
-	//TODO: Does this varargs return actually work?
 	LOG_LAST_ERROR_IF(!success, L"SetDefaultDllDirectories failed", Severity::Warning, return false);
 
 	s->plugins = {};
@@ -98,8 +106,10 @@ Platform_Teardown(PlatformState* s)
 #include <fstream>
 
 static Bytes
-LoadFile(c16* fileName, u32 padding = 0)
+LoadFile(c16* fileName, i32 padding = 0)
 {
+	Assert(padding >= 0);
+
 	//TODO: Add cwd to errors
 	//TODO: Handle files larger than 4 GB
 	//TODO: Handle c8/c16/void
@@ -111,7 +121,7 @@ LoadFile(c16* fileName, u32 padding = 0)
 
 	result.length   = (i32) inFile.tellg();
 	result.capacity = result.length + padding;
-	LOG_IF(result.capacity < result.length, L"Failed to add padding bytes when loading file: <file>", Severity::Error, goto Cleanup);
+	LOG_IF(i32Max - result.length < padding, L"File is too big to fit requested padding when loading: <file>", Severity::Error, goto Cleanup);
 
 	result.data = (u8*) malloc(sizeof(u8) * result.capacity);
 
@@ -197,7 +207,6 @@ LoadPlugin(PlatformState* s, c16* directory, c16* name)
 	plugin.cookie = AddDllDirectory(path);
 	LOG_LAST_ERROR_IF(!plugin.cookie, L"AddDllDirectory failed", Severity::Warning, return {});
 
-	//TODO: Does this load dependencies?
 	plugin.module = LoadLibraryW(name);
 	PluginHelper_PluginLoaded(directory, name);
 
