@@ -45,17 +45,15 @@ Style Notes
   After any statement that can fail I have something like:
       LOG_IF(FAILED(hr), L"D3D11CreateDevice", Severity::Error, return false);
 
-- I think I prefer passing by reference rather than by pointer. This is purely
-  for uniformity and refactoring. Having to change between -> and . is a
-  nuisance and wasted time. If I change a function from pass-by-value to
-  pass-by-reference I don't want to make a bunch of tedious syntax changes.
-  This might bite me in the ass eventually. For example, a Create function
-  that returns a new object can fail so it needs to be able to return a null
-  value, which is more difficult when returning references. I may eventually
-  return structs with a reference, bool operator, and error info which will
-  solve that problem. For now, I'm returning a pointer and immediately
-  assigning it to a local reference:
-      Type& foo = *Create();
+- Use pointers instead of references. Yes, it's annoying that there's different
+  syntax for accessing members, which can be irritating when refactoring. But
+  references just trade that for a new annoyance: less clear at the call sites
+  that the argument may be modified. There's an argument to be made that you
+  can't tell a lot of things just from looking at the call site, but
+  subjectively just doesn't feel like it's worth using an additional language
+  feature for something that's not a clear win. Also, since you can't pass
+  or return nullptr when using references it leads to inconsistent code when you
+  specifically want to support a nullptr case.
 
 - Don't create more functions than are necessary. The only time something
   becomes a new function is when it needs to be called multiple times from
@@ -75,7 +73,7 @@ Style Notes
   code. Comments that should not exist: explaining *what* this code is doing.
   If you want to know what a piece of code does, read the code. This only
   needs to be explained with a comment when the code is extremely difficult
-  to understand, highly optimized, or contains important subtlties. Section
+  to understand, highly optimized, or contains important subtleties. Section
   headers should mostly be used with local scopes:
       //Initialize Rasterizer State
       {

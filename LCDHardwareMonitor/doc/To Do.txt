@@ -7,30 +7,59 @@ Ensure debugging for both native and managed plugins is reasonable.
 Is it possible to catch managed exceptions from the native side? Can't have them crash the application.
 
 Refactoring
-	Use self or this as parameter name for 'methods'
-	Should const be used on parameters and locals?
-	Should reference parameters be passed by reference or pointer?
-		Pointers: Arrow/dot refactoring, slightly more obvious at callsite (still can't distinguish between pointer for efficiency vs pointer for modifications. Const isn't as visible at callsite)
-		Reference: Don't have to refactor dot/arrow, less obvious that the parameter may be modified
-		Truthfully, the different syntax between pointers and references is more annoying than the modification thing. There are lots of things that aren't communicated at the callsite, so why special case for this?
-	Include 'out' in out parameter names
-	Array and String slices?
+	Replace references with pointers
 	Stop using wide characters. That's not the right path to unicode support.
-	Decide what we're really doing with wide characters/i18n
 	Decide on comment style
 	Drop some of the variable name prefixes, such as d3d
+	Use self or this as parameter name for 'methods'
+	Should const be used on parameters and locals?
+	Include 'out' in out parameter names
+	Array and String slices?
+	Decide what we're really doing with wide characters/i18n
 	Pick strict C++ and VS versions
 	Renaming
 		Ensure Platform is uniform
 		CLIHelper/PluginHelper
 
-Figure out the current exceptions
-Load the OHM plugin
 Load default/fallback resources
-Catalog the current state of things
-	Shared contains the LHM API headers
-	win32_main
-		init platform
-		init renderer
-		init preview window
+
+Plugin Loading
+	[CLIHelper native loaded on startup]
+	platform_win32.hpp
+		Platform_Initialize
+			PluginHelper_Initialize
+				[2x CLIHelper loaded, managed and wrong address]
+				Register AssemblyResolveHandler
+
+		LoadPlugin
+			GetCurrentDirectory
+			AddDllDirectory      [OHMPlugin]
+			LoadLibrary          [OHMPlugin]
+			[OHMPlugin loaded as native, managed not initialized]
+			PluginHelper_PluginLoaded
+				Shove global pluginDirectory and pluginName
+	[1x OHMPlugin is loaded]
+	[OHMPlugin used]
+	[2x OHMPlugin loaded, managed and wrong address] assuming it's found because the native module is loaded
+	[Does not load OHMLib] maybe try LoadLibraryEx?
+	[OHMLib loaded, no idea how]
 	CLIHelper
+		AssemblyResolveHandler
+			Assembly::LoadFrom
+			[2x OHMPlugin loaded, managed and wrong address]
+	[This is bonkers]
+
+	Alright. So.
+	Main issue: OHMLib isn't found when loading.
+	Sub-Issue 1: We don't know when the plugin will trigger dependency loads, so
+	  the whole global variable for name and path is not going to work. Resolve
+	  args have requesting assembly though, that's probably enough, but I'd much
+	  rather find a way to set the dependency path.
+	Idea 1: Separate AppDomain per plugin so we can set dependency path.
+	  However, we eat the performance cost of serializing across domains.
+	  MIIIGHT be solvable
+	Idea 2: Spin up the CLR from native. No idea if this is helpful. Maybe as a
+	  way to handle performance issues?
+	Idea 3: Leave it as is. Call into plugins to give them a chance to resolve
+	  the dependency.
+	Plan: Research CLR loading behavior again. Determine if there's a way 
