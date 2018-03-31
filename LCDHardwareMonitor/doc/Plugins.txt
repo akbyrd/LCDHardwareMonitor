@@ -1,50 +1,202 @@
-/* NOTE: Plugins
- * Ok, here's (part of) the deal. Managed plugins bring in a lot of complexity.
- * Ultimately, I'm leaning toward Option 3. I don't like having to call into
- * managed code, so maybe there's a way around that. However, for now I'm
- * sticking with the simplicity of Option 1. Once we're up and running I'll
- * revisit the issue.
- *
- * Option 1: Call managed plugins through GetProcAddress.
- *  - This will always call into the default AppDomain. And the Fusion Loader
- *    will fail to find other managed dependencies (that aren't in the GAC)
- *    because they aren't in the bin path. We'll need to use AssemblyResolve to
- *    handle this. Will need a CLI Helper for this.
- * *- The catch here is that assemblies are loaded on-demand. So we can't know
- *    which folder to search in based on *when* the load occurs. However, we can
- *    make a reasonable guess at which folder to search based on the name of the
- *    requesting assembly. We'll need to keep a cache of loads that have occured
- *    because Assembly A and load B which then loads C and we need to know to
- *    use A's folder.
- *  - It's very appealing to be able to simply call every plugin through a
- *    uniform C interface. It means we don't have to care whether a plugin is
- *    managed or unmanaged.
- *  - However, it also leaves the onus of doing good interop on the plugin
- *    author (e.g. using a delegate to skirt the x64 performance hit and an
- *    instance method for a bit more speed). Can maybe provide a 'template' or
- *    some such to simplify it.
- *  - Enabling or disabling plugins would require unloading and reloading the
- *    entire CLR. This doesn't look possible.
- *  - Plugin dependencies could end up loading out of some other folder in the
- *    bin path. Probably not a big issue. Plugin authors can use strong naming.
- *  - ~NOTE~ Specifying the full path won't work for indirectly loaded
- *    assemblies (e.g. dependencies).
- *  - ~NOTE~ Could use a .config file for resolving dependencies, but
- *    AssemblyResolve is simpler.
- *
- * Option 2: Load plugins into a separate AppDomain
- *  - Means we can load and unload plugins independently of one another.
- *  - We'll have to call into the managed side of each plugin. If we call into
- *    native and the plugin calls into managed it's going to use the default
- *    AppDomain.
- *  - We take a 10x performance hit for calling across AppDomains.
- *  - I think we can return a function pointer back to the native side to hide
- *    the 'have to call into managed code' issue from native side.
- *
- * Option 3: Host the CLR from native
- *  - I haven't looked into this heavily, but currently it looks like it might
- *    be the right choice.
- *  - Basically it's Option 2 without a separate C++/CLI assembly. It should
- *    streamline things a bit.
- *  - What is perfomrmance like in this case?
- */
+Ok, here's (part of) the deal. Managed plugins bring in a lot of complexity.
+Ultimately, I'm leaning toward Option 3. I don't like having to call into
+managed code, so maybe there's a way around that. However, for now I'm
+sticking with the simplicity of Option 1. Once we're up and running I'll
+revisit the issue.
+
+Option 1: Call managed plugins through GetProcAddress.
+ - It's crazy this even works. I *think* GetProcAddress actually returns a
+   native thunk that ends up spinning up the CLR.
+ - This will always call into the default AppDomain. And the Fusion Loader
+   will fail to find other managed dependencies (that aren't in the GAC)
+   because they aren't in the bin path. We'll need to use AssemblyResolve to
+   handle this. Will need a CLI Helper for this.
+*- The catch here is that assemblies are loaded on-demand. So we can't know
+   which folder to search in based on *when* the load occurs. However, we can
+   make a reasonable guess at which folder to search based on the name of the
+   requesting assembly. We'll need to keep a cache of loads that have occured
+   because Assembly A can load B which then loads C and we need to know to
+   use A's folder.
+ - It's very appealing to be able to simply call every plugin through a
+   uniform C interface. It means we don't have to care whether a plugin is
+   managed or unmanaged.
+ - However, it also leaves the onus of doing good interop on the plugin
+   author (e.g. using a delegate to skirt the x64 performance hit and an
+   instance method for a bit more speed). Can maybe provide a 'template' or
+   some such to simplify it.
+ - Do the simple thing. Plugin authors can just not suck.
+ - Enabling or disabling plugins would require unloading and reloading the
+   entire CLR. This doesn't look possible.
+ - Plugin dependencies could end up loading out of some other folder in the
+   bin path. Probably not a big issue. Plugin authors can use strong naming.
+ - ~NOTE~ Specifying the full path won't work for indirectly loaded
+   assemblies (e.g. dependencies).
+ - ~NOTE~ Could use a .config file for resolving dependencies, but
+   AssemblyResolve is simpler.
+
+Option 2: Load plugins into a separate AppDomain
+ - Means we can load and unload plugins independently of one another.
+ - We'll have to call into the managed side of each plugin. If we call into
+   native and the plugin calls into managed it's going to use the default
+   AppDomain.
+ - We take a 10x performance hit for calling across AppDomains.
+ - I think we can return a function pointer back to the native side to hide
+   the 'have to call into managed code' issue from native side.
+
+Option 3: Host the CLR from native
+ - I haven't looked into this heavily, but currently it looks like it might
+   be the right choice.
+ - Basically it's Option 2 without a separate C++/CLI assembly. It should
+   streamline things a bit.
+ - What is performance like in this case?
+
+
+
+Plugin Loading Process
+	- This is just a re-hash of the above. I've rediscovered it manually in order
+	  to refresh myself on what's going on in this mess of an application.
+
+	[CLIHelper native loaded on startup]
+	platform_win32.hpp
+		Platform_Initialize
+			PluginHelper_Initialize
+				[2x CLIHelper loaded, managed and wrong address]
+				Register AssemblyResolveHandler
+
+		LoadPlugin
+			GetCurrentDirectory
+			AddDllDirectory      [OHMPlugin]
+			LoadLibrary          [OHMPlugin]
+			[OHMPlugin loaded as native, managed not initialized]
+			PluginHelper_PluginLoaded
+				Shove global pluginDirectory and pluginName
+	[1x OHMPlugin is loaded]
+	[OHMPlugin used]
+	[2x OHMPlugin loaded, managed and wrong address] assuming it's found because the native module is loaded
+	[Does not load OHMLib] maybe try LoadLibraryEx?
+	[OHMLib loaded, no idea how]
+	CLIHelper
+		AssemblyResolveHandler
+			Assembly::LoadFrom
+			[2x OHMPlugin loaded, managed and wrong address]
+	[This is bonkers]
+
+	Alright. So.
+	Main issue: OHMLib isn't found when loading.
+	Sub-Issue 1: We don't know when the plugin will trigger dependency loads, so
+	  the whole global variable for name and path is not going to work. Resolve
+	  args have requesting assembly though, that's probably enough, but I'd much
+	  rather find a way to set the dependency path.
+	Idea 1: Separate AppDomain per plugin so we can set dependency path.
+	  However, we eat the performance cost of serializing across domains.
+	  MIIIGHT be solvable
+	Idea 2: Spin up the CLR from native. No idea if this is helpful. Maybe as a
+	  way to handle performance issues?
+	Idea 3: Leave it as is. Call into plugins to give them a chance to resolve
+	  the dependency.
+	Plan: Research CLR loading behavior again. Determine if there's a way
+
+	Require Features
+		Load C++ modules
+		Load .NET assemblies
+		Very high performance
+		<10 ns function calls in plugins
+		Single version of the CLR
+		Single copy of .NET dependencies (e.g. mscorlib)
+		Logging and graceful shutdown as the worst case if a plugin exception occurs
+		Not trying to be secure. Just user and developer friendly.
+	Preferred Features
+		Exceptions only affect a single plugin
+			Assemblies in separate AppDomains
+		Individually load and unload plugins
+		Target .NET Framework 4.0
+		Plugins can be updated while the application is running (scan, unload, load)
+
+	Ideas
+		Pure C# and pure C++ plugins. No more boundary crossing.
+		Single AppDomain for all plugins. Unload all plugins on exception
+		Is the a performant way to sandbox in C++? Are subprocesses a thing?
+		Try/catch on C++ plugins. Just dump 'em if they fuck up.
+
+	Thoughts
+		Reasons for AppDomains
+			- Resolving dependencies. The search path is based on the working
+			  directory, not the directory of the plugin. So our folder structure
+			  means plugin dependencies won't be found. We currently rely on the
+			  AssemblyResolve event to manually LoadFrom. We can't change the search
+			  directory with the default domain, but we can with separate domains.
+			- Loading and unloading plugins. This is mostly for fun. It's convenient
+			  when setting up the LCD, making changes, or when a plugin fails, but
+			  those are not the common case.
+			- Hot swapping plugins. Users should be able to add, remove, and overwrite
+			  plugins and the application should respectively load, unload, and reload
+			  them automatically. This may end up being a reason *not* to use domains.
+			  If we have to manually copy native modules then we'll likely use the
+			  same model for managed plugins.
+		Not Reasons for AppDomains
+			- Security/sandboxing. Wrap plugin calls with try/catch and if they
+			  explode, just unload them or stop calling them.
+			- Performance. It's easy enough to save which plugins are in use and only
+			  load those. We can't unload, but that only affects a single run of the
+			  application.
+
+	Edge Cases
+		- What happens when a dependency throws an exception? We'll unload the plugin,
+		  but we should probably unload every plugin that uses the dependency, right?
+		  Granted, this is an edge case of an edge case. I'll pencil it in for triage
+		  in 2021.
+
+	Curiosities
+		- .NET assemblies show up twice in Visual Studio's Modules window. Once as
+		  managed, once with a 'wrong address' error. Why? Does this indicate a
+		  problem or inefficiency?
+
+	Research
+		Hosting Overview
+		https://msdn.microsoft.com/en-us/library/dd380850(v=vs.100).aspx
+		Topics at bottom
+		Initialize with CLRCreateInstance (supercedes CorBindToRuntimeEx)
+
+		Loading the Common Language Runtime into a Process
+		https://msdn.microsoft.com/en-us/library/01918c6x(v=vs.100).aspx
+		Metahost.h (Windows SDK), mscoree.lib
+
+		Runtime Hosts
+		https://msdn.microsoft.com/en-us/library/a51xd4ze(v=vs.100).aspx
+		Nothing interesting.
+
+		Application Domains
+		https://msdn.microsoft.com/en-us/library/2bh4z9hs(v=vs.100).aspx
+		Just general info
+
+		Creating and Configuring Application Domains
+		https://msdn.microsoft.com/en-us/library/wxtzfyw3(v=vs.100).aspx
+		System.AppDomain.CreateDomain
+		Domains can have custom key/value pairs to embed information
+		Use AppDomainSetup.ApplicationBase to set loading directory.
+		Use AppDomainSetup.ConfigurationFile to supply configuration settings.
+
+		Determining Application Domain Boundaries
+		https://msdn.microsoft.com/en-us/library/56e3y6t8(v=vs.100).aspx
+
+		Activation Configuration Files
+		https://msdn.microsoft.com/en-us/library/ff361644(v=vs.100).aspx
+		For using new .NET Framework versions with an older host. Don't care.
+
+		Loading and Executing User Code
+		https://msdn.microsoft.com/en-us/library/y6k08yft(v=vs.100).aspx
+
+		Transitioning to Managed Hosting Code
+		https://msdn.microsoft.com/en-us/library/yzba0xwe(v=vs.100).aspx
+		AppDomainManagers in each domain for calling managed code.
+
+		Unloading Domains and Shutting Down a Process
+		https://msdn.microsoft.com/en-us/library/7y06h4xe(v=vs.100).aspx
+		Assemblies in the default domain and domain-neutral aassemblies cannot be
+		unloaded.
+
+		How-to and Walkthrough Directory
+		https://msdn.microsoft.com/en-us/library/ms184413(v=vs.100).aspx
+		Debugging and Profiling
+		Interoperating with Unmanaged Code
+		WPF Walkthroughs
