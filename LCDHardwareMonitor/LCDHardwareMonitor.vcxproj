@@ -72,26 +72,26 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>bin\$(Configuration)_$(Platform)\</OutDir>
     <IntDir>obj\$(Configuration)_$(Platform)\</IntDir>
-    <IncludePath>$(ProjectDir)include;$(SolutionDir)Shared;$(SolutionDir)LCDHardwareMonitor CLI Helper\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)LCDHardwareMonitor CLI Helper\$(OutDir);$(LibraryPath)</LibraryPath>
+    <IncludePath>$(ProjectDir)include;$(SolutionDir)Shared;$(SolutionDir)LCDHardwareMonitor CLR Helper\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)LCDHardwareMonitor CLR Helper\$(OutDir);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>bin\$(Configuration)_$(Platform)\</OutDir>
     <IntDir>obj\$(Configuration)_$(Platform)\</IntDir>
-    <IncludePath>$(ProjectDir)include;$(SolutionDir)Shared;$(SolutionDir)LCDHardwareMonitor CLI Helper\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)LCDHardwareMonitor CLI Helper\$(OutDir);$(LibraryPath)</LibraryPath>
+    <IncludePath>$(ProjectDir)include;$(SolutionDir)Shared;$(SolutionDir)LCDHardwareMonitor CLR Helper\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)LCDHardwareMonitor CLR Helper\$(OutDir);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>bin\$(Configuration)_$(Platform)\</OutDir>
     <IntDir>obj\$(Configuration)_$(Platform)\</IntDir>
-    <IncludePath>$(ProjectDir)include;$(SolutionDir)Shared;$(SolutionDir)LCDHardwareMonitor CLI Helper\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)LCDHardwareMonitor CLI Helper\$(OutDir);$(LibraryPath)</LibraryPath>
+    <IncludePath>$(ProjectDir)include;$(SolutionDir)Shared;$(SolutionDir)LCDHardwareMonitor CLR Helper\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)LCDHardwareMonitor CLR Helper\$(OutDir);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>bin\$(Configuration)_$(Platform)\</OutDir>
     <IntDir>obj\$(Configuration)_$(Platform)\</IntDir>
-    <IncludePath>$(ProjectDir)include;$(SolutionDir)Shared;$(SolutionDir)LCDHardwareMonitor CLI Helper\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)LCDHardwareMonitor CLI Helper\$(OutDir);$(LibraryPath)</LibraryPath>
+    <IncludePath>$(ProjectDir)include;$(SolutionDir)Shared;$(SolutionDir)LCDHardwareMonitor CLR Helper\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)LCDHardwareMonitor CLR Helper\$(OutDir);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -104,7 +104,7 @@
       <Command>"$(SolutionDir)Shared\Deploy.bat" "$(SolutionDir)" "$(TargetDir)"</Command>
     </PostBuildEvent>
     <Link>
-      <AdditionalDependencies>LCDHardwareMonitor CLI Helper.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>LCDHardwareMonitor CLR Helper.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -118,7 +118,7 @@
       <Command>"$(SolutionDir)Shared\Deploy.bat" "$(SolutionDir)" "$(TargetDir)"</Command>
     </PostBuildEvent>
     <Link>
-      <AdditionalDependencies>LCDHardwareMonitor CLI Helper.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>LCDHardwareMonitor CLR Helper.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -132,7 +132,7 @@
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>LCDHardwareMonitor CLI Helper.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>LCDHardwareMonitor CLR Helper.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>"$(SolutionDir)Shared\Deploy.bat" "$(SolutionDir)" "$(TargetDir)"</Command>
@@ -149,7 +149,7 @@
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>LCDHardwareMonitor CLI Helper.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>LCDHardwareMonitor CLR Helper.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>"$(SolutionDir)Shared\Deploy.bat" "$(SolutionDir)" "$(TargetDir)"</Command>
@@ -164,6 +164,9 @@
     <ClInclude Include="..\Shared\LHMDataSource.h" />
     <ClInclude Include="..\Shared\LHMList.h" />
     <ClInclude Include="..\Shared\LHMString.h" />
+    <ClInclude Include="src\platformdefs_win32.hpp" />
+    <ClInclude Include="src\pluginloader.h" />
+    <ClInclude Include="src\pluginloader_win32.hpp" />
     <ClInclude Include="src\previewwindow_win32_d3d11.hpp" />
     <ClInclude Include="src\widget_filledbar.hpp" />
     <ClInclude Include="src\math.hpp" />
@@ -206,10 +209,6 @@
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\LCDHardwareMonitor CLI Helper\LCDHardwareMonitor CLI Helper.vcxproj">
-      <Project>{4cf4bf35-2c27-4969-bfd7-34149a9cbf12}</Project>
-      <Private>false</Private>
-    </ProjectReference>
     <ProjectReference Include="..\OpenHardwareMonitor Plugin\OpenHardwareMonitor Plugin.vcxproj">
       <Project>{2585baf1-e85b-4fd3-9a91-abcb8ccf685a}</Project>
       <Private>false</Private>

@@ -1,7 +1,7 @@
 #pragma managed
 
 #define EXPORTING 1
-#include "CLIHelper.h"
+#include "CLR.h"
 
 #include <wtypes.h>
 
@@ -37,21 +37,21 @@ AssemblyResolveHandler(Object^ sender, ResolveEventArgs^ args)
 }
 
 void
-PluginHelper_Initialize()
+CLR_Initialize()
 {
 	State::resolveDelegate = gcnew ResolveEventHandler(AssemblyResolveHandler);
 	AppDomain::CurrentDomain->AssemblyResolve += State::resolveDelegate;
 }
 
 void
-PluginHelper_PluginLoaded(c16* pluginDirectory, c16* pluginName)
+CLR_PluginLoaded(c16* pluginDirectory, c16* pluginName)
 {
 	State::pluginDirectory = gcnew String(pluginDirectory);
 	State::pluginName = gcnew String(pluginName);
 }
 
 void
-PluginHelper_PluginUnloaded(c16* pluginDirectory, c16* pluginName)
+CLR_PluginUnloaded(c16* pluginDirectory, c16* pluginName)
 {
 	if (State::pluginName == gcnew String(pluginName))
 	{
@@ -61,7 +61,7 @@ PluginHelper_PluginUnloaded(c16* pluginDirectory, c16* pluginName)
 }
 
 void
-PluginHelper_Teardown()
+CLR_Teardown()
 {
 	//TODO: Unload the current AppDomain
 	AppDomain::CurrentDomain->AssemblyResolve -= State::resolveDelegate;

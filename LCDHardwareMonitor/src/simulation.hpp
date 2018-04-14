@@ -1,29 +1,3 @@
-enum struct Severity
-{
-	Info,
-	Warning,
-	Error
-};
-
-#define WIDEHELPER(x) L##x
-#define WIDE(x) WIDEHELPER(x)
-
-#define LOG(message, severity) Log(message, severity, WIDE(__FILE__), __LINE__, WIDE(__FUNCTION__))
-#define LOG_IF(expression, message, severity, ...) IF(expression, LOG(message, severity); __VA_ARGS__)
-
-void
-Log(c16* message, Severity severity, c16* file, i32 line, c16* function)
-{
-	//TODO: Decide on logging allocation policy
-	//TODO: Check for swprintf failure (overflow).
-	c16 buffer[512];
-	swprintf(buffer, ArrayLength(buffer), L"%s - %s\n\t%s(%i)\n", function, message, file, line);
-	ConsolePrint(buffer);
-
-	if (severity > Severity::Info)
-		__debugbreak();
-}
-
 struct DataSource
 {
 	//TODO: This pointer will break when the list resizes
@@ -37,26 +11,26 @@ struct DataSource
 
 struct SimulationState
 {
-	PlatformState*   platform;
-	RendererState*   renderer;
+	PluginLoaderState* pluginLoader;
+	RendererState*     renderer;
 
-	V2i              renderSize = {320, 240};
-	List<DataSource> dataSources;
-	List<Widget>     widgets;
+	V2i                renderSize = { 320, 240 };
+	List<DataSource>   dataSources;
+	List<Widget>       widgets;
 };
 
-DataSource*
+static DataSource*
 LoadDataSource(SimulationState* s, c16* directory, c16* name)
 {
 	DataSource dataSource = {};
 	dataSource.name = name;
 
-	dataSource.plugin = LoadPlugin(s->platform, directory, name);
+	dataSource.plugin = PluginLoader_LoadPlugin(s->pluginLoader, directory, name);
 	LOG_IF(!dataSource.plugin, L"Failed to load plugin", Severity::Warning, return nullptr);
 
-	dataSource.initialize = (DataSourceInitialize) GetPluginSymbol(dataSource.plugin, "Initialize");
-	dataSource.update     = (DataSourceUpdate)     GetPluginSymbol(dataSource.plugin, "Update");
-	dataSource.teardown   = (DataSourceTeardown)   GetPluginSymbol(dataSource.plugin, "Teardown");
+	dataSource.initialize = (DataSourceInitialize) PluginLoader_GetPluginSymbol(s->pluginLoader, dataSource.plugin, "Initialize");
+	dataSource.update     = (DataSourceUpdate)     PluginLoader_GetPluginSymbol(s->pluginLoader, dataSource.plugin, "Update");
+	dataSource.teardown   = (DataSourceTeardown)   PluginLoader_GetPluginSymbol(s->pluginLoader, dataSource.plugin, "Teardown");
 
 	dataSource.sensors = {};
 	List_Reserve(dataSource.sensors, 128);
@@ -69,7 +43,7 @@ LoadDataSource(SimulationState* s, c16* directory, c16* name)
 	return List_Append(s->dataSources, dataSource);
 }
 
-b32
+static b32
 UnloadDataSource(SimulationState* s, DataSource* dataSource)
 {
 	//TODO: try/catch?
@@ -84,15 +58,21 @@ UnloadDataSource(SimulationState* s, DataSource* dataSource)
 	//TODO: Widgets will be referencing these sensors.
 	List_Free(dataSource->sensors);
 
-	b32 success = UnloadPlugin(s->platform, dataSource->plugin);
+	b32 success = PluginLoader_UnloadPlugin(s->pluginLoader, dataSource->plugin);
 	LOG_IF(!success, L"UnloadPlugin failed", Severity::Warning, return false);
 
 	return true;
 }
 
 bool
-Simulation_Initialize(SimulationState* s)
+Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, RendererState* renderer)
 {
+	s->pluginLoader = pluginLoader;
+	s->renderer     = renderer;
+
+	b32 success = PluginLoader_Initialize(s->pluginLoader);
+	if (!success) return false;
+
 	s->dataSources = {};
 	List_Reserve(s->dataSources, 8);
 	LOG_IF(!s->dataSources, L"Failed to allocate data sources list", Severity::Error, return false);
@@ -124,6 +104,9 @@ Simulation_Teardown(SimulationState* s)
 	//TODO: Decide how much we really care about simulation level teardown
 	List_Free(s->widgets);
 	List_Free(s->dataSources);
+
+	//TODO: I don't think this is necessary
+	PluginLoader_Teardown(s->pluginLoader);
 }
 
 void

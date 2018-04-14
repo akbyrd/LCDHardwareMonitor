@@ -10,12 +10,12 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\CLIHelper.cpp">
+    <ClCompile Include="src\CLR.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\CLIHelper.h">
+    <ClInclude Include="include\CLR.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

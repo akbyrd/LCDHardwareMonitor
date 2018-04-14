@@ -1,22 +1,10 @@
-/* NOTE: Raise a compiler error when switching over
- * an enum and any enum values are missing a case.
- * https://msdn.microsoft.com/en-us/library/fdt9w8tf.aspx
- */
-#pragma warning (error: 4062)
-
-//TODO: Can this be moved somewhere?
-#define IF(expression, ...) \
-if (expression)             \
-{                           \
-	__VA_ARGS__;              \
-}
-
 #include "LHMAPI.h"
 #include "LHMString.h"
 
-#include "math.hpp"
-#include "CLIHelper.h"
+#include "platformdefs_win32.hpp"
 #include "platform.h"
+#include "math.hpp"
+#include "pluginloader.h"
 #include "renderer.h"
 #include "widget_filledbar.hpp"
 #include "simulation.hpp"
@@ -25,7 +13,9 @@ if (expression)             \
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
+#include "CLR.h"
 #include "platform_win32.hpp"
+#include "pluginloader_win32.hpp"
 #include "renderer_d3d11.hpp"
 #include "previewwindow_win32_d3d11.hpp"
 
@@ -33,8 +23,6 @@ if (expression)             \
 //TODO: Think about having a fixed size for plugins, widgets, etc
 //TODO: Support x86 and x64
 //TODO: Reduce link dependencies
-/* TODO: Fix the following so hr gets stringified
- * LOG_IF(FAILED(hr), L"", return false); */
 /* TODO: Probably want to use this as some point so frame debugger works without
  * the preview window
  * https://msdn.microsoft.com/en-us/library/hh780905.aspx */
@@ -46,16 +34,10 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, c16* pCmdLine, i32 nCmdSh
 {
 	//TODO: Deal with goto's skipping variable initialization
 	int returnValue = -1;
-	SimulationState    simulationState = {};
-	PlatformState      platformState   = {};
-	RendererState      rendererState   = {};
-	PreviewWindowState previewState    = {};
-
-	//Platform
-	{
-		b32 success = Platform_Initialize(&platformState);
-		if (!success) goto Cleanup;
-	}
+	SimulationState    simulationState   = {};
+	PluginLoaderState  pluginLoaderState = {};
+	RendererState      rendererState     = {};
+	PreviewWindowState previewState      = {};
 
 
 	//Renderer
@@ -72,9 +54,7 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, c16* pCmdLine, i32 nCmdSh
 
 	//Simulation
 	{
-		simulationState.platform = &platformState;
-		simulationState.renderer = &rendererState;
-		b32 success = Simulation_Initialize(&simulationState);
+		b32 success = Simulation_Initialize(&simulationState, &pluginLoaderState, &rendererState);
 		LOG_IF(!success, L"Failed to initialize simulation", Severity::Error, goto Cleanup);
 	}
 
@@ -156,12 +136,11 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, c16* pCmdLine, i32 nCmdSh
 
 	Cleanup:
 	{
+		Simulation_Teardown(&simulationState);
 		//NOTE: Only tearing these things down so we can check for D3D leaks.
 		PreviewWindow_Teardown(&previewState, &rendererState, hInstance);
 		Renderer_DestroySharedD3D9RenderTarget(&rendererState);
 		Renderer_Teardown(&rendererState);
-		//TODO: I don't think this is necessary
-		Platform_Teardown(&platformState);
 
 		//Leak most of the things!
 		//(Windows destroys everything automatically)

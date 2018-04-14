@@ -163,7 +163,7 @@ LoadVertexShader(RendererState* s, c16* path, List<VertexAttribute> attributes, 
 		LOG_IF(!vs, L"Failed to allocate space for vertex shader", Severity::Warning, return nullptr);
 
 		//Load
-		vsBytes = LoadFileBytes(path);
+		vsBytes = Platform_LoadFileBytes(path);
 		LOG_IF(!vsBytes, L"Failed to load vertex shader file", Severity::Warning, return nullptr);
 
 		//Create
@@ -481,7 +481,7 @@ Renderer_Initialize(RendererState* s, V2i renderSize)
 	//Create pixel shader
 	{
 		//Load
-		Bytes psBytes = LoadFileBytes(L"Shaders/Basic Pixel Shader.cso");
+		Bytes psBytes = Platform_LoadFileBytes(L"Shaders/Basic Pixel Shader.cso");
 		LOG_IF(!psBytes, L"Failed to load fallback pixel shader file", Severity::Error, return false);
 
 		//Create

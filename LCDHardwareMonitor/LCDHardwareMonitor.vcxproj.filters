@@ -61,6 +61,15 @@
     <ClInclude Include="src\previewwindow_win32_d3d11.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\platformdefs_win32.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\pluginloader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\pluginloader_win32.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="res\Basic Vertex Shader.hlsl">

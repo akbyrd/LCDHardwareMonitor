@@ -44,3 +44,9 @@ typedef size_t size;
 #endif
 
 #define nameof(x) #x
+
+#define IF(expression, ...) \
+if (expression)             \
+{                           \
+	__VA_ARGS__;              \
+}
