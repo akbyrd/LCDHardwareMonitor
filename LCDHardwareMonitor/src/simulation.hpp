@@ -64,7 +64,7 @@ UnloadDataSource(SimulationState* s, DataSource* dataSource)
 	return true;
 }
 
-bool
+b32
 Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, RendererState* renderer)
 {
 	s->pluginLoader = pluginLoader;

@@ -22,10 +22,10 @@ IF errorlevel 1 GOTO Abort
 ECHO  **** Deployment successful
 
 :Exit
-ECHO.
-POPD
-EXIT /B 0
+  ECHO.
+  POPD
+  EXIT /B 0
 
 :Abort
-ECHO  **** WARNING - Deployment failed
-GOTO Exit
+  ECHO  **** WARNING - Deployment failed
+  GOTO Exit

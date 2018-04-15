@@ -27,7 +27,7 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{4CF4BF35-2C27-4969-BFD7-34149A9CBF12}</ProjectGuid>
-    <RootNamespace>LCDHardwareMonitorCLIHelper</RootNamespace>
+    <RootNamespace>LCDHardwareMonitor</RootNamespace>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
     <ProjectName>LCDHardwareMonitor CLR Helper</ProjectName>
   </PropertyGroup>

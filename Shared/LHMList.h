@@ -43,7 +43,7 @@ struct List
 
 	inline T& operator [](i32 i) { return data[i]; }
 	inline    operator T*()      { return data; }
-	inline    operator bool()    { return data != nullptr; }
+	inline    operator b32()     { return data != nullptr; }
 };
 
 template<typename T>
@@ -167,6 +167,14 @@ List_GetLastPtr(List<T>& list)
 
 template<typename T>
 inline void
+List_RemoveFast(List<T>& list, T& item)
+{
+	item = list[list.length - 1];
+	list.length--;
+}
+
+template<typename T>
+inline void
 List_RemoveLast(List<T>& list)
 {
 	if (list.length > 0) {
@@ -201,7 +209,6 @@ List_Duplicate(List<T>& list)
 	return duplicate;
 }
 
-//NOTE: I guess this only works if T has a custom equality operator?
 template<typename T>
 inline b32
 List_Equal(List<T>& listA, List<T>& listB)
@@ -218,7 +225,7 @@ List_Equal(List<T>& listA, List<T>& listB)
 	return true;
 }
 
-/* TODO: This data structures needs to be reworked entirely. The API is all
+/* TODO: This data structure needs to be reworked entirely. The API is all
  * over the place and generally garbage. */
 /* TODO: I bet we can make a pretty simple fixed-size list with the same
  * interface (e.g. transparently change between them). */
