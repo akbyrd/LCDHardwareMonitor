@@ -123,23 +123,23 @@ PreviewWindow_Initialize(PreviewWindowState* s, RendererState* rendererState, HI
 		//Create the swap chain
 		HRESULT hr;
 		hr = rendererState->dxgiFactory->CreateSwapChain(rendererState->d3dDevice.Get(), &swapChainDesc, &s->swapChain);
-		LOG_IF(FAILED(hr), L"", Severity::Error, return false);
+		LOG_HRESULT_IF_FAILED(hr, L"", Severity::Error, return false);
 		SetDebugObjectName(s->swapChain, "Swap Chain");
 
 		//Get the back buffer
 		hr = s->swapChain->GetBuffer(0, IID_PPV_ARGS(&s->backBuffer));
-		LOG_IF(FAILED(hr), L"", Severity::Error, return false);
+		LOG_HRESULT_IF_FAILED(hr, L"", Severity::Error, return false);
 		SetDebugObjectName(s->backBuffer, "Back Buffer");
 
 		//Create a render target view to the back buffer
 		//ComPtr<ID3D11RenderTargetView> renderTargetView;
 		//hr = rendererState->d3dDevice->CreateRenderTargetView(s->backBuffer.Get(), nullptr, &renderTargetView);
-		//LOG_IF(FAILED(hr), L"", Severity::Error, return false);
+		//LOG_HRESULT_IF_FAILED(hr, L"", Severity::Error, return false);
 		//SetDebugObjectName(renderTargetView, "Render Target View");
 
 		//Associate the window
 		hr = rendererState->dxgiFactory->MakeWindowAssociation(s->hwnd, DXGI_MWA_NO_ALT_ENTER);
-		LOG_IF(FAILED(hr), L"", Severity::Error, return false);
+		LOG_HRESULT_IF_FAILED(hr, L"", Severity::Error, return false);
 	}
 
 	return true;
@@ -183,7 +183,7 @@ PreviewWindow_Render(PreviewWindowState* s, RendererState* rendererState)
 		 */
 		rendererState->d3dContext->CopyResource(s->backBuffer.Get(), rendererState->d3dRenderTexture.Get());
 		HRESULT hr = s->swapChain->Present(0, 0);
-		LOG_IF(FAILED(hr), L"", Severity::Error, return false);
+		LOG_HRESULT_IF_FAILED(hr, L"", Severity::Error, return false);
 	}
 
 	return true;

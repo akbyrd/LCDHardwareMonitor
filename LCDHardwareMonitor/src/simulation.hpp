@@ -98,6 +98,9 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 void
 Simulation_Teardown(SimulationState* s)
 {
+	/* TODO: Remove this once plugin loading and unloading is solidified. It's
+	 * good to do this for testing, but it's unnecessary work in the normal
+	 * teardown case. */
 	for (i32 i = 0; i < s->dataSources.length; i++)
 	  UnloadDataSource(s, &s->dataSources[i]);
 

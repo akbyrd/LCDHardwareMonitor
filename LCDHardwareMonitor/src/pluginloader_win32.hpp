@@ -87,29 +87,29 @@ PluginLoader_Initialize(PluginLoaderState* s)
 
 		ComPtr<ICLRMetaHost> clrMetaHost;
 		hr = CLRCreateInstance(CLSID_CLRMetaHost, IID_PPV_ARGS(&clrMetaHost));
-		LOG_IF(FAILED(hr), L"CLRCreateInstance failed", Severity::Error, return false);
+		LOG_HRESULT_IF_FAILED(hr, L"CLRCreateInstance failed", Severity::Error, return false);
 
 		//TODO: Enumerate installed versions and give a helpful error message.
 		//NOTE: Relying on this version should be safe. Use clrver to check installed versions.
 		ComPtr<ICLRRuntimeInfo> clrInfo;
 		hr = clrMetaHost->GetRuntime(L"v4.0.30319", IID_PPV_ARGS(&clrInfo));
-		LOG_IF(FAILED(hr), L"ICLRMetaHost->GetRuntime failed", Severity::Error, return false);
+		LOG_HRESULT_IF_FAILED(hr, L"ICLRMetaHost->GetRuntime failed", Severity::Error, return false);
 
 		hr = clrInfo->GetInterface(CLSID_CLRRuntimeHost, IID_PPV_ARGS(&s->clrHost));
-		LOG_IF(FAILED(hr), L"ICLRRuntimeInfo->GetInterface failed", Severity::Error, return false);
+		LOG_HRESULT_IF_FAILED(hr, L"ICLRRuntimeInfo->GetInterface failed", Severity::Error, return false);
 
 		ComPtr<ICLRControl> clrControl;
 		hr = s->clrHost->GetCLRControl(&clrControl);
-		LOG_IF(FAILED(hr), L"ICLRRuntimeHost->GetCLRControl failed", Severity::Error, return false);
+		LOG_HRESULT_IF_FAILED(hr, L"ICLRRuntimeHost->GetCLRControl failed", Severity::Error, return false);
 
 		hr = clrControl->SetAppDomainManagerType(L"LCDHardwareMonitor AppDomainManager", L"LHMAppDomainManager");
-		LOG_IF(FAILED(hr), L"ICLRControl->SetAppDomainManagerType failed", Severity::Error, return false);
+		LOG_HRESULT_IF_FAILED(hr, L"ICLRControl->SetAppDomainManagerType failed", Severity::Error, return false);
 
 		hr = s->clrHost->SetHostControl(&s->clrHostControl);
-		LOG_IF(FAILED(hr), L"ICLRRuntimeHost->SetHostControl failed", Severity::Error, return false);
+		LOG_HRESULT_IF_FAILED(hr, L"ICLRRuntimeHost->SetHostControl failed", Severity::Error, return false);
 
 		hr = s->clrHost->Start();
-		LOG_IF(FAILED(hr), L"ICLRRuntimeHost->Start failed", Severity::Error, return false);
+		LOG_HRESULT_IF_FAILED(hr, L"ICLRRuntimeHost->Start failed", Severity::Error, return false);
 
 		s->lhmAppDomainManager = s->clrHostControl.GetAppDomainManager();
 	}
@@ -134,7 +134,7 @@ PluginLoader_Teardown(PluginLoaderState* s)
 		HRESULT hr;
 
 		hr = s->clrHost->Stop();
-		LOG_IF(FAILED(hr), L"ICLRRuntimeHost->Stop failed", Severity::Error);
+		LOG_HRESULT_IF_FAILED(hr, L"ICLRRuntimeHost->Stop failed", Severity::Error);
 
 		s->clrHost.Reset();
 	}
@@ -257,7 +257,7 @@ PluginLoader_UnloadPlugin(PluginLoaderState* s, Plugin* plugin)
 	b32 loaded = List_Contains(s->plugins, plugin);
 	LOG_IF(!loaded, L"Attempting to unload a plugin that is not loaded", Severity::Warning, return false);
 
-	bool success;
+	b32 success;
 	switch (plugin->kind) {
 		case PluginKind::Null:    success = false;                          break;
 		case PluginKind::Native:  success = UnloadNativePlugin(plugin);     break;

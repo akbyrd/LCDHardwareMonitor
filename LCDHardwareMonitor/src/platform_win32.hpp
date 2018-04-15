@@ -66,6 +66,7 @@ LogHRESULT(c16* message, Severity severity, HRESULT hr, c16* file, i32 line, c16
 	LogFormatMessage(message, severity, hr, file, line, function);
 }
 #define LOG_HRESULT(message, severity, hr) LogHRESULT(message, severity, hr, WFILE, LINE, WFUNC)
+#define LOG_HRESULT_IF_FAILED(hr, message, severity, ...) IF(FAILED(hr), LOG_HRESULT(message, severity, hr); __VA_ARGS__)
 
 void
 LogLastError(c16* message, Severity severity, c16* file, i32 line, c16* function)
