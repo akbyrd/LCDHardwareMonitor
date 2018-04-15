@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
@@ -7,8 +6,8 @@ using System.Runtime.InteropServices;
 [Guid("9D931427-5079-4437-89A5-165A99B14CC5")]
 public interface ILHMAppDomainManager
 {
+	int LoadAppDomain(string name, string directory);
 	void LoadPlugin(string name, string directory);
-	void UnloadPlugin(string name, string directory);
 }
 
 [ComVisible(true)]
@@ -20,14 +19,13 @@ public sealed class LHMAppDomainManager : AppDomainManager, ILHMAppDomainManager
 		InitializationFlags = AppDomainManagerInitializationOptions.RegisterWithHost;
 	}
 
-	public void LoadPlugin(string name, string directory)
+	public int LoadAppDomain(string name, string directory)
 	{
-		Debug.WriteLine("[{0}] {1}", AppDomain.CurrentDomain.FriendlyName, "Hello World!");
-
+		/* NOTE: LHMAppDomainManager is going to get loaded into each new
+		 * AppDomain so we need let ApplicationBase get inherited from the default
+		 * domain in order for it to be found. Instead, we set PrivateBinPath 
+		 * the actual plugin can be found when we load it. */
 		var domainSetup = new AppDomainSetup();
-		//domainSetup.ActivationArguments;
-		//domainSetup.ApplicationName
-		//domainSetup.ApplicationBase  = directory;
 		domainSetup.PrivateBinPath     = directory;
 		domainSetup.LoaderOptimization = LoaderOptimization.MultiDomainHost;
 
@@ -36,14 +34,13 @@ public sealed class LHMAppDomainManager : AppDomainManager, ILHMAppDomainManager
 		//domainSetup.ShadowCopyDirectories = true
 		//domainSetup.ShadowCopyFiles       = true
 
-		//TODO: Prepend "[Plugin]"
-		AppDomain domain   = CreateDomain(name, null, domainSetup);
-		//TODO: Can't load here because we're in the default AppDomain
-		//Assembly  assembly = domain.Load("OpenHardwareMonitor Plugin");
-		//TODO : Store domain in Plugin
+		AppDomain domain = CreateDomain(name, null, domainSetup);
+		return domain.Id;
 	}
 
-	public void UnloadPlugin(string name, string directory)
+	public void LoadPlugin(string name, string directory)
 	{
+		//AppDomain.FromID?
+		//Assembly assembly = domain.Load(name);
 	}
 }

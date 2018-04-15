@@ -62,6 +62,8 @@ struct Plugin
 	DLL_DIRECTORY_COOKIE cookie;
 
 	//Managed New
+	//TODO: Is this stable across unloads and loads?
+	u32                  appDomainID;
 
 	b32                  isLoaded;
 	PluginKind           kind;
@@ -208,7 +210,8 @@ LoadManagedPlugin(PluginLoaderState* s, Plugin* plugin)
 	//NOTE: fuslogvw is great for debugging managed assembly loading.
 
 	//TODO: Can this be done in native? Is that better?
-	s->lhmAppDomainManager->LoadPlugin(plugin->name, plugin->directory);
+	plugin->appDomainID = s->lhmAppDomainManager->LoadAppDomain(plugin->name, plugin->directory);
+	//s->lhmAppDomainManager->LoadPlugin(plugin->name, plugin->directory);
 
 	return true;
 }
@@ -216,7 +219,9 @@ LoadManagedPlugin(PluginLoaderState* s, Plugin* plugin)
 b32
 UnloadManagedPlugin(PluginLoaderState* s, Plugin* plugin)
 {
-	s->lhmAppDomainManager->UnloadPlugin(plugin->name, plugin->directory);
+	HRESULT hr;
+	hr = s->clrHost->UnloadAppDomain(plugin->appDomainID, true);
+	LOG_HRESULT_IF_FAILED(hr, L"ICLRRuntimeHost->UnloadAppDomain failed", Severity::Error, return false);
 
 	return true;
 }
