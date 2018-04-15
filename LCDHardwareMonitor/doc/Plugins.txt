@@ -117,6 +117,7 @@ Plugin Loading Process
 		Single AppDomain for all plugins. Unload all plugins on exception
 		Is the a performant way to sandbox in C++? Are subprocesses a thing?
 		Try/catch on C++ plugins. Just dump 'em if they fuck up.
+		Use the host manager to run GC every frame.
 
 	Thoughts
 		Reasons for AppDomains
@@ -150,6 +151,30 @@ Plugin Loading Process
 		- .NET assemblies show up twice in Visual Studio's Modules window. Once as
 		  managed, once with a 'wrong address' error. Why? Does this indicate a
 		  problem or inefficiency?
+		- The .NET Framework and the CLR are versioned separately. While the .NET
+		  Framework is upgraded regularly, currently at 4.7.1, the CLR is much less
+			freqently upgraded and is currently 4.0.x. The framework has been running
+			on CLR 4 since framework 4.0. The major versions mostly match, except
+			there was no CLR 3.
+			https://docs.microsoft.com/en-us/dotnet/framework/migration-guide/versions-and-dependencies
+		- The CLR comes with Windows (at least in Win10), so there's no need to
+		  install a redistributable.
+			https://docs.microsoft.com/en-us/dotnet/framework/migration-guide/how-to-determine-which-versions-are-installed
+
+	Notes
+		- An IHostControl and AppDomainManager must be implemented in order to host
+		  the CLR.
+		- The IHostControl can be done in C++. It's a COM type and presumably it
+		  could be implemented in C# as well.
+		- Need to check to see if the AppDomainManager can be implemented in C++. If
+		  it's in C#, a tlb file needs to be generated so the native side can use
+			the COM types. This is done by checking 'Register for COM Interop 'in the
+			VS project settings. The tlb is then used with an #import directive in
+			C++. We could preprocess the tlb into a tlh if we wanted.
+		- It's not clear whether we need to register the COM types on the user's
+			machine, or if it counts as private COM and being in the same directory is
+			sufficient.
+		- We may be able to embed the tlb in the C# dll.
 
 	Research
 		Hosting Overview

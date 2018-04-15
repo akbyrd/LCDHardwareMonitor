@@ -114,7 +114,7 @@ Simulation_Update(SimulationState* s)
 {
 	//TODO: Only update data sources that are actually being used
 	for (i32 i = 0; i < s->dataSources.length; i++)
-		s->dataSources[i].update(s->dataSources[i].sensors);
+		;// s->dataSources[i].update(s->dataSources[i].sensors);
 
 	/* NOTES:
 	 * Build a command list of things to draw.
