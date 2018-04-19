@@ -96,7 +96,7 @@ Plugin Loading Process
 	  the dependency.
 	Plan: Research CLR loading behavior again. Determine if there's a way
 
-	Require Features
+	Required Features
 		Load C++ modules
 		Load .NET assemblies
 		Very high performance
@@ -163,7 +163,8 @@ Plugin Loading Process
 
 	Notes
 		- An IHostControl and AppDomainManager must be implemented in order to host
-		  the CLR.
+		  the CLR. This seems a little pointless as it's *only* purpose for use is
+			to get a pointer to the AppDomainManager, but it looks like it's required.
 		- The IHostControl can be done in C++. It's a COM type and presumably it
 		  could be implemented in C# as well.
 		- Need to check to see if the AppDomainManager can be implemented in C++. If
@@ -177,6 +178,13 @@ Plugin Loading Process
 		- We may be able to embed the tlb in the C# dll.
 
 	Research
+		https://www.codeproject.com/Articles/416471/CLR-Hosting-Customizing-the-CLR
+		https://www.codeproject.com/Articles/418259/CLR-Hosting-Customizing-the-CLR-Part-2
+
+		http://www.lenholgate.com/blog/2010/07/clr-hosting---a-flexible-managed-plugin-system-part-1.html
+		Perhaps IDL is worth looking into?
+		More generally, what's the best way to write COM interfaces?
+
 		Hosting Overview
 		https://msdn.microsoft.com/en-us/library/dd380850(v=vs.100).aspx
 		Topics at bottom

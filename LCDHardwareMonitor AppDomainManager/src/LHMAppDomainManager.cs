@@ -6,8 +6,7 @@ using System.Runtime.InteropServices;
 [Guid("9D931427-5079-4437-89A5-165A99B14CC5")]
 public interface ILHMAppDomainManager
 {
-	int LoadAppDomain(string name, string directory);
-	void LoadPlugin(string name, string directory);
+	int LoadPlugin(string name, string directory, out IntPtr updateFn);
 }
 
 [ComVisible(true)]
@@ -19,11 +18,11 @@ public sealed class LHMAppDomainManager : AppDomainManager, ILHMAppDomainManager
 		InitializationFlags = AppDomainManagerInitializationOptions.RegisterWithHost;
 	}
 
-	public int LoadAppDomain(string name, string directory)
+	public int LoadPlugin(string name, string directory, out IntPtr updateFn)
 	{
 		/* NOTE: LHMAppDomainManager is going to get loaded into each new
 		 * AppDomain so we need let ApplicationBase get inherited from the default
-		 * domain in order for it to be found. Instead, we set PrivateBinPath 
+		 * domain in order for it to be found. Instead, we set PrivateBinPath
 		 * the actual plugin can be found when we load it. */
 		var domainSetup = new AppDomainSetup();
 		domainSetup.PrivateBinPath     = directory;
@@ -35,12 +34,43 @@ public sealed class LHMAppDomainManager : AppDomainManager, ILHMAppDomainManager
 		//domainSetup.ShadowCopyFiles       = true
 
 		AppDomain domain = CreateDomain(name, null, domainSetup);
+		var pluginManager = (LHMAppDomainManager) domain.DomainManager;
+		//NOTE: This is probably slow but it only happens once per plugin, so meh
+		pluginManager.InitializePlugin(name, directory, out updateFn);
 		return domain.Id;
 	}
 
-	public void LoadPlugin(string name, string directory)
+	private delegate void UpdateFn(IntPtr unused);
+	UpdateFn updateDelegate;
+
+	private int InitializePlugin(string name, string directory, out IntPtr updateFn)
 	{
-		//AppDomain.FromID?
-		//Assembly assembly = domain.Load(name);
+		//NOTE: Function calls average 200ns with this pattern
+		var plugin = Assembly.Load(name);
+		updateDelegate = (_) => Update(_);
+		updateFn = Marshal.GetFunctionPointerForDelegate(updateDelegate);
+		return AppDomain.CurrentDomain.Id;
 	}
+
+	public void Update (IntPtr unused)
+	{
+	}
+
+	//TODO: Stash this in version control, then remove it.
+#if false
+	using mscoree;
+	ICorRuntimeHost host = new CorRuntimeHost();
+
+	IntPtr enumHandle = IntPtr.Zero;
+	host.EnumDomains(out enumHandle);
+	while (true)
+	{
+		object rawDomain;
+		host.NextDomain(enumHandle, out rawDomain);
+		if (rawDomain == null) break;
+
+		AppDomain domain = (AppDomain) rawDomain;
+		System.Diagnostics.Debug.WriteLine("{0} - {1}", domain.FriendlyName, domain.Id);
+	}
+#endif
 }

@@ -97,6 +97,10 @@ PluginLoader_Initialize(PluginLoaderState* s)
 		hr = clrMetaHost->GetRuntime(L"v4.0.30319", IID_PPV_ARGS(&clrInfo));
 		LOG_HRESULT_IF_FAILED(hr, L"ICLRMetaHost->GetRuntime failed", Severity::Error, return false);
 
+		u32 startupFlags = STARTUP_LOADER_OPTIMIZATION_MASK | STARTUP_LOADER_OPTIMIZATION_MULTI_DOMAIN_HOST;
+		hr = clrInfo->SetDefaultStartupFlags(startupFlags, nullptr);
+		LOG_HRESULT_IF_FAILED(hr, L"ICLRRuntimeInfo->SetDefaultStartupFlags failed", Severity::Error, return false);
+
 		hr = clrInfo->GetInterface(CLSID_CLRRuntimeHost, IID_PPV_ARGS(&s->clrHost));
 		LOG_HRESULT_IF_FAILED(hr, L"ICLRRuntimeInfo->GetInterface failed", Severity::Error, return false);
 
@@ -140,14 +144,6 @@ PluginLoader_Teardown(PluginLoaderState* s)
 
 		s->clrHost.Reset();
 	}
-}
-
-//TODO: Inline this
-PluginKind
-GetPluginKind(c16* directory, c16* name)
-{
-	//TODO: Actually check if the DLL is native or managed
-	return PluginKind::Managed;
 }
 
 b32
@@ -209,9 +205,17 @@ LoadManagedPlugin(PluginLoaderState* s, Plugin* plugin)
 {
 	//NOTE: fuslogvw is great for debugging managed assembly loading.
 
-	//TODO: Can this be done in native? Is that better?
-	plugin->appDomainID = s->lhmAppDomainManager->LoadAppDomain(plugin->name, plugin->directory);
-	//s->lhmAppDomainManager->LoadPlugin(plugin->name, plugin->directory);
+	//TODO: Can we pass the Plugin*?
+	//TODO: Do we need to try/catch the managed code?
+	long fPtr = 0;
+	plugin->appDomainID = s->lhmAppDomainManager->LoadPlugin(plugin->name, plugin->directory, &fPtr);
+
+	//typedef HRESULT ( __stdcall *FExecuteInAppDomainCallback )(void *cookie);
+	FExecuteInAppDomainCallback updateFn = (FExecuteInAppDomainCallback) fPtr;
+
+	HRESULT hr;
+	hr = s->clrHost->ExecuteInAppDomain(plugin->appDomainID, updateFn, nullptr);
+	LOG_HRESULT_IF_FAILED(hr, L"ICLRRuntimeHost->ExecuteInAppDomain failed", Severity::Error, return false);
 
 	return true;
 }
@@ -229,8 +233,9 @@ UnloadManagedPlugin(PluginLoaderState* s, Plugin* plugin)
 Plugin*
 PluginLoader_LoadPlugin(PluginLoaderState* s, c16* directory, c16* name)
 {
+	//TODO: Actually check if the DLL is native or managed
 	Plugin plugin = {};
-	plugin.kind      = GetPluginKind(directory, name);
+	plugin.kind      = PluginKind::Managed;
 	plugin.isLoaded  = true;
 	plugin.directory = directory;
 	plugin.name      = name;
