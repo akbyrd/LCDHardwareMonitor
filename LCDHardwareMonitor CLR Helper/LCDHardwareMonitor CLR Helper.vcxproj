@@ -109,6 +109,9 @@
     <PostBuildEvent>
       <Command>"$(SolutionDir)Shared\Deploy.bat" "$(SolutionDir)" "$(TargetDir)" ""</Command>
     </PostBuildEvent>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -119,6 +122,9 @@
     <PostBuildEvent>
       <Command>"$(SolutionDir)Shared\Deploy.bat" "$(SolutionDir)" "$(TargetDir)" ""</Command>
     </PostBuildEvent>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>

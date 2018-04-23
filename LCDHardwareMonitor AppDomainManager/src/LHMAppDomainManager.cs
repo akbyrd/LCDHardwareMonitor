@@ -55,22 +55,4 @@ public sealed class LHMAppDomainManager : AppDomainManager, ILHMAppDomainManager
 	public void Update (IntPtr unused)
 	{
 	}
-
-	//TODO: Stash this in version control, then remove it.
-#if false
-	using mscoree;
-	ICorRuntimeHost host = new CorRuntimeHost();
-
-	IntPtr enumHandle = IntPtr.Zero;
-	host.EnumDomains(out enumHandle);
-	while (true)
-	{
-		object rawDomain;
-		host.NextDomain(enumHandle, out rawDomain);
-		if (rawDomain == null) break;
-
-		AppDomain domain = (AppDomain) rawDomain;
-		System.Diagnostics.Debug.WriteLine("{0} - {1}", domain.FriendlyName, domain.Id);
-	}
-#endif
 }
