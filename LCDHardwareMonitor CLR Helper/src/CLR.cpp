@@ -7,11 +7,27 @@ using namespace System::Runtime::InteropServices;
 
 [assembly:ComVisible(false)];
 
+//TODO: Move to a header
+struct Plugin
+{
+	typedef void (__stdcall *PluginFn)(void*);
+	u32        appDomainID;
+	PluginFn   initialize;
+	PluginFn   update;
+	PluginFn   teardown;
+
+	b32        isLoaded;
+	i32        kind;
+	c16*       directory;
+	c16*       name;
+};
+
 [ComVisible(true)]
 public interface class
 ILHMAppDomainManager
 {
-	i32 LoadPlugin(c16* name, c16* directory, IntPtr* updateFn);
+	//TODO: Want to pass Plugin without exposing it to COM
+	b32 LoadPlugin(void* plugin);
 };
 
 public ref class
@@ -24,11 +40,12 @@ public:
 		InitializationFlags = AppDomainManagerInitializationOptions::RegisterWithHost;
 	}
 
-	virtual i32
-	LoadPlugin(c16* _name, c16* _directory, IntPtr* updateFn)
+	virtual b32
+	LoadPlugin(void* _plugin)
 	{
-		auto name = gcnew String(_name);
-		auto directory = gcnew String(_directory);
+		Plugin* plugin = (Plugin*) _plugin;
+		auto name = gcnew String(plugin->name);
+		auto directory = gcnew String(plugin->directory);
 
 		/* NOTE: LHMAppDomainManager is going to get loaded into each new
 		 * AppDomain so we need let ApplicationBase get inherited from the default
@@ -45,23 +62,20 @@ public:
 
 		AppDomain^ domain = CreateDomain(name, nullptr, domainSetup);
 		auto pluginManager = (LHMAppDomainManager^) domain->DomainManager;
-		return pluginManager->InitializePlugin(name, directory, updateFn);
+		return pluginManager->InitializePlugin(plugin, name);
 	}
 
 private:
-	IDataSourcePlugin^ plugin;
 	delegate void PluginFn(IntPtr);
+	IDataSourcePlugin^ plugin;
 	PluginFn^ initialize;
 	PluginFn^ update;
 	PluginFn^ teardown;
 
-	i32
-	InitializePlugin(String^ name, String^ directory, IntPtr* updateFn)
+	b32
+	InitializePlugin(Plugin* _plugin, String^ name)
 	{
-		auto path = String::Format("{0}\\{1}.dll", directory, name);
-		auto assembly = Assembly::LoadFrom(path);
-
-		//auto assembly = Assembly::Load(name);
+		auto assembly = Assembly::Load(name);
 		for each (Type^ type in assembly->GetExportedTypes())
 		{
 			bool isPlugin = type->GetInterface(IDataSourcePlugin::typeid->FullName) != nullptr;
@@ -86,10 +100,11 @@ private:
 		initialize = gcnew PluginFn(plugin, &IDataSourcePlugin::Initialize);
 		update     = gcnew PluginFn(plugin, &IDataSourcePlugin::Update);
 		teardown   = gcnew PluginFn(plugin, &IDataSourcePlugin::Teardown);
-		//*initializeFn = Marshal::GetFunctionPointerForDelegate(initialize);
-		*updateFn = Marshal::GetFunctionPointerForDelegate(update);
-		//*teardownFn = Marshal::GetFunctionPointerForDelegate(teardown);
+		_plugin->initialize = (Plugin::PluginFn) (void*) Marshal::GetFunctionPointerForDelegate(initialize);
+		_plugin->update     = (Plugin::PluginFn) (void*) Marshal::GetFunctionPointerForDelegate(update);
+		_plugin->teardown   = (Plugin::PluginFn) (void*) Marshal::GetFunctionPointerForDelegate(teardown);
+		_plugin->appDomainID = AppDomain::CurrentDomain->Id;
 
-		return AppDomain::CurrentDomain->Id;
+		return true;
 	}
 };

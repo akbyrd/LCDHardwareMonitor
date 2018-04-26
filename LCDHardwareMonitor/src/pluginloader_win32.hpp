@@ -58,8 +58,12 @@ enum struct PluginKind
 
 struct Plugin
 {
+	typedef void (__stdcall *PluginFn)(void*);
 	//TODO: Is this stable across unloads and loads?
 	u32        appDomainID;
+	PluginFn   initialize;
+	PluginFn   update;
+	PluginFn   teardown;
 
 	b32        isLoaded;
 	PluginKind kind;
@@ -168,21 +172,11 @@ LoadManagedPlugin(PluginLoaderState* s, Plugin* plugin)
 {
 	//NOTE: fuslogvw is great for debugging managed assembly loading.
 
-	//TODO: Can we pass the Plugin*?
 	//TODO: Do we need to try/catch the managed code?
-	long fPtr = 0;
-	//TODO: Figure out why these types are mis-matched
-	plugin->appDomainID = s->lhmAppDomainManager->LoadPlugin(
-		(unsigned short*) plugin->name,
-		(unsigned short*) plugin->directory,
-		&fPtr
-	);
-
+	b32 success = s->lhmAppDomainManager->LoadPlugin(plugin);
 
 	//DEBUG: Ensure we can call into the plugin
-	typedef void (__stdcall *UpdateFn)(void*);
-	UpdateFn updateFn = (UpdateFn) fPtr;
-	updateFn(nullptr);
+	plugin->update(nullptr);
 
 	return true;
 }
