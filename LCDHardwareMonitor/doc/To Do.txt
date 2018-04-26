@@ -22,3 +22,17 @@ Refactoring
 		CLIHelper/PluginHelper
 
 Load default/fallback resources
+Zooming in and then out leaves the window the wrong size
+
+Plugins
+	- Enforce the constraint the you may *ONLY* access application provided
+	  services during scope of the function to which the services were passed.
+	  Basically, don't save a reference and access services from a separate
+	  thread. This could be detected with a 'shim' of some sort (accessor
+	  function?)
+
+Next
+	Compare ExecuteInDefaultDomain vs ExecuteInAppDomain
+	Pass pointer to Plugin instead of individual strings and such
+	Figure out why these types are mis-matched in COM methods
+	IDataSourcePlugin should be CLR API and include all managed interfaces

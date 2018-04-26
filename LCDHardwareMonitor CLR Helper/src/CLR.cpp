@@ -1,69 +1,94 @@
+#include "LHMAPI.h"
+
 #pragma managed
-
-#define EXPORTING 1
-#include "CLR.h"
-
-#include <wtypes.h>
-
 using namespace System;
 using namespace System::Reflection;
+using namespace System::Runtime::InteropServices;
 
-value struct State
+[assembly:ComVisible(false)];
+
+[ComVisible(true)]
+public interface class
+ILHMAppDomainManager
 {
-	static ResolveEventHandler^ resolveDelegate;
-	static String^ pluginDirectory;
-	static String^ pluginName;
+	i32 LoadPlugin(c16* name, c16* directory, IntPtr* updateFn);
 };
 
-Assembly^
-AssemblyResolveHandler(Object^ sender, ResolveEventArgs^ args)
+public ref class
+LHMAppDomainManager : AppDomainManager, ILHMAppDomainManager
 {
-	//TODO: RequestingAssembly is null. Maybe because we're still loading the plugin?
-	//AssemblyName^ loadingAssembly = args->RequestingAssembly->GetName();
-	//if (loadingAssembly->Name == State::pluginName)
+public:
+	void
+	InitializeNewDomain(AppDomainSetup^ appDomainInfo) override
 	{
-		/* NOTE: Looks like we have to use LoadFrom here. Load caching causes a
-		 * Load here to insta-fail. The docs also warn about recursive AssemblyResolve
-		 * events, though that doesn't seem to happen in practice because of the
-		 * caching. This doesn't feel very robust, but evenutally we'll be moving
-		 * to separate AppDomains with appropriate bin paths anyway. Not worth
-		 * spending more time on right now.
-		 */
-		AssemblyName^ dependencyAssembly = gcnew AssemblyName(args->Name);
-		String^ path = String::Format("{0}\\{1}.dll", State::pluginDirectory, dependencyAssembly->Name);
-		return Assembly::LoadFrom(path);
+		InitializationFlags = AppDomainManagerInitializationOptions::RegisterWithHost;
 	}
-	return nullptr;
-}
 
-void
-CLR_Initialize()
-{
-	State::resolveDelegate = gcnew ResolveEventHandler(AssemblyResolveHandler);
-	AppDomain::CurrentDomain->AssemblyResolve += State::resolveDelegate;
-}
-
-void
-CLR_PluginLoaded(c16* pluginDirectory, c16* pluginName)
-{
-	State::pluginDirectory = gcnew String(pluginDirectory);
-	State::pluginName = gcnew String(pluginName);
-}
-
-void
-CLR_PluginUnloaded(c16* pluginDirectory, c16* pluginName)
-{
-	if (State::pluginName == gcnew String(pluginName))
+	virtual i32
+	LoadPlugin(c16* _name, c16* _directory, IntPtr* updateFn)
 	{
-		State::pluginDirectory = nullptr;
-		State::pluginName = nullptr;
-	}
-}
+		auto name = gcnew String(_name);
+		auto directory = gcnew String(_directory);
 
-void
-CLR_Teardown()
-{
-	//TODO: Unload the current AppDomain
-	AppDomain::CurrentDomain->AssemblyResolve -= State::resolveDelegate;
-	//TODO: Reset State
-}
+		/* NOTE: LHMAppDomainManager is going to get loaded into each new
+		 * AppDomain so we need let ApplicationBase get inherited from the default
+		 * domain in order for it to be found. Instead, we set PrivateBinPath
+		 * the actual plugin can be found when we load it. */
+		auto domainSetup = gcnew AppDomainSetup();
+		domainSetup->PrivateBinPath     = directory;
+		domainSetup->LoaderOptimization = LoaderOptimization::MultiDomainHost;
+
+		//TODO: Shadowcopy and file watch
+		//domainSetup.CachePath             = "Cache"
+		//domainSetup.ShadowCopyDirectories = true
+		//domainSetup.ShadowCopyFiles       = true
+
+		AppDomain^ domain = CreateDomain(name, nullptr, domainSetup);
+		auto pluginManager = (LHMAppDomainManager^) domain->DomainManager;
+		//NOTE: This is probably slow but it only happens once per plugin, so meh
+		return pluginManager->InitializePlugin(name, directory, updateFn);
+	}
+
+private:
+	IDataSourcePlugin^ plugin;
+	delegate void PluginFn(IntPtr);
+	PluginFn^ initialize;
+	PluginFn^ update;
+	PluginFn^ teardown;
+
+	i32
+	InitializePlugin(String^ name, String^ directory, IntPtr* updateFn)
+	{
+		auto assembly = Assembly::Load(name);
+		for each (Type^ type in assembly->GetExportedTypes())
+		{
+			bool isPlugin = type->GetInterface(IDataSourcePlugin::typeid->FullName) != nullptr;
+			if (isPlugin)
+			{
+				if (!plugin)
+				{
+					plugin = (IDataSourcePlugin^) Activator::CreateInstance(type);
+				}
+				else
+				{
+					//TODO: Warning: multiple plugins in same file
+				}
+			}
+		}
+		if (!plugin)
+		{
+			//TODO: Error: load failed
+		}
+
+		//NOTE: Function calls average 215ns with this pattern
+		//(the extra 15 ns is probably just args and ExecuteInAppDomain overhead)
+		initialize = gcnew PluginFn(plugin, &IDataSourcePlugin::Initialize);
+		update     = gcnew PluginFn(plugin, &IDataSourcePlugin::Update);
+		teardown   = gcnew PluginFn(plugin, &IDataSourcePlugin::Teardown);
+		//*initializeFn = Marshal::GetFunctionPointerForDelegate(initialize);
+		*updateFn = Marshal::GetFunctionPointerForDelegate(update);
+		//*teardownFn = Marshal::GetFunctionPointerForDelegate(teardown);
+
+		return AppDomain::CurrentDomain->Id;
+	}
+};

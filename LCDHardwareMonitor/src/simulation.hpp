@@ -4,6 +4,7 @@ struct DataSource
 	Plugin*              plugin;
 	c16*                 name;
 	List<Sensor>         sensors;
+
 	DataSourceInitialize initialize;
 	DataSourceUpdate     update;
 	DataSourceTeardown   teardown;
@@ -27,10 +28,6 @@ LoadDataSource(SimulationState* s, c16* directory, c16* name)
 
 	dataSource.plugin = PluginLoader_LoadPlugin(s->pluginLoader, directory, name);
 	LOG_IF(!dataSource.plugin, L"Failed to load plugin", Severity::Warning, return nullptr);
-
-	dataSource.initialize = (DataSourceInitialize) PluginLoader_GetPluginSymbol(s->pluginLoader, dataSource.plugin, "Initialize");
-	dataSource.update     = (DataSourceUpdate)     PluginLoader_GetPluginSymbol(s->pluginLoader, dataSource.plugin, "Update");
-	dataSource.teardown   = (DataSourceTeardown)   PluginLoader_GetPluginSymbol(s->pluginLoader, dataSource.plugin, "Teardown");
 
 	dataSource.sensors = {};
 	List_Reserve(dataSource.sensors, 128);

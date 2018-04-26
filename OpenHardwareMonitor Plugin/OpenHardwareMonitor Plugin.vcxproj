@@ -164,6 +164,12 @@
   <ItemGroup>
     <ClCompile Include="src\dllmain.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\LCDHardwareMonitor CLR IDataSourcePlugin\LCDHardwareMonitor CLR IDataSourcePlugin.vcxproj">
+      <Project>{246430dc-680a-432e-b7de-bcc2c59cddae}</Project>
+      <Private>false</Private>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

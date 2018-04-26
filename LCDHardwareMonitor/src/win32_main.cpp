@@ -6,6 +6,7 @@
 #include "math.hpp"
 #include "pluginloader.h"
 #include "renderer.h"
+#include "LHMDataSource.h"
 #include "widget_filledbar.hpp"
 #include "simulation.hpp"
 
@@ -13,7 +14,6 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
-#include "CLR.h"
 #include "platform_win32.hpp"
 #include "pluginloader_win32.hpp"
 #include "renderer_d3d11.hpp"

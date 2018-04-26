@@ -1,11 +1,6 @@
 #pragma once
 
-//TODO: This could be detected with a 'shim' of some sort (accessor function?)
-/* You may *ONLY* access application provided services during scope of the
- * function to which the services were passed. Basically, don't save a reference
- * and access services from a separate thread.
- */
-
+#pragma unmanaged
 struct Sensor
 {
 	c16* name;
@@ -17,6 +12,7 @@ struct Sensor
 	r32  maxValue;
 };
 
+//TODO: These aren't used currently
 typedef void (*DataSourceInitialize)(List<Sensor>& sensors);
 LHM_API void _cdecl Initialize(List<Sensor>&);
 

@@ -3,7 +3,8 @@
 #include <wrl\client.h>
 using Microsoft::WRL::ComPtr;
 
-#import "../Run Tree/LCDHardwareMonitor AppDomainManager.tlb" no_namespace
+//TODO: Can we get type info without needing the tlb?
+#import "../Run Tree/LCDHardwareMonitor CLR Helper.tlb" no_namespace
 
 class CLRHostControl : public IHostControl
 {
@@ -57,18 +58,13 @@ enum struct PluginKind
 
 struct Plugin
 {
-	//Managed Old
-	HMODULE              module;
-	DLL_DIRECTORY_COOKIE cookie;
-
-	//Managed New
 	//TODO: Is this stable across unloads and loads?
-	u32                  appDomainID;
+	u32        appDomainID;
 
-	b32                  isLoaded;
-	PluginKind           kind;
-	c16*                 directory;
-	c16*                 name;
+	b32        isLoaded;
+	PluginKind kind;
+	c16*       directory;
+	c16*       name;
 };
 
 struct PluginLoaderState
@@ -82,8 +78,7 @@ struct PluginLoaderState
 b32
 PluginLoader_Initialize(PluginLoaderState* s)
 {
-	//CLR_Initialize();
-	//TODO: Ensure this fails gracefully if the CLR isn't installed.
+	//Managed
 	{
 		HRESULT hr;
 
@@ -91,6 +86,7 @@ PluginLoader_Initialize(PluginLoaderState* s)
 		hr = CLRCreateInstance(CLSID_CLRMetaHost, IID_PPV_ARGS(&clrMetaHost));
 		LOG_HRESULT_IF_FAILED(hr, L"CLRCreateInstance failed", Severity::Error, return false);
 
+		//TODO: Ensure this fails gracefully if the CLR isn't installed.
 		//TODO: Enumerate installed versions and give a helpful error message.
 		//NOTE: Relying on this version should be safe. Use clrver to check installed versions.
 		ComPtr<ICLRRuntimeInfo> clrInfo;
@@ -108,7 +104,7 @@ PluginLoader_Initialize(PluginLoaderState* s)
 		hr = s->clrHost->GetCLRControl(&clrControl);
 		LOG_HRESULT_IF_FAILED(hr, L"ICLRRuntimeHost->GetCLRControl failed", Severity::Error, return false);
 
-		hr = clrControl->SetAppDomainManagerType(L"LCDHardwareMonitor AppDomainManager", L"LHMAppDomainManager");
+		hr = clrControl->SetAppDomainManagerType(L"LCDHardwareMonitor CLR Helper", L"LHMAppDomainManager");
 		LOG_HRESULT_IF_FAILED(hr, L"ICLRControl->SetAppDomainManagerType failed", Severity::Error, return false);
 
 		hr = s->clrHost->SetHostControl(&s->clrHostControl);
@@ -120,8 +116,13 @@ PluginLoader_Initialize(PluginLoaderState* s)
 		s->lhmAppDomainManager = s->clrHostControl.GetAppDomainManager();
 	}
 
-	b32 success = SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
-	LOG_LAST_ERROR_IF(!success, L"SetDefaultDllDirectories failed", Severity::Warning, return false);
+
+	//Unmanaged
+	{
+		b32 success = SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
+		LOG_LAST_ERROR_IF(!success, L"SetDefaultDllDirectories failed", Severity::Warning, return false);
+	}
+
 
 	s->plugins = {};
 	List_Reserve(s->plugins, 16);
@@ -135,7 +136,7 @@ PluginLoader_Teardown(PluginLoaderState* s)
 {
 	List_Free(s->plugins);
 
-	//CLR_Teardown();
+	//Managed
 	{
 		HRESULT hr;
 
@@ -163,44 +164,6 @@ UnloadNativePlugin(Plugin* plugin)
 }
 
 b32
-LoadManagedPluginOLD(Plugin* plugin)
-{
-	c16 path[MAX_PATH];
-	i32 cwdLen = GetCurrentDirectoryW(ArrayLength(path), path);
-	LOG_LAST_ERROR_IF(cwdLen == 0, L"GetCurrentDirectory failed", Severity::Warning, return false);
-	path[cwdLen++] = '\\';
-	errno_t err = wcscpy_s(path + cwdLen, ArrayLength(path) - cwdLen, plugin->directory);
-	LOG_IF(err, L"wcscpy_s failed", Severity::Warning, return false);
-
-	//Add the plugin directory to the DLL search path so its dependencies will be found.
-	plugin->cookie = AddDllDirectory(path);
-	LOG_LAST_ERROR_IF(!plugin->cookie, L"AddDllDirectory failed", Severity::Warning, return false);
-
-	plugin->module = LoadLibraryW(plugin->name);
-	CLR_PluginLoaded(plugin->directory, plugin->name);
-
-	return true;
-}
-
-b32
-UnloadManagedPluginOLD(Plugin* plugin)
-{
-	//NOTE: fuslogvw is great for debugging managed assembly loading.
-
-	b32 success;
-
-	success = FreeLibrary(plugin->module);
-	LOG_LAST_ERROR_IF(!success, L"FreeLibrary failed", Severity::Warning, return false);
-
-	CLR_PluginUnloaded(plugin->directory, plugin->name);
-
-	success = RemoveDllDirectory(plugin->cookie);
-	LOG_LAST_ERROR_IF(!success, L"RemoveDllDirectory failed", Severity::Warning, return false);
-
-	return true;
-}
-
-b32
 LoadManagedPlugin(PluginLoaderState* s, Plugin* plugin)
 {
 	//NOTE: fuslogvw is great for debugging managed assembly loading.
@@ -208,9 +171,12 @@ LoadManagedPlugin(PluginLoaderState* s, Plugin* plugin)
 	//TODO: Can we pass the Plugin*?
 	//TODO: Do we need to try/catch the managed code?
 	long fPtr = 0;
-	plugin->appDomainID = s->lhmAppDomainManager->LoadPlugin(plugin->name, plugin->directory, &fPtr);
-
-	//typedef HRESULT ( __stdcall *FExecuteInAppDomainCallback )(void *cookie);
+	//TODO: Figure out why these types are mis-matched
+	plugin->appDomainID = s->lhmAppDomainManager->LoadPlugin(
+		(unsigned short*) plugin->name,
+		(unsigned short*) plugin->directory,
+		&fPtr
+	);
 	FExecuteInAppDomainCallback updateFn = (FExecuteInAppDomainCallback) fPtr;
 
 	HRESULT hr;
@@ -241,7 +207,8 @@ PluginLoader_LoadPlugin(PluginLoaderState* s, c16* directory, c16* name)
 	plugin.name      = name;
 
 	b32 success = false;
-	switch (plugin.kind) {
+	switch (plugin.kind)
+	{
 		case PluginKind::Null:    success = false;                         break;
 		case PluginKind::Native:  success = LoadNativePlugin(&plugin);     break;
 		case PluginKind::Managed: success = LoadManagedPlugin(s, &plugin); break;
@@ -252,7 +219,7 @@ PluginLoader_LoadPlugin(PluginLoaderState* s, c16* directory, c16* name)
 	for (i32 i = 0; i < s->plugins.length; i++)
 	{
 		Plugin* pluginSlot = &s->plugins[i];
-		if (!pluginSlot->module)
+		if (!pluginSlot->name)
 		{
 			*pluginSlot = plugin;
 			return pluginSlot;
@@ -277,10 +244,4 @@ PluginLoader_UnloadPlugin(PluginLoaderState* s, Plugin* plugin)
 
 	List_RemoveFast(s->plugins, *plugin);
 	return true;
-}
-
-void*
-PluginLoader_GetPluginSymbol(PluginLoaderState* s, Plugin* plugin, c8* symbol)
-{
-	return GetProcAddress(plugin->module, symbol);
 }
