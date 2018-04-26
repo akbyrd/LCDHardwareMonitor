@@ -296,11 +296,8 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 		{
 			if (wParam == VK_ESCAPE)
 			{
-				if (IsDebuggerPresent())
-				{
-					PostQuitMessage(0);
-					return 0;
-				}
+				PostQuitMessage(0);
+				return 0;
 			}
 			break;
 		}
@@ -309,6 +306,8 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 		{
 			b32 success = PostMessageW(nullptr, WM_PREVIEWWINDOWCLOSED, 0, 0);
 			LOG_LAST_ERROR_IF(!success, L"PostMessage failed", Severity::Warning);
+
+			PostQuitMessage(0);
 			return 0;
 		}
 	}
