@@ -35,4 +35,3 @@ Next
 	Compare ExecuteInDefaultDomain vs ExecuteInAppDomain
 	Pass pointer to Plugin instead of individual strings and such
 	Figure out why these types are mis-matched in COM methods
-	IDataSourcePlugin should be CLR API and include all managed interfaces

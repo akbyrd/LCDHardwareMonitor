@@ -22,9 +22,8 @@
     <ClCompile Include="src\CLR.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\LCDHardwareMonitor CLR IDataSourcePlugin\LCDHardwareMonitor CLR IDataSourcePlugin.vcxproj">
+    <ProjectReference Include="..\LCDHardwareMonitor CLR API\LCDHardwareMonitor CLR API.vcxproj">
       <Project>{246430dc-680a-432e-b7de-bcc2c59cddae}</Project>
-      <CopyLocalSatelliteAssemblies>false</CopyLocalSatelliteAssemblies>
       <Private>false</Private>
     </ProjectReference>
   </ItemGroup>

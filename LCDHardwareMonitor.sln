@@ -4,9 +4,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OpenHardwareMonitor Plugin", "OpenHardwareMonitor Plugin\OpenHardwareMonitor Plugin.vcxproj", "{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}"
-	ProjectSection(ProjectDependencies) = postProject
-		{246430DC-680A-432E-B7DE-BCC2C59CDDAE} = {246430DC-680A-432E-B7DE-BCC2C59CDDAE}
-	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LCDHardwareMonitor", "LCDHardwareMonitor\LCDHardwareMonitor.vcxproj", "{0BBAB39F-5449-4FCE-AD78-884154644605}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -14,11 +11,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LCDHardwareMonitor", "LCDHa
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LCDHardwareMonitor CLR Helper", "LCDHardwareMonitor CLR Helper\LCDHardwareMonitor CLR Helper.vcxproj", "{4CF4BF35-2C27-4969-BFD7-34149A9CBF12}"
-	ProjectSection(ProjectDependencies) = postProject
-		{246430DC-680A-432E-B7DE-BCC2C59CDDAE} = {246430DC-680A-432E-B7DE-BCC2C59CDDAE}
-	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LCDHardwareMonitor CLR IDataSourcePlugin", "LCDHardwareMonitor CLR IDataSourcePlugin\LCDHardwareMonitor CLR IDataSourcePlugin.vcxproj", "{246430DC-680A-432E-B7DE-BCC2C59CDDAE}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LCDHardwareMonitor CLR API", "LCDHardwareMonitor CLR API\LCDHardwareMonitor CLR API.vcxproj", "{246430DC-680A-432E-B7DE-BCC2C59CDDAE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
