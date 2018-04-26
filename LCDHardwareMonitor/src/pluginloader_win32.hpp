@@ -177,11 +177,12 @@ LoadManagedPlugin(PluginLoaderState* s, Plugin* plugin)
 		(unsigned short*) plugin->directory,
 		&fPtr
 	);
-	FExecuteInAppDomainCallback updateFn = (FExecuteInAppDomainCallback) fPtr;
 
-	HRESULT hr;
-	hr = s->clrHost->ExecuteInAppDomain(plugin->appDomainID, updateFn, nullptr);
-	LOG_HRESULT_IF_FAILED(hr, L"ICLRRuntimeHost->ExecuteInAppDomain failed", Severity::Error, return false);
+
+	//DEBUG: Ensure we can call into the plugin
+	typedef void (__stdcall *UpdateFn)(void*);
+	UpdateFn updateFn = (UpdateFn) fPtr;
+	updateFn(nullptr);
 
 	return true;
 }

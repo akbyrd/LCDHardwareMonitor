@@ -45,7 +45,6 @@ public:
 
 		AppDomain^ domain = CreateDomain(name, nullptr, domainSetup);
 		auto pluginManager = (LHMAppDomainManager^) domain->DomainManager;
-		//NOTE: This is probably slow but it only happens once per plugin, so meh
 		return pluginManager->InitializePlugin(name, directory, updateFn);
 	}
 
@@ -59,7 +58,10 @@ private:
 	i32
 	InitializePlugin(String^ name, String^ directory, IntPtr* updateFn)
 	{
-		auto assembly = Assembly::Load(name);
+		auto path = String::Format("{0}\\{1}.dll", directory, name);
+		auto assembly = Assembly::LoadFrom(path);
+
+		//auto assembly = Assembly::Load(name);
 		for each (Type^ type in assembly->GetExportedTypes())
 		{
 			bool isPlugin = type->GetInterface(IDataSourcePlugin::typeid->FullName) != nullptr;
@@ -80,8 +82,7 @@ private:
 			//TODO: Error: load failed
 		}
 
-		//NOTE: Function calls average 215ns with this pattern
-		//(the extra 15 ns is probably just args and ExecuteInAppDomain overhead)
+		//NOTE: Function calls average 200ns with this pattern
 		initialize = gcnew PluginFn(plugin, &IDataSourcePlugin::Initialize);
 		update     = gcnew PluginFn(plugin, &IDataSourcePlugin::Update);
 		teardown   = gcnew PluginFn(plugin, &IDataSourcePlugin::Teardown);
