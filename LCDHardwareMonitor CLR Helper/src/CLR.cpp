@@ -5,34 +5,48 @@ using namespace System;
 using namespace System::Reflection;
 using namespace System::Runtime::InteropServices;
 
+template<typename T>
+using SList = System::Collections::Generic::List<T>;
+
 [assembly:ComVisible(false)];
-
-//TODO: Move to a header
-struct Plugin
-{
-	typedef void (__stdcall *PluginFn)(void*);
-	u32        appDomainID;
-	PluginFn   initialize;
-	PluginFn   update;
-	PluginFn   teardown;
-
-	b32        isLoaded;
-	i32        kind;
-	c16*       directory;
-	c16*       name;
-};
-
 [ComVisible(true)]
 public interface class
-ILHMAppDomainManager
+ILHMPluginLoader
 {
-	//TODO: Want to pass Plugin without exposing it to COM
-	b32 LoadPlugin(void* plugin);
+	b32 LoadDataSource   (void* dataSource);
+	b32 UnloadDataSource (void* dataSource);
+};
+
+ref class LHMPluginLoader;
+//TODO: Might just shove this into DataSourceManaged
+public value struct
+PluginInfoManaged
+{
+
+	//TODO: This pointer will break when the list resizes
+	PluginInfo*      pluginInfo;
+	AppDomain^       appDomain;
+	LHMPluginLoader^ pluginLoader;
+};
+
+delegate void DataSourceInitializeDel();
+delegate void DataSourceUpdateDel();
+delegate void DataSourceTeardownDel();
+
+private ref struct
+DataSourceManaged
+{
+	IDataSourcePlugin^       iDataSource;
+	DataSourceInitializeDel^ initialize;
+	DataSourceUpdateDel^     update;
+	DataSourceTeardownDel^   teardown;
 };
 
 public ref class
-LHMAppDomainManager : AppDomainManager, ILHMAppDomainManager
+LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 {
+	//NOTE: These functions run in the default AppDomain
+
 public:
 	void
 	InitializeNewDomain(AppDomainSetup^ appDomainInfo) override
@@ -41,11 +55,49 @@ public:
 	}
 
 	virtual b32
-	LoadPlugin(void* _plugin)
+	LoadDataSource(void* _dataSource)
 	{
-		Plugin* plugin = (Plugin*) _plugin;
-		auto name = gcnew String(plugin->name);
-		auto directory = gcnew String(plugin->directory);
+		DataSource* dataSource = (DataSource*) _dataSource;
+		PluginInfo* pluginInfo = dataSource->pluginInfo;
+
+		b32 success;
+		success = LoadPlugin(pluginInfo);
+		if (!success) return false;
+
+		PluginInfoManaged^ pluginInfoManaged = GetPluginInfoManaged(pluginInfo);
+		success = pluginInfoManaged->pluginLoader->InitializeDataSource(dataSource);
+		if (!success) return false;
+
+		return true;
+	}
+
+	virtual b32
+	UnloadDataSource(void* _dataSource)
+	{
+		DataSource* dataSource = (DataSource*) _dataSource;
+		PluginInfo* pluginInfo = dataSource->pluginInfo;
+
+		b32 success;
+		PluginInfoManaged^ pluginInfoManaged = GetPluginInfoManaged(pluginInfo);
+		success = pluginInfoManaged->pluginLoader->TeardownDataSource(dataSource);
+		if (!success) return false;
+
+		success = UnloadPlugin(pluginInfo);
+		if (!success) return false;
+
+		return true;
+	}
+
+private:
+	//TODO: Would it be better to store gcroot<...> pointers in the native PluginInfo?
+	SList<PluginInfoManaged>^ pluginInfosManaged = gcnew SList<PluginInfoManaged>();
+	DataSourceManaged dataSourceManaged;
+
+	b32
+	LoadPlugin(PluginInfo* pluginInfo)
+	{
+		auto name      = gcnew String(pluginInfo->name);
+		auto directory = gcnew String(pluginInfo->directory);
 
 		/* NOTE: LHMAppDomainManager is going to get loaded into each new
 		 * AppDomain so we need let ApplicationBase get inherited from the default
@@ -60,30 +112,58 @@ public:
 		//domainSetup.ShadowCopyDirectories = true
 		//domainSetup.ShadowCopyFiles       = true
 
-		AppDomain^ domain = CreateDomain(name, nullptr, domainSetup);
-		auto pluginManager = (LHMAppDomainManager^) domain->DomainManager;
-		return pluginManager->InitializePlugin(plugin, name);
+		AppDomain^ appDomain = CreateDomain(name, nullptr, domainSetup);
+
+		PluginInfoManaged pluginInfoManaged = {};
+		pluginInfoManaged.pluginInfo   = pluginInfo;
+		pluginInfoManaged.appDomain    = appDomain;
+		pluginInfoManaged.pluginLoader = (LHMPluginLoader^) appDomain->DomainManager;
+		pluginInfosManaged->Add(pluginInfoManaged);
+		return true;
 	}
 
-private:
-	delegate void PluginFn(IntPtr);
-	IDataSourcePlugin^ plugin;
-	PluginFn^ initialize;
-	PluginFn^ update;
-	PluginFn^ teardown;
+	b32
+	UnloadPlugin(PluginInfo* pluginInfo)
+	{
+		PluginInfoManaged^ pluginInfoManaged = GetPluginInfoManaged(pluginInfo);
+		pluginInfosManaged->Remove(*pluginInfoManaged);
+
+		AppDomain::Unload(pluginInfoManaged->appDomain);
+		return true;
+	}
+
+	PluginInfoManaged^
+	GetPluginInfoManaged(PluginInfo* pluginInfo)
+	{
+		for (i32 i = 0; i < pluginInfosManaged->Count; i++)
+		{
+			if (pluginInfosManaged[i].pluginInfo == pluginInfo)
+			{
+				//TODO: Is this a reference to the actual element or a temporary?
+				return pluginInfosManaged[i];
+			}
+		}
+	}
+
+
+
+	//NOTE: These functions run in the plugin AppDomain
 
 	b32
-	InitializePlugin(Plugin* _plugin, String^ name)
+	InitializeDataSource(DataSource* dataSource)
 	{
+		PluginInfo* pluginInfo = dataSource->pluginInfo;
+		auto name = gcnew String(pluginInfo->name);
+
 		auto assembly = Assembly::Load(name);
 		for each (Type^ type in assembly->GetExportedTypes())
 		{
 			bool isPlugin = type->GetInterface(IDataSourcePlugin::typeid->FullName) != nullptr;
 			if (isPlugin)
 			{
-				if (!plugin)
+				if (!dataSourceManaged.iDataSource)
 				{
-					plugin = (IDataSourcePlugin^) Activator::CreateInstance(type);
+					dataSourceManaged.iDataSource = (IDataSourcePlugin^) Activator::CreateInstance(type);
 				}
 				else
 				{
@@ -91,20 +171,26 @@ private:
 				}
 			}
 		}
-		if (!plugin)
-		{
-			//TODO: Error: load failed
-		}
+		//TODO: Logging
+		//LOG_IF(!dataSourceManaged.iDataSource, L"Failed to find a data source class", Severity::Warning, return false);
 
 		//NOTE: Function calls average 200ns with this pattern
-		initialize = gcnew PluginFn(plugin, &IDataSourcePlugin::Initialize);
-		update     = gcnew PluginFn(plugin, &IDataSourcePlugin::Update);
-		teardown   = gcnew PluginFn(plugin, &IDataSourcePlugin::Teardown);
-		_plugin->initialize = (Plugin::PluginFn) (void*) Marshal::GetFunctionPointerForDelegate(initialize);
-		_plugin->update     = (Plugin::PluginFn) (void*) Marshal::GetFunctionPointerForDelegate(update);
-		_plugin->teardown   = (Plugin::PluginFn) (void*) Marshal::GetFunctionPointerForDelegate(teardown);
-		_plugin->appDomainID = AppDomain::CurrentDomain->Id;
+		//Try playing with security settings if optimizing this
+		dataSourceManaged.initialize = gcnew DataSourceInitializeDel(dataSourceManaged.iDataSource, &IDataSourcePlugin::Initialize);
+		dataSourceManaged.update     = gcnew DataSourceUpdateDel    (dataSourceManaged.iDataSource, &IDataSourcePlugin::Update);
+		dataSourceManaged.teardown   = gcnew DataSourceTeardownDel  (dataSourceManaged.iDataSource, &IDataSourcePlugin::Teardown);
 
+		dataSource->initialize = (DataSourceInitializeFn) (void*) Marshal::GetFunctionPointerForDelegate(dataSourceManaged.initialize);
+		dataSource->update     = (DataSourceUpdateFn)     (void*) Marshal::GetFunctionPointerForDelegate(dataSourceManaged.update);
+		dataSource->teardown   = (DataSourceTeardownFn)   (void*) Marshal::GetFunctionPointerForDelegate(dataSourceManaged.teardown);
+
+		return true;
+	}
+
+	b32
+	TeardownDataSource(DataSource* dataSource)
+	{
+		//Nothing to do currently
 		return true;
 	}
 };

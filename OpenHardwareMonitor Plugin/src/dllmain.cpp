@@ -14,11 +14,12 @@ using namespace OpenHardwareMonitor::Hardware;
 template<typename T>
 using SList = System::Collections::Generic::List<T>;
 
-public ref struct State : public IDataSourcePlugin
+public ref class State : IDataSourcePlugin
 {
-	virtual void Initialize(IntPtr plugin) { }
-	virtual void Update(IntPtr plugin) { }
-	virtual void Teardown(IntPtr plugin) { }
+public:
+	virtual void Initialize() { }
+	virtual void Update    () { }
+	virtual void Teardown  () { }
 
 	#if false
 	Computer           computer;

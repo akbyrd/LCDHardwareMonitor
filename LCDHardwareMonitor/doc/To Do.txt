@@ -9,17 +9,18 @@ Is it possible to catch managed exceptions from the native side? Can't have them
 Refactoring
 	Replace references with pointers
 	Stop using wide characters. That's not the right path to unicode support.
+	Decide what we're really doing with wide characters/i18n
 	Decide on comment style
 	Drop some of the variable name prefixes, such as d3d
 	Use self or this as parameter name for 'methods'
 	Should const be used on parameters and locals?
 	Include 'out' in out parameter names
 	Array and String slices?
-	Decide what we're really doing with wide characters/i18n
 	Pick strict C++ and VS versions
 	Renaming
 		Ensure Platform is uniform
-		CLIHelper/PluginHelper
+		Run Tree -> run or something
+
 
 Load default/fallback resources
 Zooming in and then out leaves the window the wrong size
@@ -32,6 +33,6 @@ Plugins
 	  function?)
 
 Next
-	Pass Plugin* instead of void* to LHMAppDomainManager
 	Normalize line endings
 	Implement OHM plugin
+	Maybe change .h to .hpp?

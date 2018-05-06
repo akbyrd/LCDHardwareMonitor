@@ -1,6 +1,7 @@
 #pragma once
-
 #pragma unmanaged
+
+#if false
 struct Sensor
 {
 	c16* name;
@@ -11,13 +12,17 @@ struct Sensor
 	r32  minValue;
 	r32  maxValue;
 };
+#endif
 
-//TODO: These aren't used currently
-typedef void (*DataSourceInitialize)(List<Sensor>& sensors);
-LHM_API void _cdecl Initialize(List<Sensor>&);
+typedef void (*DataSourceInitializeFn)();
+typedef void (*DataSourceUpdateFn)    ();
+typedef void (*DataSourceTeardownFn)  ();
 
-typedef void (*DataSourceUpdate)(List<Sensor>& sensors);
-LHM_API void _cdecl Update(List<Sensor>&);
-
-typedef void (*DataSourceTeardown)(List<Sensor>& sensors);
-LHM_API void _cdecl Teardown(List<Sensor>&);
+struct DataSource
+{
+	//TODO: This pointer will break when the list resizes
+	PluginInfo*            pluginInfo;
+	DataSourceInitializeFn initialize;
+	DataSourceUpdateFn     update;
+	DataSourceTeardownFn   teardown;
+};

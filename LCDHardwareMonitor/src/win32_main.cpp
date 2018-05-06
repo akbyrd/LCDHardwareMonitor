@@ -6,8 +6,7 @@
 #include "math.hpp"
 #include "pluginloader.h"
 #include "renderer.h"
-#include "LHMDataSource.h"
-#include "widget_filledbar.hpp"
+//#include "widget_filledbar.hpp"
 #include "simulation.hpp"
 
 #define VC_EXTRALEAN

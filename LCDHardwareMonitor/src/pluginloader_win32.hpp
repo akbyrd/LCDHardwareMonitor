@@ -1,82 +1,39 @@
 #include <metahost.h>
-
 #include <wrl\client.h>
 using Microsoft::WRL::ComPtr;
 
-//TODO: Can we get type info without needing the tlb?
+/* TODO: We don't really need this in the run tree. Want to reach into the
+ * project output folder directly, but we need to know the correct config
+ * subfolder. */
 #import "../Run Tree/LCDHardwareMonitor CLR Helper.tlb" no_namespace
 
-class CLRHostControl : public IHostControl
+class LHMHostControl : public IHostControl
 {
 public:
-	HRESULT __stdcall GetHostManager(REFIID riid, void** ppObject)
-	{
-		*ppObject = nullptr;
-		return E_NOINTERFACE;
-	}
-
+	//TODO: Double check that this doesn't get called for each new AppDomain
 	HRESULT __stdcall SetAppDomainManager(DWORD dwAppDomainID, IUnknown* pUnkAppDomainManager)
 	{
 		HRESULT hr;
-		hr = pUnkAppDomainManager->QueryInterface(IID_PPV_ARGS(&lhmAppDomainManager));
+		hr = pUnkAppDomainManager->QueryInterface(IID_PPV_ARGS(&lhmPluginLoader));
 		return hr;
 	}
 
-	//TODO: Should this be done though QueryInterface?
-	ILHMAppDomainManager* GetAppDomainManager() { return lhmAppDomainManager.Get(); }
+	ILHMPluginLoader* GetAppDomainManager() { return lhmPluginLoader.Get(); }
 
-	HRESULT __stdcall QueryInterface(REFIID riid, void **ppObject)
-	{
-		if (!ppObject) return E_POINTER;
-		*ppObject = nullptr;
-
-		//riid == __uuidof(lhmAppDomainManager)
-		if (riid == IID_IUnknown
-		 || riid == IID_IHostControl)
-		{
-			*ppObject = this;
-			AddRef();
-			return S_OK;
-		}
-		return E_NOINTERFACE;
-	}
-
-	ULONG __stdcall AddRef()  { return InterlockedIncrement(&refCount); }
-	ULONG __stdcall Release() { return InterlockedDecrement(&refCount); }
+	HRESULT __stdcall GetHostManager(REFIID, void**) { return E_NOTIMPL; }
+	HRESULT __stdcall QueryInterface(REFIID, void**) { return E_NOTIMPL; }
+	ULONG   __stdcall AddRef()  { return 0; }
+	ULONG   __stdcall Release() { return 0; }
 
 private:
-	ComPtr<ILHMAppDomainManager> lhmAppDomainManager;
-	ULONG                        refCount;
-};
-
-enum struct PluginKind
-{
-	Null,
-	Native,
-	Managed,
-};
-
-struct Plugin
-{
-	typedef void (__stdcall *PluginFn)(void*);
-	//TODO: Is this stable across unloads and loads?
-	u32        appDomainID;
-	PluginFn   initialize;
-	PluginFn   update;
-	PluginFn   teardown;
-
-	b32        isLoaded;
-	PluginKind kind;
-	c16*       directory;
-	c16*       name;
+	ComPtr<ILHMPluginLoader> lhmPluginLoader;
 };
 
 struct PluginLoaderState
 {
-	ComPtr<ICLRRuntimeHost>      clrHost;
-	CLRHostControl               clrHostControl;
-	ComPtr<ILHMAppDomainManager> lhmAppDomainManager;
-	List<Plugin>                 plugins;
+	ComPtr<ICLRRuntimeHost>  clrHost;
+	LHMHostControl           lhmHostControl;
+	ComPtr<ILHMPluginLoader> lhmPluginLoader;
 };
 
 b32
@@ -108,16 +65,16 @@ PluginLoader_Initialize(PluginLoaderState* s)
 		hr = s->clrHost->GetCLRControl(&clrControl);
 		LOG_HRESULT_IF_FAILED(hr, L"ICLRRuntimeHost->GetCLRControl failed", Severity::Error, return false);
 
-		hr = clrControl->SetAppDomainManagerType(L"LCDHardwareMonitor CLR Helper", L"LHMAppDomainManager");
+		hr = clrControl->SetAppDomainManagerType(L"LCDHardwareMonitor CLR Helper", L"LHMPluginLoader");
 		LOG_HRESULT_IF_FAILED(hr, L"ICLRControl->SetAppDomainManagerType failed", Severity::Error, return false);
 
-		hr = s->clrHost->SetHostControl(&s->clrHostControl);
+		hr = s->clrHost->SetHostControl(&s->lhmHostControl);
 		LOG_HRESULT_IF_FAILED(hr, L"ICLRRuntimeHost->SetHostControl failed", Severity::Error, return false);
 
 		hr = s->clrHost->Start();
 		LOG_HRESULT_IF_FAILED(hr, L"ICLRRuntimeHost->Start failed", Severity::Error, return false);
 
-		s->lhmAppDomainManager = s->clrHostControl.GetAppDomainManager();
+		s->lhmPluginLoader = s->lhmHostControl.GetAppDomainManager();
 	}
 
 
@@ -127,19 +84,12 @@ PluginLoader_Initialize(PluginLoaderState* s)
 		LOG_LAST_ERROR_IF(!success, L"SetDefaultDllDirectories failed", Severity::Warning, return false);
 	}
 
-
-	s->plugins = {};
-	List_Reserve(s->plugins, 16);
-	LOG_IF(!s->plugins, L"Plugin allocation failed", Severity::Error, return false);
-
 	return true;
 }
 
 void
 PluginLoader_Teardown(PluginLoaderState* s)
 {
-	List_Free(s->plugins);
-
 	//Managed
 	{
 		HRESULT hr;
@@ -152,91 +102,78 @@ PluginLoader_Teardown(PluginLoaderState* s)
 }
 
 b32
-LoadNativePlugin(Plugin* plugin)
+LoadNativeDataSource(PluginLoaderState* s, DataSource* dataSource)
 {
-	//TODO: Implement LoadNativePlugin
+	//TODO: Implement LoadNativeDataSource
 	Assert(false);
 	return false;
 }
 
 b32
-UnloadNativePlugin(Plugin* plugin)
+UnloadNativeDataSource(PluginLoaderState* s, DataSource* dataSource)
 {
-	//TODO: Implement UnloadNativePlugin
+	//TODO: Implement UnloadNativeDataSource
 	Assert(false);
 	return false;
 }
 
 b32
-LoadManagedPlugin(PluginLoaderState* s, Plugin* plugin)
+LoadManagedDataSource(PluginLoaderState* s, DataSource* dataSource)
 {
 	//NOTE: fuslogvw is great for debugging managed assembly loading.
 
 	//TODO: Do we need to try/catch the managed code?
-	b32 success = s->lhmAppDomainManager->LoadPlugin(plugin);
-
-	//DEBUG: Ensure we can call into the plugin
-	plugin->update(nullptr);
+	b32 success;
+	success = s->lhmPluginLoader->LoadDataSource(dataSource);
+	LOG_IF(!success, L"Failed to load managed data source", Severity::Warning, return false);
 
 	return true;
 }
 
 b32
-UnloadManagedPlugin(PluginLoaderState* s, Plugin* plugin)
+UnloadManagedDataSource(PluginLoaderState* s, DataSource* dataSource)
 {
-	HRESULT hr;
-	hr = s->clrHost->UnloadAppDomain(plugin->appDomainID, true);
-	LOG_HRESULT_IF_FAILED(hr, L"ICLRRuntimeHost->UnloadAppDomain failed", Severity::Error, return false);
+	b32 success;
+	success = s->lhmPluginLoader->UnloadDataSource(dataSource);
+	LOG_IF(!success, L"Failed to unload managed data source", Severity::Warning, return false);
 
 	return true;
 }
 
-Plugin*
-PluginLoader_LoadPlugin(PluginLoaderState* s, c16* directory, c16* name)
+b32
+PluginLoader_LoadDataSource(PluginLoaderState* s, DataSource* dataSource)
 {
+	PluginInfo* pluginInfo = dataSource->pluginInfo;
+
 	//TODO: Actually check if the DLL is native or managed
-	Plugin plugin = {};
-	plugin.kind      = PluginKind::Managed;
-	plugin.isLoaded  = true;
-	plugin.directory = directory;
-	plugin.name      = name;
+	pluginInfo->kind = PluginKind::Managed;
 
 	b32 success = false;
-	switch (plugin.kind)
+	switch (pluginInfo->kind)
 	{
-		case PluginKind::Null:    success = false;                         break;
-		case PluginKind::Native:  success = LoadNativePlugin(&plugin);     break;
-		case PluginKind::Managed: success = LoadManagedPlugin(s, &plugin); break;
-	}
-	if (!success) return nullptr;
-
-	//Reuse any empty spots left by unloading plugins
-	for (i32 i = 0; i < s->plugins.length; i++)
-	{
-		Plugin* pluginSlot = &s->plugins[i];
-		if (!pluginSlot->name)
-		{
-			*pluginSlot = plugin;
-			return pluginSlot;
-		}
-	}
-	return List_Append(s->plugins, plugin);
-}
-
-b32
-PluginLoader_UnloadPlugin(PluginLoaderState* s, Plugin* plugin)
-{
-	b32 loaded = List_Contains(s->plugins, plugin);
-	LOG_IF(!loaded, L"Attempting to unload a plugin that is not loaded", Severity::Warning, return false);
-
-	b32 success;
-	switch (plugin->kind) {
-		case PluginKind::Null:    success = false;                          break;
-		case PluginKind::Native:  success = UnloadNativePlugin(plugin);     break;
-		case PluginKind::Managed: success = UnloadManagedPlugin(s, plugin); break;
+		case PluginKind::Null:    success = false;                                break;
+		case PluginKind::Native:  success = LoadNativeDataSource(s, dataSource);  break;
+		case PluginKind::Managed: success = LoadManagedDataSource(s, dataSource); break;
 	}
 	if (!success) return false;
 
-	List_RemoveFast(s->plugins, *plugin);
+	pluginInfo->isLoaded = true;
+	return true;
+}
+
+b32
+PluginLoader_UnloadDataSource(PluginLoaderState* s, DataSource* dataSource)
+{
+	PluginInfo* pluginInfo = dataSource->pluginInfo;
+
+	b32 success = false;
+	switch (pluginInfo->kind)
+	{
+		case PluginKind::Null:    success = false;                                  break;
+		case PluginKind::Native:  success = UnloadNativeDataSource(s, dataSource);  break;
+		case PluginKind::Managed: success = UnloadManagedDataSource(s, dataSource); break;
+	}
+	if (!success) return false;
+
 	return true;
 }

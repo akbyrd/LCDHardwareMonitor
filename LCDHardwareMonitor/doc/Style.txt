@@ -26,9 +26,9 @@ Style Notes
   runtime aid.
 
 - On the topic of error handling, here are my rules: 1) return a value that
-  can be used a boolean for success/failure, 2) when appropriate ensure there's
-  a way for the caller to know what *why* the failure occurred, 3) for
-  procedures with multiuple failure points ensure that from the callers point
+  can be used as a boolean for success/failure, 2) when appropriate ensure
+  there's a way for the caller to know what *why* the failure occurred, 3) for
+  procedures with multiple failure points ensure that from the callers point
   of view either everything succeeds or everything fails, and 4) log the
   failure. Regarding 3) If you acquire resources and a later acquisition fails
   be sure you release all your resources. Don't leave them hanging and end up
