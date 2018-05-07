@@ -22,7 +22,6 @@ ref class LHMPluginLoader;
 public value struct
 PluginInfoManaged
 {
-
 	//TODO: This pointer will break when the list resizes
 	PluginInfo*      pluginInfo;
 	AppDomain^       appDomain;

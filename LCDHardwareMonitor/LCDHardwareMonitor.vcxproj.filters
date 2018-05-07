@@ -43,19 +43,19 @@
     <ClInclude Include="src\widget_filledbar.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\Shared\LHMDataSource.h">
+    <ClInclude Include="..\shared\LHMDataSource.h">
       <Filter>API</Filter>
     </ClInclude>
-    <ClInclude Include="..\Shared\LHMAPI.h">
+    <ClInclude Include="..\shared\LHMAPI.h">
       <Filter>API</Filter>
     </ClInclude>
-    <ClInclude Include="..\Shared\LHMCommon.h">
+    <ClInclude Include="..\shared\LHMCommon.h">
       <Filter>API</Filter>
     </ClInclude>
-    <ClInclude Include="..\Shared\LHMList.h">
+    <ClInclude Include="..\shared\LHMList.h">
       <Filter>API</Filter>
     </ClInclude>
-    <ClInclude Include="..\Shared\LHMString.h">
+    <ClInclude Include="..\shared\LHMString.h">
       <Filter>API</Filter>
     </ClInclude>
     <ClInclude Include="src\previewwindow_win32_d3d11.hpp">

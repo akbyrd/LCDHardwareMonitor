@@ -58,7 +58,7 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
-  <ImportGroup Label="Shared">
+  <ImportGroup Label="shared">
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -74,22 +74,22 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(ProjectDir)include;$(SolutionDir)Shared;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)include;$(SolutionDir)shared;$(IncludePath)</IncludePath>
     <OutDir>bin\$(Configuration)_$(Platform)\</OutDir>
     <IntDir>obj\$(Configuration)_$(Platform)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(ProjectDir)include;$(SolutionDir)Shared;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)include;$(SolutionDir)shared;$(IncludePath)</IncludePath>
     <OutDir>bin\$(Configuration)_$(Platform)\</OutDir>
     <IntDir>obj\$(Configuration)_$(Platform)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(ProjectDir)include;$(SolutionDir)Shared;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)include;$(SolutionDir)shared;$(IncludePath)</IncludePath>
     <OutDir>bin\$(Configuration)_$(Platform)\</OutDir>
     <IntDir>obj\$(Configuration)_$(Platform)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(ProjectDir)include;$(SolutionDir)Shared;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)include;$(SolutionDir)shared;$(IncludePath)</IncludePath>
     <OutDir>bin\$(Configuration)_$(Platform)\</OutDir>
     <IntDir>obj\$(Configuration)_$(Platform)\</IntDir>
   </PropertyGroup>
@@ -100,8 +100,11 @@
       <SDLCheck>true</SDLCheck>
     </ClCompile>
     <PostBuildEvent>
-      <Command>"$(SolutionDir)Shared\Deploy.bat" "$(SolutionDir)" "$(TargetDir)" ""</Command>
+      <Command>"$(SolutionDir)shared\Deploy.bat" "$(SolutionDir)" "$(TargetDir)" ""</Command>
     </PostBuildEvent>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -110,8 +113,11 @@
       <SDLCheck>true</SDLCheck>
     </ClCompile>
     <PostBuildEvent>
-      <Command>"$(SolutionDir)Shared\Deploy.bat" "$(SolutionDir)" "$(TargetDir)" ""</Command>
+      <Command>"$(SolutionDir)shared\Deploy.bat" "$(SolutionDir)" "$(TargetDir)" ""</Command>
     </PostBuildEvent>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -126,7 +132,7 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PostBuildEvent>
-      <Command>"$(SolutionDir)Shared\Deploy.bat" "$(SolutionDir)" "$(TargetDir)" ""</Command>
+      <Command>"$(SolutionDir)shared\Deploy.bat" "$(SolutionDir)" "$(TargetDir)" ""</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -142,7 +148,7 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PostBuildEvent>
-      <Command>"$(SolutionDir)Shared\Deploy.bat" "$(SolutionDir)" "$(TargetDir)" ""</Command>
+      <Command>"$(SolutionDir)shared\Deploy.bat" "$(SolutionDir)" "$(TargetDir)" ""</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

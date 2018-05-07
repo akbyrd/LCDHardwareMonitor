@@ -2,10 +2,10 @@
 #include <wrl\client.h>
 using Microsoft::WRL::ComPtr;
 
-/* TODO: We don't really need this in the run tree. Want to reach into the
+/* TODO: We don't really need this in run/. Want to reach into the
  * project output folder directly, but we need to know the correct config
  * subfolder. */
-#import "../Run Tree/LCDHardwareMonitor CLR Helper.tlb" no_namespace
+#import "../run/LCDHardwareMonitor CLR Helper.tlb" no_namespace
 
 class LHMHostControl : public IHostControl
 {

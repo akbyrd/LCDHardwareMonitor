@@ -1,29 +1,16 @@
-Central deployment (VC++ redistributables) or static linking to VCRT?
-Writing a tutorial for creating plugins.
-	Warn about loader lock.
-	Warn about using version/strong name for dependencies so you don't end up with the wrong one because the name matched.
-Create a template C++ /CLI project and a tutorial for writing .NET plugins.
-Ensure debugging for both native and managed plugins is reasonable.
-Is it possible to catch managed exceptions from the native side? Can't have them crash the application.
-
 Refactoring
 	Replace references with pointers
 	Stop using wide characters. That's not the right path to unicode support.
 	Decide what we're really doing with wide characters/i18n
-	Decide on comment style
 	Drop some of the variable name prefixes, such as d3d
 	Use self or this as parameter name for 'methods'
 	Should const be used on parameters and locals?
 	Include 'out' in out parameter names
 	Array and String slices?
-	Pick strict C++ and VS versions
-	Renaming
-		Ensure Platform is uniform
-		Run Tree -> run or something
+	Pick strict C++ version
 
-
-Load default/fallback resources
-Zooming in and then out leaves the window the wrong size
+Bugs
+	Zooming in and then out leaves the window the wrong size
 
 Plugins
 	- Enforce the constraint the you may *ONLY* access application provided
@@ -31,7 +18,23 @@ Plugins
 	  Basically, don't save a reference and access services from a separate
 	  thread. This could be detected with a 'shim' of some sort (accessor
 	  function?)
+	- Write a tutorial for creating plugins. Warn about loader lock. Warn about
+	  using version/strong name for dependencies so you don't end up with the
+	  wrong one because the name matched.
+	- Create a template C++/CLI project and a tutorial for writing .NET plugins.
+	- Ensure debugging for both native and managed plugins is reasonable.
+	- Catch managed exceptions from the native side. Can't have them crash the
+	  application.
+
+Architecture
+	- Decide on static or dynamic linking to e.g. the CRT. Bundle redistributables
+	  if dynamically linking.
+	- Load default/fallback resources
 
 Next
+	Fix GetPluginInfoManaged
+	Read about single translation unit builds
 	Maybe change .h to .hpp?
+	Decide on comment style
+	Ensure Platform function naming is uniform
 	Implement OHM plugin

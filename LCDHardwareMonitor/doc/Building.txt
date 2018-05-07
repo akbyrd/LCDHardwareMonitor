@@ -1,0 +1,58 @@
+Compiler: MSVC 2015
+Lanuage: C++ (03 mostly? TODO: Decide)
+
+
+
+Projects
+LCDHardwareMonitor
+Project dependencies: LCDHardwareMonitor CLR Helper
+Include directories: include/ and ../shared/
+Library dependencies: mscoree.lib
+Output: exe
+This is the main project. Contains the the core application as well as unmanaged
+hosting code the starts the CLR and communicates with LCDHardwareMonitor CLR
+Helper on the managed side.
+
+LCDHardwareMonitor CLR Helper
+Project dependencies: LCDHardwareMonitor CLR API
+Include directories: include/ and ../shared/
+References: LCDHardwareMonitor CLR API
+Output: dll
+Compiler flags: /clr
+Post build: tlbexp <output file.dll> /out:<output file.tlb>
+Helps handle managed plugins. The code in this assembly is responsible for
+creating and destroying AppDomains and doing bookkeeping for managed plugins.
+The code here will be injected into the AppDomain for each plugin to deal with
+unmanaged to managed interop. The core application loads this assembly and
+instantiates the main class through a COM interface (unfortunately). Due to the
+COM usage, the assembly must be parsed into .tlb file for the core application
+to use and avoid registering the COM type on the system.
+
+LCDHardwareMonitor CLR API
+Include directories: include/ and ../shared/
+Output: dll
+Compiler flags: /clr
+Contains managed descriptions of all interfaces available to plugins.
+
+OpenHardwareMonitor Plugin
+Project dependencies: LCDHardwareMonitor CLR API
+Include directories: include/ and ../shared/
+Type: data source
+Output: dll
+Compiler flags: /clr
+
+
+
+Directory Structure
+The run directory must have the following structure:
+LCDHardwareMonitor.exe
+LCDHardwareMonitor CLR API.dll
+LCDHardwareMonitor CLR Helper.dll
+LCDHardwareMonitor CLR Helper.tlb
+Data Sources/
+	Plugin Name/
+		Plugin Name.dll
+Shaders/
+
+shared/Deploy.bat can be used to copy the output from each project into a run
+directory. See comments in the script for usage.

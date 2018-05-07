@@ -4,27 +4,27 @@
     <ShowAllFiles>true</ShowAllFiles>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LocalDebuggerWorkingDirectory>..\Run Tree</LocalDebuggerWorkingDirectory>
+    <LocalDebuggerWorkingDirectory>..\run</LocalDebuggerWorkingDirectory>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
     <LocalDebuggerDebuggerType>Mixed</LocalDebuggerDebuggerType>
-    <LocalDebuggerCommand>$(SolutionDir)Run Tree\$(TargetFileName)</LocalDebuggerCommand>
+    <LocalDebuggerCommand>$(SolutionDir)run\$(TargetFileName)</LocalDebuggerCommand>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LocalDebuggerWorkingDirectory>..\Run Tree</LocalDebuggerWorkingDirectory>
+    <LocalDebuggerWorkingDirectory>..\run</LocalDebuggerWorkingDirectory>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
     <LocalDebuggerDebuggerType>Mixed</LocalDebuggerDebuggerType>
-    <LocalDebuggerCommand>$(SolutionDir)Run Tree\$(TargetFileName)</LocalDebuggerCommand>
+    <LocalDebuggerCommand>$(SolutionDir)run\$(TargetFileName)</LocalDebuggerCommand>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LocalDebuggerWorkingDirectory>..\Run Tree</LocalDebuggerWorkingDirectory>
+    <LocalDebuggerWorkingDirectory>..\run</LocalDebuggerWorkingDirectory>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
     <LocalDebuggerDebuggerType>Mixed</LocalDebuggerDebuggerType>
-    <LocalDebuggerCommand>$(SolutionDir)Run Tree\$(TargetFileName)</LocalDebuggerCommand>
+    <LocalDebuggerCommand>$(SolutionDir)run\$(TargetFileName)</LocalDebuggerCommand>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <LocalDebuggerWorkingDirectory>..\Run Tree</LocalDebuggerWorkingDirectory>
+    <LocalDebuggerWorkingDirectory>..\run</LocalDebuggerWorkingDirectory>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
     <LocalDebuggerDebuggerType>Mixed</LocalDebuggerDebuggerType>
-    <LocalDebuggerCommand>$(SolutionDir)Run Tree\$(TargetFileName)</LocalDebuggerCommand>
+    <LocalDebuggerCommand>$(SolutionDir)run\$(TargetFileName)</LocalDebuggerCommand>
   </PropertyGroup>
 </Project>

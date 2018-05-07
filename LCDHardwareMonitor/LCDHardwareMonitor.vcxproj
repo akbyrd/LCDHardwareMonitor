@@ -54,7 +54,7 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
-  <ImportGroup Label="Shared">
+  <ImportGroup Label="shared">
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -72,26 +72,22 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>bin\$(Configuration)_$(Platform)\</OutDir>
     <IntDir>obj\$(Configuration)_$(Platform)\</IntDir>
-    <IncludePath>$(ProjectDir)include;$(SolutionDir)Shared;$(SolutionDir)LCDHardwareMonitor CLR Helper\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)LCDHardwareMonitor CLR Helper\$(OutDir);$(LibraryPath)</LibraryPath>
+    <IncludePath>$(ProjectDir)include;$(SolutionDir)shared;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>bin\$(Configuration)_$(Platform)\</OutDir>
     <IntDir>obj\$(Configuration)_$(Platform)\</IntDir>
-    <IncludePath>$(ProjectDir)include;$(SolutionDir)Shared;$(SolutionDir)LCDHardwareMonitor CLR Helper\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)LCDHardwareMonitor CLR Helper\$(OutDir);$(LibraryPath)</LibraryPath>
+    <IncludePath>$(ProjectDir)include;$(SolutionDir)shared;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>bin\$(Configuration)_$(Platform)\</OutDir>
     <IntDir>obj\$(Configuration)_$(Platform)\</IntDir>
-    <IncludePath>$(ProjectDir)include;$(SolutionDir)Shared;$(SolutionDir)LCDHardwareMonitor CLR Helper\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)LCDHardwareMonitor CLR Helper\$(OutDir);$(LibraryPath)</LibraryPath>
+    <IncludePath>$(ProjectDir)include;$(SolutionDir)shared;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>bin\$(Configuration)_$(Platform)\</OutDir>
     <IntDir>obj\$(Configuration)_$(Platform)\</IntDir>
-    <IncludePath>$(ProjectDir)include;$(SolutionDir)Shared;$(SolutionDir)LCDHardwareMonitor CLR Helper\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)LCDHardwareMonitor CLR Helper\$(OutDir);$(LibraryPath)</LibraryPath>
+    <IncludePath>$(ProjectDir)include;$(SolutionDir)shared;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -101,7 +97,7 @@
       <PreprocessorDefinitions>DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <PostBuildEvent>
-      <Command>"$(SolutionDir)Shared\Deploy.bat" "$(SolutionDir)" "$(TargetDir)"</Command>
+      <Command>"$(SolutionDir)shared\Deploy.bat" "$(SolutionDir)" "$(TargetDir)"</Command>
     </PostBuildEvent>
     <Link />
     <Link>
@@ -116,7 +112,7 @@
       <PreprocessorDefinitions>DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <PostBuildEvent>
-      <Command>"$(SolutionDir)Shared\Deploy.bat" "$(SolutionDir)" "$(TargetDir)"</Command>
+      <Command>"$(SolutionDir)shared\Deploy.bat" "$(SolutionDir)" "$(TargetDir)"</Command>
     </PostBuildEvent>
     <Link />
     <Link>
@@ -137,7 +133,7 @@
       <AdditionalDependencies>mscoree.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>"$(SolutionDir)Shared\Deploy.bat" "$(SolutionDir)" "$(TargetDir)"</Command>
+      <Command>"$(SolutionDir)shared\Deploy.bat" "$(SolutionDir)" "$(TargetDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -154,18 +150,18 @@
       <AdditionalDependencies>mscoree.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>"$(SolutionDir)Shared\Deploy.bat" "$(SolutionDir)" "$(TargetDir)"</Command>
+      <Command>"$(SolutionDir)shared\Deploy.bat" "$(SolutionDir)" "$(TargetDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\win32_main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\Shared\LHMAPI.h" />
-    <ClInclude Include="..\Shared\LHMCommon.h" />
-    <ClInclude Include="..\Shared\LHMDataSource.h" />
-    <ClInclude Include="..\Shared\LHMList.h" />
-    <ClInclude Include="..\Shared\LHMString.h" />
+    <ClInclude Include="..\shared\LHMAPI.h" />
+    <ClInclude Include="..\shared\LHMCommon.h" />
+    <ClInclude Include="..\shared\LHMDataSource.h" />
+    <ClInclude Include="..\shared\LHMList.h" />
+    <ClInclude Include="..\shared\LHMString.h" />
     <ClInclude Include="src\platformdefs_win32.hpp" />
     <ClInclude Include="src\pluginloader.h" />
     <ClInclude Include="src\pluginloader_win32.hpp" />

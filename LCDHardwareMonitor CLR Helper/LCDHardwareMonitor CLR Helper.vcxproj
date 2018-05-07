@@ -68,7 +68,7 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
-  <ImportGroup Label="Shared">
+  <ImportGroup Label="shared">
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -86,20 +86,20 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>bin\$(Configuration)_$(Platform)\</OutDir>
     <IntDir>obj\$(Configuration)_$(Platform)\</IntDir>
-    <IncludePath>$(ProjectDir)include;$(SolutionDir)Shared;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)include;$(SolutionDir)shared;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(ProjectDir)include;$(SolutionDir)Shared;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)include;$(SolutionDir)shared;$(IncludePath)</IncludePath>
     <OutDir>bin\$(Configuration)_$(Platform)\</OutDir>
     <IntDir>obj\$(Configuration)_$(Platform)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>bin\$(Configuration)_$(Platform)\</OutDir>
     <IntDir>obj\$(Configuration)_$(Platform)\</IntDir>
-    <IncludePath>$(ProjectDir)include;$(SolutionDir)Shared;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)include;$(SolutionDir)shared;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(ProjectDir)include;$(SolutionDir)Shared;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)include;$(SolutionDir)shared;$(IncludePath)</IncludePath>
     <OutDir>bin\$(Configuration)_$(Platform)\</OutDir>
     <IntDir>obj\$(Configuration)_$(Platform)\</IntDir>
   </PropertyGroup>
@@ -110,7 +110,7 @@
       <SDLCheck>true</SDLCheck>
     </ClCompile>
     <PostBuildEvent>
-      <Command>tlbexp "$(TargetPath)" /out:"$(TargetDir)$(TargetName).tlb" &amp;&amp; "$(SolutionDir)Shared\Deploy.bat" "$(SolutionDir)" "$(TargetDir)" ""</Command>
+      <Command>tlbexp /nologo "$(TargetPath)" /out:"$(TargetDir)$(TargetName).tlb" &amp;&amp; "$(SolutionDir)shared\Deploy.bat" "$(SolutionDir)" "$(TargetDir)" ""</Command>
     </PostBuildEvent>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -125,7 +125,7 @@
       <SDLCheck>true</SDLCheck>
     </ClCompile>
     <PostBuildEvent>
-      <Command>tlbexp "$(TargetPath)" /out:"$(TargetDir)$(TargetName).tlb" &amp;&amp; "$(SolutionDir)Shared\Deploy.bat" "$(SolutionDir)" "$(TargetDir)" ""</Command>
+      <Command>tlbexp /nologo "$(TargetPath)" /out:"$(TargetDir)$(TargetName).tlb" &amp;&amp; "$(SolutionDir)shared\Deploy.bat" "$(SolutionDir)" "$(TargetDir)" ""</Command>
     </PostBuildEvent>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -146,7 +146,7 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PostBuildEvent>
-      <Command>tlbexp "$(TargetPath)" /out:"$(TargetDir)$(TargetName).tlb" &amp;&amp; "$(SolutionDir)Shared\Deploy.bat" "$(SolutionDir)" "$(TargetDir)" ""</Command>
+      <Command>tlbexp /nologo "$(TargetPath)" /out:"$(TargetDir)$(TargetName).tlb" &amp;&amp; "$(SolutionDir)shared\Deploy.bat" "$(SolutionDir)" "$(TargetDir)" ""</Command>
     </PostBuildEvent>
     <Manifest />
     <Manifest />
@@ -164,7 +164,7 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PostBuildEvent>
-      <Command>tlbexp "$(TargetPath)" /out:"$(TargetDir)$(TargetName).tlb" &amp;&amp; "$(SolutionDir)Shared\Deploy.bat" "$(SolutionDir)" "$(TargetDir)" ""</Command>
+      <Command>tlbexp /nologo "$(TargetPath)" /out:"$(TargetDir)$(TargetName).tlb" &amp;&amp; "$(SolutionDir)shared\Deploy.bat" "$(SolutionDir)" "$(TargetDir)" ""</Command>
     </PostBuildEvent>
     <Manifest />
     <Manifest />
