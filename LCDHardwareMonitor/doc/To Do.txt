@@ -33,6 +33,5 @@ Plugins
 	  function?)
 
 Next
-	Normalize line endings
-	Implement OHM plugin
 	Maybe change .h to .hpp?
+	Implement OHM plugin
