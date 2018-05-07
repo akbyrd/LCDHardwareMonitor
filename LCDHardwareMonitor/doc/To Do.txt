@@ -32,7 +32,6 @@ Architecture
 	- Load default/fallback resources
 
 Next
-	Fix GetPluginInfoManaged
 	Read about single translation unit builds
 	Maybe change .h to .hpp?
 	Decide on comment style

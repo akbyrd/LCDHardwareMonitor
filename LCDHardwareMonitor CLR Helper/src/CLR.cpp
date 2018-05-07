@@ -19,7 +19,7 @@ ILHMPluginLoader
 
 ref class LHMPluginLoader;
 //TODO: Might just shove this into DataSourceManaged
-public value struct
+public ref struct
 PluginInfoManaged
 {
 	//TODO: This pointer will break when the list resizes
@@ -89,7 +89,7 @@ public:
 
 private:
 	//TODO: Would it be better to store gcroot<...> pointers in the native PluginInfo?
-	SList<PluginInfoManaged>^ pluginInfosManaged = gcnew SList<PluginInfoManaged>();
+	SList<PluginInfoManaged^>^ pluginInfosManaged = gcnew SList<PluginInfoManaged^>();
 	DataSourceManaged dataSourceManaged;
 
 	b32
@@ -113,10 +113,10 @@ private:
 
 		AppDomain^ appDomain = CreateDomain(name, nullptr, domainSetup);
 
-		PluginInfoManaged pluginInfoManaged = {};
-		pluginInfoManaged.pluginInfo   = pluginInfo;
-		pluginInfoManaged.appDomain    = appDomain;
-		pluginInfoManaged.pluginLoader = (LHMPluginLoader^) appDomain->DomainManager;
+		PluginInfoManaged^ pluginInfoManaged = gcnew PluginInfoManaged();
+		pluginInfoManaged->pluginInfo   = pluginInfo;
+		pluginInfoManaged->appDomain    = appDomain;
+		pluginInfoManaged->pluginLoader = (LHMPluginLoader^) appDomain->DomainManager;
 		pluginInfosManaged->Add(pluginInfoManaged);
 		return true;
 	}
@@ -125,7 +125,7 @@ private:
 	UnloadPlugin(PluginInfo* pluginInfo)
 	{
 		PluginInfoManaged^ pluginInfoManaged = GetPluginInfoManaged(pluginInfo);
-		pluginInfosManaged->Remove(*pluginInfoManaged);
+		pluginInfosManaged->Remove(pluginInfoManaged);
 
 		AppDomain::Unload(pluginInfoManaged->appDomain);
 		return true;
@@ -135,13 +135,12 @@ private:
 	GetPluginInfoManaged(PluginInfo* pluginInfo)
 	{
 		for (i32 i = 0; i < pluginInfosManaged->Count; i++)
-		{
-			if (pluginInfosManaged[i].pluginInfo == pluginInfo)
-			{
-				//TODO: Is this a reference to the actual element or a temporary?
+			if (pluginInfosManaged[i]->pluginInfo == pluginInfo)
 				return pluginInfosManaged[i];
-			}
-		}
+
+		//Unreachable
+		Assert(false);
+		return nullptr;
 	}
 
 
