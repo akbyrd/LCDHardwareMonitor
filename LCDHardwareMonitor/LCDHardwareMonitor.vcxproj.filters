@@ -17,11 +17,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\win32_main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="src\simulation.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -42,21 +37,6 @@
     </ClInclude>
     <ClInclude Include="src\widget_filledbar.hpp">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\shared\LHMDataSource.h">
-      <Filter>API</Filter>
-    </ClInclude>
-    <ClInclude Include="..\shared\LHMAPI.h">
-      <Filter>API</Filter>
-    </ClInclude>
-    <ClInclude Include="..\shared\LHMCommon.h">
-      <Filter>API</Filter>
-    </ClInclude>
-    <ClInclude Include="..\shared\LHMList.h">
-      <Filter>API</Filter>
-    </ClInclude>
-    <ClInclude Include="..\shared\LHMString.h">
-      <Filter>API</Filter>
     </ClInclude>
     <ClInclude Include="src\previewwindow_win32_d3d11.hpp">
       <Filter>Header Files</Filter>
@@ -86,5 +66,10 @@
     <Text Include="res\style.txt">
       <Filter>Resources</Filter>
     </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\main_win32.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

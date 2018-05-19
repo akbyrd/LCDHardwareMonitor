@@ -5,7 +5,7 @@ using Microsoft::WRL::ComPtr;
 /* TODO: We don't really need this in run/. Want to reach into the
  * project output folder directly, but we need to know the correct config
  * subfolder. */
-#import "../run/LCDHardwareMonitor CLR Helper.tlb" no_namespace
+#import "../run/LCDHardwareMonitor PluginLoader CLR.tlb" no_namespace
 
 class LHMHostControl : public IHostControl
 {
@@ -65,7 +65,7 @@ PluginLoader_Initialize(PluginLoaderState* s)
 		hr = s->clrHost->GetCLRControl(&clrControl);
 		LOG_HRESULT_IF_FAILED(hr, L"ICLRRuntimeHost->GetCLRControl failed", Severity::Error, return false);
 
-		hr = clrControl->SetAppDomainManagerType(L"LCDHardwareMonitor CLR Helper", L"LHMPluginLoader");
+		hr = clrControl->SetAppDomainManagerType(L"LCDHardwareMonitor PluginLoader CLR", L"LHMPluginLoader");
 		LOG_HRESULT_IF_FAILED(hr, L"ICLRControl->SetAppDomainManagerType failed", Severity::Error, return false);
 
 		hr = s->clrHost->SetHostControl(&s->lhmHostControl);

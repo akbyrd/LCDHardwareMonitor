@@ -29,9 +29,9 @@ PluginInfoManaged
 	LHMPluginLoader^ pluginLoader;
 };
 
-[UnmanagedFunctionPointer(CallingConvention::Cdecl)] delegate void DataSourceInitializeDel();
-[UnmanagedFunctionPointer(CallingConvention::Cdecl)] delegate void DataSourceUpdateDel    ();
-[UnmanagedFunctionPointer(CallingConvention::Cdecl)] delegate void DataSourceTeardownDel  ();
+[UnmanagedFunctionPointer(CallingConvention::Cdecl)] delegate void DataSourceInitializeDel(DS_INITIALIZE_ARGS);
+[UnmanagedFunctionPointer(CallingConvention::Cdecl)] delegate void DataSourceUpdateDel    (DS_UPDATE_ARGS);
+[UnmanagedFunctionPointer(CallingConvention::Cdecl)] delegate void DataSourceTeardownDel  (DS_TEARDOWN_ARGS);
 
 private ref struct
 DataSourceManaged

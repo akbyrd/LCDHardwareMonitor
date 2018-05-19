@@ -3,16 +3,26 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OpenHardwareMonitor Plugin", "OpenHardwareMonitor Plugin\OpenHardwareMonitor Plugin.vcxproj", "{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LCDHardwareMonitor", "LCDHardwareMonitor\LCDHardwareMonitor.vcxproj", "{0BBAB39F-5449-4FCE-AD78-884154644605}"
 	ProjectSection(ProjectDependencies) = postProject
 		{4CF4BF35-2C27-4969-BFD7-34149A9CBF12} = {4CF4BF35-2C27-4969-BFD7-34149A9CBF12}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LCDHardwareMonitor CLR Helper", "LCDHardwareMonitor CLR Helper\LCDHardwareMonitor CLR Helper.vcxproj", "{4CF4BF35-2C27-4969-BFD7-34149A9CBF12}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "LCDHardwareMonitor API Win32", "LCDHardwareMonitor API Win32", "{CC1638D1-8331-4AC6-AF7B-1E0D9B07EDC0}"
+	ProjectSection(SolutionItems) = preProject
+		LCDHardwareMonitor API Win32\LHMAPI.h = LCDHardwareMonitor API Win32\LHMAPI.h
+		LCDHardwareMonitor API Win32\LHMCommon.h = LCDHardwareMonitor API Win32\LHMCommon.h
+		LCDHardwareMonitor API Win32\LHMDataSource.h = LCDHardwareMonitor API Win32\LHMDataSource.h
+		LCDHardwareMonitor API Win32\LHMList.h = LCDHardwareMonitor API Win32\LHMList.h
+		LCDHardwareMonitor API Win32\LHMPlugin.h = LCDHardwareMonitor API Win32\LHMPlugin.h
+		LCDHardwareMonitor API Win32\LHMString.h = LCDHardwareMonitor API Win32\LHMString.h
+	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LCDHardwareMonitor CLR API", "LCDHardwareMonitor CLR API\LCDHardwareMonitor CLR API.vcxproj", "{246430DC-680A-432E-B7DE-BCC2C59CDDAE}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LCDHardwareMonitor API CLR", "LCDHardwareMonitor API CLR\LCDHardwareMonitor API CLR.vcxproj", "{246430DC-680A-432E-B7DE-BCC2C59CDDAE}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LCDHardwareMonitor PluginLoader CLR", "LCDHardwareMonitor PluginLoader CLR\LCDHardwareMonitor PluginLoader CLR.vcxproj", "{4CF4BF35-2C27-4969-BFD7-34149A9CBF12}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OpenHardwareMonitor Plugin", "OpenHardwareMonitor Plugin\OpenHardwareMonitor Plugin.vcxproj", "{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -22,14 +32,6 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}.Debug|x64.ActiveCfg = Debug|x64
-		{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}.Debug|x64.Build.0 = Debug|x64
-		{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}.Debug|x86.ActiveCfg = Debug|Win32
-		{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}.Debug|x86.Build.0 = Debug|Win32
-		{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}.Release|x64.ActiveCfg = Release|x64
-		{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}.Release|x64.Build.0 = Release|x64
-		{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}.Release|x86.ActiveCfg = Release|Win32
-		{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}.Release|x86.Build.0 = Release|Win32
 		{0BBAB39F-5449-4FCE-AD78-884154644605}.Debug|x64.ActiveCfg = Debug|x64
 		{0BBAB39F-5449-4FCE-AD78-884154644605}.Debug|x64.Build.0 = Debug|x64
 		{0BBAB39F-5449-4FCE-AD78-884154644605}.Debug|x86.ActiveCfg = Debug|Win32
@@ -38,14 +40,6 @@ Global
 		{0BBAB39F-5449-4FCE-AD78-884154644605}.Release|x64.Build.0 = Release|x64
 		{0BBAB39F-5449-4FCE-AD78-884154644605}.Release|x86.ActiveCfg = Release|Win32
 		{0BBAB39F-5449-4FCE-AD78-884154644605}.Release|x86.Build.0 = Release|Win32
-		{4CF4BF35-2C27-4969-BFD7-34149A9CBF12}.Debug|x64.ActiveCfg = Debug|x64
-		{4CF4BF35-2C27-4969-BFD7-34149A9CBF12}.Debug|x64.Build.0 = Debug|x64
-		{4CF4BF35-2C27-4969-BFD7-34149A9CBF12}.Debug|x86.ActiveCfg = Debug|Win32
-		{4CF4BF35-2C27-4969-BFD7-34149A9CBF12}.Debug|x86.Build.0 = Debug|Win32
-		{4CF4BF35-2C27-4969-BFD7-34149A9CBF12}.Release|x64.ActiveCfg = Release|x64
-		{4CF4BF35-2C27-4969-BFD7-34149A9CBF12}.Release|x64.Build.0 = Release|x64
-		{4CF4BF35-2C27-4969-BFD7-34149A9CBF12}.Release|x86.ActiveCfg = Release|Win32
-		{4CF4BF35-2C27-4969-BFD7-34149A9CBF12}.Release|x86.Build.0 = Release|Win32
 		{246430DC-680A-432E-B7DE-BCC2C59CDDAE}.Debug|x64.ActiveCfg = Debug|x64
 		{246430DC-680A-432E-B7DE-BCC2C59CDDAE}.Debug|x64.Build.0 = Debug|x64
 		{246430DC-680A-432E-B7DE-BCC2C59CDDAE}.Debug|x86.ActiveCfg = Debug|Win32
@@ -54,6 +48,22 @@ Global
 		{246430DC-680A-432E-B7DE-BCC2C59CDDAE}.Release|x64.Build.0 = Release|x64
 		{246430DC-680A-432E-B7DE-BCC2C59CDDAE}.Release|x86.ActiveCfg = Release|Win32
 		{246430DC-680A-432E-B7DE-BCC2C59CDDAE}.Release|x86.Build.0 = Release|Win32
+		{4CF4BF35-2C27-4969-BFD7-34149A9CBF12}.Debug|x64.ActiveCfg = Debug|x64
+		{4CF4BF35-2C27-4969-BFD7-34149A9CBF12}.Debug|x64.Build.0 = Debug|x64
+		{4CF4BF35-2C27-4969-BFD7-34149A9CBF12}.Debug|x86.ActiveCfg = Debug|Win32
+		{4CF4BF35-2C27-4969-BFD7-34149A9CBF12}.Debug|x86.Build.0 = Debug|Win32
+		{4CF4BF35-2C27-4969-BFD7-34149A9CBF12}.Release|x64.ActiveCfg = Release|x64
+		{4CF4BF35-2C27-4969-BFD7-34149A9CBF12}.Release|x64.Build.0 = Release|x64
+		{4CF4BF35-2C27-4969-BFD7-34149A9CBF12}.Release|x86.ActiveCfg = Release|Win32
+		{4CF4BF35-2C27-4969-BFD7-34149A9CBF12}.Release|x86.Build.0 = Release|Win32
+		{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}.Debug|x64.ActiveCfg = Debug|x64
+		{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}.Debug|x64.Build.0 = Debug|x64
+		{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}.Debug|x86.ActiveCfg = Debug|Win32
+		{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}.Debug|x86.Build.0 = Debug|Win32
+		{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}.Release|x64.ActiveCfg = Release|x64
+		{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}.Release|x64.Build.0 = Release|x64
+		{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}.Release|x86.ActiveCfg = Release|Win32
+		{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

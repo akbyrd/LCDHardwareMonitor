@@ -15,7 +15,7 @@ REM Working directory is the project directory
 PUSHD "%~p0"
 
 REM Check for errors?
-ECHO  **** Copying output to run/
+ECHO  **** Copying output to run
 XCOPY /Y /I /S /B /EXCLUDE:ignored.txt "%TARGET_DIR%*" "%SOLUTION_DIR%run\%SUB_DIR%" > NUL
 IF errorlevel 1 GOTO Abort
 

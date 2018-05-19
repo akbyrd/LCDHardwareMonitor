@@ -76,22 +76,22 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>bin\$(Configuration)_$(Platform)\</OutDir>
     <IntDir>obj\$(Configuration)_$(Platform)\</IntDir>
-    <IncludePath>$(ProjectDir)include;$(SolutionDir)shared;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)include;$(SolutionDir)LCDHardwareMonitor API Win32;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>bin\$(Configuration)_$(Platform)\</OutDir>
     <IntDir>obj\$(Configuration)_$(Platform)\</IntDir>
-    <IncludePath>$(ProjectDir)include;$(SolutionDir)shared;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)include;$(SolutionDir)LCDHardwareMonitor API Win32;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>bin\$(Configuration)_$(Platform)\</OutDir>
     <IntDir>obj\$(Configuration)_$(Platform)\</IntDir>
-    <IncludePath>$(ProjectDir)include;$(SolutionDir)shared;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)include;$(SolutionDir)LCDHardwareMonitor API Win32;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>bin\$(Configuration)_$(Platform)\</OutDir>
     <IntDir>obj\$(Configuration)_$(Platform)\</IntDir>
-    <IncludePath>$(ProjectDir)include;$(SolutionDir)shared;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)include;$(SolutionDir)LCDHardwareMonitor API Win32;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -100,7 +100,7 @@
       <SDLCheck>true</SDLCheck>
     </ClCompile>
     <PostBuildEvent>
-      <Command>"$(SolutionDir)shared\Deploy.bat" "$(SolutionDir)" "$(TargetDir)" "Data Sources\OpenHardwareMonitor Source"</Command>
+      <Command>"$(SolutionDir)build\Deploy.bat" "$(SolutionDir)" "$(TargetDir)" "Data Sources\OpenHardwareMonitor Source"</Command>
     </PostBuildEvent>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -113,7 +113,7 @@
       <SDLCheck>true</SDLCheck>
     </ClCompile>
     <PostBuildEvent>
-      <Command>"$(SolutionDir)shared\Deploy.bat" "$(SolutionDir)" "$(TargetDir)" "Data Sources\OpenHardwareMonitor Source"</Command>
+      <Command>"$(SolutionDir)build\Deploy.bat" "$(SolutionDir)" "$(TargetDir)" "Data Sources\OpenHardwareMonitor Source"</Command>
     </PostBuildEvent>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -132,7 +132,7 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PostBuildEvent>
-      <Command>"$(SolutionDir)shared\Deploy.bat" "$(SolutionDir)" "$(TargetDir)" "Data Sources\OpenHardwareMonitor Source"</Command>
+      <Command>"$(SolutionDir)build\Deploy.bat" "$(SolutionDir)" "$(TargetDir)" "Data Sources\OpenHardwareMonitor Source"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -148,7 +148,7 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PostBuildEvent>
-      <Command>"$(SolutionDir)shared\Deploy.bat" "$(SolutionDir)" "$(TargetDir)" "Data Sources\OpenHardwareMonitor Source"</Command>
+      <Command>"$(SolutionDir)build\Deploy.bat" "$(SolutionDir)" "$(TargetDir)" "Data Sources\OpenHardwareMonitor Source"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -165,7 +165,7 @@
     <ClCompile Include="src\dllmain.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\LCDHardwareMonitor CLR API\LCDHardwareMonitor CLR API.vcxproj">
+    <ProjectReference Include="..\LCDHardwareMonitor API CLR\LCDHardwareMonitor API CLR.vcxproj">
       <Project>{246430dc-680a-432e-b7de-bcc2c59cddae}</Project>
       <Private>false</Private>
     </ProjectReference>

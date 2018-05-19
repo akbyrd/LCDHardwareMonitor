@@ -17,9 +17,9 @@ using SList = System::Collections::Generic::List<T>;
 public ref class State : IDataSourcePlugin
 {
 public:
-	virtual void Initialize() { }
-	virtual void Update    () { }
-	virtual void Teardown  () { }
+	virtual void Initialize(DS_INITIALIZE_ARGS) { }
+	virtual void Update    (DS_UPDATE_ARGS) { }
+	virtual void Teardown  (DS_TEARDOWN_ARGS) { }
 
 #if false
 	Computer           computer;

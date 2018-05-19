@@ -1,8 +1,5 @@
 Next
-	There's a bug in when clicking the window close button (invalid window handle)
 	Use #import instead of project references?
-	Rename CLR to CLRHost?
-	Can we reduce the amount of API duplication? Namely the delegates in CLR
 	Implement OHM plugin
 		Build a sensor list
 		Update each frame

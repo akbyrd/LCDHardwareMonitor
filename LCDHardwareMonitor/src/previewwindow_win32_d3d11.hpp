@@ -307,7 +307,8 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 			b32 success = PostMessageW(nullptr, WM_PREVIEWWINDOWCLOSED, 0, 0);
 			LOG_LAST_ERROR_IF(!success, L"PostMessage failed", Severity::Warning);
 
-			PostQuitMessage(0);
+			//NOTE: The window can be toggle at will. Don't stop the simulation just because it's not open.
+			//PostQuitMessage(0);
 			return 0;
 		}
 	}

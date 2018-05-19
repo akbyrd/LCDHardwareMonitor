@@ -11,9 +11,14 @@ PUBLIC struct Sensor
 	r32  maxValue;
 };
 
-typedef void (*DataSourceInitializeFn)();
-typedef void (*DataSourceUpdateFn)    ();
-typedef void (*DataSourceTeardownFn)  ();
+//TODO: Remove these once the API stabilizes
+#define DS_INITIALIZE_ARGS
+#define DS_UPDATE_ARGS
+#define DS_TEARDOWN_ARGS
+
+typedef void (*DataSourceInitializeFn)(DS_INITIALIZE_ARGS);
+typedef void (*DataSourceUpdateFn)    (DS_UPDATE_ARGS);
+typedef void (*DataSourceTeardownFn)  (DS_TEARDOWN_ARGS);
 
 struct DataSource
 {
