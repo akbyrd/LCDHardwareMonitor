@@ -1,6 +1,7 @@
-#pragma managed
-using namespace System;
+#pragma unmanaged
+#include "LHMAPI.h"
 
+#pragma managed
 public interface class IDataSourcePlugin
 {
 	void Initialize ();

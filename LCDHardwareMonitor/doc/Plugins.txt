@@ -1,101 +1,3 @@
-Ok, here's (part of) the deal. Managed plugins bring in a lot of complexity.
-Ultimately, I'm leaning toward Option 3. I don't like having to call into
-managed code, so maybe there's a way around that. However, for now I'm
-sticking with the simplicity of Option 1. Once we're up and running I'll
-revisit the issue.
-
-Option 1: Call managed plugins through GetProcAddress.
-	- It's crazy this even works. I *think* GetProcAddress actually returns a
-	  native thunk that ends up spinning up the CLR.
-	- This will always call into the default AppDomain. And the Fusion Loader
-	  will fail to find other managed dependencies (that aren't in the GAC)
-	  because they aren't in the bin path. We'll need to use AssemblyResolve to
-	  handle this. Will need a CLI Helper for this.
-	*-The catch here is that assemblies are loaded on-demand. So we can't know
-	  which folder to search in based on *when* the load occurs. However, we can
-	  make a reasonable guess at which folder to search based on the name of the
-	  requesting assembly. We'll need to keep a cache of loads that have occured
-	  because Assembly A can load B which then loads C and we need to know to
-	  use A's folder.
-	- It's very appealing to be able to simply call every plugin through a
-	  uniform C interface. It means we don't have to care whether a plugin is
-	  managed or unmanaged.
-	- However, it also leaves the onus of doing good interop on the plugin
-	  author (e.g. using a delegate to skirt the x64 performance hit and an
-	  instance method for a bit more speed). Can maybe provide a 'template' or
-	  some such to simplify it.
-	- Do the simple thing. Plugin authors can just not suck.
-	- Enabling or disabling plugins would require unloading and reloading the
-	  entire CLR. This doesn't look possible.
-	- Plugin dependencies could end up loading out of some other folder in the
-	  bin path. Probably not a big issue. Plugin authors can use strong naming.
-	- ~NOTE~ Specifying the full path won't work for indirectly loaded
-	  assemblies (e.g. dependencies).
-	- ~NOTE~ Could use a .config file for resolving dependencies, but
-	  AssemblyResolve is simpler.
-
-Option 2: Load plugins into a separate AppDomain
-	- Means we can load and unload plugins independently of one another.
-	- We'll have to call into the managed side of each plugin. If we call into
-	  native and the plugin calls into managed it's going to use the default
-	  AppDomain.
-	- We take a 10x performance hit for calling across AppDomains.
-	- I think we can return a function pointer back to the native side to hide
-	  the 'have to call into managed code' issue from native side.
-
-Option 3: Host the CLR from native
-	- I haven't looked into this heavily, but currently it looks like it might
-	  be the right choice.
-	- Basically it's Option 2 without a separate C++/CLI assembly. It should
-	  streamline things a bit.
-	- What is performance like in this case?
-
-
-
-Plugin Loading Process
-	- This is just a re-hash of the above. I've rediscovered it manually in order
-	  to refresh myself on what's going on in this mess of an application.
-
-	[CLIHelper native loaded on startup]
-	platform_win32.hpp
-		Platform_Initialize
-			PluginHelper_Initialize
-				[2x CLIHelper loaded, managed and wrong address]
-				Register AssemblyResolveHandler
-
-		LoadPlugin
-			GetCurrentDirectory
-			AddDllDirectory      [OHMPlugin]
-			LoadLibrary          [OHMPlugin]
-			[OHMPlugin loaded as native, managed not initialized]
-			PluginHelper_PluginLoaded
-				Shove global pluginDirectory and pluginName
-	[1x OHMPlugin is loaded]
-	[OHMPlugin used]
-	[2x OHMPlugin loaded, managed and wrong address] assuming it's found because the native module is loaded
-	[Does not load OHMLib] maybe try LoadLibraryEx?
-	[OHMLib loaded, no idea how]
-	CLIHelper
-		AssemblyResolveHandler
-			Assembly::LoadFrom
-			[2x OHMPlugin loaded, managed and wrong address]
-	[This is bonkers]
-
-	Alright. So.
-	Main issue: OHMLib isn't found when loading.
-	Sub-Issue 1: We don't know when the plugin will trigger dependency loads, so
-	  the whole global variable for name and path is not going to work. Resolve
-	  args have requesting assembly though, that's probably enough, but I'd much
-	  rather find a way to set the dependency path.
-	Idea 1: Separate AppDomain per plugin so we can set dependency path.
-	  However, we eat the performance cost of serializing across domains.
-	  MIIIGHT be solvable
-	Idea 2: Spin up the CLR from native. No idea if this is helpful. Maybe as a
-	  way to handle performance issues?
-	Idea 3: Leave it as is. Call into plugins to give them a chance to resolve
-	  the dependency.
-	Plan: Research CLR loading behavior again. Determine if there's a way
-
 	Required Features
 		Load C++ modules
 		Load .NET assemblies
@@ -112,12 +14,21 @@ Plugin Loading Process
 		Target .NET Framework 4.0
 		Plugins can be updated while the application is running (scan, unload, load)
 
+	Optimization
+	- We eat 200ns to cross domain boundaries. Is there some way to prevent this?
+	- Check for double thunks on managed to managed calls. Use __clrcall to
+	  disable native thunk generation.
+	- Would it be better to compile managed plugins as clr pure / managed only?
+	  We'll still be able to make direct unmanaged to managed calls because we
+		create and return function pointers. Can/should we drop all #pragma
+		unamanged?
+
 	Ideas
 		Pure C# and pure C++ plugins. No more boundary crossing.
-		Single AppDomain for all plugins. Unload all plugins on exception
-		Is the a performant way to sandbox in C++? Are subprocesses a thing?
+		Is there a performant way to sandbox in C++? Are subprocesses a thing?
 		Try/catch on C++ plugins. Just dump 'em if they fuck up.
 		Use the host manager to run GC every frame.
+		Could use macros for API function parameters to avoid the duplication.
 
 	Thoughts
 		Reasons for AppDomains
@@ -178,6 +89,9 @@ Plugin Loading Process
 		  machine, or if it counts as private COM and being in the same directory
 		  is sufficient.
 		- We may be able to embed the tlb in the C# dll.
+		- Marshalled function pointers are __stdcall. Be careful.
+		- Native types must be marked public or #pragma make_public() to be visible
+		  across assembly boundaries.
 
 	Research
 		https://www.codeproject.com/Articles/416471/CLR-Hosting-Customizing-the-CLR
@@ -235,3 +149,7 @@ Plugin Loading Process
 		Debugging and Profiling
 		Interoperating with Unmanaged Code
 		WPF Walkthroughs
+
+		//TODO: Read this!
+		Mixed (Native and Managed) Assemblies
+		https://msdn.microsoft.com/en-us/library/x0w2664k.aspx

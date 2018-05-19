@@ -1,8 +1,6 @@
 #pragma once
-#pragma unmanaged
 
-#if false
-struct Sensor
+PUBLIC struct Sensor
 {
 	c16* name;
 	c16* identifier;
@@ -12,7 +10,6 @@ struct Sensor
 	r32  minValue;
 	r32  maxValue;
 };
-#endif
 
 typedef void (*DataSourceInitializeFn)();
 typedef void (*DataSourceUpdateFn)    ();
@@ -25,4 +22,5 @@ struct DataSource
 	DataSourceInitializeFn initialize;
 	DataSourceUpdateFn     update;
 	DataSourceTeardownFn   teardown;
+	List<Sensor>           sensors;
 };

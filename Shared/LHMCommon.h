@@ -30,23 +30,24 @@ typedef size_t size;
 #define Megabyte 1024LL * Kilobyte
 #define Gigabyte 1024LL * Megabyte
 
-//TODO: Can _cdecl be added here? Seems like it needs to be after the return type
-#if EXPORTING
-#define LHM_API extern "C" __declspec(dllexport)
-#else
-#define LHM_API extern "C" __declspec(dllimport)
-#endif
+//#if EXPORTING
+//	#define LHM_API extern "C" __declspec(dllexport)
+//#else
+//	#define LHM_API extern "C" __declspec(dllimport)
+//#endif
 
 #if DEBUG
-#define Assert(condition) if (!(condition)) { *((u8 *) 0) = 0; }
+	#define Assert(condition) if (!(condition)) { *((u8 *) 0) = 0; }
 #else
-#define Assert(condition)
+	#define Assert(condition)
+#endif
+
+#if __cplusplus_cli
+	#define PUBLIC public
+#else
+	#define PUBLIC
 #endif
 
 #define nameof(x) #x
 
-#define IF(expression, ...) \
-if (expression)             \
-{                           \
-	__VA_ARGS__;              \
-}
+#define IF(expression, ...) if (expression) { __VA_ARGS__; }

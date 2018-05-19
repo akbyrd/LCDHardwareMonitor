@@ -1,3 +1,4 @@
+#pragma unmanaged
 #include "LHMAPI.h"
 
 #pragma managed
@@ -28,13 +29,14 @@ PluginInfoManaged
 	LHMPluginLoader^ pluginLoader;
 };
 
-delegate void DataSourceInitializeDel();
-delegate void DataSourceUpdateDel();
-delegate void DataSourceTeardownDel();
+[UnmanagedFunctionPointer(CallingConvention::Cdecl)] delegate void DataSourceInitializeDel();
+[UnmanagedFunctionPointer(CallingConvention::Cdecl)] delegate void DataSourceUpdateDel    ();
+[UnmanagedFunctionPointer(CallingConvention::Cdecl)] delegate void DataSourceTeardownDel  ();
 
 private ref struct
 DataSourceManaged
 {
+	//TODO: Replace these with a list of GCHandles or gcroots?
 	IDataSourcePlugin^       iDataSource;
 	DataSourceInitializeDel^ initialize;
 	DataSourceUpdateDel^     update;

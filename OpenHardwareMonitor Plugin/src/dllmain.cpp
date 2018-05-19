@@ -1,4 +1,4 @@
-#define EXPORTING 1
+#pragma unmanaged
 #include "LHMAPI.h"
 
 #pragma managed
@@ -21,7 +21,7 @@ public:
 	virtual void Update    () { }
 	virtual void Teardown  () { }
 
-	#if false
+#if false
 	Computer           computer;
 	SList<ISensor^>^   activeSensors;
 	SList<IHardware^>^ activeHardware;
@@ -32,8 +32,8 @@ public:
 		array<IHardware^>^ hardware;
 	};
 
-	void
-	_Initialize(::List<Sensor>& sensors)
+	virtual void
+	Initialize(::List<Sensor> sensors)
 	{
 		State::activeSensors  = gcnew SList<ISensor^>;
 		State::activeHardware = gcnew SList<IHardware^>;
@@ -161,5 +161,5 @@ public:
 		}
 		List_Clear(sensors);
 	}
-	#endif
+#endif
 };

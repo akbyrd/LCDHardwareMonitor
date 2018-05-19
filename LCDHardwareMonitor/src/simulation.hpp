@@ -38,8 +38,8 @@ LoadDataSource(SimulationState* s, c16* directory, c16* name)
 	success = PluginLoader_LoadDataSource(s->pluginLoader, &dataSource);
 	LOG_IF(!success, L"Failed to load plugin", Severity::Warning, return nullptr);
 
-	//List_Reserve(dataSource.sensors, 32);
-	//LOG_IF(!dataSource.sensors, L"Sensor allocation failed", Severity::Error, return nullptr);
+	List_Reserve(dataSource.sensors, 32);
+	LOG_IF(!dataSource.sensors, L"Sensor allocation failed", Severity::Error, return nullptr);
 
 	//TODO: try/catch?
 	if (dataSource.initialize)
@@ -62,7 +62,7 @@ UnloadDataSource(SimulationState* s, DataSource* dataSource)
 	b32 success;
 	success = PluginLoader_UnloadDataSource(s->pluginLoader, dataSource);
 	//TODO: Widgets will be referencing these sensors.
-	//List_Free(dataSource->sensors);
+	List_Free(dataSource->sensors);
 	*dataSource = {};
 	LOG_IF(!success, L"UnloadPlugin failed", Severity::Warning, return false);
 
@@ -130,9 +130,12 @@ Simulation_Update(SimulationState* s)
 {
 	//TODO: Only update data sources that are actually being used
 	for (i32 i = 0; i < s->dataSources.length; i++)
-		;// s->dataSources[i].update(s->dataSources[i].sensors);
+	{
+		DataSource* dataSource = &s->dataSources[i];
+		dataSource->update();
+	}
 
-	/* NOTES:
+	/* NOTE:
 	 * Build a command list of things to draw.
 	 * Let the renderer handle sorting and iterating the list.
 	 * Here, we should just be parameters that go with the command.
