@@ -266,8 +266,8 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 				//TODO: Maybe account for the shadow? (window - client - border)
 				// or DwmGetWindowAttribute(hWnd, DWMWA_EXTENDED_FRAME_BOUNDS, &extendedRect, sizeof(extendedRect));
 				V2i newWindowTopLeft;
-				newWindowTopLeft.x = windowCenter.x - (newClientSize.x / 2);
-				newWindowTopLeft.y = windowCenter.y - (newClientSize.y / 2);
+				newWindowTopLeft.x = windowCenter.x - (newWindowSize.x / 2);
+				newWindowTopLeft.y = windowCenter.y - (newWindowSize.y / 2);
 
 				if (newWindowTopLeft.x < 0) newWindowTopLeft.x = 0;
 				if (newWindowTopLeft.y < 0) newWindowTopLeft.y = 0;
@@ -277,8 +277,8 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 					nullptr,
 					newWindowTopLeft.x,
 					newWindowTopLeft.y,
-					newClientSize.x,
-					newClientSize.y,
+					newWindowSize.x,
+					newWindowSize.y,
 					0
 				);
 				LOG_LAST_ERROR_IF(!success, L"SetWindowPos failed", Severity::Warning, return 0);
