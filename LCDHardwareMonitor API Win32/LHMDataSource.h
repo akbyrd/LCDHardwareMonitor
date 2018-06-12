@@ -1,6 +1,7 @@
 #pragma once
 
-PUBLIC struct Sensor
+struct SensorRef { i32 index; };
+struct Sensor
 {
 	c16* name;
 	c16* identifier;
@@ -12,20 +13,23 @@ PUBLIC struct Sensor
 };
 
 //TODO: Remove these once the API stabilizes
-#define DS_INITIALIZE_ARGS
-#define DS_UPDATE_ARGS
-#define DS_TEARDOWN_ARGS
+struct DataSource;
+#define DS_INITIALIZE_ARGS DataSource* s
+#define DS_UPDATE_ARGS     DataSource* s
+#define DS_TEARDOWN_ARGS   DataSource* s
 
 typedef void (*DataSourceInitializeFn)(DS_INITIALIZE_ARGS);
 typedef void (*DataSourceUpdateFn)    (DS_UPDATE_ARGS);
 typedef void (*DataSourceTeardownFn)  (DS_TEARDOWN_ARGS);
 
-struct DataSource
+struct DataSourceRef { i32 index; };
+PUBLIC struct DataSource
 {
-	//TODO: This pointer will break when the list resizes
-	PluginInfo*            pluginInfo;
+	PluginHeaderRef        pluginHeaderRef;
 	DataSourceInitializeFn initialize;
 	DataSourceUpdateFn     update;
 	DataSourceTeardownFn   teardown;
+
 	List<Sensor>           sensors;
+	List<SensorRef>        activeSensors;
 };

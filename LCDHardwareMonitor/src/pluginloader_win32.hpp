@@ -102,7 +102,7 @@ PluginLoader_Teardown(PluginLoaderState* s)
 }
 
 b32
-LoadNativeDataSource(PluginLoaderState* s, DataSource* dataSource)
+LoadNativeDataSource(PluginLoaderState* s, PluginHeader* pluginHeader, DataSource* dataSource)
 {
 	//TODO: Implement LoadNativeDataSource
 	Assert(false);
@@ -110,7 +110,7 @@ LoadNativeDataSource(PluginLoaderState* s, DataSource* dataSource)
 }
 
 b32
-UnloadNativeDataSource(PluginLoaderState* s, DataSource* dataSource)
+UnloadNativeDataSource(PluginLoaderState* s, PluginHeader* pluginHeader, DataSource* dataSource)
 {
 	//TODO: Implement UnloadNativeDataSource
 	Assert(false);
@@ -118,60 +118,56 @@ UnloadNativeDataSource(PluginLoaderState* s, DataSource* dataSource)
 }
 
 b32
-LoadManagedDataSource(PluginLoaderState* s, DataSource* dataSource)
+LoadManagedDataSource(PluginLoaderState* s, PluginHeader* pluginHeader, DataSource* dataSource)
 {
 	//NOTE: fuslogvw is great for debugging managed assembly loading.
 
 	//TODO: Do we need to try/catch the managed code?
 	b32 success;
-	success = s->lhmPluginLoader->LoadDataSource(dataSource);
+	success = s->lhmPluginLoader->LoadDataSource(pluginHeader, dataSource);
 	LOG_IF(!success, L"Failed to load managed data source", Severity::Warning, return false);
 
 	return true;
 }
 
 b32
-UnloadManagedDataSource(PluginLoaderState* s, DataSource* dataSource)
+UnloadManagedDataSource(PluginLoaderState* s, PluginHeader* pluginHeader, DataSource* dataSource)
 {
 	b32 success;
-	success = s->lhmPluginLoader->UnloadDataSource(dataSource);
+	success = s->lhmPluginLoader->UnloadDataSource(pluginHeader, dataSource);
 	LOG_IF(!success, L"Failed to unload managed data source", Severity::Warning, return false);
 
 	return true;
 }
 
 b32
-PluginLoader_LoadDataSource(PluginLoaderState* s, DataSource* dataSource)
+PluginLoader_LoadDataSource(PluginLoaderState* s, PluginHeader* pluginHeader, DataSource* dataSource)
 {
-	PluginInfo* pluginInfo = dataSource->pluginInfo;
-
 	//TODO: Actually check if the DLL is native or managed
-	pluginInfo->kind = PluginKind::Managed;
+	pluginHeader->kind = PluginKind::Managed;
 
 	b32 success = false;
-	switch (pluginInfo->kind)
+	switch (pluginHeader->kind)
 	{
-		case PluginKind::Null:    success = false;                                break;
-		case PluginKind::Native:  success = LoadNativeDataSource(s, dataSource);  break;
-		case PluginKind::Managed: success = LoadManagedDataSource(s, dataSource); break;
+		case PluginKind::Null:    success = false;                                              break;
+		case PluginKind::Native:  success = LoadNativeDataSource(s, pluginHeader, dataSource);  break;
+		case PluginKind::Managed: success = LoadManagedDataSource(s, pluginHeader, dataSource); break;
 	}
 	if (!success) return false;
 
-	pluginInfo->isLoaded = true;
+	pluginHeader->isLoaded = true;
 	return true;
 }
 
 b32
-PluginLoader_UnloadDataSource(PluginLoaderState* s, DataSource* dataSource)
+PluginLoader_UnloadDataSource(PluginLoaderState* s, PluginHeader* pluginHeader, DataSource* dataSource)
 {
-	PluginInfo* pluginInfo = dataSource->pluginInfo;
-
 	b32 success = false;
-	switch (pluginInfo->kind)
+	switch (pluginHeader->kind)
 	{
-		case PluginKind::Null:    success = false;                                  break;
-		case PluginKind::Native:  success = UnloadNativeDataSource(s, dataSource);  break;
-		case PluginKind::Managed: success = UnloadManagedDataSource(s, dataSource); break;
+		case PluginKind::Null:    success = false;                                                break;
+		case PluginKind::Native:  success = UnloadNativeDataSource(s, pluginHeader, dataSource);  break;
+		case PluginKind::Managed: success = UnloadManagedDataSource(s, pluginHeader, dataSource); break;
 	}
 	if (!success) return false;
 

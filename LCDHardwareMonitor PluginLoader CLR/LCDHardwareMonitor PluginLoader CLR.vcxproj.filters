@@ -10,7 +10,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\pluginloaderer_CLR.cpp">
+    <ClCompile Include="src\pluginloader_clr.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -1,5 +1,7 @@
 #include "LHMAPI.h"
+//TODO: Can this go away?
 #include "LHMString.h"
+#include "LHMPluginHeader.h"
 
 #include "platformdefs_win32.hpp"
 #include "platform.h"
@@ -19,7 +21,6 @@
 #include "previewwindow_win32_d3d11.hpp"
 
 //TODO: Remove window clamping
-//TODO: Think about having a fixed size for plugins, widgets, etc
 //TODO: Support x86 and x64
 //TODO: Reduce link dependencies
 /* TODO: Probably want to use this as some point so frame debugger works without

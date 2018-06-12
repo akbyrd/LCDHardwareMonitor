@@ -4,10 +4,25 @@ struct SimulationState
 	RendererState*     renderer;
 
 	V2i                renderSize = { 320, 240 };
-	List<PluginInfo>   pluginInfos;
+	List<PluginHeader> pluginHeaders;
 	List<DataSource>   dataSources;
 	//List<Widget>       widgets;
 };
+
+static PluginHeader*
+GetPluginHeader(SimulationState* s, PluginHeaderRef ref)
+{
+	for (i32 i = 0; i < s->pluginHeaders.length; i++)
+	{
+		PluginHeader* pluginHeader = &s->pluginHeaders[i];
+		if (pluginHeader->ref == ref)
+			return pluginHeader;
+	}
+
+	//Unreachable
+	Assert(false);
+	return nullptr;
+}
 
 static DataSource*
 LoadDataSource(SimulationState* s, c16* directory, c16* name)
@@ -15,37 +30,38 @@ LoadDataSource(SimulationState* s, c16* directory, c16* name)
 	//TODO: Plugin name in errors
 
 	//Reuse any empty spots left by unloading plugins
-	PluginInfo* pluginInfo = nullptr;
-	for (i32 i = 0; i < s->pluginInfos.length; i++)
+	PluginHeader* pluginHeader = nullptr;
+	for (i32 i = 0; i < s->pluginHeaders.length; i++)
 	{
-		PluginInfo* pluginSlot = &s->pluginInfos[i];
+		PluginHeader* pluginSlot = &s->pluginHeaders[i];
 		if (!pluginSlot->name)
 		{
-			pluginInfo = pluginSlot;
+			pluginHeader = pluginSlot;
 			break;
 		}
 	}
-	if (!pluginInfo)
-		pluginInfo = List_Append(s->pluginInfos);
+	if (!pluginHeader)
+		pluginHeader = List_Append(s->pluginHeaders);
 
-	pluginInfo->name      = name;
-	pluginInfo->directory = directory;
+	pluginHeader->name      = name;
+	pluginHeader->directory = directory;
 
-	DataSource dataSource = {};
-	dataSource.pluginInfo = pluginInfo;
+	//TODO: Ensure this is removed from the list in partial initialization conditions
+	DataSource* dataSource = List_Append(s->dataSources);
+	dataSource->pluginHeaderRef = pluginHeader->ref;
 
 	b32 success;
-	success = PluginLoader_LoadDataSource(s->pluginLoader, &dataSource);
+	success = PluginLoader_LoadDataSource(s->pluginLoader, pluginHeader, dataSource);
 	LOG_IF(!success, L"Failed to load plugin", Severity::Warning, return nullptr);
 
-	List_Reserve(dataSource.sensors, 32);
-	LOG_IF(!dataSource.sensors, L"Sensor allocation failed", Severity::Error, return nullptr);
+	List_Reserve(dataSource->sensors, 32);
+	LOG_IF(!dataSource->sensors, L"Sensor allocation failed", Severity::Error, return nullptr);
 
 	//TODO: try/catch?
-	if (dataSource.initialize)
-		dataSource.initialize();
+	if (dataSource->initialize)
+		dataSource->initialize(dataSource);
 
-	return List_Append(s->dataSources, dataSource);
+	return dataSource;
 }
 
 static b32
@@ -53,21 +69,21 @@ UnloadDataSource(SimulationState* s, DataSource* dataSource)
 {
 	//TODO: Plugin name in errors
 
-	PluginInfo* pluginInfo = dataSource->pluginInfo;
+	PluginHeader* pluginHeader = GetPluginHeader(s, dataSource->pluginHeaderRef);
 
 	//TODO: try/catch?
 	if (dataSource->teardown)
-		dataSource->teardown();
+		dataSource->teardown(dataSource);
 
 	b32 success;
-	success = PluginLoader_UnloadDataSource(s->pluginLoader, dataSource);
+	success = PluginLoader_UnloadDataSource(s->pluginLoader, pluginHeader, dataSource);
 	//TODO: Widgets will be referencing these sensors.
 	List_Free(dataSource->sensors);
 	*dataSource = {};
 	LOG_IF(!success, L"UnloadPlugin failed", Severity::Warning, return false);
 
 	//TODO: Add and remove plugin info based on directory contents instead of loaded state.
-	*pluginInfo = {};
+	*pluginHeader = {};
 
 	return true;
 }
@@ -81,9 +97,9 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 	b32 success = PluginLoader_Initialize(s->pluginLoader);
 	if (!success) return false;
 
-	s->pluginInfos = {};
-	List_Reserve(s->pluginInfos, 16);
-	LOG_IF(!s->pluginInfos, L"PluginInfo allocation failed", Severity::Error, return false);
+	s->pluginHeaders = {};
+	List_Reserve(s->pluginHeaders, 16);
+	LOG_IF(!s->pluginHeaders, L"PluginHeader allocation failed", Severity::Error, return false);
 
 	s->dataSources = {};
 	List_Reserve(s->dataSources, 8);
@@ -122,7 +138,7 @@ Simulation_Teardown(SimulationState* s)
 	//TODO: Decide how much we really care about simulation level teardown
 	//List_Free(s->widgets);
 	List_Free(s->dataSources);
-	List_Free(s->pluginInfos);
+	List_Free(s->pluginHeaders);
 }
 
 void
@@ -132,7 +148,7 @@ Simulation_Update(SimulationState* s)
 	for (i32 i = 0; i < s->dataSources.length; i++)
 	{
 		DataSource* dataSource = &s->dataSources[i];
-		dataSource->update();
+		dataSource->update(dataSource);
 	}
 
 	/* NOTE:

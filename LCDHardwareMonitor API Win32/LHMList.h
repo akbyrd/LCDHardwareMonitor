@@ -50,9 +50,9 @@ struct List
 
 	typedef ListRef<T> RefT;
 	inline T& operator [](RefT r) { return data[r.index]; }
-	inline T& operator [](i32 i) { return data[i]; }
-	inline    operator T*()      { return data; }
-	inline    operator b32()     { return data != nullptr; }
+	inline T& operator [](i32 i)  { return data[i]; }
+	inline    operator T*()       { return data; }
+	inline    operator b32()      { return data != nullptr; }
 };
 
 template<typename T>
