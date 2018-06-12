@@ -107,6 +107,14 @@ private:
 
 		AppDomain^ appDomain = CreateDomain(name, nullptr, domainSetup);
 
+		/* TODO : Configure these handles to pin the objects. */
+		/* TODO : I'm 'leaking' these GCHandles under the assumption that I
+		 * re-create them later using the IntPtr in order to free them in
+		 * UnloadPlugin. I'm reasonably confident this works as expected, but I
+		 * need to confirm this is ok. It's not a huge concern, though, since the
+		 * objects will definitely go away when then AppDomain is unloaded and we
+		 * need them for the entire life of the domain.
+		 */
 		pluginHeader->appDomain    = (void*) (IntPtr) GCHandle::Alloc(appDomain);
 		pluginHeader->pluginLoader = (void*) (IntPtr) GCHandle::Alloc(appDomain->DomainManager);
 		return true;

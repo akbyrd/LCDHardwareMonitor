@@ -1,5 +1,5 @@
 Next
-	Use #import instead of project references?
+	Is it cleaner to use the auto-COM-interface of LHMPluginLoader?
 	Implement OHM plugin
 		Build a sensor list
 		Update each frame
@@ -11,6 +11,10 @@ Next
 			Rivatuner?
 			HWiNFO (promising!)
 
+	Handle multiple plugins in the same file (probably just a detailed error)
+	I think we want a separate 'public api' and 'internal api'
+	Fix memory issues
+	Use #import instead of project references?
 	Maybe change .h to .hpp?
 	Decide on comment style
 	Ensure Platform function naming is uniform
@@ -36,11 +40,6 @@ Refactoring
 	Include 'out' in out parameter names
 	Array and String slices?
 	Pick strict C++ version
-
-
-
-Bugs
-	Zooming in and then out leaves the window the wrong size
 
 
 
