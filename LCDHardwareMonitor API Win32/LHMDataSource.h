@@ -23,7 +23,7 @@ typedef void (*DataSourceUpdateFn)    (DS_UPDATE_ARGS);
 typedef void (*DataSourceTeardownFn)  (DS_TEARDOWN_ARGS);
 
 struct DataSourceRef { i32 index; };
-struct DataSource
+PUBLIC struct DataSource
 {
 	PluginHeaderRef        pluginHeaderRef;
 	DataSourceInitializeFn initialize;

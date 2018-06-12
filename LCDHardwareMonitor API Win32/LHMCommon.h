@@ -42,6 +42,12 @@ typedef size_t size;
 	#define Assert(condition)
 #endif
 
+#if __cplusplus_cli
+	#define PUBLIC public
+#else
+	#define PUBLIC
+#endif
+
 #define nameof(x) #x
 
 #define IF(expression, ...) if (expression) { __VA_ARGS__; }

@@ -1,5 +1,4 @@
 Next
-	Is it cleaner to use the auto-COM-interface of LHMPluginLoader?
 	Implement OHM plugin
 		Build a sensor list
 		Update each frame
@@ -11,6 +10,7 @@ Next
 			Rivatuner?
 			HWiNFO (promising!)
 
+	Is it cleaner to use the auto-COM-interface of LHMPluginLoader?
 	Is separating PluginHeader and PluginInfo useful?
 	Handle multiple plugins in the same file (probably just a detailed error)
 	I think we want a separate 'public api' and 'internal api'

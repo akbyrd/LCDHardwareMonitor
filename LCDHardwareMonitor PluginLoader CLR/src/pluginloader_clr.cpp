@@ -99,8 +99,9 @@ private:
 		 * objects will definitely go away when then AppDomain is unloaded and we
 		 * need them for the entire life of the domain.
 		 */
-		pluginHeader->appDomain    = (void*) (IntPtr) GCHandle::Alloc(appDomain               , GCHandleType::Pinned);
-		pluginHeader->pluginLoader = (void*) (IntPtr) GCHandle::Alloc(appDomain->DomainManager, GCHandleType::Pinned);
+		//NOTE: We can't pin the AppDomain pointer. Yay.
+		pluginHeader->appDomain    = (void*) (IntPtr) GCHandle::Alloc(appDomain);
+		pluginHeader->pluginLoader = (void*) (IntPtr) GCHandle::Alloc(appDomain->DomainManager);
 		return true;
 	}
 
@@ -147,17 +148,17 @@ private:
 		}
 		//TODO: Logging
 		//LOG_IF(!pluginInstance, L"Failed to find a data source class", Severity::Warning, return false);
-		dataSource->pluginInstance = (void*) (IntPtr) GCHandle::Alloc(pluginInstance, GCHandleType::Pinned);
+		dataSource->pluginInstance = (void*) (IntPtr) GCHandle::Alloc(pluginInstance);
 
 		//NOTE: Cross domain function calls average 200ns with this pattern
 		//Try playing with security settings if optimizing this
-		DataSourceInitializeDel initializeDel = gcnew DataSourceInitializeDel(pluginInstance, &IDataSourcePlugin::Initialize);
-		DataSourceUpdateDel     updateDel     = gcnew DataSourceUpdateDel    (pluginInstance, &IDataSourcePlugin::Update);
-		DataSourceTeardownDel   teardownDel   = gcnew DataSourceTeardownDel  (pluginInstance, &IDataSourcePlugin::Teardown);
+		DataSourceInitializeDel^ initializeDel = gcnew DataSourceInitializeDel(pluginInstance, &IDataSourcePlugin::Initialize);
+		DataSourceUpdateDel^     updateDel     = gcnew DataSourceUpdateDel    (pluginInstance, &IDataSourcePlugin::Update);
+		DataSourceTeardownDel^   teardownDel   = gcnew DataSourceTeardownDel  (pluginInstance, &IDataSourcePlugin::Teardown);
 
-		dataSource->initializeDel = (void*) (IntPtr) GCHandle::Alloc(initializeDel, GCHandleType::Pinned);
-		dataSource->updateDel     = (void*) (IntPtr) GCHandle::Alloc(updateDel,     GCHandleType::Pinned);
-		dataSource->teardownDel   = (void*) (IntPtr) GCHandle::Alloc(teardownDel,   GCHandleType::Pinned);
+		dataSource->initializeDelegate = (void*) (IntPtr) GCHandle::Alloc(initializeDel);
+		dataSource->updateDelegate     = (void*) (IntPtr) GCHandle::Alloc(updateDel);
+		dataSource->teardownDelegate   = (void*) (IntPtr) GCHandle::Alloc(teardownDel);
 
 		dataSource->initialize = (DataSourceInitializeFn) (void*) Marshal::GetFunctionPointerForDelegate(initializeDel);
 		dataSource->update     = (DataSourceUpdateFn)     (void*) Marshal::GetFunctionPointerForDelegate(updateDel);
@@ -171,9 +172,9 @@ private:
 	{
 		dataSource->pluginInstance = 0;
 
-		((GCHandle) dataSource->initializeDel).Free();
-		((GCHandle) dataSource->updateDel    ).Free();
-		((GCHandle) dataSource->teardownDel  ).Free();
+		((GCHandle) (IntPtr) dataSource->initializeDelegate).Free();
+		((GCHandle) (IntPtr) dataSource->updateDelegate    ).Free();
+		((GCHandle) (IntPtr) dataSource->teardownDelegate  ).Free();
 
 		dataSource->initializeDelegate = 0;
 		dataSource->updateDelegate     = 0;
