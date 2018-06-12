@@ -28,10 +28,10 @@ private delegate void DataSourceUpdateDel(DS_UPDATE_ARGS);
 [UnmanagedFunctionPointer(CallingConvention::Cdecl)]
 private delegate void DataSourceTeardownDel(DS_TEARDOWN_ARGS);
 
+//TODO: Can this be merged into the native DataSource like PluginHeader?
 private ref struct
 DataSource_clr
 {
-	//TODO: Replace these with a list of GCHandles or gcroots?
 	IDataSourcePlugin^       iDataSource;
 	DataSourceInitializeDel^ initialize;
 	DataSourceUpdateDel^     update;
@@ -107,7 +107,6 @@ private:
 
 		AppDomain^ appDomain = CreateDomain(name, nullptr, domainSetup);
 
-		/* TODO : Configure these handles to pin the objects. */
 		/* TODO : I'm 'leaking' these GCHandles under the assumption that I
 		 * re-create them later using the IntPtr in order to free them in
 		 * UnloadPlugin. I'm reasonably confident this works as expected, but I
@@ -115,21 +114,22 @@ private:
 		 * objects will definitely go away when then AppDomain is unloaded and we
 		 * need them for the entire life of the domain.
 		 */
-		pluginHeader->appDomain    = (void*) (IntPtr) GCHandle::Alloc(appDomain);
-		pluginHeader->pluginLoader = (void*) (IntPtr) GCHandle::Alloc(appDomain->DomainManager);
+		pluginHeader->appDomain    = (void*) (IntPtr) GCHandle::Alloc(appDomain               , GCHandleType::Pinned);
+		pluginHeader->pluginLoader = (void*) (IntPtr) GCHandle::Alloc(appDomain->DomainManager, GCHandleType::Pinned);
 		return true;
 	}
 
 	b32
 	UnloadPlugin(PluginHeader* pluginHeader)
 	{
-		AppDomain^ appDomain = (AppDomain^) ((GCHandle) (IntPtr) pluginHeader->appDomain).Target;
-		AppDomain::Unload(appDomain);
+		GCHandle appDomainHandle    = ((GCHandle) (IntPtr) pluginHeader->appDomain);
+		GCHandle pluginLoaderHandle = ((GCHandle) (IntPtr) pluginHeader->pluginLoader);
 
-		((GCHandle) (IntPtr) pluginHeader->appDomain).Free();
+		AppDomain::Unload((AppDomain^) appDomainHandle.Target);
+		appDomainHandle.Free();
 		pluginHeader->appDomain = nullptr;
 
-		((GCHandle) (IntPtr) pluginHeader->pluginLoader).Free();
+		pluginLoaderHandle.Free();
 		pluginHeader->pluginLoader = nullptr;
 		return true;
 	}
