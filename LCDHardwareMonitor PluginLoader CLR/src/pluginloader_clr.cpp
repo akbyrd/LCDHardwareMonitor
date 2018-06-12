@@ -1,6 +1,5 @@
 #pragma unmanaged
 #include "LHMAPI.h"
-#include "LHMPluginHeader.h"
 
 #pragma managed
 using namespace System;
@@ -14,16 +13,18 @@ ILHMPluginLoader
 {
 	b32 LoadSensorPlugin   (void* pluginHeader, void* sensorPlugin);
 	b32 UnloadSensorPlugin (void* pluginHeader, void* sensorPlugin);
+	b32 LoadWidgetPlugin   (void* pluginHeader, void* widgetPlugin);
+	b32 UnloadWidgetPlugin (void* pluginHeader, void* widgetPlugin);
 };
 
-[UnmanagedFunctionPointer(CallingConvention::Cdecl)]
-private delegate void SensorPluginInitializeDel(SP_INITIALIZE_ARGS);
-
-[UnmanagedFunctionPointer(CallingConvention::Cdecl)]
-private delegate void SensorPluginUpdateDel(SP_UPDATE_ARGS);
-
-[UnmanagedFunctionPointer(CallingConvention::Cdecl)]
-private delegate void SensorPluginTeardownDel(SP_TEARDOWN_ARGS);
+//TODO: Maybe move these to LCDHardwareMonitor CLR API
+#define Attributes UnmanagedFunctionPointer(CallingConvention::Cdecl)
+[Attributes] private delegate void SensorPluginInitializeDel(SP_INITIALIZE_ARGS);
+[Attributes] private delegate void SensorPluginUpdateDel    (SP_UPDATE_ARGS);
+[Attributes] private delegate void SensorPluginTeardownDel  (SP_TEARDOWN_ARGS);
+[Attributes] private delegate void WidgetPluginInitializeDel(WP_INITIALIZE_ARGS);
+[Attributes] private delegate void WidgetPluginUpdateDel    (WP_UPDATE_ARGS);
+[Attributes] private delegate void WidgetPluginTeardownDel  (WP_TEARDOWN_ARGS);
 
 public ref struct
 LHMPluginLoader : AppDomainManager, ILHMPluginLoader
@@ -62,6 +63,40 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 
 		b32 success;
 		success = pluginLoader->TeardownSensorPlugin(pluginHeader, sensorPlugin);
+		if (!success) return false;
+
+		success = UnloadPlugin(pluginHeader);
+		if (!success) return false;
+
+		return true;
+	}
+
+	virtual b32
+	LoadWidgetPlugin(void* _pluginHeader, void* _widgetPlugin)
+	{
+		PluginHeader* pluginHeader = (PluginHeader*) _pluginHeader;
+		WidgetPlugin* widgetPlugin = (WidgetPlugin*) _widgetPlugin;
+
+		b32 success;
+		success = LoadPlugin(pluginHeader);
+		if (!success) return false;
+
+		LHMPluginLoader^ pluginLoader = (LHMPluginLoader^) ((GCHandle) (IntPtr) pluginHeader->pluginLoader).Target;
+		success = pluginLoader->InitializeWidgetPlugin(pluginHeader, widgetPlugin);
+		if (!success) return false;
+
+		return true;
+	}
+
+	virtual b32
+	UnloadWidgetPlugin(void* _pluginHeader, void* _widgetPlugin)
+	{
+		PluginHeader*    pluginHeader = (PluginHeader*) _pluginHeader;
+		WidgetPlugin*    widgetPlugin = (WidgetPlugin*) _widgetPlugin;
+		LHMPluginLoader^ pluginLoader = (LHMPluginLoader^) ((GCHandle) (IntPtr) pluginHeader->pluginLoader).Target;
+
+		b32 success;
+		success = pluginLoader->TeardownWidgetPlugin(pluginHeader, widgetPlugin);
 		if (!success) return false;
 
 		success = UnloadPlugin(pluginHeader);
@@ -124,12 +159,43 @@ private:
 
 	//NOTE: These functions run in the plugin AppDomain
 
+#if false
+	generic <typename T>
+	T^
+	InstantiatePluginType(PluginHeader* pluginHeader)
+	{
+		auto name = gcnew String(pluginHeader->name);
+
+		ISensorPlugin^ pluginInstance = nullptr;
+		auto assembly = Assembly::Load(name);
+		for each (Type^ type in assembly->GetExportedTypes())
+		{
+			bool isPlugin = type->GetInterface(T::typeid->FullName) != nullptr;
+			if (isPlugin)
+			{
+				if (!pluginInstance)
+				{
+					//pluginInstance = (T^) Activator::CreateInstance(T::typeid);
+					pluginInstance = gcnew T();
+				}
+				else
+				{
+					//TODO: Warning: multiple plugins in same file
+				}
+			}
+		}
+		//TODO: Logging
+		//LOG_IF(!pluginInstance, L"Failed to find a managed sensor plugin class", Severity::Warning, return false);
+		return pluginInstance;
+	}
+#endif
+
 	b32
 	InitializeSensorPlugin(PluginHeader* pluginHeader, SensorPlugin* sensorPlugin)
 	{
 		auto name = gcnew String(pluginHeader->name);
 
-		ISensorPlugin^ pluginInstance;
+		ISensorPlugin^ pluginInstance = nullptr;
 		auto assembly = Assembly::Load(name);
 		for each (Type^ type in assembly->GetExportedTypes())
 		{
@@ -150,8 +216,6 @@ private:
 		//LOG_IF(!pluginInstance, L"Failed to find a managed sensor plugin class", Severity::Warning, return false);
 		sensorPlugin->pluginInstance = (void*) (IntPtr) GCHandle::Alloc(pluginInstance);
 
-		//NOTE: Cross domain function calls average 200ns with this pattern
-		//Try playing with security settings if optimizing this
 		SensorPluginInitializeDel^ initializeDel = gcnew SensorPluginInitializeDel(pluginInstance, &ISensorPlugin::Initialize);
 		SensorPluginUpdateDel^     updateDel     = gcnew SensorPluginUpdateDel    (pluginInstance, &ISensorPlugin::Update);
 		SensorPluginTeardownDel^   teardownDel   = gcnew SensorPluginTeardownDel  (pluginInstance, &ISensorPlugin::Teardown);
@@ -182,4 +246,64 @@ private:
 
 		return true;
 	}
+
+	b32
+	InitializeWidgetPlugin(PluginHeader* pluginHeader, WidgetPlugin* widgetPlugin)
+	{
+		auto name = gcnew String(pluginHeader->name);
+
+		IWidgetPlugin^ pluginInstance = nullptr;
+		auto assembly = Assembly::Load(name);
+		for each (Type^ type in assembly->GetExportedTypes())
+		{
+			bool isPlugin = type->GetInterface(IWidgetPlugin::typeid->FullName) != nullptr;
+			if (isPlugin)
+			{
+				if (!pluginInstance)
+				{
+					pluginInstance = (IWidgetPlugin^) Activator::CreateInstance(type);
+				}
+				else
+				{
+					//TODO: Warning: multiple plugins in same file
+				}
+			}
+		}
+		//TODO: Logging
+		//LOG_IF(!pluginInstance, L"Failed to find a managed sensor plugin class", Severity::Warning, return false);
+		widgetPlugin->pluginInstance = (void*) (IntPtr) GCHandle::Alloc(pluginInstance);
+
+		WidgetPluginInitializeDel^ initializeDel = gcnew WidgetPluginInitializeDel(pluginInstance, &IWidgetPlugin::Initialize);
+		WidgetPluginUpdateDel^     updateDel     = gcnew WidgetPluginUpdateDel    (pluginInstance, &IWidgetPlugin::Update);
+		WidgetPluginTeardownDel^   teardownDel   = gcnew WidgetPluginTeardownDel  (pluginInstance, &IWidgetPlugin::Teardown);
+
+		widgetPlugin->initializeDelegate = (void*) (IntPtr) GCHandle::Alloc(initializeDel);
+		widgetPlugin->updateDelegate     = (void*) (IntPtr) GCHandle::Alloc(updateDel);
+		widgetPlugin->teardownDelegate   = (void*) (IntPtr) GCHandle::Alloc(teardownDel);
+
+		widgetPlugin->initialize = (WidgetPluginInitializeFn) (void*) Marshal::GetFunctionPointerForDelegate(initializeDel);
+		widgetPlugin->update     = (WidgetPluginUpdateFn)     (void*) Marshal::GetFunctionPointerForDelegate(updateDel);
+		widgetPlugin->teardown   = (WidgetPluginTeardownFn)   (void*) Marshal::GetFunctionPointerForDelegate(teardownDel);
+
+		return true;
+	}
+
+	b32
+	TeardownWidgetPlugin(PluginHeader* pluginHeader, WidgetPlugin* widgetPlugin)
+	{
+		widgetPlugin->pluginInstance = 0;
+
+		((GCHandle) (IntPtr) widgetPlugin->initializeDelegate).Free();
+		((GCHandle) (IntPtr) widgetPlugin->updateDelegate    ).Free();
+		((GCHandle) (IntPtr) widgetPlugin->teardownDelegate  ).Free();
+
+		widgetPlugin->initializeDelegate = 0;
+		widgetPlugin->updateDelegate     = 0;
+		widgetPlugin->teardownDelegate   = 0;
+
+		return true;
+	}
 };
+
+//NOTE: Cross domain function calls average 200ns with the delegate pattern.
+//Try playing with security settings if optimizing this

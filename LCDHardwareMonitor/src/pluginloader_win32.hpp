@@ -141,17 +141,56 @@ UnloadManagedSensorPlugin(PluginLoaderState* s, PluginHeader* pluginHeader, Sens
 }
 
 b32
+LoadNativeWidgetPlugin(PluginLoaderState* s, PluginHeader* pluginHeader, WidgetPlugin* widgetPlugin)
+{
+	//TODO: Implement LoadNativeWidgetPlugin
+	Assert(false);
+	return false;
+}
+
+b32
+UnloadNativeWidgetPlugin(PluginLoaderState* s, PluginHeader* pluginHeader, WidgetPlugin* WidgetPlugin)
+{
+	//TODO: Implement UnloadNativeWidgetPlugin
+	Assert(false);
+	return false;
+}
+
+b32
+LoadManagedWidgetPlugin(PluginLoaderState* s, PluginHeader* pluginHeader, WidgetPlugin* WidgetPlugin)
+{
+	//NOTE: fuslogvw is great for debugging managed assembly loading.
+
+	//TODO: Do we need to try/catch the managed code?
+	b32 success;
+	success = s->lhmPluginLoader->LoadWidgetPlugin(pluginHeader, WidgetPlugin);
+	LOG_IF(!success, L"Failed to load managed Widget plugin", Severity::Warning, return false);
+
+	return true;
+}
+
+b32
+UnloadManagedWidgetPlugin(PluginLoaderState* s, PluginHeader* pluginHeader, WidgetPlugin* WidgetPlugin)
+{
+	b32 success;
+	success = s->lhmPluginLoader->UnloadWidgetPlugin(pluginHeader, WidgetPlugin);
+	LOG_IF(!success, L"Failed to unload managed Widget plugin", Severity::Warning, return false);
+
+	return true;
+}
+
+b32
 PluginLoader_LoadSensorPlugin(PluginLoaderState* s, PluginHeader* pluginHeader, SensorPlugin* sensorPlugin)
 {
 	//TODO: Actually check if the DLL is native or managed
-	pluginHeader->kind = PluginKind::Managed;
+	pluginHeader->language = PluginLanguage::Managed;
 
 	b32 success = false;
-	switch (pluginHeader->kind)
+	switch (pluginHeader->language)
 	{
-		case PluginKind::Null:    success = false;                                                  break;
-		case PluginKind::Native:  success = LoadNativeSensorPlugin(s, pluginHeader, sensorPlugin);  break;
-		case PluginKind::Managed: success = LoadManagedSensorPlugin(s, pluginHeader, sensorPlugin); break;
+		case PluginLanguage::Null:    success = false;                                                  break;
+		case PluginLanguage::Native:  success = LoadNativeSensorPlugin(s, pluginHeader, sensorPlugin);  break;
+		case PluginLanguage::Managed: success = LoadManagedSensorPlugin(s, pluginHeader, sensorPlugin); break;
 	}
 	if (!success) return false;
 
@@ -163,11 +202,45 @@ b32
 PluginLoader_UnloadSensorPlugin(PluginLoaderState* s, PluginHeader* pluginHeader, SensorPlugin* sensorPlugin)
 {
 	b32 success = false;
-	switch (pluginHeader->kind)
+	switch (pluginHeader->language)
 	{
-		case PluginKind::Null:    success = false;                                                    break;
-		case PluginKind::Native:  success = UnloadNativeSensorPlugin(s, pluginHeader, sensorPlugin);  break;
-		case PluginKind::Managed: success = UnloadManagedSensorPlugin(s, pluginHeader, sensorPlugin); break;
+		case PluginLanguage::Null:    success = false;                                                    break;
+		case PluginLanguage::Native:  success = UnloadNativeSensorPlugin(s, pluginHeader, sensorPlugin);  break;
+		case PluginLanguage::Managed: success = UnloadManagedSensorPlugin(s, pluginHeader, sensorPlugin); break;
+	}
+	if (!success) return false;
+
+	return true;
+}
+
+b32
+PluginLoader_LoadWidgetPlugin(PluginLoaderState* s, PluginHeader* pluginHeader, WidgetPlugin* widgetPlugin)
+{
+	//TODO: Actually check if the DLL is native or managed
+	pluginHeader->language = PluginLanguage::Managed;
+
+	b32 success = false;
+	switch (pluginHeader->language)
+	{
+		case PluginLanguage::Null:    success = false;                                                  break;
+		case PluginLanguage::Native:  success = LoadNativeWidgetPlugin(s, pluginHeader, widgetPlugin);  break;
+		case PluginLanguage::Managed: success = LoadManagedWidgetPlugin(s, pluginHeader, widgetPlugin); break;
+	}
+	if (!success) return false;
+
+	pluginHeader->isLoaded = true;
+	return true;
+}
+
+b32
+PluginLoader_UnloadWidgetPlugin(PluginLoaderState* s, PluginHeader* pluginHeader, WidgetPlugin* widgetPlugin)
+{
+	b32 success = false;
+	switch (pluginHeader->language)
+	{
+		case PluginLanguage::Null:    success = false;                                                    break;
+		case PluginLanguage::Native:  success = UnloadNativeWidgetPlugin(s, pluginHeader, widgetPlugin);  break;
+		case PluginLanguage::Managed: success = UnloadManagedWidgetPlugin(s, pluginHeader, widgetPlugin); break;
 	}
 	if (!success) return false;
 

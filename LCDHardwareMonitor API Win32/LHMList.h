@@ -23,18 +23,6 @@
 
 #include <memory>
 
-template<typename T, i32 S>
-inline i32 ArrayLength(const T(&arr)[S])
-{
-	return S;
-}
-
-template<typename T, i32 S>
-inline i32 ArraySize(const T(&arr)[S])
-{
-	return S * sizeof(T);
-}
-
 template<typename T>
 struct ListRef
 {
@@ -250,9 +238,9 @@ List_Equal(List<T>& listA, List<T>& listB)
  * interface (e.g. transparently change between them). */
 //TODO: Maybe return references instead of pointers?
 //TODO: Handle cases where this may fail
-//TODO: Where should memory be include?
+//TODO: Where should memory be included?
 //TODO: Create can fail too! Yay!
-//TODO: ArrayLength and ArraySize don't belong here
 //TODO: List_Shrink - if <=25% full shrink to 50%
+//TODO: Allow foreach style usage
 
 #endif

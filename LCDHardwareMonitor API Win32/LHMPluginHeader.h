@@ -4,6 +4,13 @@
 enum struct PluginKind
 {
 	Null,
+	Sensor,
+	Widget,
+};
+
+enum struct PluginLanguage
+{
+	Null,
 	Native,
 	Managed,
 };
@@ -16,6 +23,7 @@ struct PluginHeader
 	c16*            name;
 	c16*            directory;
 	PluginKind      kind;
+	PluginLanguage  language;
 	PluginInfo      info;
 
 	//TODO: Try using COM pointers instead.

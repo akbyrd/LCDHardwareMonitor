@@ -52,4 +52,16 @@ typedef size_t size;
 
 #define IF(expression, ...) if (expression) { __VA_ARGS__; }
 
+template<typename T, i32 S>
+inline i32 ArrayLength(const T(&arr)[S])
+{
+	return S;
+}
+
+template<typename T, i32 S>
+inline i32 ArraySize(const T(&arr)[S])
+{
+	return S * sizeof(T);
+}
+
 #endif

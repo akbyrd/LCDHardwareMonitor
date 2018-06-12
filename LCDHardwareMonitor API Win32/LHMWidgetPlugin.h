@@ -20,6 +20,11 @@ PUBLIC struct WidgetPlugin
 	WidgetPluginInitializeFn initialize;
 	WidgetPluginUpdateFn     update;
 	WidgetPluginTeardownFn   teardown;
+
+	void* pluginInstance;
+	void* initializeDelegate;
+	void* updateDelegate;
+	void* teardownDelegate;
 };
 
 #endif
