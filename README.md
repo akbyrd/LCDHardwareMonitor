@@ -16,9 +16,9 @@ This project started with the desire for a far more capable alternative to LCDSy
 
 After spending entirely too much time with WPF, MVVM, and other shenanigans I've scrapped the UI in order to focus exclusively on actual functionality. The UI is a graphical editor provided for convenience, and not fundamental to the applications purpose. I'll likely stick with WPF as the initial UI.
 
-![Designer Layout](res\LCD Hardware Monitor 00 - Designer Layout.png)
-![Source Layout](res\LCD Hardware Monitor 01 - Source Layout.png)
-![Renderer Preview](res\LCD Hardware Monitor 06 - Renderer In WPF.png)
+![Renderer Preview](res/LCD%20Hardware%20Monitor%2006%20-%20Renderer%20In%20WPF.png)
+![Source Layout](res/LCD%20Hardware%20Monitor%2001%20-%20Source%20Layout.png)
+![Designer Layout](res/LCD%20Hardware%20Monitor%2000%20-%20Designer%20Layout.png)
 
 ## Getting Started
 You shouldn't need to do anything other than install the [DirectX SDK](https://www.microsoft.com/en-us/download/details.aspx?id=6812). Open the solution in Visual Studio and compile.
