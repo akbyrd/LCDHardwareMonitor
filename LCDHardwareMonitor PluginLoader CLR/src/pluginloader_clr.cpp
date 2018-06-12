@@ -6,11 +6,8 @@
 using namespace System;
 using namespace System::Reflection;
 using namespace System::Runtime::InteropServices;
-
-template<typename T>
-using SList = System::Collections::Generic::List<T>;
-
 [assembly:ComVisible(false)];
+
 [ComVisible(true)]
 public interface class
 ILHMPluginLoader
@@ -64,7 +61,7 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 		LHMPluginLoader^ pluginLoader = (LHMPluginLoader^) ((GCHandle) (IntPtr) pluginHeader->pluginLoader).Target;
 
 		b32 success;
-		success = pluginLoader->TeardownDataSource(dataSource);
+		success = pluginLoader->TeardownDataSource(pluginHeader, dataSource);
 		if (!success) return false;
 
 		success = UnloadPlugin(pluginHeader);
@@ -170,9 +167,18 @@ private:
 	}
 
 	b32
-	TeardownDataSource(DataSource* dataSource)
+	TeardownDataSource(PluginHeader* pluginHeader, DataSource* dataSource)
 	{
-		//Nothing to do currently
+		dataSource->pluginInstance = 0;
+
+		((GCHandle) dataSource->initializeDel).Free();
+		((GCHandle) dataSource->updateDel    ).Free();
+		((GCHandle) dataSource->teardownDel  ).Free();
+
+		dataSource->initializeDelegate = 0;
+		dataSource->updateDelegate     = 0;
+		dataSource->teardownDelegate   = 0;
+
 		return true;
 	}
 };

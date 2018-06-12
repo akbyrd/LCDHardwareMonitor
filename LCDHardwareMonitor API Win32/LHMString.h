@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LHMSTRING
+#define LHMSTRING
 
 //TODO: Seems questionable to alias *_Free(), but nothing else.
 //TODO: Static string when capacity < 0?
@@ -87,4 +88,6 @@ FreeWString(WString& string)
 
 	string = {};
 }
+#endif
+
 #endif

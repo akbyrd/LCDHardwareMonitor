@@ -2,7 +2,7 @@
 		Load C++ modules
 		Load .NET assemblies
 		Very high performance
-		<10 ns function calls in plugins
+		<10 ns function calls into plugins
 		Single version of the CLR
 		Single copy of .NET dependencies (e.g. mscorlib)
 		Logging and graceful shutdown as the worst case if a plugin exception occurs
@@ -21,14 +21,13 @@
 	- Would it be better to compile managed plugins as clr pure / managed only?
 	  We'll still be able to make direct unmanaged to managed calls because we
 		create and return function pointers. Can/should we drop all #pragma
-		unamanged?
+		unmanaged?
 
 	Ideas
 		Pure C# and pure C++ plugins. No more boundary crossing.
 		Is there a performant way to sandbox in C++? Are subprocesses a thing?
 		Try/catch on C++ plugins. Just dump 'em if they fuck up.
 		Use the host manager to run GC every frame.
-		Could use macros for API function parameters to avoid the duplication.
 
 	Thoughts
 		Reasons for AppDomains
@@ -76,7 +75,7 @@
 	Notes
 		- An IHostControl and AppDomainManager must be implemented in order to
 		  host the CLR. This seems a little pointless as it's *only* purpose for
-		  use is to get a pointer to the AppDomainManager, but it looks like it's
+		  us is to get a pointer to the AppDomainManager, but it looks like it's
 		  required.
 		- The IHostControl can be done in C++. It's a COM type and presumably it
 		  could be implemented in C# as well.

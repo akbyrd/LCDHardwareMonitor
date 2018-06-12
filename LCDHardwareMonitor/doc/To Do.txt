@@ -11,13 +11,14 @@ Next
 			Rivatuner?
 			HWiNFO (promising!)
 
+	Is separating PluginHeader and PluginInfo useful?
 	Handle multiple plugins in the same file (probably just a detailed error)
 	I think we want a separate 'public api' and 'internal api'
-	Fix memory issues
 	Use #import instead of project references?
 	Maybe change .h to .hpp?
-	Decide on comment style
+	Decide on comment style ("// " for comments, "//" for disabled code)
 	Ensure Platform function naming is uniform
+	Decide on 'plugin loader' naming on both sides of the managed boundary
 
 
 
@@ -35,7 +36,7 @@ Refactoring
 	Stop using wide characters. That's not the right path to unicode support.
 	Decide what we're really doing with wide characters/i18n
 	Drop some of the variable name prefixes, such as d3d
-	Use self or this as parameter name for 'methods'
+	Use this as parameter name for 'methods'
 	Should const be used on parameters and locals?
 	Include 'out' in out parameter names
 	Array and String slices?

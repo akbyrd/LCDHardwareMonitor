@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LHMDATASOURCE
+#define LHMDATASOURCE
 
 struct SensorRef { i32 index; };
 struct Sensor
@@ -13,17 +14,16 @@ struct Sensor
 };
 
 //TODO: Remove these once the API stabilizes
-struct DataSource;
-#define DS_INITIALIZE_ARGS DataSource* s
-#define DS_UPDATE_ARGS     DataSource* s
-#define DS_TEARDOWN_ARGS   DataSource* s
+#define DS_INITIALIZE_ARGS struct DataSource* s
+#define DS_UPDATE_ARGS     struct DataSource* s
+#define DS_TEARDOWN_ARGS   struct DataSource* s
 
 typedef void (*DataSourceInitializeFn)(DS_INITIALIZE_ARGS);
 typedef void (*DataSourceUpdateFn)    (DS_UPDATE_ARGS);
 typedef void (*DataSourceTeardownFn)  (DS_TEARDOWN_ARGS);
 
 struct DataSourceRef { i32 index; };
-PUBLIC struct DataSource
+struct DataSource
 {
 	PluginHeaderRef        pluginHeaderRef;
 	DataSourceInitializeFn initialize;
@@ -38,3 +38,5 @@ PUBLIC struct DataSource
 	void* updateDelegate;
 	void* teardownDelegate;
 };
+
+#endif

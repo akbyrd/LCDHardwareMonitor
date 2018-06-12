@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LHMPLUGINHEADER
+#define LHMPLUGINHEADER
 
 enum struct PluginKind
 {
@@ -21,3 +22,5 @@ struct PluginHeader
 	void* appDomain;
 	void* pluginLoader;
 };
+
+#endif

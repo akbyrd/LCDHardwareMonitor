@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LHMLIST
+#define LHMLIST
 
 /* Usage Notes
  *  - Memory is zero-initialized during allocations and when items are removed.
@@ -244,3 +245,5 @@ List_Equal(List<T>& listA, List<T>& listB)
 //TODO: Create can fail too! Yay!
 //TODO: ArrayLength and ArraySize don't belong here
 //TODO: List_Shrink - if <=25% full shrink to 50%
+
+#endif
