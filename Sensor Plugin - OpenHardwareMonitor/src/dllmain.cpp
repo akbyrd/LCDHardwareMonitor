@@ -16,7 +16,7 @@ using namespace OpenHardwareMonitor::Hardware;
 template<typename T>
 using SList = System::Collections::Generic::List<T>;
 
-public ref class State : IDataSourcePlugin
+public ref class State : ISensorPlugin
 {
 public:
 	Computer^          computer;
@@ -30,7 +30,7 @@ public:
 	};
 
 	virtual void
-	Initialize(DS_INITIALIZE_ARGS)
+	Initialize(SP_INITIALIZE_ARGS)
 	{
 		computer       = gcnew Computer();
 		activeSensors  = gcnew SList<ISensor^>;
@@ -120,7 +120,7 @@ public:
 	}
 
 	virtual void
-	Update(DS_UPDATE_ARGS)
+	Update(SP_UPDATE_ARGS)
 	{
 		for (i32 i = 0; i < State::activeHardware->Count; i++)
 			State::activeHardware[i]->Update();
@@ -144,7 +144,7 @@ public:
 	}
 
 	virtual void
-	Teardown(DS_TEARDOWN_ARGS)
+	Teardown(SP_TEARDOWN_ARGS)
 	{
 		for (i32 i = 0; i < s->sensors.length; i++)
 		{

@@ -37,7 +37,7 @@ Contains managed descriptions of all interfaces available to plugins.
 OpenHardwareMonitor Plugin
 Project dependencies: LCDHardwareMonitor CLR API
 Include directories: include/ and ../shared/
-Type: data source
+Type: sensor plugin
 Output: dll
 Compiler flags: /clr
 
@@ -49,7 +49,10 @@ LCDHardwareMonitor.exe
 LCDHardwareMonitor CLR API.dll
 LCDHardwareMonitor CLR Helper.dll
 LCDHardwareMonitor CLR Helper.tlb
-Data Sources/
+Sensor Plugins/
+	Plugin Name/
+		Plugin Name.dll
+Widget Plugins/
 	Plugin Name/
 		Plugin Name.dll
 Shaders/

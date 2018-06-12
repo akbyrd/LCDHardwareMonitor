@@ -12,18 +12,18 @@ using namespace System::Runtime::InteropServices;
 public interface class
 ILHMPluginLoader
 {
-	b32 LoadDataSource   (void* pluginHeader, void* dataSource);
-	b32 UnloadDataSource (void* pluginHeader, void* dataSource);
+	b32 LoadSensorPlugin   (void* pluginHeader, void* sensorPlugin);
+	b32 UnloadSensorPlugin (void* pluginHeader, void* sensorPlugin);
 };
 
 [UnmanagedFunctionPointer(CallingConvention::Cdecl)]
-private delegate void DataSourceInitializeDel(DS_INITIALIZE_ARGS);
+private delegate void SensorPluginInitializeDel(SP_INITIALIZE_ARGS);
 
 [UnmanagedFunctionPointer(CallingConvention::Cdecl)]
-private delegate void DataSourceUpdateDel(DS_UPDATE_ARGS);
+private delegate void SensorPluginUpdateDel(SP_UPDATE_ARGS);
 
 [UnmanagedFunctionPointer(CallingConvention::Cdecl)]
-private delegate void DataSourceTeardownDel(DS_TEARDOWN_ARGS);
+private delegate void SensorPluginTeardownDel(SP_TEARDOWN_ARGS);
 
 public ref struct
 LHMPluginLoader : AppDomainManager, ILHMPluginLoader
@@ -37,31 +37,31 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	}
 
 	virtual b32
-	LoadDataSource(void* _pluginHeader, void* _dataSource)
+	LoadSensorPlugin(void* _pluginHeader, void* _sensorPlugin)
 	{
-		DataSource*   dataSource   = (DataSource*) _dataSource;
 		PluginHeader* pluginHeader = (PluginHeader*) _pluginHeader;
+		SensorPlugin* sensorPlugin = (SensorPlugin*) _sensorPlugin;
 
 		b32 success;
 		success = LoadPlugin(pluginHeader);
 		if (!success) return false;
 
 		LHMPluginLoader^ pluginLoader = (LHMPluginLoader^) ((GCHandle) (IntPtr) pluginHeader->pluginLoader).Target;
-		success = pluginLoader->InitializeDataSource(pluginHeader, dataSource);
+		success = pluginLoader->InitializeSensorPlugin(pluginHeader, sensorPlugin);
 		if (!success) return false;
 
 		return true;
 	}
 
 	virtual b32
-	UnloadDataSource(void* _pluginHeader, void* _dataSource)
+	UnloadSensorPlugin(void* _pluginHeader, void* _sensorPlugin)
 	{
-		DataSource*      dataSource   = (DataSource*) _dataSource;
 		PluginHeader*    pluginHeader = (PluginHeader*) _pluginHeader;
+		SensorPlugin*    sensorPlugin = (SensorPlugin*) _sensorPlugin;
 		LHMPluginLoader^ pluginLoader = (LHMPluginLoader^) ((GCHandle) (IntPtr) pluginHeader->pluginLoader).Target;
 
 		b32 success;
-		success = pluginLoader->TeardownDataSource(pluginHeader, dataSource);
+		success = pluginLoader->TeardownSensorPlugin(pluginHeader, sensorPlugin);
 		if (!success) return false;
 
 		success = UnloadPlugin(pluginHeader);
@@ -125,20 +125,20 @@ private:
 	//NOTE: These functions run in the plugin AppDomain
 
 	b32
-	InitializeDataSource(PluginHeader* pluginHeader, DataSource* dataSource)
+	InitializeSensorPlugin(PluginHeader* pluginHeader, SensorPlugin* sensorPlugin)
 	{
 		auto name = gcnew String(pluginHeader->name);
 
-		IDataSourcePlugin^ pluginInstance;
+		ISensorPlugin^ pluginInstance;
 		auto assembly = Assembly::Load(name);
 		for each (Type^ type in assembly->GetExportedTypes())
 		{
-			bool isPlugin = type->GetInterface(IDataSourcePlugin::typeid->FullName) != nullptr;
+			bool isPlugin = type->GetInterface(ISensorPlugin::typeid->FullName) != nullptr;
 			if (isPlugin)
 			{
 				if (!pluginInstance)
 				{
-					pluginInstance = (IDataSourcePlugin^) Activator::CreateInstance(type);
+					pluginInstance = (ISensorPlugin^) Activator::CreateInstance(type);
 				}
 				else
 				{
@@ -147,38 +147,38 @@ private:
 			}
 		}
 		//TODO: Logging
-		//LOG_IF(!pluginInstance, L"Failed to find a data source class", Severity::Warning, return false);
-		dataSource->pluginInstance = (void*) (IntPtr) GCHandle::Alloc(pluginInstance);
+		//LOG_IF(!pluginInstance, L"Failed to find a managed sensor plugin class", Severity::Warning, return false);
+		sensorPlugin->pluginInstance = (void*) (IntPtr) GCHandle::Alloc(pluginInstance);
 
 		//NOTE: Cross domain function calls average 200ns with this pattern
 		//Try playing with security settings if optimizing this
-		DataSourceInitializeDel^ initializeDel = gcnew DataSourceInitializeDel(pluginInstance, &IDataSourcePlugin::Initialize);
-		DataSourceUpdateDel^     updateDel     = gcnew DataSourceUpdateDel    (pluginInstance, &IDataSourcePlugin::Update);
-		DataSourceTeardownDel^   teardownDel   = gcnew DataSourceTeardownDel  (pluginInstance, &IDataSourcePlugin::Teardown);
+		SensorPluginInitializeDel^ initializeDel = gcnew SensorPluginInitializeDel(pluginInstance, &ISensorPlugin::Initialize);
+		SensorPluginUpdateDel^     updateDel     = gcnew SensorPluginUpdateDel    (pluginInstance, &ISensorPlugin::Update);
+		SensorPluginTeardownDel^   teardownDel   = gcnew SensorPluginTeardownDel  (pluginInstance, &ISensorPlugin::Teardown);
 
-		dataSource->initializeDelegate = (void*) (IntPtr) GCHandle::Alloc(initializeDel);
-		dataSource->updateDelegate     = (void*) (IntPtr) GCHandle::Alloc(updateDel);
-		dataSource->teardownDelegate   = (void*) (IntPtr) GCHandle::Alloc(teardownDel);
+		sensorPlugin->initializeDelegate = (void*) (IntPtr) GCHandle::Alloc(initializeDel);
+		sensorPlugin->updateDelegate     = (void*) (IntPtr) GCHandle::Alloc(updateDel);
+		sensorPlugin->teardownDelegate   = (void*) (IntPtr) GCHandle::Alloc(teardownDel);
 
-		dataSource->initialize = (DataSourceInitializeFn) (void*) Marshal::GetFunctionPointerForDelegate(initializeDel);
-		dataSource->update     = (DataSourceUpdateFn)     (void*) Marshal::GetFunctionPointerForDelegate(updateDel);
-		dataSource->teardown   = (DataSourceTeardownFn)   (void*) Marshal::GetFunctionPointerForDelegate(teardownDel);
+		sensorPlugin->initialize = (SensorPluginInitializeFn) (void*) Marshal::GetFunctionPointerForDelegate(initializeDel);
+		sensorPlugin->update     = (SensorPluginUpdateFn)     (void*) Marshal::GetFunctionPointerForDelegate(updateDel);
+		sensorPlugin->teardown   = (SensorPluginTeardownFn)   (void*) Marshal::GetFunctionPointerForDelegate(teardownDel);
 
 		return true;
 	}
 
 	b32
-	TeardownDataSource(PluginHeader* pluginHeader, DataSource* dataSource)
+	TeardownSensorPlugin(PluginHeader* pluginHeader, SensorPlugin* sensorPlugin)
 	{
-		dataSource->pluginInstance = 0;
+		sensorPlugin->pluginInstance = 0;
 
-		((GCHandle) (IntPtr) dataSource->initializeDelegate).Free();
-		((GCHandle) (IntPtr) dataSource->updateDelegate    ).Free();
-		((GCHandle) (IntPtr) dataSource->teardownDelegate  ).Free();
+		((GCHandle) (IntPtr) sensorPlugin->initializeDelegate).Free();
+		((GCHandle) (IntPtr) sensorPlugin->updateDelegate    ).Free();
+		((GCHandle) (IntPtr) sensorPlugin->teardownDelegate  ).Free();
 
-		dataSource->initializeDelegate = 0;
-		dataSource->updateDelegate     = 0;
-		dataSource->teardownDelegate   = 0;
+		sensorPlugin->initializeDelegate = 0;
+		sensorPlugin->updateDelegate     = 0;
+		sensorPlugin->teardownDelegate   = 0;
 
 		return true;
 	}

@@ -3,4 +3,4 @@
 //#include "LHMString.h"
 #include "LHMPluginInfo.h"
 #include "LHMPluginHeader.h"
-#include "LHMDataSource.h"
+#include "LHMSensorPlugin.h"

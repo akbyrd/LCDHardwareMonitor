@@ -13,9 +13,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "LCDHardwareMonitor API Win3
 	ProjectSection(SolutionItems) = preProject
 		LCDHardwareMonitor API Win32\LHMAPI.h = LCDHardwareMonitor API Win32\LHMAPI.h
 		LCDHardwareMonitor API Win32\LHMCommon.h = LCDHardwareMonitor API Win32\LHMCommon.h
-		LCDHardwareMonitor API Win32\LHMDataSource.h = LCDHardwareMonitor API Win32\LHMDataSource.h
 		LCDHardwareMonitor API Win32\LHMList.h = LCDHardwareMonitor API Win32\LHMList.h
+		LCDHardwareMonitor API Win32\LHMPluginHeader.h = LCDHardwareMonitor API Win32\LHMPluginHeader.h
 		LCDHardwareMonitor API Win32\LHMPluginInfo.h = LCDHardwareMonitor API Win32\LHMPluginInfo.h
+		LCDHardwareMonitor API Win32\LHMSensorPlugin.h = LCDHardwareMonitor API Win32\LHMSensorPlugin.h
 		LCDHardwareMonitor API Win32\LHMString.h = LCDHardwareMonitor API Win32\LHMString.h
 	EndProjectSection
 EndProject
@@ -23,7 +24,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LCDHardwareMonitor API CLR"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LCDHardwareMonitor PluginLoader CLR", "LCDHardwareMonitor PluginLoader CLR\LCDHardwareMonitor PluginLoader CLR.vcxproj", "{4CF4BF35-2C27-4969-BFD7-34149A9CBF12}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OpenHardwareMonitor Plugin", "OpenHardwareMonitor Plugin\OpenHardwareMonitor Plugin.vcxproj", "{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Sensor Plugin - OpenHardwareMonitor", "Sensor Plugin - OpenHardwareMonitor\Sensor Plugin - OpenHardwareMonitor.vcxproj", "{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Widget Plugin - Filled Bar", "Widget Plugin - Filled Bar\Widget Plugin - Filled Bar.vcxproj", "{7DA05A6B-45B5-4877-B211-14ED51B5388B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -65,6 +68,14 @@ Global
 		{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}.Release|x64.Build.0 = Release|x64
 		{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}.Release|x86.ActiveCfg = Release|Win32
 		{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}.Release|x86.Build.0 = Release|Win32
+		{7DA05A6B-45B5-4877-B211-14ED51B5388B}.Debug|x64.ActiveCfg = Debug|x64
+		{7DA05A6B-45B5-4877-B211-14ED51B5388B}.Debug|x64.Build.0 = Debug|x64
+		{7DA05A6B-45B5-4877-B211-14ED51B5388B}.Debug|x86.ActiveCfg = Debug|Win32
+		{7DA05A6B-45B5-4877-B211-14ED51B5388B}.Debug|x86.Build.0 = Debug|Win32
+		{7DA05A6B-45B5-4877-B211-14ED51B5388B}.Release|x64.ActiveCfg = Release|x64
+		{7DA05A6B-45B5-4877-B211-14ED51B5388B}.Release|x64.Build.0 = Release|x64
+		{7DA05A6B-45B5-4877-B211-14ED51B5388B}.Release|x86.ActiveCfg = Release|Win32
+		{7DA05A6B-45B5-4877-B211-14ED51B5388B}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

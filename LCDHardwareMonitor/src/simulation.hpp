@@ -8,7 +8,7 @@ struct SimulationState
 
 	V2i                renderSize = { 320, 240 };
 	List<PluginHeader> pluginHeaders;
-	List<DataSource>   dataSources;
+	List<SensorPlugin> sensorPlugins;
 	//List<Widget>       widgets;
 };
 
@@ -27,8 +27,8 @@ GetPluginHeader(SimulationState* s, PluginHeaderRef ref)
 	return nullptr;
 }
 
-static DataSource*
-LoadDataSource(SimulationState* s, c16* directory, c16* name)
+static SensorPlugin*
+LoadSensorPlugin(SimulationState* s, c16* directory, c16* name)
 {
 	//TODO: Plugin name in errors
 
@@ -50,39 +50,39 @@ LoadDataSource(SimulationState* s, c16* directory, c16* name)
 	pluginHeader->directory = directory;
 
 	//TODO: Ensure this is removed from the list in partial initialization conditions
-	DataSource* dataSource = List_Append(s->dataSources);
-	dataSource->pluginHeaderRef = pluginHeader->ref;
+	SensorPlugin* sensorPlugin = List_Append(s->sensorPlugins);
+	sensorPlugin->pluginHeaderRef = pluginHeader->ref;
 
 	b32 success;
-	success = PluginLoader_LoadDataSource(s->pluginLoader, pluginHeader, dataSource);
+	success = PluginLoader_LoadSensorPlugin(s->pluginLoader, pluginHeader, sensorPlugin);
 	LOG_IF(!success, L"Failed to load plugin", Severity::Warning, return nullptr);
 
-	List_Reserve(dataSource->sensors, 32);
-	LOG_IF(!dataSource->sensors, L"Sensor allocation failed", Severity::Error, return nullptr);
+	List_Reserve(sensorPlugin->sensors, 32);
+	LOG_IF(!sensorPlugin->sensors, L"Sensor allocation failed", Severity::Error, return nullptr);
 
 	//TODO: try/catch?
-	if (dataSource->initialize)
-		dataSource->initialize(dataSource);
+	if (sensorPlugin->initialize)
+		sensorPlugin->initialize(sensorPlugin);
 
-	return dataSource;
+	return sensorPlugin;
 }
 
 static b32
-UnloadDataSource(SimulationState* s, DataSource* dataSource)
+UnloadSensorPlugin(SimulationState* s, SensorPlugin* sensorPlugin)
 {
 	//TODO: Plugin name in errors
 
-	PluginHeader* pluginHeader = GetPluginHeader(s, dataSource->pluginHeaderRef);
+	PluginHeader* pluginHeader = GetPluginHeader(s, sensorPlugin->pluginHeaderRef);
 
 	//TODO: try/catch?
-	if (dataSource->teardown)
-		dataSource->teardown(dataSource);
+	if (sensorPlugin->teardown)
+		sensorPlugin->teardown(sensorPlugin);
 
 	b32 success;
-	success = PluginLoader_UnloadDataSource(s->pluginLoader, pluginHeader, dataSource);
+	success = PluginLoader_UnloadSensorPlugin(s->pluginLoader, pluginHeader, sensorPlugin);
 	//TODO: Widgets will be referencing these sensors.
-	List_Free(dataSource->sensors);
-	*dataSource = {};
+	List_Free(sensorPlugin->sensors);
+	*sensorPlugin = {};
 	LOG_IF(!success, L"UnloadPlugin failed", Severity::Warning, return false);
 
 	//TODO: Add and remove plugin info based on directory contents instead of loaded state.
@@ -101,21 +101,22 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 	if (!success) return false;
 
 	List_Reserve(s->pluginHeaders, 16);
-	LOG_IF(!s->pluginHeaders, L"PluginHeader allocation failed", Severity::Error, return false);
+	LOG_IF(!s->pluginHeaders, L"Failed to allocate plugin headers list", Severity::Error, return false);
 
-	List_Reserve(s->dataSources, 8);
-	LOG_IF(!s->dataSources, L"Failed to allocate data sources list", Severity::Error, return false);
+	List_Reserve(s->sensorPlugins, 8);
+	LOG_IF(!s->sensorPlugins, L"Failed to allocate sensor plugins list", Severity::Error, return false);
 
 	//List_Reserve(s->widgets, 8);
 	//LOG_IF(!s->widgets, L"Failed to allocate widgets list", Severity::Error, return false);
 
 	//DEBUG: Testing
 	{
-		DataSource* ohmDataSource = LoadDataSource(s, L"Data Sources\\OpenHardwareMonitor Source", L"OpenHardwareMonitor Plugin");
+		SensorPlugin* ohmPlugin = LoadSensorPlugin(s, L"Sensor Plugins\\OpenHardwareMonitor", L"OpenHardwareMonitor Plugin");
+		//WidgetPlugin* filledBarPlugin = LoadSensorPlugin(s, L"Widget Plugins\\Filled Bar", L"Filled Bar Plugin");
 
 		//Widget* w = List_Append(s->widgets);
 		//w->mesh   = Mesh::Quad;
-		//w->sensor = List_GetRef(ohmDataSource->sensors, 0);
+		//w->sensor = List_GetRef(ohmPlugin->sensors, 0);
 		//w->size   = { 240, 12 };
 	}
 
@@ -128,26 +129,26 @@ Simulation_Teardown(SimulationState* s)
 	/* TODO: Remove this once plugin loading and unloading is solidified. It's
 	 * good to do this for testing, but it's unnecessary work in the normal
 	 * teardown case. */
-	for (i32 i = 0; i < s->dataSources.length; i++)
-	  UnloadDataSource(s, &s->dataSources[i]);
+	for (i32 i = 0; i < s->sensorPlugins.length; i++)
+	  UnloadSensorPlugin(s, &s->sensorPlugins[i]);
 
 	//TODO: I don't think this is necessary
 	PluginLoader_Teardown(s->pluginLoader);
 
 	//TODO: Decide how much we really care about simulation level teardown
 	//List_Free(s->widgets);
-	List_Free(s->dataSources);
+	List_Free(s->sensorPlugins);
 	List_Free(s->pluginHeaders);
 }
 
 void
 Simulation_Update(SimulationState* s)
 {
-	//TODO: Only update data sources that are actually being used
-	for (i32 i = 0; i < s->dataSources.length; i++)
+	//TODO: Only update plugins that are actually being used
+	for (i32 i = 0; i < s->sensorPlugins.length; i++)
 	{
-		DataSource* dataSource = &s->dataSources[i];
-		dataSource->update(dataSource);
+		SensorPlugin* sensorPlugin = &s->sensorPlugins[i];
+		sensorPlugin->update(sensorPlugin);
 	}
 
 	/* NOTE:

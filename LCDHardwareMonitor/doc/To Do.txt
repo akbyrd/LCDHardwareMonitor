@@ -21,7 +21,7 @@ Next
 
 
 
-Data Sources
+Sensor Plugins
 	Should report the list of available sensors during initialization
 	Should be able to enable and disable sensors
 		Should this be 'on demand' or as a list of requests as part of the update?

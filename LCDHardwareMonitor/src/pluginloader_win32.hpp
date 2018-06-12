@@ -102,46 +102,46 @@ PluginLoader_Teardown(PluginLoaderState* s)
 }
 
 b32
-LoadNativeDataSource(PluginLoaderState* s, PluginHeader* pluginHeader, DataSource* dataSource)
+LoadNativeSensorPlugin(PluginLoaderState* s, PluginHeader* pluginHeader, SensorPlugin* sensorPlugin)
 {
-	//TODO: Implement LoadNativeDataSource
+	//TODO: Implement LoadNativeSensorPlugin
 	Assert(false);
 	return false;
 }
 
 b32
-UnloadNativeDataSource(PluginLoaderState* s, PluginHeader* pluginHeader, DataSource* dataSource)
+UnloadNativeSensorPlugin(PluginLoaderState* s, PluginHeader* pluginHeader, SensorPlugin* sensorPlugin)
 {
-	//TODO: Implement UnloadNativeDataSource
+	//TODO: Implement UnloadNativeSensorPlugin
 	Assert(false);
 	return false;
 }
 
 b32
-LoadManagedDataSource(PluginLoaderState* s, PluginHeader* pluginHeader, DataSource* dataSource)
+LoadManagedSensorPlugin(PluginLoaderState* s, PluginHeader* pluginHeader, SensorPlugin* sensorPlugin)
 {
 	//NOTE: fuslogvw is great for debugging managed assembly loading.
 
 	//TODO: Do we need to try/catch the managed code?
 	b32 success;
-	success = s->lhmPluginLoader->LoadDataSource(pluginHeader, dataSource);
-	LOG_IF(!success, L"Failed to load managed data source", Severity::Warning, return false);
+	success = s->lhmPluginLoader->LoadSensorPlugin(pluginHeader, sensorPlugin);
+	LOG_IF(!success, L"Failed to load managed sensor plugin", Severity::Warning, return false);
 
 	return true;
 }
 
 b32
-UnloadManagedDataSource(PluginLoaderState* s, PluginHeader* pluginHeader, DataSource* dataSource)
+UnloadManagedSensorPlugin(PluginLoaderState* s, PluginHeader* pluginHeader, SensorPlugin* sensorPlugin)
 {
 	b32 success;
-	success = s->lhmPluginLoader->UnloadDataSource(pluginHeader, dataSource);
-	LOG_IF(!success, L"Failed to unload managed data source", Severity::Warning, return false);
+	success = s->lhmPluginLoader->UnloadSensorPlugin(pluginHeader, sensorPlugin);
+	LOG_IF(!success, L"Failed to unload managed sensor plugin", Severity::Warning, return false);
 
 	return true;
 }
 
 b32
-PluginLoader_LoadDataSource(PluginLoaderState* s, PluginHeader* pluginHeader, DataSource* dataSource)
+PluginLoader_LoadSensorPlugin(PluginLoaderState* s, PluginHeader* pluginHeader, SensorPlugin* sensorPlugin)
 {
 	//TODO: Actually check if the DLL is native or managed
 	pluginHeader->kind = PluginKind::Managed;
@@ -149,9 +149,9 @@ PluginLoader_LoadDataSource(PluginLoaderState* s, PluginHeader* pluginHeader, Da
 	b32 success = false;
 	switch (pluginHeader->kind)
 	{
-		case PluginKind::Null:    success = false;                                              break;
-		case PluginKind::Native:  success = LoadNativeDataSource(s, pluginHeader, dataSource);  break;
-		case PluginKind::Managed: success = LoadManagedDataSource(s, pluginHeader, dataSource); break;
+		case PluginKind::Null:    success = false;                                                  break;
+		case PluginKind::Native:  success = LoadNativeSensorPlugin(s, pluginHeader, sensorPlugin);  break;
+		case PluginKind::Managed: success = LoadManagedSensorPlugin(s, pluginHeader, sensorPlugin); break;
 	}
 	if (!success) return false;
 
@@ -160,14 +160,14 @@ PluginLoader_LoadDataSource(PluginLoaderState* s, PluginHeader* pluginHeader, Da
 }
 
 b32
-PluginLoader_UnloadDataSource(PluginLoaderState* s, PluginHeader* pluginHeader, DataSource* dataSource)
+PluginLoader_UnloadSensorPlugin(PluginLoaderState* s, PluginHeader* pluginHeader, SensorPlugin* sensorPlugin)
 {
 	b32 success = false;
 	switch (pluginHeader->kind)
 	{
-		case PluginKind::Null:    success = false;                                                break;
-		case PluginKind::Native:  success = UnloadNativeDataSource(s, pluginHeader, dataSource);  break;
-		case PluginKind::Managed: success = UnloadManagedDataSource(s, pluginHeader, dataSource); break;
+		case PluginKind::Null:    success = false;                                                    break;
+		case PluginKind::Native:  success = UnloadNativeSensorPlugin(s, pluginHeader, sensorPlugin);  break;
+		case PluginKind::Managed: success = UnloadManagedSensorPlugin(s, pluginHeader, sensorPlugin); break;
 	}
 	if (!success) return false;
 
