@@ -1,5 +1,5 @@
-#ifndef LHMSTRING
-#define LHMSTRING
+#ifndef LHM_STRING
+#define LHM_STRING
 
 //TODO: Seems questionable to alias *_Free(), but nothing else.
 //TODO: Static string when capacity < 0?

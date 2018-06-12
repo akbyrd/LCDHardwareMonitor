@@ -1,7 +1,6 @@
-#ifndef LHMSENSORPLUGIN
-#define LHMSENSORPLUGIN
+#ifndef LHM_SENSORPLUGIN
+#define LHM_SENSORPLUGIN
 
-struct SensorRef { i32 index; };
 struct Sensor
 {
 	c16* name;
@@ -23,7 +22,6 @@ typedef void (*SensorPluginUpdateFn)    (SP_UPDATE_ARGS);
 typedef void (*SensorPluginTeardownFn)  (SP_TEARDOWN_ARGS);
 
 //TODO: Passing this directly to plugins is dangerous.
-struct SensorPluginRef { i32 index; };
 PUBLIC struct SensorPlugin
 {
 	PluginHeaderRef          pluginHeaderRef;
@@ -32,7 +30,7 @@ PUBLIC struct SensorPlugin
 	SensorPluginTeardownFn   teardown;
 
 	List<Sensor>             sensors;
-	List<SensorRef>          activeSensors;
+	//List<SensorRef>          activeSensors;
 
 	void* pluginInstance;
 	void* initializeDelegate;

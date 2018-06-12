@@ -5,7 +5,6 @@
 
 #include "platformdefs_win32.hpp"
 #include "platform.h"
-#include "math.hpp"
 #include "pluginloader.h"
 #include "renderer.h"
 #include "simulation.hpp"

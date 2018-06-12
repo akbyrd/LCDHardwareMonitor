@@ -1,5 +1,5 @@
-#ifndef LHMPLUGININFO
-#define LHMPLUGININFO
+#ifndef LHM_PLUGININFO
+#define LHM_PLUGININFO
 
 struct PluginInfoRef { i32 index; };
 struct PluginInfo

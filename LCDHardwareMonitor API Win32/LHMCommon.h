@@ -1,5 +1,5 @@
-#ifndef LHMCOMMON
-#define LHMCOMMON
+#ifndef LHM_COMMON
+#define LHM_COMMON
 
 #include <cstdint>
 typedef uint8_t  u8;

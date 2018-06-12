@@ -1,6 +1,3 @@
-//TODO: Widgets should be loaded as plugins!
-//#include "widget_filledbar.hpp"
-
 struct SimulationState
 {
 	PluginLoaderState* pluginLoader;
@@ -9,6 +6,7 @@ struct SimulationState
 	V2i                renderSize = { 320, 240 };
 	List<PluginHeader> pluginHeaders;
 	List<SensorPlugin> sensorPlugins;
+	List<WidgetPlugin> widgetPlugins;
 	//List<Widget>       widgets;
 };
 
@@ -111,7 +109,7 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 
 	//DEBUG: Testing
 	{
-		SensorPlugin* ohmPlugin = LoadSensorPlugin(s, L"Sensor Plugins\\OpenHardwareMonitor", L"OpenHardwareMonitor Plugin");
+		SensorPlugin* ohmPlugin = LoadSensorPlugin(s, L"Sensor Plugins\\OpenHardwareMonitor", L"Sensor Plugin - OpenHardwareMonitor");
 		//WidgetPlugin* filledBarPlugin = LoadSensorPlugin(s, L"Widget Plugins\\Filled Bar", L"Filled Bar Plugin");
 
 		//Widget* w = List_Append(s->widgets);

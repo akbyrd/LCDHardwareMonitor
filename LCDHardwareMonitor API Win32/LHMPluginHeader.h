@@ -1,5 +1,5 @@
-#ifndef LHMPLUGINHEADER
-#define LHMPLUGINHEADER
+#ifndef LHM_PLUGINHEADER
+#define LHM_PLUGINHEADER
 
 enum struct PluginKind
 {

@@ -1,3 +1,6 @@
+#ifndef LHM_MATH
+#define LHM_MATH
+
 const i32 i32Min = -2147483647 - 1;
 const i32 i32Max = 2147483647;
 const u32 u32Max = 4294967295;
@@ -245,3 +248,5 @@ Clamp(V4 v, V4 maxSize)
 	if (v.z > maxSize.z) v.z = maxSize.z;
 	if (v.w > maxSize.w) v.w = maxSize.w;
 }
+
+#endif

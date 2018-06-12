@@ -1,5 +1,5 @@
-#ifndef LHMLIST
-#define LHMLIST
+#ifndef LHM_LIST
+#define LHM_LIST
 
 /* Usage Notes
  *  - Memory is zero-initialized during allocations and when items are removed.
