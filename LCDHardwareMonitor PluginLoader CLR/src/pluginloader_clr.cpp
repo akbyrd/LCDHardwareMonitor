@@ -28,16 +28,6 @@ private delegate void DataSourceUpdateDel(DS_UPDATE_ARGS);
 [UnmanagedFunctionPointer(CallingConvention::Cdecl)]
 private delegate void DataSourceTeardownDel(DS_TEARDOWN_ARGS);
 
-//TODO: Can this be merged into the native DataSource like PluginHeader?
-private ref struct
-DataSource_clr
-{
-	IDataSourcePlugin^       iDataSource;
-	DataSourceInitializeDel^ initialize;
-	DataSourceUpdateDel^     update;
-	DataSourceTeardownDel^   teardown;
-};
-
 public ref struct
 LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 {
@@ -84,8 +74,6 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	}
 
 private:
-	DataSource_clr dataSource_clr;
-
 	b32
 	LoadPlugin(PluginHeader* pluginHeader)
 	{
@@ -143,15 +131,16 @@ private:
 	{
 		auto name = gcnew String(pluginHeader->name);
 
+		IDataSourcePlugin^ pluginInstance;
 		auto assembly = Assembly::Load(name);
 		for each (Type^ type in assembly->GetExportedTypes())
 		{
 			bool isPlugin = type->GetInterface(IDataSourcePlugin::typeid->FullName) != nullptr;
 			if (isPlugin)
 			{
-				if (!dataSource_clr.iDataSource)
+				if (!pluginInstance)
 				{
-					dataSource_clr.iDataSource = (IDataSourcePlugin^) Activator::CreateInstance(type);
+					pluginInstance = (IDataSourcePlugin^) Activator::CreateInstance(type);
 				}
 				else
 				{
@@ -160,17 +149,22 @@ private:
 			}
 		}
 		//TODO: Logging
-		//LOG_IF(!dataSource_clr.iDataSource, L"Failed to find a data source class", Severity::Warning, return false);
+		//LOG_IF(!pluginInstance, L"Failed to find a data source class", Severity::Warning, return false);
+		dataSource->pluginInstance = (void*) (IntPtr) GCHandle::Alloc(pluginInstance, GCHandleType::Pinned);
 
-		//NOTE: Function calls average 200ns with this pattern
+		//NOTE: Cross domain function calls average 200ns with this pattern
 		//Try playing with security settings if optimizing this
-		dataSource_clr.initialize = gcnew DataSourceInitializeDel(dataSource_clr.iDataSource, &IDataSourcePlugin::Initialize);
-		dataSource_clr.update     = gcnew DataSourceUpdateDel    (dataSource_clr.iDataSource, &IDataSourcePlugin::Update);
-		dataSource_clr.teardown   = gcnew DataSourceTeardownDel  (dataSource_clr.iDataSource, &IDataSourcePlugin::Teardown);
+		DataSourceInitializeDel initializeDel = gcnew DataSourceInitializeDel(pluginInstance, &IDataSourcePlugin::Initialize);
+		DataSourceUpdateDel     updateDel     = gcnew DataSourceUpdateDel    (pluginInstance, &IDataSourcePlugin::Update);
+		DataSourceTeardownDel   teardownDel   = gcnew DataSourceTeardownDel  (pluginInstance, &IDataSourcePlugin::Teardown);
 
-		dataSource->initialize = (DataSourceInitializeFn) (void*) Marshal::GetFunctionPointerForDelegate(dataSource_clr.initialize);
-		dataSource->update     = (DataSourceUpdateFn)     (void*) Marshal::GetFunctionPointerForDelegate(dataSource_clr.update);
-		dataSource->teardown   = (DataSourceTeardownFn)   (void*) Marshal::GetFunctionPointerForDelegate(dataSource_clr.teardown);
+		dataSource->initializeDel = (void*) (IntPtr) GCHandle::Alloc(initializeDel, GCHandleType::Pinned);
+		dataSource->updateDel     = (void*) (IntPtr) GCHandle::Alloc(updateDel,     GCHandleType::Pinned);
+		dataSource->teardownDel   = (void*) (IntPtr) GCHandle::Alloc(teardownDel,   GCHandleType::Pinned);
+
+		dataSource->initialize = (DataSourceInitializeFn) (void*) Marshal::GetFunctionPointerForDelegate(initializeDel);
+		dataSource->update     = (DataSourceUpdateFn)     (void*) Marshal::GetFunctionPointerForDelegate(updateDel);
+		dataSource->teardown   = (DataSourceTeardownFn)   (void*) Marshal::GetFunctionPointerForDelegate(teardownDel);
 
 		return true;
 	}

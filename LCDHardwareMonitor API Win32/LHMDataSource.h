@@ -32,4 +32,9 @@ PUBLIC struct DataSource
 
 	List<Sensor>           sensors;
 	List<SensorRef>        activeSensors;
+
+	void* pluginInstance;
+	void* initializeDelegate;
+	void* updateDelegate;
+	void* teardownDelegate;
 };

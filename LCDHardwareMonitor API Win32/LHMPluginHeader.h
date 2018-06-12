@@ -17,8 +17,7 @@ struct PluginHeader
 	PluginKind      kind;
 	PluginInfo      info;
 
+	//TODO: Try using COM pointers instead.
 	void* appDomain;
 	void* pluginLoader;
-	//ComPtr<_AppDomain> appDomain;
-	//ComPtr<ILHMPluginLoader> pluginLoader;
 };
