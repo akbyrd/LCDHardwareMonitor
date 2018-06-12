@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\pluginloaderer_clr.cpp" />
+    <ClCompile Include="src\pluginloader_clr.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\LCDHardwareMonitor API CLR\LCDHardwareMonitor API CLR.vcxproj">

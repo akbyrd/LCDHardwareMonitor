@@ -35,12 +35,21 @@ inline i32 ArraySize(const T(&arr)[S])
 }
 
 template<typename T>
+struct ListRef
+{
+	int index;
+	bool operator==(const ListRef& other) { return index == other.index; }
+};
+
+template<typename T>
 struct List
 {
 	i32 length;
 	i32 capacity;
 	T*  data;
 
+	typedef ListRef<T> RefT;
+	inline T& operator [](RefT r) { return data[r.index]; }
 	inline T& operator [](i32 i) { return data[i]; }
 	inline    operator T*()      { return data; }
 	inline    operator b32()     { return data != nullptr; }

@@ -3,5 +3,5 @@
 #include "LHMCommon.h"
 #include "LHMList.h"
 //#include "LHMString.h"
-#include "LHMPlugin.h"
+#include "LHMPluginInfo.h"
 #include "LHMDataSource.h"

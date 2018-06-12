@@ -14,7 +14,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "LCDHardwareMonitor API Win3
 		LCDHardwareMonitor API Win32\LHMCommon.h = LCDHardwareMonitor API Win32\LHMCommon.h
 		LCDHardwareMonitor API Win32\LHMDataSource.h = LCDHardwareMonitor API Win32\LHMDataSource.h
 		LCDHardwareMonitor API Win32\LHMList.h = LCDHardwareMonitor API Win32\LHMList.h
-		LCDHardwareMonitor API Win32\LHMPlugin.h = LCDHardwareMonitor API Win32\LHMPlugin.h
+		LCDHardwareMonitor API Win32\LHMPluginInfo.h = LCDHardwareMonitor API Win32\LHMPluginInfo.h
 		LCDHardwareMonitor API Win32\LHMString.h = LCDHardwareMonitor API Win32\LHMString.h
 	EndProjectSection
 EndProject
