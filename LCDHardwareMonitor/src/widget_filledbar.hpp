@@ -23,20 +23,14 @@ struct Widget
 		V4    backgroundColor = { 0.0f, 0.0f, 0.0f, 1.0f };
 	};
 
-	//TODO: This pointer will break when the list resizes (or sensors are added/removed)
-	//Eventually we'll want to store something more indirect than a pointer.
-	//Maybe a plugin id and sensor id pair? Maybe ids are never reused or invalid
-	//This will tie closely into how we save layouts between sessions
-	//Plugin* plugin;
-	Sensor* sensor;
-
-	V2i position;
-	V2i size;
+	SensorRef sensorRef;
+	Mesh      mesh;
+	V2i       position;
+	V2i       size;
 
 	VSConstants vsConstants;
 	PSConstants psConstants;
 
-	Mesh    mesh;
 	//TODO: Maybe string and range overrides?
 	//TODO: drawFn? Widget type to function map?
 };

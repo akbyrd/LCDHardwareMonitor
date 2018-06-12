@@ -22,6 +22,7 @@ typedef void (*DataSourceInitializeFn)(DS_INITIALIZE_ARGS);
 typedef void (*DataSourceUpdateFn)    (DS_UPDATE_ARGS);
 typedef void (*DataSourceTeardownFn)  (DS_TEARDOWN_ARGS);
 
+//TODO: Passing this directly to plugins is dangerous.
 struct DataSourceRef { i32 index; };
 PUBLIC struct DataSource
 {

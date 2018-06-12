@@ -166,6 +166,15 @@ List_ContainsValue(List<T>& list, T& item)
 }
 
 template<typename T>
+inline ListRef<T>
+List_GetRef(List<T>& list, i32 index)
+{
+	ListRef<T> ref = {};
+	ref.index = index;
+	return ref;
+}
+
+template<typename T>
 inline T*
 List_GetLastPtr(List<T>& list)
 {

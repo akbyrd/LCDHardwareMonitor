@@ -1,3 +1,6 @@
+//TODO: Widgets should be loaded as plugins!
+//#include "widget_filledbar.hpp"
+
 struct SimulationState
 {
 	PluginLoaderState* pluginLoader;
@@ -97,28 +100,24 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 	b32 success = PluginLoader_Initialize(s->pluginLoader);
 	if (!success) return false;
 
-	s->pluginHeaders = {};
 	List_Reserve(s->pluginHeaders, 16);
 	LOG_IF(!s->pluginHeaders, L"PluginHeader allocation failed", Severity::Error, return false);
 
-	s->dataSources = {};
 	List_Reserve(s->dataSources, 8);
 	LOG_IF(!s->dataSources, L"Failed to allocate data sources list", Severity::Error, return false);
 
-	//s->widgets = {};
 	//List_Reserve(s->widgets, 8);
-	//LOG_IF(!s->dataSources, L"Failed to allocate widgets list", Severity::Error, return false);
+	//LOG_IF(!s->widgets, L"Failed to allocate widgets list", Severity::Error, return false);
 
-	/* TODO: Exceptions are being raised due to OpenHardwareLib and
-	 * OpenHardware Plugin failing to load. It looks like they fail and then we
-	 * use AssemblyResolve to find them using the full path.
-	 */
-	DataSource* ohmDataSource = LoadDataSource(s, L"Data Sources\\OpenHardwareMonitor Source", L"OpenHardwareMonitor Plugin");
+	//DEBUG: Testing
+	{
+		DataSource* ohmDataSource = LoadDataSource(s, L"Data Sources\\OpenHardwareMonitor Source", L"OpenHardwareMonitor Plugin");
 
-	//Widget& w = *List_Append(s->widgets);
-	//w.mesh   = Mesh::Quad;
-	//w.sensor = &s->dataSources[0].sensors[0];
-	//w.size   = {240, 12};
+		//Widget* w = List_Append(s->widgets);
+		//w->mesh   = Mesh::Quad;
+		//w->sensor = List_GetRef(ohmDataSource->sensors, 0);
+		//w->size   = { 240, 12 };
+	}
 
 	return true;
 }

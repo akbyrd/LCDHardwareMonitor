@@ -4,9 +4,11 @@
 #pragma managed
 #include <string.h>
 
+/* NOTE: It looks like it's not possible to update individual sensors. Updates
+ * happen at the hardware level. */
+
 using namespace System;
 using namespace System::Collections::Generic;
-using namespace System::Diagnostics;
 using namespace System::Runtime::InteropServices;
 using namespace OpenHardwareMonitor;
 using namespace OpenHardwareMonitor::Hardware;
@@ -17,12 +19,7 @@ using SList = System::Collections::Generic::List<T>;
 public ref class State : IDataSourcePlugin
 {
 public:
-	virtual void Initialize(DS_INITIALIZE_ARGS) { }
-	virtual void Update    (DS_UPDATE_ARGS) { }
-	virtual void Teardown  (DS_TEARDOWN_ARGS) { }
-
-#if false
-	Computer           computer;
+	Computer^          computer;
 	SList<ISensor^>^   activeSensors;
 	SList<IHardware^>^ activeHardware;
 
@@ -33,12 +30,11 @@ public:
 	};
 
 	virtual void
-	Initialize(::List<Sensor> sensors)
+	Initialize(DS_INITIALIZE_ARGS)
 	{
-		State::activeSensors  = gcnew SList<ISensor^>;
-		State::activeHardware = gcnew SList<IHardware^>;
-
-		Computer^ computer = %State::computer;
+		computer       = gcnew Computer();
+		activeSensors  = gcnew SList<ISensor^>;
+		activeHardware = gcnew SList<IHardware^>;
 
 		//ENABLE ALL THE THINGS!
 		computer->CPUEnabled           = true;
@@ -58,14 +54,14 @@ public:
 
 			//Hardware
 			IHardware^ currentHardware = current.hardware[i];
-			State::activeHardware->Add(currentHardware);
+			activeHardware->Add(currentHardware);
 
 			//Sensors
 			array<ISensor^>^ ohmSensors = currentHardware->Sensors;
 			for (i32 j = 0; j < ohmSensors->Length; j++)
 			{
 				ISensor^ ohmSensor = ohmSensors[j];
-				State::activeSensors->Add(ohmSensor);
+				activeSensors->Add(ohmSensor);
 
 				String^ format;
 				switch (ohmSensor->SensorType)
@@ -93,7 +89,7 @@ public:
 				sensor.identifier = (c16*) Marshal::StringToHGlobalUni(ohmSensor->Identifier->ToString()).ToPointer();
 				sensor.string     = (c16*) Marshal::StringToHGlobalUni(value).ToPointer();
 
-				List_Append(sensors, sensor);
+				List_Append(s->sensors, sensor);
 			}
 
 			//Sub-Hardware
@@ -101,8 +97,8 @@ public:
 			if (subhardware != nullptr && subhardware->Length > 0)
 			{
 				stack->Push(current);
-				current.index = 0;
 				current.hardware = subhardware;
+				i = -1;
 			}
 
 			//Pop
@@ -116,22 +112,23 @@ public:
 			}
 		}
 
+		//TODO: Handle hardware and sensor changes
 		//IHardware::SensorAdded
 		//IHardware::SensorRemoved
 		//computer->HardwareAdded   += OnHardwareAdded;
 		//computer->HardwareRemoved += OnHardwareRemoved;
 	}
 
-	//TODO: Only update hardware that's actually being used
-	void
-	_Update(::List<Sensor>& sensors)
+	virtual void
+	Update(DS_UPDATE_ARGS)
 	{
 		for (i32 i = 0; i < State::activeHardware->Count; i++)
 			State::activeHardware[i]->Update();
 
-		for (i32 i = 0; i < sensors.length; i++)
+		//TODO: This is stupid
+		for (i32 i = 0; i < s->sensors.length; i++)
 		{
-			Sensor& sensor = sensors[i];
+			Sensor& sensor = s->sensors[i];
 
 			String^ sensorName = gcnew String(sensor.name);
 			for (i32 j = 0; j < State::activeSensors->Count; j++)
@@ -146,12 +143,12 @@ public:
 		}
 	}
 
-	void
-	_Teardown(::List<Sensor>& sensors)
+	virtual void
+	Teardown(DS_TEARDOWN_ARGS)
 	{
-		for (i32 i = 0; i < sensors.length; i++)
+		for (i32 i = 0; i < s->sensors.length; i++)
 		{
-			Sensor& sensor = sensors[i];
+			Sensor& sensor = s->sensors[i];
 
 			Marshal::FreeHGlobal((IntPtr) sensor.name);
 			Marshal::FreeHGlobal((IntPtr) sensor.identifier);
@@ -159,7 +156,6 @@ public:
 
 			sensor = {};
 		}
-		List_Clear(sensors);
+		List_Clear(s->sensors);
 	}
-#endif
 };

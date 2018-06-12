@@ -1,8 +1,7 @@
 Next
 	Implement OHM plugin
-		Build a sensor list
-		Update each frame
 		Show on the LCD!
+		Might be worthwhile to shove a userData pointer on Sensor
 		Pass a logging interface
 		Probably need a replacement SDK since it's unmaintained
 			CPUID System Monitor SDK is one option, but it's paid
@@ -45,7 +44,7 @@ Refactoring
 
 
 Plugins
-	- Enforce the constraint the you may *ONLY* access application provided
+	- Enforce the constraint that you may *ONLY* access application provided
 	  services during scope of the function to which the services were passed.
 	  Basically, don't save a reference and access services from a separate
 	  thread. This could be detected with a 'shim' of some sort (accessor
