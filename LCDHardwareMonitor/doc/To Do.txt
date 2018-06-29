@@ -1,4 +1,6 @@
 Next
+	Is it worth abstracting a little to unify sensor and widget plugin handling?
+
 	Implement OHM plugin
 		Show on the LCD!
 		Might be worthwhile to shove a userData pointer on Sensor
@@ -9,15 +11,12 @@ Next
 			Rivatuner?
 			HWiNFO (promising!)
 
+	Implement dynamically sized allocations for logging and DetectPluginLanguage
 	Is it cleaner to use the auto-COM-interface of LHMPluginLoader?
 	Is separating PluginHeader and PluginInfo useful?
 	Handle multiple plugins in the same file (probably just a detailed error)
 	I think we want a separate 'public api' and 'internal api'
 	Use #import instead of project references?
-	Maybe change .h to .hpp?
-	Decide on comment style ("// " for comments, "//" for disabled code)
-	Ensure Platform function naming is uniform
-	Decide on 'plugin loader' naming on both sides of the managed boundary
 
 
 
@@ -31,6 +30,11 @@ Sensor Plugins
 
 
 Refactoring
+	Raise warning level
+	Ensure Platform function naming is uniform
+	Decide on 'plugin loader' naming on both sides of the managed boundary
+	Maybe change .h to .hpp?
+	Decide on comment style ("// " for comments, "//" for disabled code)
 	Replace references with pointers
 	Stop using wide characters. That's not the right path to unicode support.
 	Decide what we're really doing with wide characters/i18n

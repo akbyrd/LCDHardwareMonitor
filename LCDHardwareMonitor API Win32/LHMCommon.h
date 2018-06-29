@@ -49,19 +49,15 @@ typedef size_t size;
 #endif
 
 #define nameof(x) #x
-
+#define HAS_FLAG(x, f) ((x & f) == f)
 #define IF(expression, ...) if (expression) { __VA_ARGS__; }
+#define CONCAT2(x, y) x ## y
+#define CONCAT(x, y) CONCAT2(x, y)
 
 template<typename T, i32 S>
-inline i32 ArrayLength(const T(&arr)[S])
-{
-	return S;
-}
+inline i32 ArrayLength(const T(&arr)[S]) { return S; }
 
 template<typename T, i32 S>
-inline i32 ArraySize(const T(&arr)[S])
-{
-	return S * sizeof(T);
-}
+inline i32 ArraySize(const T(&arr)[S]) { return S * sizeof(T); }
 
 #endif

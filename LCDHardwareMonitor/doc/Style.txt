@@ -32,17 +32,15 @@ Style Notes
   of view either everything succeeds or everything fails, and 4) log the
   failure. Regarding 3) If you acquire resources and a later acquisition fails
   be sure you release all your resources. Don't leave them hanging and end up
-  in some mixed state. Currently, I think this is best implemented with a
-  C-style 'goto Cleanup' pattern. Something like ScopeGuard or defer would
-  maybe be acceptable, but I haven't fully bought into that complexity.
-  Regarding 4) I pass a logging context around that should be used to log any
-  failure without having to worry about the details of logging. It may go to
-  a file, or to a buffer that can be displayed in the application, or to a
-  server, it doesn't matter. This can be wrapped up in macros or functions to
-  simplify. I'm also ok with sloppy allocation/deallocation in logging
-  functions because it should be happening rarely. This is also the perfect
-  place for a custom 'stack allocator' so the allocation is practically free.
-  After any statement that can fail I have something like:
+  in some mixed state. Currently, I think this is best implemented with
+  ScopeGuard or defer. Regarding 4) I pass a logging context around that should
+  be used to log any failure without having to worry about the details of
+  logging. It may go to a file, or to a buffer that can be displayed in the
+  application, or to a server, it doesn't matter. This can be wrapped up in
+  macros or functions to simplify. I'm also ok with sloppy allocation/
+  deallocation in logging functions because it should be happening rarely. This
+  is also the perfect place for a custom 'stack allocator' so the allocation is
+  practically free. After any statement that can fail I have something like:
       LOG_IF(FAILED(hr), L"D3D11CreateDevice", Severity::Error, return false);
 
 - Use pointers instead of references. Yes, it's annoying that there's different

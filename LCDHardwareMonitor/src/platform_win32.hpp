@@ -5,7 +5,7 @@
 void
 Platform_Log(c16* message, Severity severity, c16* file, i32 line, c16* function)
 {
-	//TODO: Decide on logging allocation policy
+	//TODO: Dynamic allocation
 	//TODO: Check for swprintf failure (overflow).
 	c16 buffer[512];
 	swprintf(buffer, ArrayLength(buffer), L"%s - %s\n\t%s(%i)\n", function, message, file, line);
@@ -24,6 +24,7 @@ Platform_Print(c16* message)
 static void
 LogFormatMessage(c16* message, Severity severity, u32 messageID, c16* file, i32 line, c16* function)
 {
+	//TODO: Dynamic allocation
 	c16 windowsMessage[256];
 	u32 uResult = FormatMessageW(
 		FORMAT_MESSAGE_FROM_SYSTEM,
@@ -36,6 +37,7 @@ LogFormatMessage(c16* message, Severity severity, u32 messageID, c16* file, i32 
 	);
 
 	//NOTE: If we fail this far down, just...fuck it.
+	//TODO: Dynamic allocation
 	c16 combinedMessage[256];
 	if (uResult == 0)
 	{
