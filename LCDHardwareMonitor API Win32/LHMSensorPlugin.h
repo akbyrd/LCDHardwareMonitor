@@ -3,13 +3,13 @@
 
 struct Sensor
 {
-	c16* name;
-	c16* identifier;
-	c16* string;
-	r32  value;
+	c8* name;
+	c8* identifier;
+	c8* string;
+	r32 value;
 	// TODO: Range struct?
-	r32  minValue;
-	r32  maxValue;
+	r32 minValue;
+	r32 maxValue;
 };
 
 // TODO: Remove these once the API stabilizes

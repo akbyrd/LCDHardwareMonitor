@@ -16,7 +16,6 @@ using r32 = float;
 using r64 = double;
 
 using c8  = char;
-using c16 = wchar_t;
 
 using b8  = bool;
 using b32 = int;
@@ -52,5 +51,10 @@ inline i32 ArrayLength(const T(&arr)[S]) { return S; }
 
 template<typename T, i32 S>
 inline i32 ArraySize(const T(&arr)[S]) { return S * sizeof(T); }
+
+// NOTE: Raise a compiler error when switching over
+// an enum and any enum values are missing a case.
+// https://msdn.microsoft.com/en-us/library/fdt9w8tf.aspx
+#pragma warning (error: 4062)
 
 #endif

@@ -20,8 +20,8 @@ struct PluginHeader
 {
 	PluginHeaderRef ref;
 	b32             isLoaded;
-	c16*            name;
-	c16*            directory;
+	c8*             name;
+	c8*             directory;
 	PluginKind      kind;
 	PluginLanguage  language;
 	PluginInfo      info;

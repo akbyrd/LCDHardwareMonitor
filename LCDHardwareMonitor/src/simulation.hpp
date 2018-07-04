@@ -11,7 +11,7 @@ struct SimulationState
 };
 
 static PluginHeader*
-CreatePluginHeader(SimulationState* s, c16* directory, c16* name, PluginKind kind)
+CreatePluginHeader(SimulationState* s, c8* directory, c8* name, PluginKind kind)
 {
 	// Reuse any empty spots left by unloading plugins
 	PluginHeader* pluginHeader = nullptr;
@@ -50,7 +50,7 @@ GetPluginHeader(SimulationState* s, PluginHeaderRef ref)
 }
 
 static SensorPlugin*
-LoadSensorPlugin(SimulationState* s, c16* directory, c16* name)
+LoadSensorPlugin(SimulationState* s, c8* directory, c8* name)
 {
 	// TODO: Plugin name in errors
 
@@ -62,10 +62,10 @@ LoadSensorPlugin(SimulationState* s, c16* directory, c16* name)
 
 	b32 success;
 	success = PluginLoader_LoadSensorPlugin(s->pluginLoader, pluginHeader, sensorPlugin);
-	LOG_IF(!success, L"Failed to load sensor plugin", Severity::Warning, return nullptr);
+	LOG_IF(!success, "Failed to load sensor plugin", Severity::Warning, return nullptr);
 
 	List_Reserve(sensorPlugin->sensors, 32);
-	LOG_IF(!sensorPlugin->sensors, L"Sensor allocation failed", Severity::Error, return nullptr);
+	LOG_IF(!sensorPlugin->sensors, "Sensor allocation failed", Severity::Error, return nullptr);
 
 	// TODO: try/catch?
 	if (sensorPlugin->initialize)
@@ -90,7 +90,7 @@ UnloadSensorPlugin(SimulationState* s, SensorPlugin* sensorPlugin)
 	// TODO: Widgets will be referencing these sensors.
 	List_Free(sensorPlugin->sensors);
 	*sensorPlugin = {};
-	LOG_IF(!success, L"Failed to unload sensor plugin.", Severity::Warning, return false);
+	LOG_IF(!success, "Failed to unload sensor plugin.", Severity::Warning, return false);
 
 	// TODO: Add and remove plugin headers based on directory contents instead of loaded state.
 	*pluginHeader = {};
@@ -99,7 +99,7 @@ UnloadSensorPlugin(SimulationState* s, SensorPlugin* sensorPlugin)
 }
 
 static WidgetPlugin*
-LoadWidgetPlugin(SimulationState* s, c16* directory, c16* name)
+LoadWidgetPlugin(SimulationState* s, c8* directory, c8* name)
 {
 	PluginHeader* pluginHeader = CreatePluginHeader(s, directory, name, PluginKind::Widget);
 
@@ -109,7 +109,7 @@ LoadWidgetPlugin(SimulationState* s, c16* directory, c16* name)
 
 	b32 success;
 	success = PluginLoader_LoadWidgetPlugin(s->pluginLoader, pluginHeader, widgetPlugin);
-	LOG_IF(!success, L"Failed to load widget plugin", Severity::Warning, return nullptr);
+	LOG_IF(!success, "Failed to load widget plugin", Severity::Warning, return nullptr);
 
 	// TODO: try/catch?
 	if (widgetPlugin->initialize)
@@ -131,7 +131,7 @@ UnloadWidgetPlugin(SimulationState* s, WidgetPlugin* widgetPlugin)
 
 	b32 success;
 	success = PluginLoader_UnloadWidgetPlugin(s->pluginLoader, pluginHeader, widgetPlugin);
-	LOG_IF(!success, L"Failed to unload widget plugin.", Severity::Warning, return false);
+	LOG_IF(!success, "Failed to unload widget plugin.", Severity::Warning, return false);
 
 	// TODO: Add and remove plugin headers based on directory contents instead of loaded state.
 	*widgetPlugin = {};
@@ -149,21 +149,21 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 	if (!success) return false;
 
 	List_Reserve(s->pluginHeaders, 16);
-	LOG_IF(!s->pluginHeaders, L"Failed to allocate plugin headers list", Severity::Error, return false);
+	LOG_IF(!s->pluginHeaders, "Failed to allocate plugin headers list", Severity::Error, return false);
 
 	List_Reserve(s->sensorPlugins, 8);
-	LOG_IF(!s->sensorPlugins, L"Failed to allocate sensor plugins list", Severity::Error, return false);
+	LOG_IF(!s->sensorPlugins, "Failed to allocate sensor plugins list", Severity::Error, return false);
 
 	List_Reserve(s->widgetPlugins, 8);
-	LOG_IF(!s->widgetPlugins, L"Failed to allocate widget plugins list", Severity::Error, return false);
+	LOG_IF(!s->widgetPlugins, "Failed to allocate widget plugins list", Severity::Error, return false);
 
 	//List_Reserve(s->widgets, 8);
-	//LOG_IF(!s->widgets, L"Failed to allocate widgets list", Severity::Error, return false);
+	//LOG_IF(!s->widgets, "Failed to allocate widgets list", Severity::Error, return false);
 
 	// DEBUG: Testing
 	{
-		SensorPlugin* ohmPlugin       = LoadSensorPlugin(s, L"Sensor Plugins\\OpenHardwareMonitor", L"Sensor Plugin - OpenHardwareMonitor");
-		WidgetPlugin* filledBarPlugin = LoadWidgetPlugin(s, L"Widget Plugins\\Filled Bar",          L"Widget Plugin - Filled Bar");
+		SensorPlugin* ohmPlugin       = LoadSensorPlugin(s, "Sensor Plugins\\OpenHardwareMonitor", "Sensor Plugin - OpenHardwareMonitor");
+		WidgetPlugin* filledBarPlugin = LoadWidgetPlugin(s, "Widget Plugins\\Filled Bar",          "Widget Plugin - Filled Bar");
 
 		//Widget* w = List_Append(s->widgets);
 		//w->mesh   = Mesh::Quad;

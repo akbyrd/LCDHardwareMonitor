@@ -157,7 +157,6 @@
     <ClCompile Include="src\main_win32.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\platformdefs_win32.hpp" />
     <ClInclude Include="src\pluginloader.h" />
     <ClInclude Include="src\pluginloader_win32.hpp" />
     <ClInclude Include="src\previewwindow_win32_d3d11.hpp" />

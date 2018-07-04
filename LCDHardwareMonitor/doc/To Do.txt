@@ -17,6 +17,7 @@ Next
 	Handle multiple plugins in the same file (probably just a detailed error)
 	I think we want a separate 'public api' and 'internal api'
 	Use #import instead of project references?
+	Add UTF-8 support
 
 
 
@@ -36,8 +37,6 @@ Refactoring
 	Decide on 'plugin loader' naming on both sides of the managed boundary
 	Maybe change .h to .hpp?
 	Replace references with pointers
-	Stop using wide characters. That's not the right path to unicode support.
-	Decide what we're really doing with wide characters/i18n
 	Drop some of the variable name prefixes, such as d3d
 	Use this as parameter name for 'methods'
 	Should const be used on parameters and locals?
@@ -67,3 +66,4 @@ Architecture
 	- Decide on static or dynamic linking to e.g. the CRT. Bundle redistributables
 	  if dynamically linking.
 	- Load default/fallback resources
+

@@ -1,4 +1,4 @@
-const c16 previewWindowClass[] = L"LCDHardwareMonitor Preview Class";
+const c8  previewWindowClass[] = "LCDHardwareMonitor Preview Class";
 const u32 WM_PREVIEWWINDOWCLOSED = WM_USER + 0;
 
 struct PreviewWindowState
@@ -24,7 +24,7 @@ PreviewWindow_Initialize(PreviewWindowState* s, RendererState* rendererState, HI
 		LRESULT CALLBACK
 		PreviewWndProc(HWND, u32, WPARAM, LPARAM);
 
-		WNDCLASSW windowClass = {};
+		WNDCLASSA windowClass = {};
 		windowClass.style         = 0;
 		windowClass.lpfnWndProc   = PreviewWndProc;
 		windowClass.cbClsExtra    = 0;
@@ -36,24 +36,24 @@ PreviewWindow_Initialize(PreviewWindowState* s, RendererState* rendererState, HI
 		windowClass.lpszMenuName  = nullptr;
 		windowClass.lpszClassName = previewWindowClass;
 
-		ATOM classAtom = RegisterClassW(&windowClass);
-		LOG_LAST_ERROR_IF(classAtom == INVALID_ATOM, L"RegisterClass failed", Severity::Error, return false);
+		ATOM classAtom = RegisterClassA(&windowClass);
+		LOG_LAST_ERROR_IF(classAtom == INVALID_ATOM, "RegisterClass failed", Severity::Error, return false);
 
 		auto windowStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE;
 
 		b32 success;
 		RECT windowRect = { 0, 0, rendererState->renderSize.x, rendererState->renderSize.y };
 		success = AdjustWindowRect(&windowRect, windowStyle, false);
-		LOG_LAST_ERROR_IF(!success, L"AdjustWindowRect failed", Severity::Warning);
+		LOG_LAST_ERROR_IF(!success, "AdjustWindowRect failed", Severity::Warning);
 
 		s->renderSize = rendererState->renderSize;
 
 		s->nonClientSize.x = (windowRect.right - windowRect.left) - s->renderSize.x;
 		s->nonClientSize.y = (windowRect.bottom - windowRect.top) - s->renderSize.y;
 
-		s->hwnd = CreateWindowW(
+		s->hwnd = CreateWindowA(
 			windowClass.lpszClassName,
-			L"LHM Preview",
+			"LHM Preview",
 			windowStyle,
 			CW_USEDEFAULT, CW_USEDEFAULT,
 			s->renderSize.x + s->nonClientSize.x,
@@ -65,13 +65,13 @@ PreviewWindow_Initialize(PreviewWindowState* s, RendererState* rendererState, HI
 		);
 		if (s->hwnd == INVALID_HANDLE_VALUE)
 		{
-			LOG_LAST_ERROR(L"CreateWindowEx failed", Severity::Error);
+			LOG_LAST_ERROR("CreateWindowEx failed", Severity::Error);
 			s->hwnd = nullptr;
 			return false;
 		}
 
 		success = SetForegroundWindow(s->hwnd);
-		LOG_LAST_ERROR_IF(!success, L"SetForegroundWindow failed", Severity::Warning);
+		LOG_LAST_ERROR_IF(!success, "SetForegroundWindow failed", Severity::Warning);
 	}
 
 
@@ -123,23 +123,23 @@ PreviewWindow_Initialize(PreviewWindowState* s, RendererState* rendererState, HI
 		// Create the swap chain
 		HRESULT hr;
 		hr = rendererState->dxgiFactory->CreateSwapChain(rendererState->d3dDevice.Get(), &swapChainDesc, &s->swapChain);
-		LOG_HRESULT_IF_FAILED(hr, L"", Severity::Error, return false);
+		LOG_HRESULT_IF_FAILED(hr, "", Severity::Error, return false);
 		SetDebugObjectName(s->swapChain, "Swap Chain");
 
 		// Get the back buffer
 		hr = s->swapChain->GetBuffer(0, IID_PPV_ARGS(&s->backBuffer));
-		LOG_HRESULT_IF_FAILED(hr, L"", Severity::Error, return false);
+		LOG_HRESULT_IF_FAILED(hr, "", Severity::Error, return false);
 		SetDebugObjectName(s->backBuffer, "Back Buffer");
 
 		// Create a render target view to the back buffer
 		//ComPtr<ID3D11RenderTargetView> renderTargetView;
 		//hr = rendererState->d3dDevice->CreateRenderTargetView(s->backBuffer.Get(), nullptr, &renderTargetView);
-		//LOG_HRESULT_IF_FAILED(hr, L"", Severity::Error, return false);
+		//LOG_HRESULT_IF_FAILED(hr, "", Severity::Error, return false);
 		//SetDebugObjectName(renderTargetView, "Render Target View");
 
 		// Associate the window
 		hr = rendererState->dxgiFactory->MakeWindowAssociation(s->hwnd, DXGI_MWA_NO_ALT_ENTER);
-		LOG_HRESULT_IF_FAILED(hr, L"", Severity::Error, return false);
+		LOG_HRESULT_IF_FAILED(hr, "", Severity::Error, return false);
 	}
 
 	return true;
@@ -160,10 +160,10 @@ PreviewWindow_Teardown(PreviewWindowState* s, RendererState* rendererState, HINS
 		b32 success;
 
 		success = DestroyWindow(s->hwnd);
-		LOG_LAST_ERROR_IF(!success, L"DestroyWindow failed", Severity::Error, return false);
+		LOG_LAST_ERROR_IF(!success, "DestroyWindow failed", Severity::Error, return false);
 
-		success = UnregisterClassW(previewWindowClass, hInstance);
-		LOG_LAST_ERROR_IF(!success, L"UnregisterClass failed", Severity::Warning);
+		success = UnregisterClassA(previewWindowClass, hInstance);
+		LOG_LAST_ERROR_IF(!success, "UnregisterClass failed", Severity::Warning);
 
 		*s = {};
 	}
@@ -182,7 +182,7 @@ PreviewWindow_Render(PreviewWindowState* s, RendererState* rendererState)
 		// running Direct3D apps to get a DXGI_ERROR_DEVICE_REMOVED event.
 		rendererState->d3dContext->CopyResource(s->backBuffer.Get(), rendererState->d3dRenderTexture.Get());
 		HRESULT hr = s->swapChain->Present(0, 0);
-		LOG_HRESULT_IF_FAILED(hr, L"", Severity::Error, return false);
+		LOG_HRESULT_IF_FAILED(hr, "", Severity::Error, return false);
 	}
 
 	return true;
@@ -208,7 +208,7 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 			i64 iResult = SetWindowLongPtrW(hwnd, GWLP_USERDATA, (LPARAM) s);
 			if (iResult == 0 && GetLastError() != 0)
 			{
-				LOG_LAST_ERROR(L"SetWindowLongPtr failed", Severity::Error);
+				LOG_LAST_ERROR("SetWindowLongPtr failed", Severity::Error);
 				return false;
 			}
 			break;
@@ -238,7 +238,7 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 
 				RECT windowRect;
 				success = GetWindowRect(s->hwnd, &windowRect);
-				LOG_LAST_ERROR_IF(!success, L"GetWindowRect failed", Severity::Warning, return 0);
+				LOG_LAST_ERROR_IF(!success, "GetWindowRect failed", Severity::Warning, return 0);
 
 				V2i windowCenter;
 				windowCenter.x = (windowRect.right + windowRect.left) / 2;
@@ -248,7 +248,7 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 
 				RECT usableDesktopRect;
 				success = SystemParametersInfoW(SPI_GETWORKAREA, 0, &usableDesktopRect, 0);
-				LOG_LAST_ERROR_IF(!success, L"SystemParametersInfo failed", Severity::Warning, return 0);
+				LOG_LAST_ERROR_IF(!success, "SystemParametersInfo failed", Severity::Warning, return 0);
 
 				V2i usableDesktopSize;
 				usableDesktopSize.x = usableDesktopRect.right - usableDesktopRect.left;
@@ -280,12 +280,12 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 					newWindowSize.y,
 					0
 				);
-				LOG_LAST_ERROR_IF(!success, L"SetWindowPos failed", Severity::Warning, return 0);
+				LOG_LAST_ERROR_IF(!success, "SetWindowPos failed", Severity::Warning, return 0);
 
 				s->zoomFactor = newZoomFactor;
 
 				success = SetForegroundWindow(s->hwnd);
-				LOG_LAST_ERROR_IF(!success, L"SetForegroundWindow failed", Severity::Warning);
+				LOG_LAST_ERROR_IF(!success, "SetForegroundWindow failed", Severity::Warning);
 			}
 
 			return 0;
@@ -304,7 +304,7 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 		case WM_CLOSE:
 		{
 			b32 success = PostMessageW(nullptr, WM_PREVIEWWINDOWCLOSED, 0, 0);
-			LOG_LAST_ERROR_IF(!success, L"PostMessage failed", Severity::Warning);
+			LOG_LAST_ERROR_IF(!success, "PostMessage failed", Severity::Warning);
 
 			// NOTE: The window can be toggle at will. Don't stop the simulation
 			// just because it's not open.

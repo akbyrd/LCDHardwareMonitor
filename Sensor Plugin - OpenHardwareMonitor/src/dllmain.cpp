@@ -66,28 +66,28 @@ public:
 				String^ format;
 				switch (ohmSensor->SensorType)
 				{
-					case SensorType::Clock:       format = L"%i MHz";   break;
-					case SensorType::Control:     format = L"%s%%";     break;
-					case SensorType::Data:        format = L"%f";       break;
-					case SensorType::Factor:      format = L"%.2f";     break;
-					case SensorType::Fan:         format = L"%.0f RPM"; break;
-					case SensorType::Flow:        format = L"%.2f L/h"; break;
-					case SensorType::Level:       format = L"%.0f%%";   break;
-					case SensorType::Load:        format = L"%.0f%%";   break;
-					case SensorType::Power:       format = L"%.1f W";   break;
-					case SensorType::SmallData:   format = L"%s";       break;
-					case SensorType::Temperature: format = L"%.0f C";   break;
-					case SensorType::Voltage:     format = L"%.2f V";   break;
-					default:                      format = L"Unknown SensorType: " + ohmSensor->SensorType.ToString(); break;
+					case SensorType::Clock:       format = "%i MHz";   break;
+					case SensorType::Control:     format = "%s%%";     break;
+					case SensorType::Data:        format = "%f";       break;
+					case SensorType::Factor:      format = "%.2f";     break;
+					case SensorType::Fan:         format = "%.0f RPM"; break;
+					case SensorType::Flow:        format = "%.2f L/h"; break;
+					case SensorType::Level:       format = "%.0f%%";   break;
+					case SensorType::Load:        format = "%.0f%%";   break;
+					case SensorType::Power:       format = "%.1f W";   break;
+					case SensorType::SmallData:   format = "%s";       break;
+					case SensorType::Temperature: format = "%.0f C";   break;
+					case SensorType::Voltage:     format = "%.2f V";   break;
+					default:                      format = "Unknown SensorType: " + ohmSensor->SensorType.ToString(); break;
 				}
 				// TODO: Format in C
 				// TODO: Don't update unless changed
 				String^ value  = String::Format(format, ohmSensor->Value);
 
 				Sensor sensor = {};
-				sensor.name       = (c16*) Marshal::StringToHGlobalUni(ohmSensor->Name).ToPointer();
-				sensor.identifier = (c16*) Marshal::StringToHGlobalUni(ohmSensor->Identifier->ToString()).ToPointer();
-				sensor.string     = (c16*) Marshal::StringToHGlobalUni(value).ToPointer();
+				sensor.name       = (c8*) Marshal::StringToHGlobalAnsi(ohmSensor->Name).ToPointer();
+				sensor.identifier = (c8*) Marshal::StringToHGlobalAnsi(ohmSensor->Identifier->ToString()).ToPointer();
+				sensor.string     = (c8*) Marshal::StringToHGlobalAnsi(value).ToPointer();
 
 				List_Append(s->sensors, sensor);
 			}

@@ -184,7 +184,7 @@ private:
 			}
 		}
 		// TODO: Logging
-		//LOG_IF(!pluginInstance, L"Failed to find a managed sensor plugin class", Severity::Warning, return false);
+		//LOG_IF(!pluginInstance, "Failed to find a managed sensor plugin class", Severity::Warning, return false);
 		return pluginInstance;
 	}
 #endif
@@ -212,7 +212,7 @@ private:
 			}
 		}
 		// TODO: Logging
-		//LOG_IF(!pluginInstance, L"Failed to find a managed sensor plugin class", Severity::Warning, return false);
+		//LOG_IF(!pluginInstance, "Failed to find a managed sensor plugin class", Severity::Warning, return false);
 		sensorPlugin->pluginInstance = (void*) (IntPtr) GCHandle::Alloc(pluginInstance);
 
 		SensorPluginInitializeDel^ initializeDel = gcnew SensorPluginInitializeDel(pluginInstance, &ISensorPlugin::Initialize);
@@ -269,7 +269,7 @@ private:
 			}
 		}
 		// TODO: Logging
-		//LOG_IF(!pluginInstance, L"Failed to find a managed sensor plugin class", Severity::Warning, return false);
+		//LOG_IF(!pluginInstance, "Failed to find a managed sensor plugin class", Severity::Warning, return false);
 		widgetPlugin->pluginInstance = (void*) (IntPtr) GCHandle::Alloc(pluginInstance);
 
 		WidgetPluginInitializeDel^ initializeDel = gcnew WidgetPluginInitializeDel(pluginInstance, &IWidgetPlugin::Initialize);

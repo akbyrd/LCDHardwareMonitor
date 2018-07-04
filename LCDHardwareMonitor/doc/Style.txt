@@ -46,7 +46,7 @@ Style Notes
   deallocation in logging functions because it should be happening rarely. This
   is also the perfect place for a custom 'stack allocator' so the allocation is
   practically free. After any statement that can fail I have something like:
-      LOG_IF(FAILED(hr), L"D3D11CreateDevice", Severity::Error, return false);
+      LOG_IF(FAILED(hr), "D3D11CreateDevice", Severity::Error, return false);
 
 - Use pointers instead of references. Yes, it's annoying that there's different
   syntax for accessing members, which can be irritating when refactoring. But

@@ -8,9 +8,8 @@
 
 // NOTE: Strings are null terminated for C compatibility.
 
-using Bytes   = List<u8>;
-using String  = List<c8>;
-using WString = List<c16>;
+using Bytes  = List<u8>;
+using String = List<c8>;
 
 inline void
 Bytes_Free(Bytes& bytes)
@@ -20,12 +19,6 @@ Bytes_Free(Bytes& bytes)
 
 inline void
 String_Free(String& string)
-{
-	List_Free(string);
-}
-
-inline void
-WString_Free(WString& string)
 {
 	List_Free(string);
 }
@@ -52,17 +45,6 @@ struct String
 	inline     operator b32()    { return data != nullptr; }
 };
 
-struct WString
-{
-	u32  length;
-	u32  capacity;
-	c16* data;
-
-	inline c16& operator[](i32 i) { return data[i]; }
-	inline      operator c16*()   { return data; }
-	inline      operator b32()    { return data != nullptr; }
-};
-
 void
 FreeBytes(Bytes& bytes)
 {
@@ -74,15 +56,6 @@ FreeBytes(Bytes& bytes)
 
 void
 FreeString(String& string)
-{
-	if (string.capacity > 0)
-		free(string.data);
-
-	string = {};
-}
-
-void
-FreeWString(WString& string)
 {
 	if (string.capacity > 0)
 		free(string.data);

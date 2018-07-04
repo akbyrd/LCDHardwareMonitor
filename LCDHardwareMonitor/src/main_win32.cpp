@@ -3,7 +3,6 @@
 #include "LHMString.h"
 #include "LHMPluginHeader.h"
 
-#include "platformdefs_win32.hpp"
 #include "platform.h"
 #include "pluginloader.h"
 #include "renderer.h"
@@ -28,7 +27,7 @@
 const i32 togglePreviewWindowID = 0;
 
 i32 CALLBACK
-wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, c16* pCmdLine, i32 nCmdShow)
+WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmdShow)
 {
 	// TODO: Deal with goto's skipping variable initialization
 	int returnValue = -1;
@@ -53,14 +52,14 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, c16* pCmdLine, i32 nCmdSh
 	// Simulation
 	{
 		b32 success = Simulation_Initialize(&simulationState, &pluginLoaderState, &rendererState);
-		LOG_IF(!success, L"Failed to initialize simulation", Severity::Error, goto Cleanup);
+		LOG_IF(!success, "Failed to initialize simulation", Severity::Error, goto Cleanup);
 	}
 
 
 	// Misc
 	{
 		b32 success = SetPriorityClass(GetCurrentProcess(), BELOW_NORMAL_PRIORITY_CLASS);
-		LOG_LAST_ERROR_IF(!success, L"SetPriorityClass failed", Severity::Warning);
+		LOG_LAST_ERROR_IF(!success, "SetPriorityClass failed", Severity::Warning);
 	}
 
 
@@ -68,7 +67,7 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, c16* pCmdLine, i32 nCmdSh
 	{
 		PreviewWindow_Initialize(&previewState, &rendererState, hInstance);
 		b32 success = RegisterHotKey(nullptr, togglePreviewWindowID, MOD_NOREPEAT, VK_F1);
-		LOG_LAST_ERROR_IF(!success, L"RegisterHotKey failed", Severity::Warning);
+		LOG_LAST_ERROR_IF(!success, "RegisterHotKey failed", Severity::Warning);
 	}
 
 
@@ -123,7 +122,7 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, c16* pCmdLine, i32 nCmdSh
 
 			// Render
 			b32 success = Renderer_Render(&rendererState);
-			LOG_IF(!success, L"Render failed", Severity::Error);
+			LOG_IF(!success, "Render failed", Severity::Error);
 
 			PreviewWindow_Render(&previewState, &rendererState);
 
