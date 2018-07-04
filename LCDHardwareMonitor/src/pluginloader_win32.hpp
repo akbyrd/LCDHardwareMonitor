@@ -2,15 +2,15 @@
 #include <wrl\client.h>
 using Microsoft::WRL::ComPtr;
 
-/* TODO: We don't really need this in run/. Want to reach into the
- * project output folder directly, but we need to know the correct config
- * subfolder. */
-#import "../run/LCDHardwareMonitor PluginLoader CLR.tlb" no_namespace
+// TODO: We don't really need this in run/. Want to reach into the
+// project output folder directly, but we need to know the correct config
+// subfolder.
+#import "..\\run\\LCDHardwareMonitor PluginLoader CLR.tlb" no_namespace
 
 class LHMHostControl : public IHostControl
 {
 public:
-	//TODO: Double check that this doesn't get called for each new AppDomain
+	// TODO: Double check that this doesn't get called for each new AppDomain
 	HRESULT __stdcall SetAppDomainManager(DWORD dwAppDomainID, IUnknown* pUnkAppDomainManager)
 	{
 		HRESULT hr;
@@ -39,7 +39,7 @@ struct PluginLoaderState
 b32
 PluginLoader_Initialize(PluginLoaderState* s)
 {
-	//Managed
+	// Managed
 	{
 		HRESULT hr;
 
@@ -47,9 +47,10 @@ PluginLoader_Initialize(PluginLoaderState* s)
 		hr = CLRCreateInstance(CLSID_CLRMetaHost, IID_PPV_ARGS(&clrMetaHost));
 		LOG_HRESULT_IF_FAILED(hr, L"CLRCreateInstance failed", Severity::Error, return false);
 
-		//TODO: Ensure this fails gracefully if the CLR isn't installed.
-		//TODO: Enumerate installed versions and give a helpful error message.
-		//NOTE: Relying on this version should be safe. Use clrver to check installed versions.
+		// TODO: Ensure this fails gracefully if the CLR isn't installed.
+		// TODO: Enumerate installed versions and give a helpful error message.
+		// NOTE: Relying on this version should be safe. Use clrver to check
+		// installed versions.
 		ComPtr<ICLRRuntimeInfo> clrInfo;
 		hr = clrMetaHost->GetRuntime(L"v4.0.30319", IID_PPV_ARGS(&clrInfo));
 		LOG_HRESULT_IF_FAILED(hr, L"ICLRMetaHost->GetRuntime failed", Severity::Error, return false);
@@ -78,7 +79,7 @@ PluginLoader_Initialize(PluginLoaderState* s)
 	}
 
 
-	//Unmanaged
+	// Unmanaged
 	{
 		b32 success = SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
 		LOG_LAST_ERROR_IF(!success, L"SetDefaultDllDirectories failed", Severity::Warning, return false);
@@ -90,7 +91,7 @@ PluginLoader_Initialize(PluginLoaderState* s)
 void
 PluginLoader_Teardown(PluginLoaderState* s)
 {
-	//Managed
+	// Managed
 	{
 		HRESULT hr;
 
