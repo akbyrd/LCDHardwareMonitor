@@ -4,8 +4,8 @@
 #pragma managed
 #include <string.h>
 
-/* NOTE: It looks like it's not possible to update individual sensors. Updates
- * happen at the hardware level. */
+// NOTE: It looks like it's not possible to update individual sensors. Updates
+// happen at the hardware level. */
 
 using namespace System;
 using namespace System::Collections::Generic;
@@ -36,7 +36,7 @@ public:
 		activeSensors  = gcnew SList<ISensor^>;
 		activeHardware = gcnew SList<IHardware^>;
 
-		//ENABLE ALL THE THINGS!
+		// ENABLE ALL THE THINGS!
 		computer->CPUEnabled           = true;
 		computer->FanControllerEnabled = true;
 		computer->GPUEnabled           = true;
@@ -52,11 +52,11 @@ public:
 		{
 			current.index = i;
 
-			//Hardware
+			// Hardware
 			IHardware^ currentHardware = current.hardware[i];
 			activeHardware->Add(currentHardware);
 
-			//Sensors
+			// Sensors
 			array<ISensor^>^ ohmSensors = currentHardware->Sensors;
 			for (i32 j = 0; j < ohmSensors->Length; j++)
 			{
@@ -80,8 +80,8 @@ public:
 					case SensorType::Voltage:     format = L"%.2f V";   break;
 					default:                      format = L"Unknown SensorType: " + ohmSensor->SensorType.ToString(); break;
 				}
-				//TODO: Format in C
-				//TODO: Don't update unless changed
+				// TODO: Format in C
+				// TODO: Don't update unless changed
 				String^ value  = String::Format(format, ohmSensor->Value);
 
 				Sensor sensor = {};
@@ -92,7 +92,7 @@ public:
 				List_Append(s->sensors, sensor);
 			}
 
-			//Sub-Hardware
+			// Sub-Hardware
 			array<IHardware^>^ subhardware = current.hardware[i]->SubHardware;
 			if (subhardware != nullptr && subhardware->Length > 0)
 			{
@@ -101,7 +101,7 @@ public:
 				i = -1;
 			}
 
-			//Pop
+			// Pop
 			if (i >= current.hardware->Length - 1)
 			{
 				if (stack->Count > 0)
@@ -112,7 +112,7 @@ public:
 			}
 		}
 
-		//TODO: Handle hardware and sensor changes
+		// TODO: Handle hardware and sensor changes
 		//IHardware::SensorAdded
 		//IHardware::SensorRemoved
 		//computer->HardwareAdded   += OnHardwareAdded;
@@ -125,7 +125,7 @@ public:
 		for (i32 i = 0; i < State::activeHardware->Count; i++)
 			State::activeHardware[i]->Update();
 
-		//TODO: This is stupid
+		// TODO: This is stupid
 		for (i32 i = 0; i < s->sensors.length; i++)
 		{
 			Sensor& sensor = s->sensors[i];

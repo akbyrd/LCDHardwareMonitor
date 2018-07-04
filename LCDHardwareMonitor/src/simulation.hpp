@@ -13,7 +13,7 @@ struct SimulationState
 static PluginHeader*
 CreatePluginHeader(SimulationState* s, c16* directory, c16* name, PluginKind kind)
 {
-	//Reuse any empty spots left by unloading plugins
+	// Reuse any empty spots left by unloading plugins
 	PluginHeader* pluginHeader = nullptr;
 	for (i32 i = 0; i < s->pluginHeaders.length; i++)
 	{
@@ -44,7 +44,7 @@ GetPluginHeader(SimulationState* s, PluginHeaderRef ref)
 			return pluginHeader;
 	}
 
-	//Unreachable
+	// Unreachable
 	Assert(false);
 	return nullptr;
 }
@@ -52,11 +52,11 @@ GetPluginHeader(SimulationState* s, PluginHeaderRef ref)
 static SensorPlugin*
 LoadSensorPlugin(SimulationState* s, c16* directory, c16* name)
 {
-	//TODO: Plugin name in errors
+	// TODO: Plugin name in errors
 
 	PluginHeader* pluginHeader = CreatePluginHeader(s, directory, name, PluginKind::Sensor);
 
-	//TODO: Ensure this is removed from the list in partial initialization conditions
+	// TODO: Ensure this is removed from the list in partial initialization conditions
 	SensorPlugin* sensorPlugin = List_Append(s->sensorPlugins);
 	sensorPlugin->pluginHeaderRef = pluginHeader->ref;
 
@@ -67,7 +67,7 @@ LoadSensorPlugin(SimulationState* s, c16* directory, c16* name)
 	List_Reserve(sensorPlugin->sensors, 32);
 	LOG_IF(!sensorPlugin->sensors, L"Sensor allocation failed", Severity::Error, return nullptr);
 
-	//TODO: try/catch?
+	// TODO: try/catch?
 	if (sensorPlugin->initialize)
 		sensorPlugin->initialize(sensorPlugin);
 
@@ -77,22 +77,22 @@ LoadSensorPlugin(SimulationState* s, c16* directory, c16* name)
 static b32
 UnloadSensorPlugin(SimulationState* s, SensorPlugin* sensorPlugin)
 {
-	//TODO: Plugin name in errors
+	// TODO: Plugin name in errors
 
 	PluginHeader* pluginHeader = GetPluginHeader(s, sensorPlugin->pluginHeaderRef);
 
-	//TODO: try/catch?
+	// TODO: try/catch?
 	if (sensorPlugin->teardown)
 		sensorPlugin->teardown(sensorPlugin);
 
 	b32 success;
 	success = PluginLoader_UnloadSensorPlugin(s->pluginLoader, pluginHeader, sensorPlugin);
-	//TODO: Widgets will be referencing these sensors.
+	// TODO: Widgets will be referencing these sensors.
 	List_Free(sensorPlugin->sensors);
 	*sensorPlugin = {};
 	LOG_IF(!success, L"Failed to unload sensor plugin.", Severity::Warning, return false);
 
-	//TODO: Add and remove plugin headers based on directory contents instead of loaded state.
+	// TODO: Add and remove plugin headers based on directory contents instead of loaded state.
 	*pluginHeader = {};
 
 	return true;
@@ -103,7 +103,7 @@ LoadWidgetPlugin(SimulationState* s, c16* directory, c16* name)
 {
 	PluginHeader* pluginHeader = CreatePluginHeader(s, directory, name, PluginKind::Widget);
 
-	//TODO: Ensure this is removed from the list in partial initialization conditions
+	// TODO: Ensure this is removed from the list in partial initialization conditions
 	WidgetPlugin* widgetPlugin = List_Append(s->widgetPlugins);
 	widgetPlugin->pluginHeaderRef = pluginHeader->ref;
 
@@ -111,7 +111,7 @@ LoadWidgetPlugin(SimulationState* s, c16* directory, c16* name)
 	success = PluginLoader_LoadWidgetPlugin(s->pluginLoader, pluginHeader, widgetPlugin);
 	LOG_IF(!success, L"Failed to load widget plugin", Severity::Warning, return nullptr);
 
-	//TODO: try/catch?
+	// TODO: try/catch?
 	if (widgetPlugin->initialize)
 		widgetPlugin->initialize(widgetPlugin);
 
@@ -121,11 +121,11 @@ LoadWidgetPlugin(SimulationState* s, c16* directory, c16* name)
 static b32
 UnloadWidgetPlugin(SimulationState* s, WidgetPlugin* widgetPlugin)
 {
-	//TODO: Plugin name in errors
+	// TODO: Plugin name in errors
 
 	PluginHeader* pluginHeader = GetPluginHeader(s, widgetPlugin->pluginHeaderRef);
 
-	//TODO: try/catch?
+	// TODO: try/catch?
 	if (widgetPlugin->teardown)
 		widgetPlugin->teardown(widgetPlugin);
 
@@ -133,7 +133,7 @@ UnloadWidgetPlugin(SimulationState* s, WidgetPlugin* widgetPlugin)
 	success = PluginLoader_UnloadWidgetPlugin(s->pluginLoader, pluginHeader, widgetPlugin);
 	LOG_IF(!success, L"Failed to unload widget plugin.", Severity::Warning, return false);
 
-	//TODO: Add and remove plugin headers based on directory contents instead of loaded state.
+	// TODO: Add and remove plugin headers based on directory contents instead of loaded state.
 	*widgetPlugin = {};
 
 	return true;
@@ -160,10 +160,10 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 	//List_Reserve(s->widgets, 8);
 	//LOG_IF(!s->widgets, L"Failed to allocate widgets list", Severity::Error, return false);
 
-	//DEBUG: Testing
+	// DEBUG: Testing
 	{
 		SensorPlugin* ohmPlugin       = LoadSensorPlugin(s, L"Sensor Plugins\\OpenHardwareMonitor", L"Sensor Plugin - OpenHardwareMonitor");
-		//WidgetPlugin* filledBarPlugin = LoadWidgetPlugin(s, L"Widget Plugins\\Filled Bar",          L"Widget Plugin - Filled Bar");
+		WidgetPlugin* filledBarPlugin = LoadWidgetPlugin(s, L"Widget Plugins\\Filled Bar",          L"Widget Plugin - Filled Bar");
 
 		//Widget* w = List_Append(s->widgets);
 		//w->mesh   = Mesh::Quad;
@@ -177,10 +177,10 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 void
 Simulation_Teardown(SimulationState* s)
 {
-	/* TODO: Decide how much we really care about simulation level teardown.
-	 * Remove this once plugin loading and unloading is solidified. It's good to
-	 * do this for testing, but it's unnecessary work in the normal teardown
-	 * case. */
+	// TODO: Decide how much we really care about simulation level teardown.
+	// Remove this once plugin loading and unloading is solidified. It's good to
+	// do this for testing, but it's unnecessary work in the normal teardown
+	// case.
 
 	//List_Free(s->widgets);
 
@@ -200,12 +200,12 @@ Simulation_Teardown(SimulationState* s)
 void
 Simulation_Update(SimulationState* s)
 {
-	//TODO: Only update plugins that are actually being used
+	// TODO: Only update plugins that are actually being used
 	for (i32 i = 0; i < s->sensorPlugins.length; i++)
 	{
 		SensorPlugin* sensorPlugin = &s->sensorPlugins[i];
 
-		//TODO: try/catch?
+		// TODO: try/catch?
 		if (sensorPlugin->update)
 			sensorPlugin->update(sensorPlugin);
 	}
@@ -214,16 +214,14 @@ Simulation_Update(SimulationState* s)
 	{
 		WidgetPlugin* widgetPlugin = &s->widgetPlugins[i];
 
-		//TODO: try/catch?
+		// TODO: try/catch?
 		if (widgetPlugin->update)
 			widgetPlugin->update(widgetPlugin);
 	}
 
-	/* NOTE:
-	 * Build a command list of things to draw.
-	 * Let the renderer handle sorting and iterating the list.
-	 * Here, we should just be parameters that go with the command.
-	 */
+	// NOTE: Build a command list of things to draw. Let the renderer handle
+	// sorting and iterating the list. Here, we should just be parameters that go
+	// with the command.
 	//for (i32 i = 0; i < s->widgets.length; i++)
 	//	;
 }

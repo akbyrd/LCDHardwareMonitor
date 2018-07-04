@@ -19,7 +19,7 @@ b32 PreviewWindow_Render     (RendererState*, PreviewWindowState*);
 b32
 PreviewWindow_Initialize(PreviewWindowState* s, RendererState* rendererState, HINSTANCE hInstance)
 {
-	//Create Window
+	// Create Window
 	{
 		LRESULT CALLBACK
 		PreviewWndProc(HWND, u32, WPARAM, LPARAM);
@@ -75,35 +75,35 @@ PreviewWindow_Initialize(PreviewWindowState* s, RendererState* rendererState, HI
 	}
 
 
-	//Attach Renderer
+	// Attach Renderer
 	{
-		/* TODO: When using fullscreen, the display mode should be chosen by enumerating supported
-		 * modes. If a mode is chosen that isn't supported, a performance penalty will be incurred due
-		 * to Present performing a blit instead of a swap (does this apply to incorrect refresh rates
-		 * or only incorrect resolutions?).
-		 */
+		// TODO: When using fullscreen, the display mode should be chosen by
+		// enumerating supported modes. If a mode is chosen that isn't supported,
+		// a performance penalty will be incurred due to Present performing a blit
+		// instead of a swap (does this apply to incorrect refresh rates or only
+		// incorrect resolutions?).
 
-		/* Set swap chain properties
-		 *
-		 * NOTE:
-		 * If the DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH flag is used, the display mode that most
-		 * closely matches the back buffer will be used when entering fullscreen. If this happens to
-		 * be the same size as the back buffer, no WM_SIZE event is sent to the application (I'm only
-		 * assuming it *does* get sent if the size changes, I haven't tested it). If the flag is not
-		 * used, the display mode will be changed to match that of the desktop (usually the monitors
-		 * native display mode). This generally results in a WM_SIZE event (again, I'm only assuming
-		 * one will not be sent if the window happens to already be the same size as the desktop).
-		 * For now, I think it makes the most sense to use the native display mode when entering
-		 * fullscreen, so I'm removing the flag.
-		 *
-		 * If we use a flip presentation swap chain, explicitly force destruction of any previous
-		 * swap chains before creating a new one.
-		 * https://msdn.microsoft.com/en-us/library/windows/desktop/ff476425(v=vs.85).aspx#Defer_Issues_with_Flip
-		 */
+		// Set swap chain properties
+		// NOTE: If the DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH flag is used, the
+		// display mode that most closely matches the back buffer will be used
+		// when entering fullscreen. If this happens to be the same size as the
+		// back buffer, no WM_SIZE event is sent to the application (I'm only
+		// assuming it *does* get sent if the size changes, I haven't tested it).
+		// If the flag is not
+		// used, the display mode will be changed to match that of the desktop
+		// (usually the monitors native display mode). This generally results in a
+		// WM_SIZE event (again, I'm only assuming one will not be sent if the
+		// window happens to already be the same size as the desktop). For now, I
+		// think it makes the most sense to use the native display mode when
+		// entering fullscreen, so I'm removing the flag.
+		//
+		// If we use a flip presentation swap chain, explicitly force destruction
+		// of any previous swap chains before creating a new one.
+		// https://msdn.microsoft.com/en-us/library/windows/desktop/ff476425(v=vs.85).aspx#Defer_Issues_with_Flip
 		DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
 		swapChainDesc.BufferDesc.Width                   = rendererState->renderSize.x;
 		swapChainDesc.BufferDesc.Height                  = rendererState->renderSize.y;
-		//TODO: Get values from system (match desktop. what happens if it changes?)
+		// TODO: Get values from system (match desktop. what happens if it changes?)
 		swapChainDesc.BufferDesc.RefreshRate.Numerator   = 60;
 		swapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
 		swapChainDesc.BufferDesc.Format                  = DXGI_FORMAT_B8G8R8A8_UNORM;
@@ -118,26 +118,26 @@ PreviewWindow_Initialize(PreviewWindowState* s, RendererState* rendererState, HI
 		swapChainDesc.SwapEffect                         = DXGI_SWAP_EFFECT_DISCARD;
 		swapChainDesc.Flags                              = 0;//DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 
-		//NOTE: IDXGISwapChain::ResizeTarget to resize window if render target changes
+		// NOTE: IDXGISwapChain::ResizeTarget to resize window if render target changes
 
-		//Create the swap chain
+		// Create the swap chain
 		HRESULT hr;
 		hr = rendererState->dxgiFactory->CreateSwapChain(rendererState->d3dDevice.Get(), &swapChainDesc, &s->swapChain);
 		LOG_HRESULT_IF_FAILED(hr, L"", Severity::Error, return false);
 		SetDebugObjectName(s->swapChain, "Swap Chain");
 
-		//Get the back buffer
+		// Get the back buffer
 		hr = s->swapChain->GetBuffer(0, IID_PPV_ARGS(&s->backBuffer));
 		LOG_HRESULT_IF_FAILED(hr, L"", Severity::Error, return false);
 		SetDebugObjectName(s->backBuffer, "Back Buffer");
 
-		//Create a render target view to the back buffer
+		// Create a render target view to the back buffer
 		//ComPtr<ID3D11RenderTargetView> renderTargetView;
 		//hr = rendererState->d3dDevice->CreateRenderTargetView(s->backBuffer.Get(), nullptr, &renderTargetView);
 		//LOG_HRESULT_IF_FAILED(hr, L"", Severity::Error, return false);
 		//SetDebugObjectName(renderTargetView, "Render Target View");
 
-		//Associate the window
+		// Associate the window
 		hr = rendererState->dxgiFactory->MakeWindowAssociation(s->hwnd, DXGI_MWA_NO_ALT_ENTER);
 		LOG_HRESULT_IF_FAILED(hr, L"", Severity::Error, return false);
 	}
@@ -148,14 +148,14 @@ PreviewWindow_Initialize(PreviewWindowState* s, RendererState* rendererState, HI
 b32
 PreviewWindow_Teardown(PreviewWindowState* s, RendererState* rendererState, HINSTANCE hInstance)
 {
-	//Detach Renderer
+	// Detach Renderer
 	{
 		s->backBuffer.Reset();
 		s->swapChain .Reset();
 	}
 
 
-	//Destroy Window
+	// Destroy Window
 	{
 		b32 success;
 
@@ -176,11 +176,10 @@ PreviewWindow_Render(PreviewWindowState* s, RendererState* rendererState)
 {
 	if (s->hwnd)
 	{
-		/* TODO: Handle DXGI_ERROR_DEVICE_RESET and DXGI_ERROR_DEVICE_REMOVED
-		 * Developer Command Prompt for Visual Studio as an administrator, and
-		 * typing dxcap -forcetdr which will immediately cause all currently running
-		 * Direct3D apps to get a DXGI_ERROR_DEVICE_REMOVED event.
-		 */
+		// TODO: Handle DXGI_ERROR_DEVICE_RESET and DXGI_ERROR_DEVICE_REMOVED
+		// Developer Command Prompt for Visual Studio as an administrator, and
+		// typing dxcap -forcetdr which will immediately cause all currently
+		// running Direct3D apps to get a DXGI_ERROR_DEVICE_REMOVED event.
 		rendererState->d3dContext->CopyResource(s->backBuffer.Get(), rendererState->d3dRenderTexture.Get());
 		HRESULT hr = s->swapChain->Present(0, 0);
 		LOG_HRESULT_IF_FAILED(hr, L"", Severity::Error, return false);
@@ -202,8 +201,8 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 			auto createStruct = (CREATESTRUCT*) lParam;
 			s = (PreviewWindowState*) createStruct->lpCreateParams;
 
-			//NOTE: Because Windows is dumb. See Return value section:
-			//https://msdn.microsoft.com/en-us/library/windows/desktop/ms644898.aspx
+			// NOTE: Because Windows is dumb. See Return value section:
+			// https://msdn.microsoft.com/en-us/library/windows/desktop/ms644898.aspx
 			SetLastError(0);
 
 			i64 iResult = SetWindowLongPtrW(hwnd, GWLP_USERDATA, (LPARAM) s);
@@ -217,8 +216,8 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 
 		case WM_MOUSEWHEEL:
 		{
-			//TODO: Fix mouse cursor
-			//TODO: Is it worth trying to make things portable?
+			// TODO: Fix mouse cursor
+			// TODO: Is it worth trying to make things portable?
 			s->mouseWheelAccumulator += GET_WHEEL_DELTA_WPARAM(wParam);
 			i16 newZoomFactor = s->zoomFactor;
 			while (s->mouseWheelAccumulator >= WHEEL_DELTA)
@@ -262,8 +261,8 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 						break;
 				}
 
-				//TODO: Try expanding from top left only
-				//TODO: Maybe account for the shadow? (window - client - border)
+				// TODO: Try expanding from top left only
+				// TODO: Maybe account for the shadow? (window - client - border)
 				// or DwmGetWindowAttribute(hWnd, DWMWA_EXTENDED_FRAME_BOUNDS, &extendedRect, sizeof(extendedRect));
 				V2i newWindowTopLeft;
 				newWindowTopLeft.x = windowCenter.x - (newWindowSize.x / 2);
@@ -307,7 +306,8 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 			b32 success = PostMessageW(nullptr, WM_PREVIEWWINDOWCLOSED, 0, 0);
 			LOG_LAST_ERROR_IF(!success, L"PostMessage failed", Severity::Warning);
 
-			//NOTE: The window can be toggle at will. Don't stop the simulation just because it's not open.
+			// NOTE: The window can be toggle at will. Don't stop the simulation
+			// just because it's not open.
 			//PostQuitMessage(0);
 			return 0;
 		}

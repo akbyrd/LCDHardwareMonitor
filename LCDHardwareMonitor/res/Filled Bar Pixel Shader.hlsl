@@ -1,12 +1,12 @@
-//TODO: Ensure transparent borders work as expected when blending with the fill/background
-//TODO: Doesn't support vertical bars
-//TODO: Maybe want to support arbitrary bar direction (to get a slanted end)
-//TODO: Corners in the border blur don't look right
-//TODO: The border blur size isn't quite correct (give it large numbers, expect it to cap out. Not sure if it does?)
+// TODO: Ensure transparent borders work as expected when blending with the fill/background
+// TODO: Doesn't support vertical bars
+// TODO: Maybe want to support arbitrary bar direction (to get a slanted end)
+// TODO: Corners in the border blur don't look right
+// TODO: The border blur size isn't quite correct (give it large numbers, expect it to cap out. Not sure if it does?)
 
 cbuffer cbPerObject
 {
-	//TODO: How do we get this? (Do the UV calculation in CPU, I think)
+	// TODO: How do we get this? (Do the UV calculation in CPU, I think)
 	float2 res;
 
 	float4 borderColor = { 1.0f, 0.0f, 0.0f, 1.0f };
@@ -29,7 +29,7 @@ struct PixelFragment
 
 float4 main(PixelFragment pIn) : SV_TARGET
 {
-	//Border
+	// Border
 	float2 pixelsPerUV = rcp(res);
 	float2 borderSizeUV = borderSize * pixelsPerUV;
 	float2 borderBlurUV = borderBlur * pixelsPerUV;
@@ -38,7 +38,7 @@ float4 main(PixelFragment pIn) : SV_TARGET
 	float borderMask = max(borderThing.x, borderThing.y);
 
 
-	//Fill
+	// Fill
 	pIn.UV = (1.0f + 2.0f * borderSizeUV) * pIn.UV - borderSizeUV;
 	float t = smoothstep(fillAmount + fillBlur, fillAmount - fillBlur, pIn.UV.x);
 	float4 interiorColor = lerp(fillColor, backgroundColor, t);

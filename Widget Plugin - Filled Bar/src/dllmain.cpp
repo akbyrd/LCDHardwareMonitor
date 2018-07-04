@@ -11,7 +11,7 @@ struct Widget2
 	__declspec(align(16))
 	struct PSConstants
 	{
-		//TODO: How do we get this? (Do the UV calculation in CPU, I think)
+		// TODO: How do we get this? (Do the UV calculation in CPU, I think)
 		V2i   res;
 
 		V4    borderColor = { 1.0f, 0.0f, 0.0f, 1.0f };
@@ -33,18 +33,18 @@ struct Widget2
 	VSConstants vsConstants;
 	PSConstants psConstants;
 
-	//TODO: Maybe string and range overrides?
-	//TODO: drawFn? Widget type to function map?
+	// TODO: Maybe string and range overrides?
+	// TODO: drawFn? Widget type to function map?
 };
 
 void
 DrawWidget_FilledBar(Widget& w /*, RendererState* renderer */)
 {
-	//Set Input Layout
-	//Set Vertex Shader
-	//Set VS constant buffer
-	//Set Pixel Shader
-	//Set PS constant buffer
+	// Set Input Layout
+	// Set Vertex Shader
+	// Set VS constant buffer
+	// Set Pixel Shader
+	// Set PS constant buffer
 }
 
-//typedef FilledBarConstants ConstantBufferType;
+//using ConstantBufferType = FilledBarConstants;

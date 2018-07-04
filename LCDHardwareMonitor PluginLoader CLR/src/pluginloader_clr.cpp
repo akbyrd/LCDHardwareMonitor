@@ -17,7 +17,7 @@ ILHMPluginLoader
 	b32 UnloadWidgetPlugin (void* pluginHeader, void* widgetPlugin);
 };
 
-//TODO: Maybe move these to LCDHardwareMonitor CLR API
+// TODO: Maybe move these to LCDHardwareMonitor CLR API
 #define Attributes UnmanagedFunctionPointer(CallingConvention::Cdecl)
 [Attributes] private delegate void SensorPluginInitializeDel(SP_INITIALIZE_ARGS);
 [Attributes] private delegate void SensorPluginUpdateDel    (SP_UPDATE_ARGS);
@@ -29,7 +29,7 @@ ILHMPluginLoader
 public ref struct
 LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 {
-	//NOTE: These functions run in the default AppDomain
+	// NOTE: These functions run in the default AppDomain
 
 	void
 	InitializeNewDomain(AppDomainSetup^ appDomainInfo) override
@@ -112,29 +112,28 @@ private:
 		auto name      = gcnew String(pluginHeader->name);
 		auto directory = gcnew String(pluginHeader->directory);
 
-		/* NOTE: LHMAppDomainManager is going to get loaded into each new
-		 * AppDomain so we need to let ApplicationBase get inherited from the
-		 * default domain in order for it to be found. Instead, we set
-		 * PrivateBinPath the actual plugin can be found when we load it. */
+		// NOTE: LHMAppDomainManager is going to get loaded into each new
+		// AppDomain so we need to let ApplicationBase get inherited from the
+		// default domain in order for it to be found. Instead, we set
+		// PrivateBinPath the actual plugin can be found when we load it.
 		auto domainSetup = gcnew AppDomainSetup();
 		domainSetup->PrivateBinPath     = directory;
 		domainSetup->LoaderOptimization = LoaderOptimization::MultiDomainHost;
 
-		//TODO: Shadowcopy and file watch
+		// TODO: Shadowcopy and file watch
 		//domainSetup.CachePath             = "Cache"
 		//domainSetup.ShadowCopyDirectories = true
 		//domainSetup.ShadowCopyFiles       = true
 
 		AppDomain^ appDomain = CreateDomain(name, nullptr, domainSetup);
 
-		/* TODO : I'm 'leaking' these GCHandles under the assumption that I
-		 * re-create them later using the IntPtr in order to free them in
-		 * UnloadPlugin. I'm reasonably confident this works as expected, but I
-		 * need to confirm this is ok. It's not a huge concern, though, since the
-		 * objects will definitely go away when then AppDomain is unloaded and we
-		 * need them for the entire life of the domain.
-		 */
-		//NOTE: We can't pin the AppDomain pointer. Yay.
+		// TODO: I'm 'leaking' these GCHandles under the assumption that I
+		// re-create them later using the IntPtr in order to free them in
+		// UnloadPlugin. I'm reasonably confident this works as expected, but I
+		// need to confirm this is ok. It's not a huge concern, though, since the
+		// objects will definitely go away when then AppDomain is unloaded and we
+		// need them for the entire life of the domain.
+		// NOTE: We can't pin the AppDomain pointer. Yay.
 		pluginHeader->appDomain    = (void*) (IntPtr) GCHandle::Alloc(appDomain);
 		pluginHeader->pluginLoader = (void*) (IntPtr) GCHandle::Alloc(appDomain->DomainManager);
 		return true;
@@ -157,7 +156,7 @@ private:
 
 
 
-	//NOTE: These functions run in the plugin AppDomain
+	// NOTE: These functions run in the plugin AppDomain
 
 #if false
 	generic <typename T>
@@ -180,11 +179,11 @@ private:
 				}
 				else
 				{
-					//TODO: Warning: multiple plugins in same file
+					// TODO: Warning: multiple plugins in same file
 				}
 			}
 		}
-		//TODO: Logging
+		// TODO: Logging
 		//LOG_IF(!pluginInstance, L"Failed to find a managed sensor plugin class", Severity::Warning, return false);
 		return pluginInstance;
 	}
@@ -208,11 +207,11 @@ private:
 				}
 				else
 				{
-					//TODO: Warning: multiple plugins in same file
+					// TODO: Warning: multiple plugins in same file
 				}
 			}
 		}
-		//TODO: Logging
+		// TODO: Logging
 		//LOG_IF(!pluginInstance, L"Failed to find a managed sensor plugin class", Severity::Warning, return false);
 		sensorPlugin->pluginInstance = (void*) (IntPtr) GCHandle::Alloc(pluginInstance);
 
@@ -265,11 +264,11 @@ private:
 				}
 				else
 				{
-					//TODO: Warning: multiple plugins in same file
+					// TODO: Warning: multiple plugins in same file
 				}
 			}
 		}
-		//TODO: Logging
+		// TODO: Logging
 		//LOG_IF(!pluginInstance, L"Failed to find a managed sensor plugin class", Severity::Warning, return false);
 		widgetPlugin->pluginInstance = (void*) (IntPtr) GCHandle::Alloc(pluginInstance);
 
@@ -305,5 +304,5 @@ private:
 	}
 };
 
-//NOTE: Cross domain function calls average 200ns with the delegate pattern.
-//Try playing with security settings if optimizing this
+// NOTE: Cross domain function calls average 200ns with the delegate pattern.
+// Try playing with security settings if optimizing this

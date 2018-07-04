@@ -37,13 +37,13 @@ union V2i
 		i32 y;
 	};
 
-	//Aliases
+	// Aliases
 	i32 arr[2];
 
 	i32 operator[] (i32 index);
 };
 
-//Operators
+// Operators
 inline b32
 operator== (V2i lhs, V2i rhs)
 {
@@ -103,7 +103,7 @@ union V3
 		r32 z;
 	};
 
-	//Aliases
+	// Aliases
 	struct
 	{
 		r32 r;
@@ -121,7 +121,7 @@ union V3
 	r32 operator[] (i32 index);
 };
 
-//Operators
+// Operators
 inline b32
 operator== (V3 lhs, V3 rhs)
 {
@@ -183,7 +183,7 @@ union V4
 		r32 w;
 	};
 
-	//Aliases
+	// Aliases
 	struct
 	{
 		r32 r;
@@ -196,7 +196,7 @@ union V4
 	r32 operator[] (i32 index);
 };
 
-//Operators
+// Operators
 inline b32
 operator== (V4 lhs, V4 rhs)
 {

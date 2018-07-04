@@ -15,7 +15,7 @@ enum struct PluginLanguage
 	Managed,
 };
 
-typedef List<struct PluginHeader>::RefT PluginHeaderRef;
+using PluginHeaderRef = List<struct PluginHeader>::RefT;
 struct PluginHeader
 {
 	PluginHeaderRef ref;
@@ -26,7 +26,7 @@ struct PluginHeader
 	PluginLanguage  language;
 	PluginInfo      info;
 
-	//TODO: Try using COM pointers instead.
+	// TODO: Try using COM pointers instead.
 	void* appDomain;
 	void* pluginLoader;
 };

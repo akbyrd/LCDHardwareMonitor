@@ -1,7 +1,6 @@
-/* NOTE: Raise a compiler error when switching over
- * an enum and any enum values are missing a case.
- * https://msdn.microsoft.com/en-us/library/fdt9w8tf.aspx
- */
+// NOTE: Raise a compiler error when switching over
+// an enum and any enum values are missing a case.
+// https://msdn.microsoft.com/en-us/library/fdt9w8tf.aspx
 #pragma warning (error: 4062)
 
 #define L_WIDEHELPER(x) L##x

@@ -30,7 +30,7 @@ struct ConstantBufferDesc
 	//void* data;
 };
 
-//TODO: Mesh struct, pre-set pointers
+// TODO: Mesh struct, pre-set pointers
 enum Mesh
 {
 	Null,
@@ -43,7 +43,7 @@ enum Mesh
 	Count
 };
 
-//typedef List<struct Mesh>::RefT MeshRef;
+//using MeshRef = List<struct Mesh>::RefT;
 struct DrawCall
 {
 	Mesh          mesh         = Mesh::Null;

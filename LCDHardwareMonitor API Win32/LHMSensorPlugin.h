@@ -7,21 +7,21 @@ struct Sensor
 	c16* identifier;
 	c16* string;
 	r32  value;
-	//TODO: Range struct?
+	// TODO: Range struct?
 	r32  minValue;
 	r32  maxValue;
 };
 
-//TODO: Remove these once the API stabilizes
+// TODO: Remove these once the API stabilizes
 #define SP_INITIALIZE_ARGS struct SensorPlugin* s
 #define SP_UPDATE_ARGS     struct SensorPlugin* s
 #define SP_TEARDOWN_ARGS   struct SensorPlugin* s
 
-typedef void (*SensorPluginInitializeFn)(SP_INITIALIZE_ARGS);
-typedef void (*SensorPluginUpdateFn)    (SP_UPDATE_ARGS);
-typedef void (*SensorPluginTeardownFn)  (SP_TEARDOWN_ARGS);
+using SensorPluginInitializeFn = void (*)(SP_INITIALIZE_ARGS);
+using SensorPluginUpdateFn     = void (*)(SP_UPDATE_ARGS);
+using SensorPluginTeardownFn   = void (*)(SP_TEARDOWN_ARGS);
 
-//TODO: Passing this directly to plugins is dangerous.
+// TODO: Passing this directly to plugins is dangerous.
 PUBLIC struct SensorPlugin
 {
 	PluginHeaderRef          pluginHeaderRef;

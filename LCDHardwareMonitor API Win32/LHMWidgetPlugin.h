@@ -5,14 +5,14 @@ struct Widget
 {
 };
 
-//TODO: Remove these once the API stabilizes
+// TODO: Remove these once the API stabilizes
 #define WP_INITIALIZE_ARGS struct WidgetPlugin* s
 #define WP_UPDATE_ARGS     struct WidgetPlugin* s
 #define WP_TEARDOWN_ARGS   struct WidgetPlugin* s
 
-typedef void (*WidgetPluginInitializeFn)(WP_INITIALIZE_ARGS);
-typedef void (*WidgetPluginUpdateFn)    (WP_UPDATE_ARGS);
-typedef void (*WidgetPluginTeardownFn)  (WP_TEARDOWN_ARGS);
+using WidgetPluginInitializeFn = void (*)(WP_INITIALIZE_ARGS);
+using WidgetPluginUpdateFn     = void (*)(WP_UPDATE_ARGS);
+using WidgetPluginTeardownFn   = void (*)(WP_TEARDOWN_ARGS);
 
 PUBLIC struct WidgetPlugin
 {

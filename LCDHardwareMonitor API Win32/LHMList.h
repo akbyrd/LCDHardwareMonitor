@@ -1,25 +1,24 @@
 #ifndef LHM_LIST
 #define LHM_LIST
 
-/* Usage Notes
- *  - Memory is zero-initialized during allocations and when items are removed.
- *    If you choose to manipulate internal data such as the current length (e.g.
- *    to remove an item) you will leave dangling data whose destructor has not
- *    been called. If an item is later placed into that spot the destructor will
- *    be called upon the copy-assignment. Using the provided functions is
- *    recommended.
- *
- *  - Does *not* support move semantics. Items are copy-assigned into spots.
- *    Using classes with single ownership semantics (i.e. ones that will free a
- *    resource in the destructor) are not recommended.
- *
- *  - List_Contains is determined by reference, not by value. That is, the
- *    address of the object is checked to see if it lies within the list.
- *
- *  - Grow and Append can fail due to allocations.
- *    Grow returns false.
- *    Append return a nullptr instead of a pointer to the new slot.
- */
+// NOTE:
+// - Memory is zero-initialized during allocations and when items are removed.
+//   If you choose to manipulate internal data such as the current length (e.g.
+//   to remove an item) you will leave dangling data whose destructor has not
+//   been called. If an item is later placed into that spot the destructor will
+//   be called upon the copy-assignment. Using the provided functions is
+//   recommended.
+//
+// - Does *not* support move semantics. Items are copy-assigned into spots.
+//   Using classes with single ownership semantics (i.e. ones that will free a
+//   resource in the destructor) are not recommended.
+//
+// - List_Contains is determined by reference, not by value. That is, the
+//   address of the object is checked to see if it lies within the list.
+//
+// - Grow and Append can fail due to allocations.
+//   Grow returns false.
+//   Append return a nullptr instead of a pointer to the new slot.
 
 #include <memory>
 
@@ -37,7 +36,7 @@ struct List
 	i32 capacity;
 	T*  data;
 
-	typedef ListRef<T> RefT;
+	using RefT = ListRef<T>;
 	inline T& operator [](RefT r) { return data[r.index]; }
 	inline T& operator [](i32 i)  { return data[i]; }
 	inline    operator T*()       { return data; }
@@ -133,11 +132,11 @@ List_Contains(List<T>& list, T& item)
 	if (list.length == 0)
 		return false;
 
-	//TODO: This returns false positives if the address in the range, but not an actual item
+	// TODO: This returns false positives if the address in the range, but not an actual item
 	return &item >= &list[0] && &item < &list[list.length];
 }
 
-//NOTE: I guess this only works if T has a custom equality operator?
+// NOTE: I guess this only works if T has a custom equality operator?
 template<typename T>
 inline b32
 List_ContainsValue(List<T>& list, T& item)
@@ -204,7 +203,7 @@ List_Duplicate(List<T>& list)
 {
 	List<T> duplicate = {};
 	List_Reserve(duplicate, list.capacity);
-	//TODO: Fix this
+	// TODO: Fix this
 	//if (!duplicate) return nullptr;
 
 	duplicate.length   = list.length;
@@ -232,15 +231,16 @@ List_Equal(List<T>& listA, List<T>& listB)
 	return true;
 }
 
-/* TODO: This data structure needs to be reworked entirely. The API is all
- * over the place and generally garbage. */
-/* TODO: I bet we can make a pretty simple fixed-size list with the same
- * interface (e.g. transparently change between them). */
-//TODO: Maybe return references instead of pointers?
-//TODO: Handle cases where this may fail
-//TODO: Where should memory be included?
-//TODO: Create can fail too! Yay!
-//TODO: List_Shrink - if <=25% full shrink to 50%
-//TODO: Allow foreach style usage
+// TODO: This data structure needs to be reworked entirely. The API is all
+// over the place and generally garbage.
+// TODO: I bet we can make a pretty simple fixed-size list with the same
+// interface (e.g. transparently change between them).
+// TODO: Maybe return references instead of pointers?
+// TODO: Handle cases where this may fail
+// TODO: Where should memory be included?
+// TODO: Create can fail too! Yay!
+// TODO: List_Shrink - if <=25% full shrink to 50%
+// TODO: Allow foreach style usage
+// TODO: Use placement new to avoid calling destructors on garbage objects?
 
 #endif

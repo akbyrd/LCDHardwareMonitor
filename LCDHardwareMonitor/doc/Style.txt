@@ -9,6 +9,11 @@ Style Notes
   their representation. Calling a real number a 'floating point number' is no
   less silly than calling an unsigned integer a 'two's complement number'.
 
+- Prefer using over typedef. It's more intuitive, looks more like normal
+  variable assignment, and provides a superset of typedef functionality. Using
+  *must* be used when aliasing templates and I'd prefer to use a single language
+  construct rather than two.
+
 - Don't introduce complexity that isn't *required* by the problem being solved.
   Move semantics is a ridiculous feature that exists only to solve problems
   introduced by other ridiculous features that came before it. Yes, this
@@ -73,10 +78,18 @@ Style Notes
   needs to be explained with a comment when the code is extremely difficult
   to understand, highly optimized, or contains important subtleties. Section
   headers should mostly be used with local scopes:
-      //Initialize Rasterizer State
+      // Initialize Rasterizer State
       {
           //...
       }
+  Code is disabled with //<code> or #if false. Code is commented with // <text>.
+  /* <...> */ and /// <...> and other esoteric formats are never used. Note the
+  use of spaces after slashes. Comments generally wrap at 80 characters.
+  However, if it makes the code signficantly cleaner/easier to read use your
+  best judgement. Justifications: block comments don't nest, editors are
+  finnicky about auto-continuing comments on new lines, I don't currently care
+  about specific documentation generators, and spacing differences make it easy
+  to Ctrl+F specifically for comments and not disabled code.
 
 - Prefer plain old data and functions over objects.
 

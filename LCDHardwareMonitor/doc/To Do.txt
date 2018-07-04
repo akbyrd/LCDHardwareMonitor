@@ -30,11 +30,11 @@ Sensor Plugins
 
 
 Refactoring
+	Rewrite List<T>
 	Raise warning level
 	Ensure Platform function naming is uniform
 	Decide on 'plugin loader' naming on both sides of the managed boundary
 	Maybe change .h to .hpp?
-	Decide on comment style ("// " for comments, "//" for disabled code)
 	Replace references with pointers
 	Stop using wide characters. That's not the right path to unicode support.
 	Decide what we're really doing with wide characters/i18n

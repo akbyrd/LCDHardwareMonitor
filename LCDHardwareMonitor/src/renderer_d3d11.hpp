@@ -1,6 +1,5 @@
-/* TODO: What happens if we call random renderer api and the device is
- * disconnected? Presumably it can happen at anytime, not just during an update?
- */
+// TODO: What happens if we call random renderer api and the device is
+// disconnected? Presumably it can happen at anytime, not just during an update?
 
 #pragma comment(lib, "D3D11.lib")
 #pragma comment(lib,  "D3D9.lib")
@@ -30,7 +29,7 @@ namespace HLSLSemantic
 	const c8* Color    = "COLOR";
 }
 
-// NOTES:
+// NOTE:
 // - Assume there's only one set of shaders and buffers so we don't need to
 //   know which ones to use.
 // - Shaders and buffers can be shoved in a list in RendererState, referenced
@@ -60,9 +59,9 @@ struct InputLayout
 struct VertexShader
 {
 	WString                    name;
-	//TODO: Needs to be ref counted
+	// TODO: Needs to be ref counted
 	InputLayout*               inputLayout;
-	//TODO: Better names?
+	// TODO: Better names?
 	ComPtr<ID3D11VertexShader> d3dVertexShader;
 	ComPtr<ID3D11Buffer>       d3dConstantBuffer;
 };
@@ -102,16 +101,17 @@ struct RendererState
 	u32                drawCallCount       = 0;
 };
 
-//TODO: Asset loading system
-//TODO: Initialize lists
-//TODO: Set shaders before use
-//TODO: Debug shader!
-//TODO: We're not really handling errors cases. Going to end up partially initialized. Reference counting might be a robust solution?
-//TODO: Handle unloading assets (will require reference counting, I think)
-//TODO: This pointer will move
-//TODO: Start passing WStrings instead of c16*?
+// TODO: Asset loading system
+// TODO: Initialize lists
+// TODO: Set shaders before use
+// TODO: Debug shader!
+// TODO: We're not really handling errors cases. Going to end up partially
+// initialized. Reference counting might be a robust solution?
+// TODO: Handle unloading assets (will require reference counting, I think)
+// TODO: This pointer will move
+// TODO: Start passing WStrings instead of c16*?
 
-//TODO: Merge these?
+// TODO: Merge these?
 template<u32 TNameLength>
 static inline void
 SetDebugObjectName(const ComPtr<ID3D11Device> &resource, const c8 (&name)[TNameLength])
@@ -144,8 +144,8 @@ LoadVertexShader(RendererState* s, c16* path, List<VertexAttribute> attributes, 
 {
 	HRESULT hr;
 
-	//TODO: Hash names?
-	//Use Existing
+	// TODO: Hash names?
+	// Use Existing
 	for (i32 i = 0; i < s->vertexShaders.length; i++)
 	{
 		if (wcscmp(s->vertexShaders[i].name, path) == 0)
@@ -153,25 +153,25 @@ LoadVertexShader(RendererState* s, c16* path, List<VertexAttribute> attributes, 
 	}
 
 
-	//TODO: Copy name
-	//TODO: Find a way to include shader name in errors
-	//Vertex Shader
+	// TODO: Copy name
+	// TODO: Find a way to include shader name in errors
+	// Vertex Shader
 	VertexShader* vs = nullptr;
 	Bytes vsBytes = {};
 	{
 		vs = List_Append(s->vertexShaders, VertexShader {});
 		LOG_IF(!vs, L"Failed to allocate space for vertex shader", Severity::Warning, return nullptr);
 
-		//Load
+		// Load
 		vsBytes = Platform_LoadFileBytes(path);
 		LOG_IF(!vsBytes, L"Failed to load vertex shader file", Severity::Warning, return nullptr);
 
-		//Create
+		// Create
 		hr = s->d3dDevice->CreateVertexShader(vsBytes.data, vsBytes.length, nullptr, &vs->d3dVertexShader);
 		LOG_HRESULT_IF_FAILED(hr, L"Failed to create vertex shader", Severity::Error, return nullptr);
 		SetDebugObjectName(vs->d3dVertexShader, "Vertex Shader");
 
-		//Per-object constant buffer
+		// Per-object constant buffer
 		D3D11_BUFFER_DESC vsConstBuffDes = {};
 		vsConstBuffDes.ByteWidth           = cBufDesc.size;
 		vsConstBuffDes.Usage               = D3D11_USAGE_DYNAMIC;
@@ -186,7 +186,7 @@ LoadVertexShader(RendererState* s, c16* path, List<VertexAttribute> attributes, 
 	}
 
 
-	//Input layout
+	// Input layout
 	InputLayout* il = nullptr;
 	{
 		il = List_Append(s->inputLayouts);
@@ -205,7 +205,7 @@ LoadVertexShader(RendererState* s, c16* path, List<VertexAttribute> attributes, 
 				case VertexAttributeSemantic::Color:    semantic = HLSLSemantic::Color;    break;
 
 				default:
-					//TODO: Include semantic value
+					// TODO: Include semantic value
 					LOG_IF(true, L"Unrecognized VS attribute semantic", Severity::Warning, return nullptr);
 			}
 
@@ -216,7 +216,7 @@ LoadVertexShader(RendererState* s, c16* path, List<VertexAttribute> attributes, 
 				case VertexAttributeFormat::Float4: format = DXGI_FORMAT_R32G32B32A32_FLOAT; break;
 
 				default:
-					//TODO: Include format value
+					// TODO: Include format value
 					LOG_IF(true, L"Unrecognized VS attribute format", Severity::Warning, return nullptr);
 			}
 
@@ -240,7 +240,7 @@ LoadVertexShader(RendererState* s, c16* path, List<VertexAttribute> attributes, 
 	return vs;
 
 //Cleanup:
-	//TODO: Initialize all values
+	// TODO: Initialize all values
 	List_Free(vsBytes);
 
 	if (il)
@@ -264,7 +264,7 @@ static void UpdateRasterizerState(RendererState* s);
 b32
 Renderer_Initialize(RendererState* s, V2i renderSize)
 {
-	//TODO: This assert style probably needs to be changed
+	// TODO: This assert style probably needs to be changed
 	Assert(s->d3dDevice                   == nullptr);
 	Assert(s->d3dContext                  == nullptr);
 	Assert(s->dxgiFactory                 == nullptr);
@@ -275,10 +275,10 @@ Renderer_Initialize(RendererState* s, V2i renderSize)
 	Assert(s->d3dRasterizerStateSolid     == nullptr);
 	Assert(s->d3dRasterizerStateWireframe == nullptr);
 
-	//TODO : Move into local blocks
+	// TODO : Move into local blocks
 	HRESULT hr;
 
-	//Create device
+	// Create device
 	{
 		UINT createDeviceFlags = D3D11_CREATE_DEVICE_SINGLETHREADED;
 		#if DEBUG
@@ -293,7 +293,7 @@ Renderer_Initialize(RendererState* s, V2i renderSize)
 			D3D_DRIVER_TYPE_HARDWARE,
 			nullptr,
 			createDeviceFlags,
-			nullptr, 0, //NOTE: 11_1 will never be created by default
+			nullptr, 0, // NOTE: 11_1 will never be created by default
 			D3D11_SDK_VERSION,
 			&s->d3dDevice,
 			&featureLevel,
@@ -303,14 +303,14 @@ Renderer_Initialize(RendererState* s, V2i renderSize)
 		SetDebugObjectName(s->d3dDevice,  "Device");
 		SetDebugObjectName(s->d3dContext, "Device Context");
 
-		//Check feature level
+		// Check feature level
 		if ((featureLevel & D3D_FEATURE_LEVEL_11_0) != D3D_FEATURE_LEVEL_11_0)
 		{
 			LOG(L"Created device does not support D3D 11", Severity::Error);
 			return false;
 		}
 
-		//Obtain the DXGI factory used to create the current device.
+		// Obtain the DXGI factory used to create the current device.
 		ComPtr<IDXGIDevice1> dxgiDevice;
 		hr = s->d3dDevice.As(&dxgiDevice);
 		LOG_HRESULT_IF_FAILED(hr, L"Failed to get DXGI device", Severity::Error, return false);
@@ -323,12 +323,12 @@ Renderer_Initialize(RendererState* s, V2i renderSize)
 		LOG_HRESULT_IF_FAILED(hr, L"Failed to get DXGI adapter", Severity::Error, return false);
 		SetDebugObjectName(dxgiAdapter, "DXGI Adapter");
 
-		//TODO: Only needed for the swap chain
+		// TODO: Only needed for the swap chain
 		hr = dxgiAdapter->GetParent(IID_PPV_ARGS(&s->dxgiFactory));
 		LOG_HRESULT_IF_FAILED(hr, L"Failed to get DXGI factory", Severity::Error, return false);
 		SetDebugObjectName(s->dxgiFactory, "DXGI Factory");
 
-		//Check for the WARP driver
+		// Check for the WARP driver
 		DXGI_ADAPTER_DESC desc = {};
 		hr = dxgiAdapter->GetDesc(&desc);
 		LOG_HRESULT_IF_FAILED(hr, L"Failed to get DXGI adapter description", Severity::Error, return false);
@@ -343,9 +343,9 @@ Renderer_Initialize(RendererState* s, V2i renderSize)
 	}
 
 
-	//Configure debugging
+	// Configure debugging
 	{
-		//TODO: Maybe replace DEBUG with something app specific
+		// TODO: Maybe replace DEBUG with something app specific
 		#ifdef DEBUG
 		ComPtr<IDXGIDebug1> dxgiDebug;
 		hr = DXGIGetDebugInterface1(0, IID_PPV_ARGS(&dxgiDebug));
@@ -365,12 +365,12 @@ Renderer_Initialize(RendererState* s, V2i renderSize)
 	}
 
 
-	//Create render texture
+	// Create render texture
 	D3D11_TEXTURE2D_DESC renderTextureDesc = {};
 	{
-		//Create texture
+		// Create texture
 		{
-			//Query and set MSAA quality levels
+			// Query and set MSAA quality levels
 			hr = s->d3dDevice->CheckMultisampleQualityLevels(
 				DXGI_FORMAT_B8G8R8A8_UNORM,
 				s->multisampleCount,
@@ -382,14 +382,13 @@ Renderer_Initialize(RendererState* s, V2i renderSize)
 			renderTextureDesc.Height             = renderSize.y;
 			renderTextureDesc.MipLevels          = 1;
 			renderTextureDesc.ArraySize          = 1;
-			/* TODO: Switch to DXGI_FORMAT_B8G8R8A8_UNORM_SRGB for linear rendering
-			 * DirectXMath colors are defined in sRGB colorspace. Update the clear:
-			 * color.v = XMColorSRGBToRGB(Colors::CornflowerBlue);
-			 * context->ClearRenderTargetView(renderTarget, color);
-			 * https://blog.molecular-matters.com/2011/11/21/gamma-correct-rendering/
-			 * http://http.developer.nvidia.com/GPUGems3/gpugems3_ch24.html
-			 * http://filmicgames.com/archives/299
-			 */
+			// TODO: Switch to DXGI_FORMAT_B8G8R8A8_UNORM_SRGB for linear rendering
+			// DirectXMath colors are defined in sRGB colorspace. Update the clear:
+			// color.v = XMColorSRGBToRGB(Colors::CornflowerBlue);
+			// context->ClearRenderTargetView(renderTarget, color);
+			// https://blog.molecular-matters.com/2011/11/21/gamma-correct-rendering/
+			// http://http.developer.nvidia.com/GPUGems3/gpugems3_ch24.html
+			// http://filmicgames.com/archives/299
 			renderTextureDesc.Format             = DXGI_FORMAT_B8G8R8A8_UNORM;
 			renderTextureDesc.SampleDesc.Count   = s->multisampleCount;
 			renderTextureDesc.SampleDesc.Quality = s->qualityLevelCount - 1;
@@ -411,7 +410,7 @@ Renderer_Initialize(RendererState* s, V2i renderSize)
 		}
 
 
-		//Create depth buffer
+		// Create depth buffer
 		{
 			D3D11_TEXTURE2D_DESC depthDesc = {};
 			depthDesc.Width              = s->renderSize.x;
@@ -437,11 +436,11 @@ Renderer_Initialize(RendererState* s, V2i renderSize)
 		}
 
 
-		//Initialize output merger
+		// Initialize output merger
 		s->d3dContext->OMSetRenderTargets(1, s->d3dRenderTargetView.GetAddressOf(), s->d3dDepthBufferView.Get());
 
 
-		//Initialize viewport
+		// Initialize viewport
 		{
 			D3D11_VIEWPORT viewport = {};
 			viewport.TopLeftX = 0;
@@ -455,7 +454,7 @@ Renderer_Initialize(RendererState* s, V2i renderSize)
 		}
 
 
-		//Initialize projection matrix
+		// Initialize projection matrix
 		{
 			XMMATRIX P = XMMatrixOrthographicLH((r32) s->renderSize.x, (r32) s->renderSize.y, 0, 1000);
 			XMStoreFloat4x4(&s->proj, P);
@@ -463,7 +462,7 @@ Renderer_Initialize(RendererState* s, V2i renderSize)
 	}
 
 
-	//Create vertex shader
+	// Create vertex shader
 	{
 		List<VertexAttribute> vsAttributes = {};
 		List_Reserve(vsAttributes, 2);
@@ -473,39 +472,38 @@ Renderer_Initialize(RendererState* s, V2i renderSize)
 		List_Append(vsAttributes, VertexAttribute { VertexAttributeSemantic::Color,    VertexAttributeFormat::Float4 });
 		VertexShader* vs = LoadVertexShader(s, L"Shaders/Basic Vertex Shader.cso", vsAttributes, { sizeof(XMFLOAT4X4) });
 
-		//TODO: Move this
+		// TODO: Move this
 		s->d3dContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	}
 
 
-	//Create pixel shader
+	// Create pixel shader
 	{
-		//Load
+		// Load
 		Bytes psBytes = Platform_LoadFileBytes(L"Shaders/Basic Pixel Shader.cso");
 		LOG_IF(!psBytes, L"Failed to load fallback pixel shader file", Severity::Error, return false);
 
-		//Create
+		// Create
 		hr = s->d3dDevice->CreatePixelShader(psBytes.data, psBytes.length, nullptr, &s->d3dPixelShader);
 		LOG_HRESULT_IF_FAILED(hr, L"Failed to create fallback pixel shader", Severity::Error, return false);
 		SetDebugObjectName(s->d3dPixelShader, "Pixel Shader");
 
-		//Set
+		// Set
 		s->d3dContext->PSSetShader(s->d3dPixelShader.Get(), nullptr, 0);
 	}
 
 
-	//Initialize rasterizer state
+	// Initialize rasterizer state
 	{
 		// NOTE: MultisampleEnable toggles between quadrilateral AA (true) and alpha AA (false).
 		// Alpha AA has a massive performance impact while quadrilateral is much smaller
 		// (negligible for the mesh drawn here). Visually, it's hard to tell the difference between
 		// quadrilateral AA on and off in this demo. Alpha AA on the other hand is more obvious. It
-		// causes the wireframe to draw lines 2 px wide instead of 1.
-		//
-		// See remarks: https://msdn.microsoft.com/en-us/library/windows/desktop/ff476198(v=vs.85).aspx
+		// causes the wireframe to draw lines 2 px wide instead of 1. See remarks:
+		// https://msdn.microsoft.com/en-us/library/windows/desktop/ff476198(v=vs.85).aspx
 		const b32 useQuadrilateralLineAA = true;
 
-		//Solid
+		// Solid
 		D3D11_RASTERIZER_DESC rasterizerDesc = {};
 		rasterizerDesc.FillMode              = D3D11_FILL_SOLID;
 		rasterizerDesc.CullMode              = D3D11_CULL_NONE;
@@ -522,25 +520,25 @@ Renderer_Initialize(RendererState* s, V2i renderSize)
 		LOG_HRESULT_IF_FAILED(hr, L"Failed to create solid rasterizer state", Severity::Error, return false);
 		SetDebugObjectName(s->d3dRasterizerStateSolid, "Rasterizer State (Solid)");
 
-		//Wireframe
+		// Wireframe
 		rasterizerDesc.FillMode = D3D11_FILL_WIREFRAME;
 
 		hr = s->d3dDevice->CreateRasterizerState(&rasterizerDesc, &s->d3dRasterizerStateWireframe);
 		LOG_HRESULT_IF_FAILED(hr, L"Failed to create wireframe rasterizer state", Severity::Error, return false);
 		SetDebugObjectName(s->d3dRasterizerStateWireframe, "Rasterizer State (Wireframe)");
 
-		//Start off in correct state
+		// Start off in correct state
 		UpdateRasterizerState(s);
 	}
 
 
-	//DEBUG: Create a draw call
-	//TODO: This should be done in the application, not the renderer
+	// DEBUG: Create a draw call
+	// TODO: This should be done in the application, not the renderer
 	{
-		//Create vertices
+		// Create vertices
 		Vertex vertices[4];
 
-		//TODO: Real equilateral triangle
+		// TODO: Real equilateral triangle
 		vertices[0].position = XMFLOAT3(-.5f, -.5f, 0);
 		vertices[1].position = XMFLOAT3(-.5f,  .5f, 0);
 		vertices[2].position = XMFLOAT3( .5f,  .5f, 0);
@@ -551,7 +549,7 @@ Renderer_Initialize(RendererState* s, V2i renderSize)
 		XMStoreFloat4(&vertices[2].color, Colors::Blue);
 		XMStoreFloat4(&vertices[3].color, Colors::White);
 
-		//Create vertex buffer
+		// Create vertex buffer
 		D3D11_BUFFER_DESC vertBuffDesc = {};
 		vertBuffDesc.ByteWidth           = ArraySize(vertices);
 		vertBuffDesc.Usage               = D3D11_USAGE_DYNAMIC;
@@ -574,17 +572,17 @@ Renderer_Initialize(RendererState* s, V2i renderSize)
 		LOG_HRESULT_IF_FAILED(hr, L"Failed to create quad vertex buffer", Severity::Error, return false);
 		SetDebugObjectName(vBuffer, "Quad Vertices");
 
-		//TODO: Move
-		//Set
+		// TODO: Move
+		// Set
 		s->d3dContext->IASetVertexBuffers(0, 1, vBuffer.GetAddressOf(), &mesh->vStride, &mesh->vOffset);
 
-		//Create indices
+		// Create indices
 		UINT indices[] = {
 			0, 1, 2,
 			2, 3, 0
 		};
 
-		//Create index buffer
+		// Create index buffer
 		mesh->iBase   = 0;
 		mesh->iCount  = ArrayLength(indices);
 		mesh->iFormat = DXGI_FORMAT_R32_UINT;
@@ -609,8 +607,8 @@ Renderer_Initialize(RendererState* s, V2i renderSize)
 
 		s->d3dContext->IASetIndexBuffer(iBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
 
-		//TODO: Remove
-		//Draw call
+		// TODO: Remove
+		// Draw call
 		DrawCall* dc;
 		dc = Renderer_PushDrawCall(s);
 		if (dc == nullptr) return false;
@@ -664,7 +662,7 @@ Renderer_Teardown(RendererState* s)
 	s->d3dRasterizerStateWireframe.Reset();
 
 
-	//Log live objects
+	// Log live objects
 	{
 		#ifdef DEBUG
 		HRESULT hr;
@@ -673,15 +671,14 @@ Renderer_Teardown(RendererState* s)
 		hr = DXGIGetDebugInterface1(0, IID_PPV_ARGS(&dxgiDebug));
 		LOG_HRESULT_IF_FAILED(hr, L"Failed to get DXGI debug interface", Severity::Warning, return);
 
-		//TODO: Test the differences in the output
-		//DXGI_DEBUG_RLO_ALL
-		//DXGI_DEBUG_RLO_SUMMARY
-		//DXGI_DEBUG_RLO_DETAIL
-		/* NOTE: Only available with the Windows SDK installed. That's not
-		 * unituitive and doesn't lead to cryptic errors or anything. Fuck you,
-		 * Microsoft.
-		 */
-		//TODO: Re-enable this
+		// TODO: Test the differences in the output
+		// DXGI_DEBUG_RLO_ALL
+		// DXGI_DEBUG_RLO_SUMMARY
+		// DXGI_DEBUG_RLO_DETAIL
+		// NOTE: Only available with the Windows SDK installed. That's not
+		// unituitive and doesn't lead to cryptic errors or anything. Fuck you,
+		// Microsoft.
+		// TODO: Re-enable this
 		//hr = dxgiDebug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_IGNORE_INTERNAL);
 		//LOG_HRESULT_IF_FAILED(hr, L"ReportLiveObjects failed", Severity::Warning, return);
 
@@ -714,14 +711,14 @@ Renderer_Render(RendererState* s)
 	s->d3dContext->ClearRenderTargetView(s->d3dRenderTargetView.Get(), DirectX::Colors::Black);
 	s->d3dContext->ClearDepthStencilView(s->d3dDepthBufferView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
 
-	//Update Camera
+	// Update Camera
 	XMVECTOR pos    = {0, 0, 0};
 	XMVECTOR target = {0, 0, 1};
 	XMVECTOR up     = {0, 1, 0};
 
 	XMMATRIX V = XMMatrixLookAtLH(pos, target, up);
 
-	//TODO: Sort draws
+	// TODO: Sort draws
 	for (u32 i = 0; i < s->drawCallCount; i++)
 	{
 		DrawCall*     dc   = &s->drawCalls[i];
@@ -732,13 +729,13 @@ Renderer_Render(RendererState* s)
 		XMMATRIX P = XMLoadFloat4x4(&s->proj);
 		XMMATRIX WVP = XMMatrixTranspose(W * V * P);
 
-		//Set
+		// Set
 		s->d3dContext->VSSetShader(vs->d3dVertexShader.Get(), nullptr, 0);
 		s->d3dContext->VSSetConstantBuffers(0, 1, vs->d3dConstantBuffer.GetAddressOf());
 		s->d3dContext->IASetInputLayout(vs->inputLayout->d3dInputLayout.Get());
 		//s->d3dContext->IASetVertexBuffers(0, 1, vBuffer.GetAddressOf(), &mesh->vStride, &mesh->vOffset);
 
-		//Update VS cbuffer
+		// Update VS cbuffer
 		D3D11_MAPPED_SUBRESOURCE vsConstBuffMap = {};
 		hr = s->d3dContext->Map(vs->d3dConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &vsConstBuffMap);
 		LOG_HRESULT_IF_FAILED(hr, L"Failed to map constant buffer", Severity::Error, return false);
@@ -750,7 +747,7 @@ Renderer_Render(RendererState* s)
 	}
 	//s->drawCallCount = 0;
 
-	//TODO: Why is this here again? I think it's for the WPF app
+	// TODO: Why is this here again? I think it's for the WPF app
 	//s->d3dContext->Flush();
 
 	return true;
@@ -766,7 +763,7 @@ Renderer_CreateSharedD3D9RenderTexture(RendererState* s)
 
 	HRESULT hr;
 
-	//Device
+	// Device
 	hr = Direct3DCreate9Ex(D3D_SDK_VERSION, &s->d3d9);
 	LOG_HRESULT_IF_FAILED(hr, L"Failed to initialize D3D9", Severity::Error, return false);
 
@@ -779,7 +776,7 @@ Renderer_CreateSharedD3D9RenderTexture(RendererState* s)
 	hr = s->d3d9->CreateDeviceEx(
 		D3DADAPTER_DEFAULT,
 		D3DDEVTYPE_HAL,
-		GetDesktopWindow(), //TODO: Ensure this is ok
+		GetDesktopWindow(), // TODO: Ensure this is ok
 		D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED | D3DCREATE_FPU_PRESERVE,
 		&presentParams,
 		nullptr,
@@ -788,7 +785,7 @@ Renderer_CreateSharedD3D9RenderTexture(RendererState* s)
 	LOG_HRESULT_IF_FAILED(hr, L"Failed to create D3D9 device", Severity::Error, return false);
 
 
-	//Shared surface
+	// Shared surface
 	ComPtr<IDXGIResource> dxgiRenderTexture;
 	hr = s->d3dRenderTexture.As(&dxgiRenderTexture);
 	LOG_HRESULT_IF_FAILED(hr, L"Failed to get DXGI render texture", Severity::Error, return false);

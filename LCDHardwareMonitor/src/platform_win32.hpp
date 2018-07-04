@@ -1,12 +1,11 @@
-//
-// Logging
-//
+// TODO: Remove this
+#include <fstream>
 
 void
 Platform_Log(c16* message, Severity severity, c16* file, i32 line, c16* function)
 {
-	//TODO: Dynamic allocation
-	//TODO: Check for swprintf failure (overflow).
+	// TODO: Dynamic allocation
+	// TODO: Check for swprintf failure (overflow).
 	c16 buffer[512];
 	swprintf(buffer, ArrayLength(buffer), L"%s - %s\n\t%s(%i)\n", function, message, file, line);
 	Platform_Print(buffer);
@@ -24,7 +23,7 @@ Platform_Print(c16* message)
 static void
 LogFormatMessage(c16* message, Severity severity, u32 messageID, c16* file, i32 line, c16* function)
 {
-	//TODO: Dynamic allocation
+	// TODO: Dynamic allocation
 	c16 windowsMessage[256];
 	u32 uResult = FormatMessageW(
 		FORMAT_MESSAGE_FROM_SYSTEM,
@@ -36,8 +35,8 @@ LogFormatMessage(c16* message, Severity severity, u32 messageID, c16* file, i32 
 		nullptr
 	);
 
-	//NOTE: If we fail this far down, just...fuck it.
-	//TODO: Dynamic allocation
+	// NOTE: If we fail this far down, just...fuck it.
+	// TODO: Dynamic allocation
 	c16 combinedMessage[256];
 	if (uResult == 0)
 	{
@@ -79,21 +78,14 @@ LogLastError(c16* message, Severity severity, c16* file, i32 line, c16* function
 #define LOG_LAST_ERROR(message, severity) LogLastError(message, severity, WFILE, LINE, WFUNC)
 #define LOG_LAST_ERROR_IF(expression, message, severity, ...) IF(expression, LOG_LAST_ERROR(message, severity); __VA_ARGS__)
 
-
-//
-// File handling
-//
-
-#include <fstream>
-
 static Bytes
 LoadFile(c16* fileName, i32 padding = 0)
 {
 	Assert(padding >= 0);
 
-	//TODO: Add cwd to errors
-	//TODO: Handle files larger than 4 GB
-	//TODO: Handle c8/c16/void
+	// TODO: Add cwd to errors
+	// TODO: Handle files larger than 4 GB
+	// TODO: Handle c8/c16/void
 
 	Bytes result = {};
 

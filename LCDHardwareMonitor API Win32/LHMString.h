@@ -1,15 +1,16 @@
 #ifndef LHM_STRING
 #define LHM_STRING
 
-//TODO: Seems questionable to alias *_Free(), but nothing else.
-//TODO: Static string when capacity < 0?
-//TODO: String views or slices (they need to know they don't own the string. Actually, the 'static string' concept will work here I think).
+// TODO: Seems questionable to alias *_Free(), but nothing else.
+// TODO: Static string when capacity < 0?
+// TODO: String views or slices (they need to know they don't own the string.
+// Actually, the 'static string' concept will work here I think).
 
-//NOTE: Strings are null terminated for C compatibility.
+// NOTE: Strings are null terminated for C compatibility.
 
-typedef List<u8>  Bytes;
-typedef List<c8>  String;
-typedef List<c16> WString;
+using Bytes   = List<u8>;
+using String  = List<c8>;
+using WString = List<c16>;
 
 inline void
 Bytes_Free(Bytes& bytes)
