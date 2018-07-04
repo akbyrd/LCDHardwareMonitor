@@ -2,6 +2,10 @@ Style Notes
 
 - These notes are as much for me as anyone else.
 
+- Compile as C++14, but keep the shenanigans to a minimum. I use quite a few
+  C++11 features, and I can't currently think of any C++14 features, but I don't
+  feel the need to rule them out.
+
 - I find the type_t convention rather pointless, so I typedef that stuff away.
   In particular, I like the basic types being as brief as possible. i32 is a
   32-bit integer number, u32 is a 32-bit unsigned integer, and r32 is a

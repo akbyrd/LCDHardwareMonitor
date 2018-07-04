@@ -235,7 +235,8 @@ List_Equal(List<T>& listA, List<T>& listB)
 // over the place and generally garbage.
 // TODO: I bet we can make a pretty simple fixed-size list with the same
 // interface (e.g. transparently change between them).
-// TODO: Maybe return references instead of pointers?
+// TODO: Array and String slices?
+// TODO: Settle on references or pointers
 // TODO: Handle cases where this may fail
 // TODO: Where should memory be included?
 // TODO: Create can fail too! Yay!

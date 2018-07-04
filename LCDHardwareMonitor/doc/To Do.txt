@@ -1,6 +1,20 @@
 Next
-	Is it worth abstracting a little to unify sensor and widget plugin handling?
+	Include types:
+		public API - LHMList, LHMPluginInfo
+		internal stuff - LHMPluginHeader
+		useful non-API stuff - LHMDefer
 
+		Should plugins have access to LHMMath, LHMDefer?
+		LHMPluginHeader and probablyt be moved to
+
+
+	Is separating PluginHeader and PluginInfo useful?
+	I think we want a separate 'public api' and 'internal api'
+	Raise warning level
+	Leverage Scoped/defer everywhere
+	Memory pools
+
+	Is it worth abstracting a little to unify sensor and widget plugin handling?
 	Implement OHM plugin
 		Show on the LCD!
 		Might be worthwhile to shove a userData pointer on Sensor
@@ -13,9 +27,7 @@ Next
 
 	Implement dynamically sized allocations for logging and DetectPluginLanguage
 	Is it cleaner to use the auto-COM-interface of LHMPluginLoader?
-	Is separating PluginHeader and PluginInfo useful?
 	Handle multiple plugins in the same file (probably just a detailed error)
-	I think we want a separate 'public api' and 'internal api'
 	Use #import instead of project references?
 	Add UTF-8 support
 
@@ -31,22 +43,21 @@ Sensor Plugins
 
 
 Refactoring
-	Rewrite List<T>
-	Raise warning level
+	Try out range based for loops
 	Ensure Platform function naming is uniform
 	Decide on 'plugin loader' naming on both sides of the managed boundary
-	Maybe change .h to .hpp?
-	Replace references with pointers
+	Rewrite List<T>
 	Drop some of the variable name prefixes, such as d3d
 	Use this as parameter name for 'methods'
 	Should const be used on parameters and locals?
 	Include 'out' in out parameter names
-	Array and String slices?
-	Pick strict C++ version
 
 
 
 Plugins
+	- Version the API so it can change without breaking existing plugins.
+	- Once everything is nailed down, sepate plugins into public and private parts
+	  and remove the private parts from public API headers.
 	- Enforce the constraint that you may *ONLY* access application provided
 	  services during scope of the function to which the services were passed.
 	  Basically, don't save a reference and access services from a separate

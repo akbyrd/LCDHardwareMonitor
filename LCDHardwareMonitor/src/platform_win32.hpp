@@ -1,6 +1,11 @@
 // TODO: Remove this
 #include <fstream>
 
+// NOTE: Raise a compiler error when switching over
+// an enum and any enum values are missing a case.
+// https://msdn.microsoft.com/en-us/library/fdt9w8tf.aspx
+#pragma warning (error: 4062)
+
 void
 Platform_Log(c8* message, Severity severity, c8* file, i32 line, c8* function)
 {

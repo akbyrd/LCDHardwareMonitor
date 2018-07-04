@@ -1,8 +1,6 @@
 #include "LHMAPI.h"
-// TODO: Can this go away?
-#include "LHMString.h"
-#include "LHMPluginHeader.h"
 
+#include "LHMString.hpp"
 #include "platform.h"
 #include "pluginloader.h"
 #include "renderer.h"

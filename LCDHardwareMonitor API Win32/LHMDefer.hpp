@@ -4,6 +4,7 @@
 // - Without complicated control flow
 // - Without separating creation and release code
 // - Without adding a ton of complexity
+//
 // Problems we are *not* solving:
 // - Exception safety
 // - Thread safety
