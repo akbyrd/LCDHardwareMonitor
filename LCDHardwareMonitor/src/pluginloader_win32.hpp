@@ -1,11 +1,18 @@
+#include <winnt.h>
 #include <metahost.h>
 #include <wrl\client.h>
 using Microsoft::WRL::ComPtr;
+
+#pragma warning(push)
+#pragma warning(disable: 4091) // typedef ignored
+#include <CorHdr.h>
+#pragma warning(pop)
 
 // TODO: We don't really need this in run/. Want to reach into the
 // project output folder directly, but we need to know the correct config
 // subfolder.
 #import "..\\run\\LCDHardwareMonitor PluginLoader CLR.tlb" no_namespace
+#include "LHMDefer.hpp"
 
 class LHMHostControl : public IHostControl
 {
@@ -102,80 +109,74 @@ PluginLoader_Teardown(PluginLoaderState* s)
 	}
 }
 
-b32
-LoadNativeSensorPlugin(PluginLoaderState* s, PluginHeader* pluginHeader, SensorPlugin* sensorPlugin)
+using ScopedHandle = Scoped<HANDLE, decltype(CloseHandle), CloseHandle>;
+
+static b32
+DetectPluginLanguage(PluginHeader* pluginHeader)
 {
-	//TODO: Implement LoadNativeSensorPlugin
-	Assert(false);
-	return false;
-}
+	// TODO: Move memory mapping to platform API?
 
-b32
-UnloadNativeSensorPlugin(PluginLoaderState* s, PluginHeader* pluginHeader, SensorPlugin* sensorPlugin)
-{
-	//TODO: Implement UnloadNativeSensorPlugin
-	Assert(false);
-	return false;
-}
+	// TODO: Dynamic allocation
+	// TODO: Check swprintf error
+	c16 buffer[512];
+	swprintf(buffer, ArrayLength(buffer), L"%s\\%s.dll", pluginHeader->directory, pluginHeader->name);
 
-b32
-LoadManagedSensorPlugin(PluginLoaderState* s, PluginHeader* pluginHeader, SensorPlugin* sensorPlugin)
-{
-	//NOTE: fuslogvw is great for debugging managed assembly loading.
+	ScopedHandle pluginFile = CreateFileW(
+		buffer,
+		GENERIC_READ,
+		FILE_SHARE_READ,
+		nullptr,
+		OPEN_EXISTING,
+		FILE_ATTRIBUTE_NORMAL,
+		nullptr
+	);
+	LOG_LAST_ERROR_IF(pluginFile == INVALID_HANDLE_VALUE, L"Failed to open plugin file.", Severity::Warning, return false);
 
-	//TODO: Do we need to try/catch the managed code?
-	b32 success;
-	success = s->lhmPluginLoader->LoadSensorPlugin(pluginHeader, sensorPlugin);
-	LOG_IF(!success, L"Failed to load managed sensor plugin", Severity::Warning, return false);
+	ScopedHandle pluginFileMap = CreateFileMappingW(
+		pluginFile,
+		nullptr,
+		PAGE_READONLY,
+		0, 0,
+		nullptr
+	);
+	LOG_LAST_ERROR_IF(!pluginFileMap, L"Failed to create plugin file mapping.", Severity::Warning, return false);
 
-	return true;
-}
+	// TODO: We could map the DOS header, get the PE offset, then remap starting there
+	// NOTE: Can't map a fixed number of bytes because the DOS stub is of unknown length
+	void* pluginFileMemory = MapViewOfFile(pluginFileMap, FILE_MAP_READ, 0, 0, 0);
+	LOG_LAST_ERROR_IF(!pluginFileMemory, L"Failed to map view of plugin file.", Severity::Warning, return false);
+	defer {
+		if (pluginFileMemory)
+		{
+			// BUG: Failures here will not propagate back to the calling function
+			// TODO: What happens if Unmap is called with null? Can we drop the check?
+			b32 success = UnmapViewOfFile(pluginFileMemory);
+			LOG_IF(!success, L"Failed to unmap view of plugin file.", Severity::Error);
+		}
+	};
 
-b32
-UnloadManagedSensorPlugin(PluginLoaderState* s, PluginHeader* pluginHeader, SensorPlugin* sensorPlugin)
-{
-	b32 success;
-	success = s->lhmPluginLoader->UnloadSensorPlugin(pluginHeader, sensorPlugin);
-	LOG_IF(!success, L"Failed to unload managed sensor plugin", Severity::Warning, return false);
+	IMAGE_DOS_HEADER* dosHeader = (IMAGE_DOS_HEADER*) pluginFileMemory;
+	LOG_IF(dosHeader->e_magic != IMAGE_DOS_SIGNATURE, L"Plugin file does not have a proper DOS header.", Severity::Warning, return false);
 
-	return true;
-}
+	IMAGE_NT_HEADERS* ntHeader = (IMAGE_NT_HEADERS*) ((u8*) pluginFileMemory + dosHeader->e_lfanew);
+	LOG_IF(ntHeader->Signature != IMAGE_NT_SIGNATURE, L"Plugin file does not have a proper NT header.", Severity::Warning, return false);
 
-b32
-LoadNativeWidgetPlugin(PluginLoaderState* s, PluginHeader* pluginHeader, WidgetPlugin* widgetPlugin)
-{
-	//TODO: Implement LoadNativeWidgetPlugin
-	Assert(false);
-	return false;
-}
+	IMAGE_FILE_HEADER* fileHeader = &ntHeader->FileHeader;
+	LOG_IF(fileHeader->SizeOfOptionalHeader == 0, L"Plugin file does not have an optional header.", Severity::Warning, return false);
+	LOG_IF(!HAS_FLAG(fileHeader->Characteristics, IMAGE_FILE_DLL), L"Plugin file is not a dynamically linked library.", Severity::Warning, return false);
 
-b32
-UnloadNativeWidgetPlugin(PluginLoaderState* s, PluginHeader* pluginHeader, WidgetPlugin* WidgetPlugin)
-{
-	//TODO: Implement UnloadNativeWidgetPlugin
-	Assert(false);
-	return false;
-}
+	IMAGE_OPTIONAL_HEADER* optionalHeader = &ntHeader->OptionalHeader;
+	LOG_IF(optionalHeader->Magic != IMAGE_NT_OPTIONAL_HDR_MAGIC, L"Plugin file does not have a proper optional header.", Severity::Warning, return false);
 
-b32
-LoadManagedWidgetPlugin(PluginLoaderState* s, PluginHeader* pluginHeader, WidgetPlugin* WidgetPlugin)
-{
-	//NOTE: fuslogvw is great for debugging managed assembly loading.
-
-	//TODO: Do we need to try/catch the managed code?
-	b32 success;
-	success = s->lhmPluginLoader->LoadWidgetPlugin(pluginHeader, WidgetPlugin);
-	LOG_IF(!success, L"Failed to load managed Widget plugin", Severity::Warning, return false);
-
-	return true;
-}
-
-b32
-UnloadManagedWidgetPlugin(PluginLoaderState* s, PluginHeader* pluginHeader, WidgetPlugin* WidgetPlugin)
-{
-	b32 success;
-	success = s->lhmPluginLoader->UnloadWidgetPlugin(pluginHeader, WidgetPlugin);
-	LOG_IF(!success, L"Failed to unload managed Widget plugin", Severity::Warning, return false);
+	if (optionalHeader->NumberOfRvaAndSizes <= IMAGE_DIRECTORY_ENTRY_COMHEADER)
+	{
+		pluginHeader->language = PluginLanguage::Native;
+	}
+	else
+	{
+		IMAGE_DATA_DIRECTORY* clrDirectory = &optionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_COMHEADER];
+		pluginHeader->language = clrDirectory->Size == 0 ? PluginLanguage::Native : PluginLanguage::Managed;
+	}
 
 	return true;
 }
@@ -183,15 +184,29 @@ UnloadManagedWidgetPlugin(PluginLoaderState* s, PluginHeader* pluginHeader, Widg
 b32
 PluginLoader_LoadSensorPlugin(PluginLoaderState* s, PluginHeader* pluginHeader, SensorPlugin* sensorPlugin)
 {
-	//TODO: Actually check if the DLL is native or managed
-	pluginHeader->language = PluginLanguage::Managed;
-
 	b32 success = false;
+
+	success = DetectPluginLanguage(pluginHeader);
+	if (!success) return false;
+
 	switch (pluginHeader->language)
 	{
-		case PluginLanguage::Null:    success = false;                                                  break;
-		case PluginLanguage::Native:  success = LoadNativeSensorPlugin(s, pluginHeader, sensorPlugin);  break;
-		case PluginLanguage::Managed: success = LoadManagedSensorPlugin(s, pluginHeader, sensorPlugin); break;
+		case PluginLanguage::Null:
+			success = false;
+			break;
+
+		case PluginLanguage::Native:
+			// TODO: Implement LoadNativeSensorPlugin
+			Assert(false);
+			success = false;
+			break;
+
+		case PluginLanguage::Managed:
+			// NOTE: fuslogvw is great for debugging managed assembly loading.
+			// TODO: Do we need to try/catch the managed code?
+			success = s->lhmPluginLoader->LoadSensorPlugin(pluginHeader, sensorPlugin);
+			LOG_IF(!success, L"Failed to load managed sensor plugin", Severity::Warning);
+			break;
 	}
 	if (!success) return false;
 
@@ -205,9 +220,20 @@ PluginLoader_UnloadSensorPlugin(PluginLoaderState* s, PluginHeader* pluginHeader
 	b32 success = false;
 	switch (pluginHeader->language)
 	{
-		case PluginLanguage::Null:    success = false;                                                    break;
-		case PluginLanguage::Native:  success = UnloadNativeSensorPlugin(s, pluginHeader, sensorPlugin);  break;
-		case PluginLanguage::Managed: success = UnloadManagedSensorPlugin(s, pluginHeader, sensorPlugin); break;
+		case PluginLanguage::Null:
+			success = false;
+			break;
+
+		case PluginLanguage::Native:
+			// TODO: Implement UnloadNativeSensorPlugin
+			Assert(false);
+			success = false;
+			break;
+
+		case PluginLanguage::Managed:
+			success = s->lhmPluginLoader->UnloadSensorPlugin(pluginHeader, sensorPlugin);
+			LOG_IF(!success, L"Failed to unload managed sensor plugin", Severity::Warning);
+			break;
 	}
 	if (!success) return false;
 
@@ -217,15 +243,29 @@ PluginLoader_UnloadSensorPlugin(PluginLoaderState* s, PluginHeader* pluginHeader
 b32
 PluginLoader_LoadWidgetPlugin(PluginLoaderState* s, PluginHeader* pluginHeader, WidgetPlugin* widgetPlugin)
 {
-	//TODO: Actually check if the DLL is native or managed
-	pluginHeader->language = PluginLanguage::Managed;
-
 	b32 success = false;
+
+	success = DetectPluginLanguage(pluginHeader);
+	if (!success) return false;
+
 	switch (pluginHeader->language)
 	{
-		case PluginLanguage::Null:    success = false;                                                  break;
-		case PluginLanguage::Native:  success = LoadNativeWidgetPlugin(s, pluginHeader, widgetPlugin);  break;
-		case PluginLanguage::Managed: success = LoadManagedWidgetPlugin(s, pluginHeader, widgetPlugin); break;
+		case PluginLanguage::Null:
+			success = false;
+			break;
+
+		case PluginLanguage::Native:
+			// TODO: Implement LoadNativeWidgetPlugin
+			Assert(false);
+			success = false;
+			break;
+
+		case PluginLanguage::Managed:
+			// NOTE: fuslogvw is great for debugging managed assembly loading.
+			// TODO: Do we need to try/catch the managed code?
+			success = s->lhmPluginLoader->LoadWidgetPlugin(pluginHeader, widgetPlugin);
+			LOG_IF(!success, L"Failed to load managed Widget plugin", Severity::Warning);
+			break;
 	}
 	if (!success) return false;
 
@@ -239,9 +279,20 @@ PluginLoader_UnloadWidgetPlugin(PluginLoaderState* s, PluginHeader* pluginHeader
 	b32 success = false;
 	switch (pluginHeader->language)
 	{
-		case PluginLanguage::Null:    success = false;                                                    break;
-		case PluginLanguage::Native:  success = UnloadNativeWidgetPlugin(s, pluginHeader, widgetPlugin);  break;
-		case PluginLanguage::Managed: success = UnloadManagedWidgetPlugin(s, pluginHeader, widgetPlugin); break;
+		case PluginLanguage::Null:
+			success = false;
+			break;
+
+		case PluginLanguage::Native:
+			// TODO: Implement UnloadNativeWidgetPlugin
+			Assert(false);
+			success = false;
+			break;
+
+		case PluginLanguage::Managed:
+			success = s->lhmPluginLoader->UnloadWidgetPlugin(pluginHeader, widgetPlugin);
+			LOG_IF(!success, L"Failed to unload managed Widget plugin", Severity::Warning);
+			break;
 	}
 	if (!success) return false;
 
