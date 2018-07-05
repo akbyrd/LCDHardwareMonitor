@@ -6,7 +6,7 @@ This project started with the desire for a far more capable alternative to LCDSy
 
 ## Status
 * ~~WPF shell prototype~~
-* ~~Plugin archtecture~~
+* ~~Plugin architecture~~
 * Core functionality
 * Content renderer
 * Choose hardware
