@@ -25,39 +25,39 @@
 template<typename T>
 struct ListRef
 {
-	int index;
+	u32 index;
 	bool operator==(const ListRef& other) { return index == other.index; }
 };
 
 template<typename T>
 struct List
 {
-	i32 length;
-	i32 capacity;
+	u32 length;
+	u32 capacity;
 	T*  data;
 
 	using RefT = ListRef<T>;
 	inline T& operator [](RefT r) { return data[r.index]; }
-	inline T& operator [](i32 i)  { return data[i]; }
+	//inline T& operator [](u32 i)  { return data[i]; }
 	inline    operator T*()       { return data; }
 	inline    operator b32()      { return data != nullptr; }
 };
 
 template<typename T>
 inline b32
-List_Reserve(List<T>& list, i32 capacity)
+List_Reserve(List<T>& list, u32 capacity)
 {
 	if (list.capacity < capacity)
 	{
-		i32 totalSize = sizeof(T) * capacity;
-		i32 emptySize = sizeof(T) * (capacity - list.length);
+		u64 totalSize = sizeof(T) * capacity;
+		u64 emptySize = sizeof(T) * (capacity - list.length);
 
-		T* data = (T*) realloc(list.data, totalSize);
+		T* data = (T*) realloc(list.data, (size) totalSize);
 		if (!data) return false;
 
 		list.capacity = capacity;
 		list.data     = data;
-		memset(&list.data[list.length], 0, emptySize);
+		memset(&list.data[list.length], 0, (size) emptySize);
 	}
 
 	return true;
@@ -77,16 +77,16 @@ List_Grow(List<T>& list)
 {
 	if (list.length == list.capacity)
 	{
-		i32 capacity  = list.capacity ? 2*list.capacity : 4;
-		i32 totalSize = sizeof(T) * capacity;
-		i32 emptySize = sizeof(T) * (capacity - list.length);
+		u32 capacity  = list.capacity ? 2*list.capacity : 4;
+		u64 totalSize = sizeof(T) * capacity;
+		u64 emptySize = sizeof(T) * (capacity - list.length);
 
-		T*  data = (T*) realloc(list.data, totalSize);
+		T* data = (T*) realloc(list.data, (size) totalSize);
 		if (!data) return false;
 
 		list.capacity = capacity;
 		list.data     = data;
-		memset(&list.data[list.length], 0, emptySize);
+		memset(&list.data[list.length], 0, (size) emptySize);
 	}
 
 	return true;
@@ -144,7 +144,7 @@ List_ContainsValue(List<T>& list, T& item)
 	if (list.length == 0)
 		return false;
 
-	for (i32 i = 0; i < list.length; i++)
+	for (u32 i = 0; i < list.length; i++)
 	{
 		if (list[i] == item)
 			return true;
@@ -154,7 +154,7 @@ List_ContainsValue(List<T>& list, T& item)
 
 template<typename T>
 inline ListRef<T>
-List_GetRef(List<T>& list, i32 index)
+List_GetRef(List<T>& list, u32 index)
 {
 	ListRef<T> ref = {};
 	ref.index = index;
@@ -222,7 +222,7 @@ List_Equal(List<T>& listA, List<T>& listB)
 	if (listA.length != listB.length)
 		return false;
 
-	for (i32 i = 0; i < listA.length; i++)
+	for (u32 i = 0; i < listA.length; i++)
 	{
 		if (listA[i] != listB[i])
 			return false;

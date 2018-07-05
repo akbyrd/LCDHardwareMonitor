@@ -5,6 +5,8 @@
 #pragma comment(lib,  "D3D9.lib")
 #pragma comment(lib,  "DXGI.lib")
 
+#pragma warning(push, 0)
+
 // For some GUID magic in the DirectX/DXGI headers. Must be included before them.
 #include <InitGuid.h>
 
@@ -22,6 +24,8 @@ using namespace DirectX;
 
 #include <wrl\client.h>
 using Microsoft::WRL::ComPtr;
+
+#pragma warning(pop)
 
 namespace HLSLSemantic
 {
@@ -89,7 +93,7 @@ struct RendererState
 	List<InputLayout>  inputLayouts        = {};
 
 	XMFLOAT4X4         proj                = {};
-	V2i                renderSize          = {};
+	V2i                renderSize          = {}; // TODO : Change this to unsigned
 	DXGI_FORMAT        renderFormat        = DXGI_FORMAT_UNKNOWN;
 	u32                multisampleCount    = 1;
 	u32                qualityLevelCount   = 0;
@@ -139,6 +143,7 @@ SetDebugObjectName(const ComPtr<IDXGIObject> &resource, const c8 (&name)[TNameLe
 	#endif
 }
 
+// TODO: Should a failed load mark the file as bad?
 static VertexShader*
 LoadVertexShader(RendererState* s, c8* path, List<VertexAttribute> attributes, ConstantBufferDesc cBufDesc)
 {
@@ -146,7 +151,7 @@ LoadVertexShader(RendererState* s, c8* path, List<VertexAttribute> attributes, C
 
 	// TODO: Hash names?
 	// Use Existing
-	for (i32 i = 0; i < s->vertexShaders.length; i++)
+	for (u32 i = 0; i < s->vertexShaders.length; i++)
 	{
 		if (strcmp(s->vertexShaders[i].name, path) == 0)
 			return &s->vertexShaders[i];
@@ -156,20 +161,23 @@ LoadVertexShader(RendererState* s, c8* path, List<VertexAttribute> attributes, C
 	// TODO: Copy name
 	// TODO: Find a way to include shader name in errors
 	// Vertex Shader
-	VertexShader* vs = nullptr;
-	Bytes vsBytes = {};
-	{
-		vs = List_Append(s->vertexShaders, VertexShader {});
-		LOG_IF(!vs, "Failed to allocate space for vertex shader", Severity::Warning, return nullptr);
+	VertexShader vs = {};
+	defer {
+		vs.d3dConstantBuffer.Reset();
+		vs.d3dVertexShader.Reset();
+	};
 
+	Bytes vsBytes = {};
+	defer { List_Free(vsBytes); };
+	{
 		// Load
 		vsBytes = Platform_LoadFileBytes(path);
 		LOG_IF(!vsBytes, "Failed to load vertex shader file", Severity::Warning, return nullptr);
 
 		// Create
-		hr = s->d3dDevice->CreateVertexShader(vsBytes.data, vsBytes.length, nullptr, &vs->d3dVertexShader);
+		hr = s->d3dDevice->CreateVertexShader(vsBytes.data, vsBytes.length, nullptr, &vs.d3dVertexShader);
 		LOG_HRESULT_IF_FAILED(hr, "Failed to create vertex shader", Severity::Error, return nullptr);
-		SetDebugObjectName(vs->d3dVertexShader, "Vertex Shader");
+		SetDebugObjectName(vs.d3dVertexShader, "Vertex Shader");
 
 		// Per-object constant buffer
 		D3D11_BUFFER_DESC vsConstBuffDes = {};
@@ -180,23 +188,26 @@ LoadVertexShader(RendererState* s, c8* path, List<VertexAttribute> attributes, C
 		vsConstBuffDes.MiscFlags           = 0;
 		vsConstBuffDes.StructureByteStride = 0;
 
-		hr = s->d3dDevice->CreateBuffer(&vsConstBuffDes, nullptr, &vs->d3dConstantBuffer);
+		hr = s->d3dDevice->CreateBuffer(&vsConstBuffDes, nullptr, &vs.d3dConstantBuffer);
 		LOG_HRESULT_IF_FAILED(hr, "Failed to create vertex buffer", Severity::Error, return nullptr);
-		SetDebugObjectName(vs->d3dConstantBuffer, "VS Constant Buffer (Per-Object)");
+		SetDebugObjectName(vs.d3dConstantBuffer, "VS Constant Buffer (Per-Object)");
 	}
 
 
 	// Input layout
-	InputLayout* il = nullptr;
+	InputLayout il = {};
+	defer {
+		il.d3dInputLayout.Reset();
+	};
 	{
-		il = List_Append(s->inputLayouts);
-		LOG_IF(!il, "Failed to allocate space for input layout", Severity::Warning, return nullptr);
-		il->attibutes = List_Duplicate(attributes);
+		// TODO: Why are we duplicating these?
+		il.attibutes = List_Duplicate(attributes);
+		LOG_IF(!il.attibutes, "Failed to allocate space for input layout attributes", Severity::Warning, return nullptr);
 
 		List<D3D11_INPUT_ELEMENT_DESC> vsInputDescs = {};
 		List_Reserve(vsInputDescs, attributes.length);
 		LOG_IF(!vsInputDescs, "Input description allocation failed", Severity::Warning, return nullptr);
-		for (i32 i = 0; i < attributes.length; i++)
+		for (u32 i = 0; i < attributes.length; i++)
 		{
 			const c8* semantic;
 			switch (attributes[i].semantic)
@@ -231,32 +242,26 @@ LoadVertexShader(RendererState* s, c8* path, List<VertexAttribute> attributes, C
 			List_Append(vsInputDescs, inputDesc);
 		}
 
-		hr = s->d3dDevice->CreateInputLayout(vsInputDescs.data, vsInputDescs.length, vsBytes.data, vsBytes.length, &il->d3dInputLayout);
+		hr = s->d3dDevice->CreateInputLayout(vsInputDescs.data, vsInputDescs.length, vsBytes.data, vsBytes.length, &il.d3dInputLayout);
 		LOG_HRESULT_IF_FAILED(hr, "Failed to create input layout", Severity::Error, return nullptr);
-		SetDebugObjectName(il->d3dInputLayout, "Input Layout");
+		SetDebugObjectName(il.d3dInputLayout, "Input Layout");
 	}
 
-	vs->inputLayout = il;
-	return vs;
 
-//Cleanup:
-	// TODO: Initialize all values
-	List_Free(vsBytes);
-
-	if (il)
+	// Commit
+	VertexShader* vs2 = nullptr;
 	{
-		il->d3dInputLayout.Reset();
-		List_RemoveLast(s->inputLayouts);
+		InputLayout* il2 = List_Append(s->inputLayouts, il);
+		LOG_IF(!il2, "Failed to allocate space for input layout", Severity::Warning, return nullptr);
+		il = {};
+
+		vs.inputLayout = il2;
+		vs2 = List_Append(s->vertexShaders, vs);
+		LOG_IF(!vs2, "Failed to allocate space for vertex shader", Severity::Warning, return nullptr);
+		vs = {};
 	}
 
-	if (vs)
-	{
-		vs->d3dConstantBuffer.Reset();
-		vs->d3dVertexShader.Reset();
-		List_RemoveLast(s->vertexShaders);
-	}
-
-	return nullptr;
+	return vs2;
 }
 
 static void UpdateRasterizerState(RendererState* s);
@@ -274,6 +279,7 @@ Renderer_Initialize(RendererState* s, V2i renderSize)
 	Assert(s->d3dPixelShader              == nullptr);
 	Assert(s->d3dRasterizerStateSolid     == nullptr);
 	Assert(s->d3dRasterizerStateWireframe == nullptr);
+	Assert(renderSize.x < i32Max && renderSize.y < i32Max);
 
 	// TODO : Move into local blocks
 	HRESULT hr;
@@ -378,8 +384,8 @@ Renderer_Initialize(RendererState* s, V2i renderSize)
 			);
 			LOG_HRESULT_IF_FAILED(hr, "CheckMultisampleQualityLevels failed", Severity::Error, return false);
 
-			renderTextureDesc.Width              = renderSize.x;
-			renderTextureDesc.Height             = renderSize.y;
+			renderTextureDesc.Width              = (u32) renderSize.x;
+			renderTextureDesc.Height             = (u32) renderSize.y;
 			renderTextureDesc.MipLevels          = 1;
 			renderTextureDesc.ArraySize          = 1;
 			// TODO: Switch to DXGI_FORMAT_B8G8R8A8_UNORM_SRGB for linear rendering
@@ -413,8 +419,8 @@ Renderer_Initialize(RendererState* s, V2i renderSize)
 		// Create depth buffer
 		{
 			D3D11_TEXTURE2D_DESC depthDesc = {};
-			depthDesc.Width              = s->renderSize.x;
-			depthDesc.Height             = s->renderSize.y;
+			depthDesc.Width              = (u32) s->renderSize.x;
+			depthDesc.Height             = (u32) s->renderSize.y;
 			depthDesc.MipLevels          = 1;
 			depthDesc.ArraySize          = 1;
 			depthDesc.Format             = DXGI_FORMAT_D24_UNORM_S8_UINT;
@@ -468,9 +474,11 @@ Renderer_Initialize(RendererState* s, V2i renderSize)
 		List_Reserve(vsAttributes, 2);
 		LOG_IF(!vsAttributes, "Failed to allocate fallback vertex shader attributes", Severity::Error, return false);
 
-		List_Append(vsAttributes, VertexAttribute { VertexAttributeSemantic::Position, VertexAttributeFormat::Float3 });
-		List_Append(vsAttributes, VertexAttribute { VertexAttributeSemantic::Color,    VertexAttributeFormat::Float4 });
-		VertexShader* vs = LoadVertexShader(s, "Shaders/Basic Vertex Shader.cso", vsAttributes, { sizeof(XMFLOAT4X4) });
+		VertexAttribute va1 = { VertexAttributeSemantic::Position, VertexAttributeFormat::Float3 };
+		VertexAttribute va2 = { VertexAttributeSemantic::Color,    VertexAttributeFormat::Float4 };
+		List_Append(vsAttributes, va1);
+		List_Append(vsAttributes, va2);
+		LoadVertexShader(s, "Shaders/Basic Vertex Shader.cso", vsAttributes, { sizeof(XMFLOAT4X4) });
 
 		// TODO: Move this
 		s->d3dContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -484,7 +492,7 @@ Renderer_Initialize(RendererState* s, V2i renderSize)
 		LOG_IF(!psBytes, "Failed to load fallback pixel shader file", Severity::Error, return false);
 
 		// Create
-		hr = s->d3dDevice->CreatePixelShader(psBytes.data, psBytes.length, nullptr, &s->d3dPixelShader);
+		hr = s->d3dDevice->CreatePixelShader(psBytes.data, (u64) psBytes.length, nullptr, &s->d3dPixelShader);
 		LOG_HRESULT_IF_FAILED(hr, "Failed to create fallback pixel shader", Severity::Error, return false);
 		SetDebugObjectName(s->d3dPixelShader, "Pixel Shader");
 
@@ -551,7 +559,7 @@ Renderer_Initialize(RendererState* s, V2i renderSize)
 
 		// Create vertex buffer
 		D3D11_BUFFER_DESC vertBuffDesc = {};
-		vertBuffDesc.ByteWidth           = ArraySize(vertices);
+		vertBuffDesc.ByteWidth           = (u32) ArraySize(vertices);
 		vertBuffDesc.Usage               = D3D11_USAGE_DYNAMIC;
 		vertBuffDesc.BindFlags           = D3D11_BIND_VERTEX_BUFFER;
 		vertBuffDesc.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
@@ -642,13 +650,13 @@ UpdateRasterizerState(RendererState* s)
 void
 Renderer_Teardown(RendererState* s)
 {
-	for (i32 i = 0; i < s->vertexShaders.length; i++)
+	for (u32 i = 0; i < s->vertexShaders.length; i++)
 	{
 		s->vertexShaders[i].d3dVertexShader.Reset();
 		s->vertexShaders[i].d3dConstantBuffer.Reset();
 	}
 
-	for (i32 i = 0; i < s->inputLayouts.length; i++)
+	for (u32 i = 0; i < s->inputLayouts.length; i++)
 		s->inputLayouts[i].d3dInputLayout.Reset();
 
 	s->d3dDevice                  .Reset();
@@ -690,7 +698,7 @@ Renderer_Teardown(RendererState* s)
 DrawCall*
 Renderer_PushDrawCall(RendererState* s)
 {
-	Assert(s->drawCallCount < (u32) ArrayLength(s->drawCalls));
+	Assert(s->drawCallCount < ArrayLength(s->drawCalls));
 
 	DrawCall* drawCall = &s->drawCalls[s->drawCallCount++];
 	return drawCall;
@@ -743,7 +751,8 @@ Renderer_Render(RendererState* s)
 		memcpy(vsConstBuffMap.pData, &WVP, sizeof(WVP));
 		s->d3dContext->Unmap(vs->d3dConstantBuffer.Get(), 0);
 
-		s->d3dContext->DrawIndexed(mesh->iCount, 0, mesh->vOffset);
+		Assert(mesh->vOffset < i32Max);
+		s->d3dContext->DrawIndexed(mesh->iCount, 0, (i32) mesh->vOffset);
 	}
 	//s->drawCallCount = 0;
 
@@ -796,8 +805,8 @@ Renderer_CreateSharedD3D9RenderTexture(RendererState* s)
 
 	Assert(s->renderFormat == DXGI_FORMAT_B8G8R8A8_UNORM);
 	hr = s->d3d9Device->CreateTexture(
-		s->renderSize.x,
-		s->renderSize.y,
+		(u32) s->renderSize.x,
+		(u32) s->renderSize.y,
 		1,
 		D3DUSAGE_RENDERTARGET,
 		D3DFMT_A8R8G8B8,

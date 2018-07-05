@@ -1,18 +1,10 @@
 Next
-	Include types:
-		public API - LHMList, LHMPluginInfo
-		internal stuff - LHMPluginHeader
-		useful non-API stuff - LHMDefer
-
-		Should plugins have access to LHMMath, LHMDefer?
-		LHMPluginHeader and probablyt be moved to
-
-
-	Is separating PluginHeader and PluginInfo useful?
-	I think we want a separate 'public api' and 'internal api'
-	Raise warning level
+	Enforce C++ version
+	Enforce standard compliant
 	Leverage Scoped/defer everywhere
 	Memory pools
+		Replace array stack allocations with Lists out of a pool.
+		Remove ArrayLength/Size
 
 	Is it worth abstracting a little to unify sensor and widget plugin handling?
 	Implement OHM plugin

@@ -1,11 +1,6 @@
 // TODO: Remove this
 #include <fstream>
 
-// NOTE: Raise a compiler error when switching over
-// an enum and any enum values are missing a case.
-// https://msdn.microsoft.com/en-us/library/fdt9w8tf.aspx
-#pragma warning (error: 4062)
-
 void
 Platform_Log(c8* message, Severity severity, c8* file, i32 line, c8* function)
 {
@@ -69,7 +64,7 @@ LogFormatMessage(c8* message, Severity severity, u32 messageID, c8* file, i32 li
 void
 LogHRESULT(c8* message, Severity severity, HRESULT hr, c8* file, i32 line, c8* function)
 {
-	LogFormatMessage(message, severity, hr, file, line, function);
+	LogFormatMessage(message, severity, (u32) hr, file, line, function);
 }
 #define LOG_HRESULT(message, severity, hr) LogHRESULT(message, severity, hr, LOCATION_ARGS)
 #define LOG_HRESULT_IF_FAILED(hr, message, severity, ...) IF(FAILED(hr), LOG_HRESULT(message, severity, hr); __VA_ARGS__)
@@ -97,9 +92,9 @@ LoadFile(c8* fileName, i32 padding = 0)
 	std::ifstream inFile(fileName, std::ios::binary | std::ios::ate);
 	LOG_IF(!inFile.is_open(), "Failed to open file: <file>. Working Directory: <cwd>", Severity::Error, goto Cleanup);
 
-	result.length   = (i32) inFile.tellg();
+	LOG_IF(u32Max - inFile.tellg() - padding < 0, "File is too big to fit requested padding when loading: <file>", Severity::Error, goto Cleanup);
+	result.length   = (u32) inFile.tellg();
 	result.capacity = result.length + padding;
-	LOG_IF(i32Max - result.length < padding, "File is too big to fit requested padding when loading: <file>", Severity::Error, goto Cleanup);
 
 	result.data = (u8*) malloc(sizeof(u8) * result.capacity);
 

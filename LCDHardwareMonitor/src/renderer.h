@@ -26,7 +26,7 @@ struct VertexAttribute
 struct ConstantBufferDesc
 {
 	//b32   dirty;
-	i32   size;
+	u32   size;
 	//void* data;
 };
 

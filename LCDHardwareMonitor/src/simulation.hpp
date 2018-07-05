@@ -15,7 +15,7 @@ CreatePluginHeader(SimulationState* s, c8* directory, c8* name, PluginKind kind)
 {
 	// Reuse any empty spots left by unloading plugins
 	PluginHeader* pluginHeader = nullptr;
-	for (i32 i = 0; i < s->pluginHeaders.length; i++)
+	for (u32 i = 0; i < s->pluginHeaders.length; i++)
 	{
 		PluginHeader* pluginSlot = &s->pluginHeaders[i];
 		if (!pluginSlot->name)
@@ -37,7 +37,7 @@ CreatePluginHeader(SimulationState* s, c8* directory, c8* name, PluginKind kind)
 static PluginHeader*
 GetPluginHeader(SimulationState* s, PluginHeaderRef ref)
 {
-	for (i32 i = 0; i < s->pluginHeaders.length; i++)
+	for (u32 i = 0; i < s->pluginHeaders.length; i++)
 	{
 		PluginHeader* pluginHeader = &s->pluginHeaders[i];
 		if (pluginHeader->ref == ref)
@@ -165,6 +165,9 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 		SensorPlugin* ohmPlugin       = LoadSensorPlugin(s, "Sensor Plugins\\OpenHardwareMonitor", "Sensor Plugin - OpenHardwareMonitor");
 		WidgetPlugin* filledBarPlugin = LoadWidgetPlugin(s, "Widget Plugins\\Filled Bar",          "Widget Plugin - Filled Bar");
 
+		UNUSED(ohmPlugin);
+		UNUSED(filledBarPlugin);
+
 		//Widget* w = List_Append(s->widgets);
 		//w->mesh   = Mesh::Quad;
 		//w->sensor = List_GetRef(ohmPlugin->sensors, 0);
@@ -184,11 +187,11 @@ Simulation_Teardown(SimulationState* s)
 
 	//List_Free(s->widgets);
 
-	for (i32 i = 0; i < s->widgetPlugins.length; i++)
+	for (u32 i = 0; i < s->widgetPlugins.length; i++)
 		UnloadWidgetPlugin(s, &s->widgetPlugins[i]);
 	List_Free(s->widgetPlugins);
 
-	for (i32 i = 0; i < s->sensorPlugins.length; i++)
+	for (u32 i = 0; i < s->sensorPlugins.length; i++)
 		UnloadSensorPlugin(s, &s->sensorPlugins[i]);
 	List_Free(s->sensorPlugins);
 
@@ -201,7 +204,7 @@ void
 Simulation_Update(SimulationState* s)
 {
 	// TODO: Only update plugins that are actually being used
-	for (i32 i = 0; i < s->sensorPlugins.length; i++)
+	for (u32 i = 0; i < s->sensorPlugins.length; i++)
 	{
 		SensorPlugin* sensorPlugin = &s->sensorPlugins[i];
 
@@ -210,7 +213,7 @@ Simulation_Update(SimulationState* s)
 			sensorPlugin->update(sensorPlugin);
 	}
 
-	for (i32 i = 0; i < s->widgetPlugins.length; i++)
+	for (u32 i = 0; i < s->widgetPlugins.length; i++)
 	{
 		WidgetPlugin* widgetPlugin = &s->widgetPlugins[i];
 
@@ -222,6 +225,6 @@ Simulation_Update(SimulationState* s)
 	// NOTE: Build a command list of things to draw. Let the renderer handle
 	// sorting and iterating the list. Here, we should just be parameters that go
 	// with the command.
-	//for (i32 i = 0; i < s->widgets.length; i++)
+	//for (u32 i = 0; i < s->widgets.length; i++)
 	//	;
 }

@@ -21,6 +21,8 @@ using c16 = wchar_t;
 using b8  = bool;
 using b32 = int;
 
+using size = size_t;
+
 const u64 Kilobyte = 1024LL;
 const u64 Megabyte = 1024LL * Kilobyte;
 const u64 Gigabyte = 1024LL * Megabyte;
@@ -32,25 +34,26 @@ const u64 Gigabyte = 1024LL * Megabyte;
 //#endif
 
 #if DEBUG
-	#define Assert(condition) if (!(condition)) { *((u8 *) 0) = 0; }
+#define Assert(condition) if (!(condition)) { *((u8 *) 0) = 0; }
 #else
-	#define Assert(condition)
+#define Assert(condition)
 #endif
 
 #if __cplusplus_cli
-	#define PUBLIC public
+#define PUBLIC public
 #else
-	#define PUBLIC
+#define PUBLIC
 #endif
 
 #define nameof(x) #x
+#define UNUSED(x) (x);
 #define HAS_FLAG(x, f) ((x & f) == f)
 #define IF(expression, ...) if (expression) { __VA_ARGS__; }
 
-template<typename T, i32 S>
-inline i32 ArrayLength(const T(&arr)[S]) { return S; }
+template<typename T, size_t S>
+inline size_t ArrayLength(const T(&arr)[S]) { UNUSED(arr); return S; }
 
-template<typename T, i32 S>
-inline i32 ArraySize(const T(&arr)[S]) { return S * sizeof(T); }
+template<typename T, size_t S>
+inline size_t ArraySize(const T(&arr)[S]) { UNUSED(arr); return S * sizeof(T); }
 
 #endif

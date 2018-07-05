@@ -34,6 +34,7 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	void
 	InitializeNewDomain(AppDomainSetup^ appDomainInfo) override
 	{
+		UNUSED(appDomainInfo);
 		InitializationFlags = AppDomainManagerInitializationOptions::RegisterWithHost;
 	}
 
@@ -233,6 +234,8 @@ private:
 	b32
 	TeardownSensorPlugin(PluginHeader* pluginHeader, SensorPlugin* sensorPlugin)
 	{
+		UNUSED(pluginHeader);
+
 		sensorPlugin->pluginInstance = 0;
 
 		((GCHandle) (IntPtr) sensorPlugin->initializeDelegate).Free();
@@ -290,6 +293,8 @@ private:
 	b32
 	TeardownWidgetPlugin(PluginHeader* pluginHeader, WidgetPlugin* widgetPlugin)
 	{
+		UNUSED(pluginHeader);
+
 		widgetPlugin->pluginInstance = 0;
 
 		((GCHandle) (IntPtr) widgetPlugin->initializeDelegate).Free();

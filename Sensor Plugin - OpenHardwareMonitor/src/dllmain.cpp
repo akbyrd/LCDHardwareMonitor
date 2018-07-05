@@ -126,7 +126,7 @@ public:
 			State::activeHardware[i]->Update();
 
 		// TODO: This is stupid
-		for (i32 i = 0; i < s->sensors.length; i++)
+		for (u32 i = 0; i < s->sensors.length; i++)
 		{
 			Sensor& sensor = s->sensors[i];
 
@@ -146,7 +146,7 @@ public:
 	virtual void
 	Teardown(SP_TEARDOWN_ARGS)
 	{
-		for (i32 i = 0; i < s->sensors.length; i++)
+		for (u32 i = 0; i < s->sensors.length; i++)
 		{
 			Sensor& sensor = s->sensors[i];
 

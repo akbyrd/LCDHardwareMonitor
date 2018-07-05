@@ -43,7 +43,7 @@ PreviewWindow_Initialize(PreviewWindowState* s, RendererState* rendererState, HI
 
 		b32 success;
 		RECT windowRect = { 0, 0, rendererState->renderSize.x, rendererState->renderSize.y };
-		success = AdjustWindowRect(&windowRect, windowStyle, false);
+		success = AdjustWindowRect(&windowRect, (u32) windowStyle, false);
 		LOG_LAST_ERROR_IF(!success, "AdjustWindowRect failed", Severity::Warning);
 
 		s->renderSize = rendererState->renderSize;
@@ -54,7 +54,7 @@ PreviewWindow_Initialize(PreviewWindowState* s, RendererState* rendererState, HI
 		s->hwnd = CreateWindowA(
 			windowClass.lpszClassName,
 			"LHM Preview",
-			windowStyle,
+			(u32) windowStyle,
 			CW_USEDEFAULT, CW_USEDEFAULT,
 			s->renderSize.x + s->nonClientSize.x,
 			s->renderSize.y + s->nonClientSize.y,
@@ -101,8 +101,8 @@ PreviewWindow_Initialize(PreviewWindowState* s, RendererState* rendererState, HI
 		// of any previous swap chains before creating a new one.
 		// https://msdn.microsoft.com/en-us/library/windows/desktop/ff476425(v=vs.85).aspx#Defer_Issues_with_Flip
 		DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
-		swapChainDesc.BufferDesc.Width                   = rendererState->renderSize.x;
-		swapChainDesc.BufferDesc.Height                  = rendererState->renderSize.y;
+		swapChainDesc.BufferDesc.Width                   = (u32) rendererState->renderSize.x;
+		swapChainDesc.BufferDesc.Height                  = (u32) rendererState->renderSize.y;
 		// TODO: Get values from system (match desktop. what happens if it changes?)
 		swapChainDesc.BufferDesc.RefreshRate.Numerator   = 60;
 		swapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
@@ -148,6 +148,8 @@ PreviewWindow_Initialize(PreviewWindowState* s, RendererState* rendererState, HI
 b32
 PreviewWindow_Teardown(PreviewWindowState* s, RendererState* rendererState, HINSTANCE hInstance)
 {
+	UNUSED(rendererState);
+
 	// Detach Renderer
 	{
 		s->backBuffer.Reset();
@@ -219,7 +221,7 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 			// TODO: Fix mouse cursor
 			// TODO: Is it worth trying to make things portable?
 			s->mouseWheelAccumulator += GET_WHEEL_DELTA_WPARAM(wParam);
-			i16 newZoomFactor = s->zoomFactor;
+			u16 newZoomFactor = s->zoomFactor;
 			while (s->mouseWheelAccumulator >= WHEEL_DELTA)
 			{
 				s->mouseWheelAccumulator -= WHEEL_DELTA;
@@ -228,9 +230,8 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 			while (s->mouseWheelAccumulator <= -WHEEL_DELTA)
 			{
 				s->mouseWheelAccumulator += WHEEL_DELTA;
-				newZoomFactor--;
+				if (newZoomFactor > 1) newZoomFactor--;
 			}
-			if (newZoomFactor < 1) newZoomFactor = 1;
 
 			if (newZoomFactor != s->zoomFactor)
 			{

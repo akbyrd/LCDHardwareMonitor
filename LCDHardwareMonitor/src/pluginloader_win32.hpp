@@ -1,10 +1,9 @@
+#pragma warning(push, 0)
 #include <winnt.h>
 #include <metahost.h>
 #include <wrl\client.h>
 using Microsoft::WRL::ComPtr;
 
-#pragma warning(push)
-#pragma warning(disable: 4091) // typedef ignored
 #include <CorHdr.h>
 #pragma warning(pop)
 
@@ -12,12 +11,13 @@ using Microsoft::WRL::ComPtr;
 // folder directly, but we need to know the correct config subfolder.
 #import "..\\run\\LCDHardwareMonitor PluginLoader CLR.tlb" no_namespace
 
-class LHMHostControl : public IHostControl
+class LHMHostControl final : public IHostControl
 {
 public:
 	// TODO: Double check that this doesn't get called for each new AppDomain
 	HRESULT __stdcall SetAppDomainManager(DWORD dwAppDomainID, IUnknown* pUnkAppDomainManager)
 	{
+		UNUSED(dwAppDomainID);
 		HRESULT hr;
 		hr = pUnkAppDomainManager->QueryInterface(IID_PPV_ARGS(&lhmPluginLoader));
 		return hr;

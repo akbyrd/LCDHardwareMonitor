@@ -27,6 +27,7 @@ const i32 togglePreviewWindowID = 0;
 i32 CALLBACK
 WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmdShow)
 {
+	UNUSED(hPrevInstance); UNUSED(pCmdLine); UNUSED(nCmdShow);
 	// TODO: Deal with goto's skipping variable initialization
 	int returnValue = -1;
 	SimulationState    simulationState   = {};

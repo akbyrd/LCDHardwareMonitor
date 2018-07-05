@@ -40,7 +40,7 @@ struct String
 	u32 capacity;
 	c8* data;
 
-	inline c8& operator[](i32 i) { return data[i]; }
+	inline c8& operator[](u32 i) { return data[i]; }
 	inline     operator c8*()    { return data; }
 	inline     operator b32()    { return data != nullptr; }
 };

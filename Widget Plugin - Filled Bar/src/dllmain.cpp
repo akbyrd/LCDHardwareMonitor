@@ -40,6 +40,7 @@ struct Widget2
 void
 DrawWidget_FilledBar(Widget& w /*, RendererState* renderer */)
 {
+	UNUSED(w);
 	// Set Input Layout
 	// Set Vertex Shader
 	// Set VS constant buffer
