@@ -1,4 +1,5 @@
 Next
+	Use a macro to toggle cleanup code
 	Enforce C++ version
 	Enforce standard compliant
 	Leverage Scoped/defer everywhere
