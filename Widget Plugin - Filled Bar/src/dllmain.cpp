@@ -1,9 +1,10 @@
 #include "LHMAPI.h"
 // TODO: Remove this once args stabilize
 #include "LHMPluginHeader.h"
-#include "LHMSensorPlugin.h"
+#include "LHMWidgetPlugin.h"
 
-struct Widget2
+#if false
+struct Widget
 {
 	__declspec(align(16))
 	struct VSConstants
@@ -40,7 +41,6 @@ struct Widget2
 	// TODO: drawFn? Widget type to function map?
 };
 
-#if false
 void
 DrawWidget_FilledBar(Widget& w /*, RendererState* renderer */)
 {
@@ -51,13 +51,20 @@ DrawWidget_FilledBar(Widget& w /*, RendererState* renderer */)
 	// Set Pixel Shader
 	// Set PS constant buffer
 }
-#endif
 
 //using ConstantBufferType = FilledBarConstants;
+#endif
 
-extern "C"
+EXPORT
+void
+Initialize(WP_INITIALIZE_ARGS)
 {
-	__declspec(dllexport) void Initialize(SP_INITIALIZE_ARGS) { UNUSED(s); }
-	__declspec(dllexport) void Update    (SP_UPDATE_ARGS    ) { UNUSED(s); }
-	__declspec(dllexport) void Teardown  (SP_TEARDOWN_ARGS  ) { UNUSED(s); }
+	WidgetDefinition widgetDef = {};
+	widgetDef.name    = "Filled Bar";
+	widgetDef.author  = "akbyrd";
+	widgetDef.version = 1;
+	api->AddWidgetDefinition(context, &widgetDef);
 }
+
+EXPORT void Update   (WP_UPDATE_ARGS)   { UNUSED(context); UNUSED(api); }
+EXPORT void Teardown (WP_TEARDOWN_ARGS) { UNUSED(context); UNUSED(api); }

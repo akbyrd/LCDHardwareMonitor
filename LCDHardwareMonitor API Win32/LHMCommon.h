@@ -27,12 +27,6 @@ const u64 Kilobyte = 1024LL;
 const u64 Megabyte = 1024LL * Kilobyte;
 const u64 Gigabyte = 1024LL * Megabyte;
 
-//#if EXPORTING
-//	#define LHM_API extern "C" __declspec(dllexport)
-//#else
-//	#define LHM_API extern "C" __declspec(dllimport)
-//#endif
-
 #if DEBUG
 	#define Assert(condition) if (!(condition)) { *((u8 *) 0) = 0; }
 #else

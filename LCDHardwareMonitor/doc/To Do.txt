@@ -1,9 +1,18 @@
 Next
-	Memory pools
-		Replace array stack allocations with Lists out of a pool.
-		Remove ArrayLength/Size
-	Look over logging carefully
-	Add formatted logging
+	Implement plugin API
+		Rewrite headers to be normal native headers. Move the CLR specific bits to a separate header.
+		Implement 'services' (mainly logging)
+		Can we typecheck plugin functions by making the plugin assign function pointers somewhere?
+		(Can probably do this in a header since we know the function names)
+		Questions
+			How do we deal with API that can fail?
+				Currently thinking context is a struct. Context has a fail flag and
+				reference to API struct. On fail set the flag and swap the API for a
+				bunch of empty functions.
+			How will managed code use native services and api? (probably dllimport)
+			Can we simplify the whole business?
+		Quirks
+			Have to pass a context parameter that plugins have to forward along.
 
 	Implement OHM plugin
 		Show on the LCD!
@@ -15,6 +24,11 @@ Next
 			Rivatuner?
 			HWiNFO (promising!)
 
+	Memory pools
+		Replace array stack allocations with Lists out of a pool.
+		Remove ArrayLength/Size
+	Look over logging carefully
+	Add formatted logging
 
 
 Back Burner

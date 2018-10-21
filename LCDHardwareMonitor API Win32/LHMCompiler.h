@@ -11,4 +11,6 @@
 	#pragma warning (disable: 4710) // Function not inlined
 	#pragma warning (disable: 4774) // printf format not a literal
 	#pragma warning (disable: 4820) // Struct padding added
+
+	#define EXPORT extern "C" __declspec(dllexport)
 #endif

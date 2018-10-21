@@ -1,14 +1,22 @@
 struct SimulationState
 {
-	PluginLoaderState* pluginLoader;
-	RendererState*     renderer;
+	PluginLoaderState*     pluginLoader;
+	RendererState*         renderer;
 
-	v2i                renderSize = { 320, 240 };
-	List<PluginHeader> pluginHeaders;
-	List<SensorPlugin> sensorPlugins;
-	List<WidgetPlugin> widgetPlugins;
-	//List<Widget>       widgets;
+	v2i                    renderSize = { 320, 240 };
+	List<PluginHeader>     pluginHeaders;
+	List<SensorPlugin>     sensorPlugins;
+	List<WidgetPlugin>     widgetPlugins;
+	List<WidgetDefinition> widgetDefinitions;
+	//List<Widget>           widgets;
 };
+
+struct PluginContext
+{
+	SimulationState* s;
+	bool             success;
+};
+
 
 static PluginHeader*
 CreatePluginHeader(SimulationState* s, c8* directory, c8* name, PluginKind kind)
@@ -99,6 +107,20 @@ UnloadSensorPlugin(SimulationState* s, SensorPlugin* sensorPlugin)
 	return true;
 }
 
+static b32
+AddWidgetDefinition(PluginContext* context, WidgetDefinition* widgetDef)
+{
+	if (!context->success) return false;
+	context->success = false;
+
+	SimulationState* s = (SimulationState*) context->s;
+	widgetDef = List_Append(s->widgetDefinitions, *widgetDef);
+	LOG_IF(!widgetDef, "Failed to allocate space for widget definition", Severity::Warning, return false);
+
+	context->success = true;
+	return true;
+}
+
 static WidgetPlugin*
 LoadWidgetPlugin(SimulationState* s, c8* directory, c8* name)
 {
@@ -112,9 +134,21 @@ LoadWidgetPlugin(SimulationState* s, c8* directory, c8* name)
 	success = PluginLoader_LoadWidgetPlugin(s->pluginLoader, pluginHeader, widgetPlugin);
 	LOG_IF(!success, "Failed to load widget plugin", Severity::Warning, return nullptr);
 
+	// TODO: Hoist this up
+	WidgetPluginInitializeAPI api = {};
+	api.AddWidgetDefinition = AddWidgetDefinition;
+
+	// TODO: Hoist this up
+	PluginContext context = {};
+	context.s       = s;
+	context.success = true;
+
 	// TODO: try/catch?
 	if (widgetPlugin->initialize)
-		widgetPlugin->initialize(widgetPlugin);
+	{
+		widgetPlugin->initialize(&context, &api);
+		LOG_IF(!context.success, "Failed to initialize widget plugin", Severity::Warning, return nullptr);
+	}
 
 	return widgetPlugin;
 }
@@ -128,7 +162,7 @@ UnloadWidgetPlugin(SimulationState* s, WidgetPlugin* widgetPlugin)
 
 	// TODO: try/catch?
 	if (widgetPlugin->teardown)
-		widgetPlugin->teardown(widgetPlugin);
+		widgetPlugin->teardown(nullptr, nullptr);
 
 	b32 success;
 	success = PluginLoader_UnloadWidgetPlugin(s->pluginLoader, pluginHeader, widgetPlugin);
@@ -220,7 +254,7 @@ Simulation_Update(SimulationState* s)
 
 		// TODO: try/catch?
 		if (widgetPlugin->update)
-			widgetPlugin->update(widgetPlugin);
+			widgetPlugin->update(nullptr, nullptr);
 	}
 
 	// NOTE: Build a command list of things to draw. Let the renderer handle

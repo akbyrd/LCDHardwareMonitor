@@ -17,16 +17,16 @@ struct Sensor
 #define SP_UPDATE_ARGS     struct SensorPlugin* s
 #define SP_TEARDOWN_ARGS   struct SensorPlugin* s
 
-using SensorPluginInitializeFn = void(SP_INITIALIZE_ARGS);
-using SensorPluginUpdateFn     = void(SP_UPDATE_ARGS);
-using SensorPluginTeardownFn   = void(SP_TEARDOWN_ARGS);
-
 COM_VISIBLE struct SensorPlugin
 {
-	PluginHeaderRef           pluginHeaderRef;
-	SensorPluginInitializeFn* initialize;
-	SensorPluginUpdateFn*     update;
-	SensorPluginTeardownFn*   teardown;
+	using InitializeFn = void(SP_INITIALIZE_ARGS);
+	using UpdateFn     = void(SP_UPDATE_ARGS);
+	using TeardownFn   = void(SP_TEARDOWN_ARGS);
+
+	PluginHeaderRef pluginHeaderRef;
+	InitializeFn*   initialize;
+	UpdateFn*       update;
+	TeardownFn*     teardown;
 
 	List<Sensor>              sensors;
 	//List<SensorRef>           activeSensors;

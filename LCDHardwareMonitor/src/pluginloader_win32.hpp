@@ -201,9 +201,9 @@ PluginLoader_LoadSensorPlugin(PluginLoaderState* s, PluginHeader* pluginHeader, 
 			SetDllDirectoryA("");
 
 			HMODULE pluginModule = (HMODULE) pluginHeader->userData;
-			sensorPlugin->initialize = (SensorPluginInitializeFn*) (void*) GetProcAddress(pluginModule, "Initialize");
-			sensorPlugin->update     = (SensorPluginUpdateFn*)     (void*) GetProcAddress(pluginModule, "Update");
-			sensorPlugin->teardown   = (SensorPluginTeardownFn*)   (void*) GetProcAddress(pluginModule, "Teardown");
+			sensorPlugin->initialize = (SensorPlugin::InitializeFn*) (void*) GetProcAddress(pluginModule, "Initialize");
+			sensorPlugin->update     = (SensorPlugin::UpdateFn*)     (void*) GetProcAddress(pluginModule, "Update");
+			sensorPlugin->teardown   = (SensorPlugin::TeardownFn*)   (void*) GetProcAddress(pluginModule, "Teardown");
 			success = true;
 			break;
 		}
@@ -274,9 +274,9 @@ PluginLoader_LoadWidgetPlugin(PluginLoaderState* s, PluginHeader* pluginHeader, 
 			SetDllDirectoryA("");
 
 			HMODULE pluginModule = (HMODULE) pluginHeader->userData;
-			widgetPlugin->initialize = (WidgetPluginInitializeFn*) (void*) GetProcAddress(pluginModule, "Initialize");
-			widgetPlugin->update     = (WidgetPluginUpdateFn*)     (void*) GetProcAddress(pluginModule, "Update");
-			widgetPlugin->teardown   = (WidgetPluginTeardownFn*)   (void*) GetProcAddress(pluginModule, "Teardown");
+			widgetPlugin->initialize = (WidgetPlugin::InitializeFn*) (void*) GetProcAddress(pluginModule, "Initialize");
+			widgetPlugin->update     = (WidgetPlugin::UpdateFn*)     (void*) GetProcAddress(pluginModule, "Update");
+			widgetPlugin->teardown   = (WidgetPlugin::TeardownFn*)   (void*) GetProcAddress(pluginModule, "Teardown");
 			success = true;
 			break;
 		}
