@@ -11,7 +11,6 @@
 //
 #include <stdarg.h>
 
-using Bytes  = List<u8>;
 using String = List<c8>;
 
 b32

@@ -8,7 +8,6 @@ struct SimulationState
 	List<SensorPlugin>     sensorPlugins;
 	List<WidgetPlugin>     widgetPlugins;
 	List<WidgetDefinition> widgetDefinitions;
-	//List<Widget>           widgets;
 };
 
 struct PluginContext
@@ -135,9 +134,10 @@ AddWidgetDefinition(PluginContext* context, WidgetDefinition* widgetDef)
 	context->success = false;
 
 	// TODO: Use empty slots
-	widgetDef->ref = context->ref;
 	widgetDef = List_Append(context->s->widgetDefinitions, *widgetDef);
 	LOG_IF(!widgetDef, "Failed to allocate space for widget definition", Severity::Warning, return false);
+
+	widgetDef->ref = context->ref;
 
 	context->success = true;
 	return true;
@@ -229,6 +229,18 @@ UnloadWidgetPlugin(SimulationState* s, WidgetPlugin* widgetPlugin)
 	return true;
 }
 
+static Widget*
+CreateWidget(WidgetDefinition* widgetDef)
+{
+	u32 widgetOffset = widgetDef->instances.length;
+	u32 size = sizeof(Widget) + widgetDef->size;
+	b32 success = List_Reserve(widgetDef->instances, widgetDef->instances.length + size);
+	LOG_IF(!success, "Failed to allocate widget", Severity::Error, return nullptr);
+
+	Widget* widget = (Widget*) &widgetDef->instances[widgetOffset];
+	return widget;
+}
+
 b32
 Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, RendererState* renderer)
 {
@@ -250,21 +262,24 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 	List_Reserve(s->widgetDefinitions, 8);
 	LOG_IF(!s->widgetDefinitions, "Failed to allocate widget definitions list", Severity::Error, return false);
 
-	//List_Reserve(s->widgets, 8);
-	//LOG_IF(!s->widgets, "Failed to allocate widgets list", Severity::Error, return false);
-
 	// DEBUG: Testing
 	{
-		SensorPlugin* ohmPlugin       = LoadSensorPlugin(s, "Sensor Plugins\\OpenHardwareMonitor", "Sensor Plugin - OpenHardwareMonitor");
-		WidgetPlugin* filledBarPlugin = LoadWidgetPlugin(s, "Widget Plugins\\Filled Bar",          "Widget Plugin - Filled Bar");
-
-		UNUSED(ohmPlugin);
-		UNUSED(filledBarPlugin);
+		//SensorPlugin* ohmPlugin = LoadSensorPlugin(s, "Sensor Plugins\\OpenHardwareMonitor", "Sensor Plugin - OpenHardwareMonitor");
+		//if (!ohmPlugin) return false;
 
 		//Widget* w = List_Append(s->widgets);
 		//w->mesh   = Mesh::Quad;
 		//w->sensor = List_GetRef(ohmPlugin->sensors, 0);
 		//w->size   = { 240, 12 };
+
+		WidgetPlugin* filledBarPlugin = LoadWidgetPlugin(s, "Widget Plugins\\Filled Bar", "Widget Plugin - Filled Bar");
+		if (!filledBarPlugin) return false;
+
+		WidgetDefinition* widgetDef = &s->widgetDefinitions[0];
+		Widget* widget = CreateWidget(widgetDef);
+		if (!widget) return false;
+		widget->position = { 10, 10 };
+		widgetDef->initialize(widget);
 	}
 
 	return true;
@@ -278,7 +293,8 @@ Simulation_Teardown(SimulationState* s)
 	// do this for testing, but it's unnecessary work in the normal teardown
 	// case.
 
-	//List_Free(s->widgets);
+	for (u32 i = 0; i < s->widgetDefinitions.length; i++)
+		List_Free(s->widgetDefinitions[i].instances);
 	List_Free(s->widgetDefinitions);
 
 	for (u32 i = 0; i < s->widgetPlugins.length; i++)
@@ -289,9 +305,9 @@ Simulation_Teardown(SimulationState* s)
 		UnloadSensorPlugin(s, &s->sensorPlugins[i]);
 	List_Free(s->sensorPlugins);
 
-	PluginLoader_Teardown(s->pluginLoader);
-
 	List_Free(s->pluginHeaders);
+
+	PluginLoader_Teardown(s->pluginLoader);
 }
 
 void

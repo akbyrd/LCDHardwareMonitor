@@ -1,21 +1,25 @@
 Next
-	Try implementing a list iterator
+	Drop 'Plugin' from plugin file names
 
 	Implement plugin API
 		Implement 'services' (mainly logging)
-		Can we typecheck plugin functions by making the plugin assign function pointers somewhere?
-		(Can probably do this in a header since we know the function names)
+		Can we typecheck plugin functions by making the plugin assign function
+		pointers somewhere? (Can probably do this in a header since we know the
+		function names). Actually, maybe this is the right way to get plugin
+		functions in the first place. If we only find a single RegisterPlugin
+		function, then ask the plugin to fill in a bunch of function pointers, we
+		1) Get better type safety since they'll have to match the function pointer
+		definition. 2) Reduce the amount of boilerplate on the application side.
 		Questions
 			How will managed code use native services and api? (probably dllimport)
-			Would it be better to hide Context inside SimulationState so plugins don't have to worry about
-			it?
-		Quirks
-			Have to pass a context parameter that plugins have to forward along.
+			Would it be better to hide Context inside SimulationState so plugins
+			don't have to worry about it?
+			Do we need to support people using objects in plugins (e.g do we need to
+			give dtors an opportunity to run?)
 
 	Implement OHM plugin
 		Show on the LCD!
 		Might be worthwhile to shove a userData pointer on Sensor
-		Pass a logging interface
 		Probably need a replacement SDK since it's unmaintained
 			CPUID System Monitor SDK is one option, but it's paid
 			AIDA64 doesn't have an SDK but it supports WMI and shared memory
@@ -27,6 +31,7 @@ Next
 		Remove ArrayLength/Size
 	Look over logging carefully
 	Add formatted logging
+
 
 
 Back Burner

@@ -2,6 +2,7 @@
 #define LHM_SENSORPLUGIN
 
 struct PluginContext;
+
 struct PluginHeader;
 using PluginHeaderRef = List<PluginHeader>::RefT;
 

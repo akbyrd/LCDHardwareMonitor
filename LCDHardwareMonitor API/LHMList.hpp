@@ -245,6 +245,8 @@ List_Equal(List<T>& listA, List<T>& listB)
 	return true;
 }
 
+using Bytes = List<u8>;
+
 // TODO: This data structure needs to be reworked entirely. The API is all
 // over the place and generally garbage.
 // TODO: I bet we can make a pretty simple fixed-size list with the same

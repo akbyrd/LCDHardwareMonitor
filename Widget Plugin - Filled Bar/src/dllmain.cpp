@@ -51,17 +51,57 @@ DrawWidget_FilledBar(Widget& w /*, RendererState* renderer */)
 //using ConstantBufferType = FilledBarConstants;
 #endif
 
-EXPORT
-b32
+struct BarWidget
+{
+	// TODO: Unsigned vector type
+	v2i size;
+};
+
+// TODO: Standardize plugin functions
+static void
+InitializeBarWidget(Widget* widget)
+{
+	BarWidget* barWidget = GetWidgetData<BarWidget>(widget);
+	barWidget->size = { 240, 12 };
+}
+
+EXPORT b32
 Initialize(PluginContext* context, WidgetPlugin::InitializeAPI* api)
 {
 	WidgetDefinition widgetDef = {};
-	widgetDef.name    = "Filled Bar";
-	widgetDef.author  = "akbyrd";
-	widgetDef.version = 1;
+	widgetDef.name       = "Filled Bar";
+	widgetDef.author     = "akbyrd";
+	widgetDef.version    = 1;
+	widgetDef.size       = sizeof(BarWidget);
+	widgetDef.initialize = &InitializeBarWidget;
 	api->AddWidgetDefinition(context, &widgetDef);
 	return true;
 }
 
-EXPORT void Update   (PluginContext* context, WidgetPlugin::UpdateAPI*   api) { UNUSED(context); UNUSED(api); }
-EXPORT void Teardown (PluginContext* context, WidgetPlugin::TeardownAPI* api) { UNUSED(context); UNUSED(api); }
+EXPORT void
+Update(PluginContext* context, WidgetPlugin::UpdateAPI* api)
+{
+	UNUSED(context); UNUSED(api);
+
+	// TODO: It's not clear whether or not drawing belongs in update
+}
+
+EXPORT void
+Teardown(PluginContext* context, WidgetPlugin::TeardownAPI* api)
+{
+	UNUSED(context); UNUSED(api);
+}
+
+/*
+ * How do we create a bar widget?
+ * Maybe a CreateWidget function is part of the WidgetDefinition?
+ * When the plugin adds a definition it adds a create function.
+ * We'll need a memory arena thing to store widgets
+ * Widget size given in Initialize so an arena can be created
+ * App: plugin initialize
+ * Plug: add widget definition
+ * App: create widget
+ * Plug: add widget to arena
+ * App: plugin update
+ * Plug: submit draw commands for each
+ */
