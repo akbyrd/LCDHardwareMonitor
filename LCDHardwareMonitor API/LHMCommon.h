@@ -33,12 +33,6 @@ const u64 Gigabyte = 1024LL * Megabyte;
 	#define Assert(condition)
 #endif
 
-#if __cplusplus_cli
-	#define COM_VISIBLE public
-#else
-	#define COM_VISIBLE
-#endif
-
 #define nameof(x) #x
 #define UNUSED(x) (x);
 #define HAS_FLAG(x, f) ((x & f) == f)

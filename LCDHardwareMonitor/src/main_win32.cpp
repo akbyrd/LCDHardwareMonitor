@@ -1,6 +1,5 @@
 #include "LHMAPI.h"
 #include "LHMString.hpp"
-#define BUILDING_LHM
 #include "LHMPluginHeader.h"
 #include "LHMSensorPlugin.h"
 #include "LHMWidgetPlugin.h"

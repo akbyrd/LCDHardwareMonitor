@@ -78,7 +78,7 @@ LoadSensorPlugin(SimulationState* s, c8* directory, c8* name)
 
 	// TODO: try/catch?
 	if (sensorPlugin->initialize)
-		sensorPlugin->initialize(sensorPlugin);
+		sensorPlugin->initialize(nullptr, nullptr);
 
 	return sensorPlugin;
 }
@@ -92,7 +92,7 @@ UnloadSensorPlugin(SimulationState* s, SensorPlugin* sensorPlugin)
 
 	// TODO: try/catch?
 	if (sensorPlugin->teardown)
-		sensorPlugin->teardown(sensorPlugin);
+		sensorPlugin->teardown(nullptr, nullptr);
 
 	b32 success;
 	success = PluginLoader_UnloadSensorPlugin(s->pluginLoader, pluginHeader, sensorPlugin);
@@ -135,7 +135,7 @@ LoadWidgetPlugin(SimulationState* s, c8* directory, c8* name)
 	LOG_IF(!success, "Failed to load widget plugin", Severity::Warning, return nullptr);
 
 	// TODO: Hoist this up
-	WidgetPluginInitializeAPI api = {};
+	WidgetPlugin::InitializeAPI api = {};
 	api.AddWidgetDefinition = AddWidgetDefinition;
 
 	// TODO: Hoist this up
@@ -245,7 +245,7 @@ Simulation_Update(SimulationState* s)
 
 		// TODO: try/catch?
 		if (sensorPlugin->update)
-			sensorPlugin->update(sensorPlugin);
+			sensorPlugin->update(nullptr, nullptr);
 	}
 
 	for (u32 i = 0; i < s->widgetPlugins.length; i++)

@@ -1,3 +1,6 @@
+#ifndef LHM_API
+#define LHM_API
+
 // Utility
 #include "LHMCompiler.h"
 #include "LHMCommon.h"
@@ -8,5 +11,10 @@
 
 // Public API
 #include "LHMPluginInfo.h"
-//#include "LHMSensor.h"
-//#include "LHMWidget.h"
+#include "LHMPluginHeader.h"
+#include "LHMSensor.h"
+#include "LHMSensorPlugin.h"
+#include "LHMWidget.h"
+#include "LHMWidgetPlugin.h"
+
+#endif

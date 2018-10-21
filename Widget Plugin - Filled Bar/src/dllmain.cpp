@@ -1,7 +1,4 @@
 #include "LHMAPI.h"
-// TODO: Remove this once args stabilize
-#include "LHMPluginHeader.h"
-#include "LHMWidgetPlugin.h"
 
 #if false
 struct Widget
@@ -57,7 +54,7 @@ DrawWidget_FilledBar(Widget& w /*, RendererState* renderer */)
 
 EXPORT
 void
-Initialize(WP_INITIALIZE_ARGS)
+Initialize(PluginContext* context, WidgetPlugin::InitializeAPI* api)
 {
 	WidgetDefinition widgetDef = {};
 	widgetDef.name    = "Filled Bar";
@@ -66,5 +63,5 @@ Initialize(WP_INITIALIZE_ARGS)
 	api->AddWidgetDefinition(context, &widgetDef);
 }
 
-EXPORT void Update   (WP_UPDATE_ARGS)   { UNUSED(context); UNUSED(api); }
-EXPORT void Teardown (WP_TEARDOWN_ARGS) { UNUSED(context); UNUSED(api); }
+EXPORT void Update   (PluginContext* context, WidgetPlugin::UpdateAPI*   api) { UNUSED(context); UNUSED(api); }
+EXPORT void Teardown (PluginContext* context, WidgetPlugin::TeardownAPI* api) { UNUSED(context); UNUSED(api); }

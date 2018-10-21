@@ -1,8 +1,5 @@
 #pragma unmanaged
-#include "LHMAPI.h"
-#include "LHMPluginHeader.h"
-#include "LHMSensorPlugin.h"
-#include "LHMWidgetPlugin.h"
+#include "LHMAPICLR.h"
 
 #pragma managed
 using namespace System;
@@ -13,7 +10,7 @@ using namespace System::Runtime::InteropServices;
 // Try playing with security settings if optimizing this
 
 // TODO: *Really* want to default to non-visible so TLBs aren't bloated to
-// hell, but I can't find a way to allow native types in as parameters to
+// hell, but I can't find a way to allow native types as parameters to
 // ILHMPluginLoader functions without setting the entire assembly to visible.
 // And currently I prefer the bloat to passing void* parameters and casting.
 //[assembly:ComVisible(false)];
@@ -33,9 +30,9 @@ public value struct
 SensorPlugin_CLR
 {
 	#define Attributes UnmanagedFunctionPointer(CallingConvention::Cdecl)
-	[Attributes] delegate void InitializeDelegate(SP_INITIALIZE_ARGS);
-	[Attributes] delegate void UpdateDelegate    (SP_UPDATE_ARGS);
-	[Attributes] delegate void TeardownDelegate  (SP_TEARDOWN_ARGS);
+	[Attributes] delegate void InitializeDelegate(PluginContext* context, SensorPlugin::InitializeAPI* api);
+	[Attributes] delegate void UpdateDelegate    (PluginContext* context, SensorPlugin::UpdateAPI*     api);
+	[Attributes] delegate void TeardownDelegate  (PluginContext* context, SensorPlugin::TeardownAPI*   api);
 	#undef Attributes
 
 	ISensorPlugin^      pluginInstance;
@@ -49,9 +46,9 @@ public value struct
 WidgetPlugin_CLR
 {
 	#define Attributes UnmanagedFunctionPointer(CallingConvention::Cdecl)
-	[Attributes] delegate void InitializeDelegate(WP_INITIALIZE_ARGS);
-	[Attributes] delegate void UpdateDelegate    (WP_UPDATE_ARGS);
-	[Attributes] delegate void TeardownDelegate  (WP_TEARDOWN_ARGS);
+	[Attributes] delegate void InitializeDelegate(PluginContext* context, WidgetPlugin::InitializeAPI* api);
+	[Attributes] delegate void UpdateDelegate    (PluginContext* context, WidgetPlugin::UpdateAPI*     api);
+	[Attributes] delegate void TeardownDelegate  (PluginContext* context, WidgetPlugin::TeardownAPI*   api);
 	#undef Attributes
 
 	IWidgetPlugin^      pluginInstance;

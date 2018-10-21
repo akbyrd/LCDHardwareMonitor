@@ -1,8 +1,5 @@
 #pragma unmanaged
-#include "LHMAPI.h"
-// TODO: Remove this once args stabilize
-#include "LHMPluginHeader.h"
-#include "LHMSensorPlugin.h"
+#include "LHMAPICLR.h"
 
 #pragma managed
 #include <string.h>
@@ -31,8 +28,13 @@ public ref struct State : ISensorPlugin
 		array<IHardware^>^ hardware;
 	};
 
+	virtual void Initialize(PluginContext*, SensorPlugin::InitializeAPI*) {}
+	virtual void Update    (PluginContext*, SensorPlugin::UpdateAPI*)     {}
+	virtual void Teardown  (PluginContext*, SensorPlugin::TeardownAPI*)   {}
+
+	#if false
 	virtual void
-	Initialize(SP_INITIALIZE_ARGS)
+	Initialize(PluginContext* context, SensorPlugin::InitializeAPI* api)
 	{
 		computer       = gcnew Computer();
 		activeSensors  = gcnew SList<ISensor^>;
@@ -122,7 +124,7 @@ public ref struct State : ISensorPlugin
 	}
 
 	virtual void
-	Update(SP_UPDATE_ARGS)
+	Update(PluginContext* context, SensorPlugin::UpdateAPI* api)
 	{
 		for (i32 i = 0; i < State::activeHardware->Count; i++)
 			State::activeHardware[i]->Update();
@@ -146,7 +148,7 @@ public ref struct State : ISensorPlugin
 	}
 
 	virtual void
-	Teardown(SP_TEARDOWN_ARGS)
+	Teardown(PluginContext* context, SensorPlugin::TeardownAPI* api)
 	{
 		for (u32 i = 0; i < s->sensors.length; i++)
 		{
@@ -160,4 +162,5 @@ public ref struct State : ISensorPlugin
 		}
 		List_Clear(s->sensors);
 	}
+	#endif
 };

@@ -1,3 +1,6 @@
+#ifndef LHM_COMPILER
+#define LHM_COMPILER
+
 #if _MSC_VER
 	// Some warnings are just fucking stupid
 	#pragma warning (disable: 4061) // Enum not explicitly handle in switch
@@ -13,4 +16,14 @@
 	#pragma warning (disable: 4820) // Struct padding added
 
 	#define EXPORT extern "C" __declspec(dllexport)
+#endif
+
+#if __cplusplus_cli
+	// NOTE: This warning is surpiously raised when using #pragma make_public on
+	// a nested native type.
+	#pragma warning (disable: 4692) // Non-private member contains private type
+
+	//public struct PluginContext {};
+#endif
+
 #endif

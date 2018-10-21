@@ -10,19 +10,22 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LCDHardwareMonitor", "LCDHa
 		{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A} = {2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "LCDHardwareMonitor API Win32", "LCDHardwareMonitor API Win32", "{CC1638D1-8331-4AC6-AF7B-1E0D9B07EDC0}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "LCDHardwareMonitor API", "LCDHardwareMonitor API", "{CC1638D1-8331-4AC6-AF7B-1E0D9B07EDC0}"
 	ProjectSection(SolutionItems) = preProject
-		LCDHardwareMonitor API Win32\LHMAPI.h = LCDHardwareMonitor API Win32\LHMAPI.h
-		LCDHardwareMonitor API Win32\LHMCommon.h = LCDHardwareMonitor API Win32\LHMCommon.h
-		LCDHardwareMonitor API Win32\LHMCompiler.h = LCDHardwareMonitor API Win32\LHMCompiler.h
-		LCDHardwareMonitor API Win32\LHMDefer.hpp = LCDHardwareMonitor API Win32\LHMDefer.hpp
-		LCDHardwareMonitor API Win32\LHMList.hpp = LCDHardwareMonitor API Win32\LHMList.hpp
-		LCDHardwareMonitor API Win32\LHMMath.hpp = LCDHardwareMonitor API Win32\LHMMath.hpp
-		LCDHardwareMonitor API Win32\LHMPluginHeader.h = LCDHardwareMonitor API Win32\LHMPluginHeader.h
-		LCDHardwareMonitor API Win32\LHMPluginInfo.h = LCDHardwareMonitor API Win32\LHMPluginInfo.h
-		LCDHardwareMonitor API Win32\LHMSensorPlugin.h = LCDHardwareMonitor API Win32\LHMSensorPlugin.h
-		LCDHardwareMonitor API Win32\LHMString.hpp = LCDHardwareMonitor API Win32\LHMString.hpp
-		LCDHardwareMonitor API Win32\LHMWidgetPlugin.h = LCDHardwareMonitor API Win32\LHMWidgetPlugin.h
+		LCDHardwareMonitor API\LHMAPI.h = LCDHardwareMonitor API\LHMAPI.h
+		LCDHardwareMonitor API\LHMAPICLR.h = LCDHardwareMonitor API\LHMAPICLR.h
+		LCDHardwareMonitor API\LHMCommon.h = LCDHardwareMonitor API\LHMCommon.h
+		LCDHardwareMonitor API\LHMCompiler.h = LCDHardwareMonitor API\LHMCompiler.h
+		LCDHardwareMonitor API\LHMDefer.hpp = LCDHardwareMonitor API\LHMDefer.hpp
+		LCDHardwareMonitor API\LHMList.hpp = LCDHardwareMonitor API\LHMList.hpp
+		LCDHardwareMonitor API\LHMMath.hpp = LCDHardwareMonitor API\LHMMath.hpp
+		LCDHardwareMonitor API\LHMPluginHeader.h = LCDHardwareMonitor API\LHMPluginHeader.h
+		LCDHardwareMonitor API\LHMPluginInfo.h = LCDHardwareMonitor API\LHMPluginInfo.h
+		LCDHardwareMonitor API\LHMSensor.h = LCDHardwareMonitor API\LHMSensor.h
+		LCDHardwareMonitor API\LHMSensorPlugin.h = LCDHardwareMonitor API\LHMSensorPlugin.h
+		LCDHardwareMonitor API\LHMString.hpp = LCDHardwareMonitor API\LHMString.hpp
+		LCDHardwareMonitor API\LHMWidget.h = LCDHardwareMonitor API\LHMWidget.h
+		LCDHardwareMonitor API\LHMWidgetPlugin.h = LCDHardwareMonitor API\LHMWidgetPlugin.h
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LCDHardwareMonitor API CLR", "LCDHardwareMonitor API CLR\LCDHardwareMonitor API CLR.vcxproj", "{246430DC-680A-432E-B7DE-BCC2C59CDDAE}"

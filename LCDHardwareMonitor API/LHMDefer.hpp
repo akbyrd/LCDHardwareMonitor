@@ -1,3 +1,6 @@
+#ifndef LHM_DEFER
+#define LHM_DEFER
+
 // NOTE:
 // Problems we are solving:
 // - Releasing resources at the end of the current scope
@@ -76,3 +79,5 @@ struct Scoped
 	b32 operator== (TResource other) { return resource == other; }
 	operator TResource() { return resource; }
 };
+
+#endif
