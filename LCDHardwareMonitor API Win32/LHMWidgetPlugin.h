@@ -14,7 +14,7 @@ using WidgetPluginInitializeFn = void(WP_INITIALIZE_ARGS);
 using WidgetPluginUpdateFn     = void(WP_UPDATE_ARGS);
 using WidgetPluginTeardownFn   = void(WP_TEARDOWN_ARGS);
 
-PUBLIC struct WidgetPlugin
+COM_VISIBLE struct WidgetPlugin
 {
 	PluginHeaderRef           pluginHeaderRef;
 	WidgetPluginInitializeFn* initialize;

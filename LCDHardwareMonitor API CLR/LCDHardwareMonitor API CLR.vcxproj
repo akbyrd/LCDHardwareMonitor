@@ -101,7 +101,7 @@
       <AdditionalOptions>/std:c++14 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <PostBuildEvent>
-      <Command>"$(SolutionDir)build\Deploy.bat" "$(SolutionDir)" "$(TargetDir)" ""</Command>
+      <Command>"..\build\Deploy.bat" "$(OutDir)"</Command>
     </PostBuildEvent>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -115,7 +115,7 @@
       <AdditionalOptions>/std:c++14 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <PostBuildEvent>
-      <Command>"$(SolutionDir)build\Deploy.bat" "$(SolutionDir)" "$(TargetDir)" ""</Command>
+      <Command>"..\build\Deploy.bat" "$(OutDir)"</Command>
     </PostBuildEvent>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -135,7 +135,7 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PostBuildEvent>
-      <Command>"$(SolutionDir)build\Deploy.bat" "$(SolutionDir)" "$(TargetDir)" ""</Command>
+      <Command>"..\build\Deploy.bat" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -152,7 +152,7 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PostBuildEvent>
-      <Command>"$(SolutionDir)build\Deploy.bat" "$(SolutionDir)" "$(TargetDir)" ""</Command>
+      <Command>"..\build\Deploy.bat" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

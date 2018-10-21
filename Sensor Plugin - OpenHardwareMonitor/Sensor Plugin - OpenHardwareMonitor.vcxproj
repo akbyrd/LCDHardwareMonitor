@@ -102,7 +102,7 @@
       <AdditionalOptions>/std:c++14 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <PostBuildEvent>
-      <Command>"$(SolutionDir)build\Deploy.bat" "$(SolutionDir)" "$(TargetDir)" "Sensor Plugins\OpenHardwareMonitor"</Command>
+      <Command>"..\build\Deploy.bat" "$(OutDir)" "Sensor Plugins\OpenHardwareMonitor"</Command>
     </PostBuildEvent>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -116,7 +116,7 @@
       <AdditionalOptions>/std:c++14 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <PostBuildEvent>
-      <Command>"$(SolutionDir)build\Deploy.bat" "$(SolutionDir)" "$(TargetDir)" "Sensor Plugins\OpenHardwareMonitor"</Command>
+      <Command>"..\build\Deploy.bat" "$(OutDir)" "Sensor Plugins\OpenHardwareMonitor"</Command>
     </PostBuildEvent>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -136,7 +136,7 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PostBuildEvent>
-      <Command>"$(SolutionDir)build\Deploy.bat" "$(SolutionDir)" "$(TargetDir)" "Sensor Plugins\OpenHardwareMonitor"</Command>
+      <Command>"..\build\Deploy.bat" "$(OutDir)" "Sensor Plugins\OpenHardwareMonitor"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -153,7 +153,7 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PostBuildEvent>
-      <Command>"$(SolutionDir)build\Deploy.bat" "$(SolutionDir)" "$(TargetDir)" "Sensor Plugins\OpenHardwareMonitor"</Command>
+      <Command>"..\build\Deploy.bat" "$(OutDir)" "Sensor Plugins\OpenHardwareMonitor"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -173,6 +173,7 @@
     <ProjectReference Include="..\LCDHardwareMonitor API CLR\LCDHardwareMonitor API CLR.vcxproj">
       <Project>{246430dc-680a-432e-b7de-bcc2c59cddae}</Project>
       <Private>false</Private>
+      <CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

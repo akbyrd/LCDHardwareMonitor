@@ -8,18 +8,23 @@
 using namespace System;
 using namespace System::Reflection;
 using namespace System::Runtime::InteropServices;
-[assembly:ComVisible(false)];
+
+// TODO: *Really* want to default to non-visible so TLBs aren't bloated to
+// hell, but I can't find a way to allow native types in as parameters to
+// ILHMPluginLoader functions without setting the entire assembly to visible.
+//[assembly:ComVisible(false)];
 
 [ComVisible(true)]
 public interface class
 ILHMPluginLoader
 {
-	b32 LoadSensorPlugin   (void* pluginHeader, void* sensorPlugin);
-	b32 UnloadSensorPlugin (void* pluginHeader, void* sensorPlugin);
-	b32 LoadWidgetPlugin   (void* pluginHeader, void* widgetPlugin);
-	b32 UnloadWidgetPlugin (void* pluginHeader, void* widgetPlugin);
+	b32 LoadSensorPlugin   (PluginHeader* pluginHeader, SensorPlugin* sensorPlugin);
+	b32 UnloadSensorPlugin (PluginHeader* pluginHeader, SensorPlugin* sensorPlugin);
+	b32 LoadWidgetPlugin   (PluginHeader* pluginHeader, WidgetPlugin* widgetPlugin);
+	b32 UnloadWidgetPlugin (PluginHeader* pluginHeader, WidgetPlugin* widgetPlugin);
 };
 
+[ComVisible(false)]
 public value struct
 SensorPlugin_CLR
 {
@@ -35,6 +40,7 @@ SensorPlugin_CLR
 	TeardownDelegate^   teardownDelegate;
 };
 
+[ComVisible(false)]
 public value struct
 WidgetPlugin_CLR
 {
@@ -50,7 +56,7 @@ WidgetPlugin_CLR
 	TeardownDelegate^   teardownDelegate;
 };
 
-
+[ComVisible(false)]
 public ref struct
 LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 {
@@ -64,11 +70,9 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	}
 
 	virtual b32
-	LoadSensorPlugin(void* _pluginHeader, void* _sensorPlugin)
+	LoadSensorPlugin(PluginHeader* pluginHeader, SensorPlugin* sensorPlugin)
 	{
 		b32 success;
-		PluginHeader* pluginHeader = (PluginHeader*) _pluginHeader;
-		SensorPlugin* sensorPlugin = (SensorPlugin*) _sensorPlugin;
 
 		success = LoadPlugin(pluginHeader);
 		if (!success) return false;
@@ -81,11 +85,9 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	}
 
 	virtual b32
-	UnloadSensorPlugin(void* _pluginHeader, void* _sensorPlugin)
+	UnloadSensorPlugin(PluginHeader* pluginHeader, SensorPlugin* sensorPlugin)
 	{
 		b32 success;
-		PluginHeader* pluginHeader = (PluginHeader*) _pluginHeader;
-		SensorPlugin* sensorPlugin = (SensorPlugin*) _sensorPlugin;
 
 		LHMPluginLoader^ pluginLoader = GetDomainResidentLoader(pluginHeader);
 		success = pluginLoader->TeardownSensorPlugin(pluginHeader, sensorPlugin);
@@ -98,11 +100,9 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	}
 
 	virtual b32
-	LoadWidgetPlugin(void* _pluginHeader, void* _widgetPlugin)
+	LoadWidgetPlugin(PluginHeader* pluginHeader, WidgetPlugin* widgetPlugin)
 	{
 		b32 success;
-		PluginHeader* pluginHeader = (PluginHeader*) _pluginHeader;
-		WidgetPlugin* widgetPlugin = (WidgetPlugin*) _widgetPlugin;
 
 		success = LoadPlugin(pluginHeader);
 		if (!success) return false;
@@ -115,11 +115,9 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	}
 
 	virtual b32
-	UnloadWidgetPlugin(void* _pluginHeader, void* _widgetPlugin)
+	UnloadWidgetPlugin(PluginHeader* pluginHeader, WidgetPlugin* widgetPlugin)
 	{
 		b32 success;
-		PluginHeader* pluginHeader = (PluginHeader*) _pluginHeader;
-		WidgetPlugin* widgetPlugin = (WidgetPlugin*) _widgetPlugin;
 
 		LHMPluginLoader^ pluginLoader = GetDomainResidentLoader(pluginHeader);
 		success = pluginLoader->TeardownWidgetPlugin(pluginHeader, widgetPlugin);
@@ -131,7 +129,7 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 		return true;
 	}
 
-private:
+	private:
 	LHMPluginLoader^
 	GetDomainResidentLoader (PluginHeader* pluginHeader)
 	{

@@ -40,9 +40,9 @@ const u64 Gigabyte = 1024LL * Megabyte;
 #endif
 
 #if __cplusplus_cli
-	#define PUBLIC public
+	#define COM_VISIBLE public
 #else
-	#define PUBLIC
+	#define COM_VISIBLE
 #endif
 
 #define nameof(x) #x

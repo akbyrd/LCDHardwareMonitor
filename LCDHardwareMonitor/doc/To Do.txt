@@ -1,5 +1,7 @@
 Next
 	Is it worth abstracting a little to unify sensor and widget plugin handling?
+	Is it possible to allow native types in COM functions without making the entire assembly visible?
+
 	Memory pools
 		Replace array stack allocations with Lists out of a pool.
 		Remove ArrayLength/Size

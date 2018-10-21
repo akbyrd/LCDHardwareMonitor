@@ -17,7 +17,8 @@ enum struct PluginLanguage
 
 // TODO: Maybe union SensorPlugin and WidgetPlugin into here?
 using PluginHeaderRef = List<struct PluginHeader>::RefT;
-struct PluginHeader
+
+COM_VISIBLE struct PluginHeader
 {
 	PluginHeaderRef ref;
 	b32             isLoaded;

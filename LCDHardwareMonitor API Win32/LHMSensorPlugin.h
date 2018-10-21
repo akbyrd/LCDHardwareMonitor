@@ -21,7 +21,7 @@ using SensorPluginInitializeFn = void(SP_INITIALIZE_ARGS);
 using SensorPluginUpdateFn     = void(SP_UPDATE_ARGS);
 using SensorPluginTeardownFn   = void(SP_TEARDOWN_ARGS);
 
-PUBLIC struct SensorPlugin
+COM_VISIBLE struct SensorPlugin
 {
 	PluginHeaderRef           pluginHeaderRef;
 	SensorPluginInitializeFn* initialize;

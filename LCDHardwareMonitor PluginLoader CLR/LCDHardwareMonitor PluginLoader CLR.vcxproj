@@ -25,6 +25,7 @@
     <ProjectReference Include="..\LCDHardwareMonitor API CLR\LCDHardwareMonitor API CLR.vcxproj">
       <Project>{246430dc-680a-432e-b7de-bcc2c59cddae}</Project>
       <Private>false</Private>
+      <CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -111,7 +112,8 @@
       <AdditionalOptions>/std:c++14 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <PostBuildEvent>
-      <Command>tlbexp /nologo "$(TargetPath)" /out:"$(TargetDir)$(TargetName).tlb" &amp;&amp; "$(SolutionDir)build\Deploy.bat" "$(SolutionDir)" "$(TargetDir)" ""</Command>
+      <Command>"..\build\GenTLB.bat" "$(OutDir)" "$(TargetName)" &amp;&amp; ^
+"..\build\Deploy.bat" "$(OutDir)"</Command>
     </PostBuildEvent>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -127,7 +129,8 @@
       <AdditionalOptions>/std:c++14 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <PostBuildEvent>
-      <Command>tlbexp /nologo "$(TargetPath)" /out:"$(TargetDir)$(TargetName).tlb" &amp;&amp; "$(SolutionDir)build\Deploy.bat" "$(SolutionDir)" "$(TargetDir)" ""</Command>
+      <Command>"..\build\GenTLB.bat" "$(OutDir)" "$(TargetName)" &amp;&amp; ^
+"..\build\Deploy.bat" "$(OutDir)"</Command>
     </PostBuildEvent>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -149,7 +152,8 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PostBuildEvent>
-      <Command>tlbexp /nologo "$(TargetPath)" /out:"$(TargetDir)$(TargetName).tlb" &amp;&amp; "$(SolutionDir)build\Deploy.bat" "$(SolutionDir)" "$(TargetDir)" ""</Command>
+      <Command>"..\build\GenTLB.bat" "$(OutDir)" "$(TargetName)" &amp;&amp; ^
+"..\build\Deploy.bat" "$(OutDir)"</Command>
     </PostBuildEvent>
     <Manifest />
     <Manifest />
@@ -168,7 +172,8 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PostBuildEvent>
-      <Command>tlbexp /nologo "$(TargetPath)" /out:"$(TargetDir)$(TargetName).tlb" &amp;&amp; "$(SolutionDir)build\Deploy.bat" "$(SolutionDir)" "$(TargetDir)" ""</Command>
+      <Command>"..\build\GenTLB.bat" "$(OutDir)" "$(TargetName)" &amp;&amp; ^
+"..\build\Deploy.bat" "$(OutDir)"</Command>
     </PostBuildEvent>
     <Manifest />
     <Manifest />
