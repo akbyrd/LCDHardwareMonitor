@@ -191,6 +191,25 @@ RemoveWidgetDefinitions(PluginContext* context)
 	}
 }
 
+static PixelShader
+LoadPixelShader(PluginContext* context, c8* _path)
+{
+	if (!context->success) return PixelShader::Null;
+	context->success = false;
+
+	PluginHeader* pluginHeader = GetPluginHeader(context->s, context->ref);
+	String path = {};
+	// TODO: Why doesn't this return the string?
+	context->success = String_Format(path, "%s/%s", pluginHeader->directory, _path);
+	LOG_IF(!context->success, "Failed to format pixel shader path", Severity::Warning, return PixelShader::Null);
+
+	PixelShader ps = Renderer_LoadPixelShader(context->s->renderer, path);
+	LOG_IF(!ps, "Failed to load pixel shader", Severity::Warning, return PixelShader::Null);
+
+	context->success = true;
+	return ps;
+}
+
 static WidgetPlugin*
 LoadWidgetPlugin(SimulationState* s, c8* directory, c8* name)
 {
@@ -214,6 +233,7 @@ LoadWidgetPlugin(SimulationState* s, c8* directory, c8* name)
 
 		WidgetPlugin::InitializeAPI api = {};
 		api.AddWidgetDefinition = AddWidgetDefinition;
+		api.LoadPixelShader     = LoadPixelShader;
 
 		success = widgetPlugin->initialize(&context, api);
 		success &= context.success;
@@ -311,8 +331,10 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 
 			VertexAttribute va1 = { VertexAttributeSemantic::Position, VertexAttributeFormat::Float3 };
 			VertexAttribute va2 = { VertexAttributeSemantic::Color,    VertexAttributeFormat::Float4 };
+			VertexAttribute va3 = { VertexAttributeSemantic::TexCoord, VertexAttributeFormat::Float2 };
 			List_Append(vsAttributes, va1);
 			List_Append(vsAttributes, va2);
+			List_Append(vsAttributes, va3);
 
 			// TODO: Matrix type?
 			ConstantBufferDesc cBufferDesc = {};

@@ -5,12 +5,14 @@ enum struct VertexAttributeSemantic
 	None,
 	Position,
 	Color,
+	TexCoord,
 	Count
 };
 
 enum struct VertexAttributeFormat
 {
 	None,
+	Float2,
 	Float3,
 	Float4,
 	Count

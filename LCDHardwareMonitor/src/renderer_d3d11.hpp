@@ -33,6 +33,7 @@ namespace HLSLSemantic
 {
 	const c8* Position = "POSITION";
 	const c8* Color    = "COLOR";
+	const c8* TexCoord = "TEXCOORD";
 }
 
 // NOTE:
@@ -54,6 +55,7 @@ struct Vertex
 {
 	XMFLOAT3 position;
 	XMFLOAT4 color;
+	XMFLOAT2 uv;
 };
 
 // TODO: Might be worth merging this into VertexShaderData
@@ -387,6 +389,11 @@ Renderer_Initialize(RendererState* s, v2i renderSize)
 		XMStoreFloat4(&vertices[2].color, Colors::Blue);
 		XMStoreFloat4(&vertices[3].color, Colors::White);
 
+		vertices[0].uv = XMFLOAT2(0, 0);
+		vertices[1].uv = XMFLOAT2(0, 1);
+		vertices[2].uv = XMFLOAT2(1, 1);
+		vertices[3].uv = XMFLOAT2(1, 0);
+
 		// Create vertex buffer
 		D3D11_BUFFER_DESC vertBuffDesc = {};
 		vertBuffDesc.ByteWidth           = (u32) ArraySize(vertices);
@@ -578,6 +585,7 @@ Renderer_LoadVertexShader(RendererState* s, c8* path, List<VertexAttribute> attr
 			{
 				case VertexAttributeSemantic::Position: semantic = HLSLSemantic::Position; break;
 				case VertexAttributeSemantic::Color:    semantic = HLSLSemantic::Color;    break;
+				case VertexAttributeSemantic::TexCoord: semantic = HLSLSemantic::TexCoord; break;
 
 				default:
 					// TODO: Include semantic value
@@ -587,6 +595,7 @@ Renderer_LoadVertexShader(RendererState* s, c8* path, List<VertexAttribute> attr
 			DXGI_FORMAT format;
 			switch (attributes[i].format)
 			{
+				case VertexAttributeFormat::Float2: format = DXGI_FORMAT_R32G32_FLOAT;       break;
 				case VertexAttributeFormat::Float3: format = DXGI_FORMAT_R32G32B32_FLOAT;    break;
 				case VertexAttributeFormat::Float4: format = DXGI_FORMAT_R32G32B32A32_FLOAT; break;
 

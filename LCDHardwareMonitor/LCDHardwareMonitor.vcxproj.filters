@@ -46,9 +46,6 @@
     <FxCompile Include="res\Basic Pixel Shader.hlsl">
       <Filter>Resources</Filter>
     </FxCompile>
-    <FxCompile Include="res\Filled Bar Pixel Shader.hlsl">
-      <Filter>Resources</Filter>
-    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main_win32.cpp">

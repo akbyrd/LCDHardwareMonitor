@@ -45,4 +45,5 @@ float4 main(PixelFragment pIn) : SV_TARGET
 
 
 	return lerp(interiorColor, borderColor, borderMask);
+	return float4(1, 1, 1, 1);
 }

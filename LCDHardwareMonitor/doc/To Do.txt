@@ -1,9 +1,11 @@
 Next
 	Rendering!
+		Next: set constant buffer from plugin (then use application memory arena)
 		Implement materials
 		Can plugins share shaders? (maybe not)
 		Runtime shader compilation
 		Shader hot-reloading
+		Should plugins get a raw pointer to D3D instead of having an abstracted API?
 
 	API cleanup
 		Probably have plugins fill a struct full of function pointers

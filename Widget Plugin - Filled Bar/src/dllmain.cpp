@@ -65,13 +65,16 @@ InitializeBarWidget(Widget* widget)
 	barWidget->size = { 240, 12 };
 }
 
+// TODO: Allocate in an application supplied arena.
+static PixelShader filledBarPS = {};
+
 static void
 DrawBarWidget(PluginContext* context, WidgetPlugin::UpdateAPI api, Widget* widget, BarWidget* barWidget)
 {
 	DrawCall dc = {};
 	dc.mesh         = StandardMesh::Quad;
 	dc.vs           = StandardVertexShader::Debug;
-	dc.ps           = StandardPixelShader::Debug;
+	dc.ps           = filledBarPS;
 	dc.worldM[0][0] = r32(barWidget->size.x);
 	dc.worldM[1][1] = r32(barWidget->size.y);
 	dc.worldM[2][2] = 1.0f;
@@ -91,6 +94,8 @@ Initialize(PluginContext* context, WidgetPlugin::InitializeAPI api)
 	widgetDef.size       = sizeof(BarWidget);
 	widgetDef.initialize = &InitializeBarWidget;
 	api.AddWidgetDefinition(context, &widgetDef);
+
+	filledBarPS = api.LoadPixelShader(context, "Filled Bar Pixel Shader.cso");
 	return true;
 }
 

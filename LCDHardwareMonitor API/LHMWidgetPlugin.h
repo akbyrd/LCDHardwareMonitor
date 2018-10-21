@@ -44,9 +44,11 @@ struct WidgetPlugin
 {
 	struct InitializeAPI
 	{
-		using AddWidgetDefinitionFn = void(PluginContext*, WidgetDefinition*);
+		using AddWidgetDefinitionFn = void       (PluginContext*, WidgetDefinition*);
+		using LoadPixelShaderFn     = PixelShader(PluginContext*, c8* path);
 
 		AddWidgetDefinitionFn* AddWidgetDefinition;
+		LoadPixelShaderFn*     LoadPixelShader;
 	};
 
 	struct UpdateAPI
