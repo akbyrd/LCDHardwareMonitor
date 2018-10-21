@@ -4,20 +4,13 @@
 #include "LHMSensorPlugin.h"
 #include "LHMWidgetPlugin.h"
 
-// TODO: Restructure these to allow plugins to avoid implementing functions
-// they don't need. Don't spend time calling empty functions.
-
 #pragma managed
-public interface class ISensorPlugin
-{
-	void Initialize (SP_INITIALIZE_ARGS);
-	void Update     (SP_UPDATE_ARGS);
-	void Teardown   (SP_TEARDOWN_ARGS);
-};
+public interface class ISensorPlugin { };
+public interface class ISensorInitialize { void Initialize (SP_INITIALIZE_ARGS); };
+public interface class ISensorUpdate     { void Update     (SP_UPDATE_ARGS);     };
+public interface class ISensorTeardown   { void Teardown   (SP_TEARDOWN_ARGS);   };
 
-public interface class IWidgetPlugin
-{
-	void Initialize (WP_INITIALIZE_ARGS);
-	void Update     (WP_UPDATE_ARGS);
-	void Teardown   (WP_TEARDOWN_ARGS);
-};
+public interface class IWidgetPlugin { };
+public interface class IWidgetInitialize { void Initialize (WP_INITIALIZE_ARGS); };
+public interface class IWidgetUpdate     { void Update     (WP_UPDATE_ARGS);     };
+public interface class IWidgetTeardown   { void Teardown   (WP_TEARDOWN_ARGS);   };

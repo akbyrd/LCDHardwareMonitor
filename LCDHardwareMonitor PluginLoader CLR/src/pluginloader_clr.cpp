@@ -217,20 +217,29 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	b32
 	InitializeSensorPlugin(PluginHeader* pluginHeader, SensorPlugin* sensorPlugin)
 	{
-		b32 success;
-
-		ISensorPlugin^ pluginInstance = nullptr;
-		success = LoadAssemblyAndInstantiateType(pluginHeader->name, pluginInstance);
+		b32 success = LoadAssemblyAndInstantiateType(pluginHeader->name, sensorPluginCLR.pluginInstance);
 		if (!success) return false;
 
-		sensorPluginCLR.pluginInstance     = pluginInstance;
-		sensorPluginCLR.initializeDelegate = gcnew SensorPlugin_CLR::InitializeDelegate(pluginInstance, &ISensorPlugin::Initialize);
-		sensorPluginCLR.updateDelegate     = gcnew SensorPlugin_CLR::UpdateDelegate    (pluginInstance, &ISensorPlugin::Update);
-		sensorPluginCLR.teardownDelegate   = gcnew SensorPlugin_CLR::TeardownDelegate  (pluginInstance, &ISensorPlugin::Teardown);
+		auto iInitialize = dynamic_cast<ISensorInitialize^>(sensorPluginCLR.pluginInstance);
+		if (iInitialize)
+		{
+			sensorPluginCLR.initializeDelegate = gcnew SensorPlugin_CLR::InitializeDelegate(iInitialize, &ISensorInitialize::Initialize);
+			sensorPlugin->initialize = (SensorPluginInitializeFn*) (void*) Marshal::GetFunctionPointerForDelegate(sensorPluginCLR.initializeDelegate);
+		}
 
-		sensorPlugin->initialize = (SensorPluginInitializeFn*) (void*) Marshal::GetFunctionPointerForDelegate(sensorPluginCLR.initializeDelegate);
-		sensorPlugin->update     = (SensorPluginUpdateFn*)     (void*) Marshal::GetFunctionPointerForDelegate(sensorPluginCLR.updateDelegate);
-		sensorPlugin->teardown   = (SensorPluginTeardownFn*)   (void*) Marshal::GetFunctionPointerForDelegate(sensorPluginCLR.teardownDelegate);
+		auto iUpdate = dynamic_cast<ISensorUpdate^>(sensorPluginCLR.pluginInstance);
+		if (iUpdate)
+		{
+			sensorPluginCLR.updateDelegate = gcnew SensorPlugin_CLR::UpdateDelegate(iUpdate, &ISensorUpdate::Update);
+			sensorPlugin->update = (SensorPluginUpdateFn*) (void*) Marshal::GetFunctionPointerForDelegate(sensorPluginCLR.updateDelegate);
+		}
+
+		auto iTeardown = dynamic_cast<ISensorTeardown^>(sensorPluginCLR.pluginInstance);
+		if (iTeardown)
+		{
+			sensorPluginCLR.teardownDelegate = gcnew SensorPlugin_CLR::TeardownDelegate(iTeardown, &ISensorTeardown::Teardown);
+			sensorPlugin->teardown = (SensorPluginTeardownFn*) (void*) Marshal::GetFunctionPointerForDelegate(sensorPluginCLR.teardownDelegate);
+		}
 
 		return true;
 	}
@@ -251,20 +260,29 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	b32
 	InitializeWidgetPlugin(PluginHeader* pluginHeader, WidgetPlugin* widgetPlugin)
 	{
-		b32 success;
-
-		IWidgetPlugin^ pluginInstance = nullptr;
-		success = LoadAssemblyAndInstantiateType(pluginHeader->name, pluginInstance);
+		b32 success = LoadAssemblyAndInstantiateType(pluginHeader->name, widgetPluginCLR.pluginInstance);
 		if (!success) return false;
 
-		widgetPluginCLR.pluginInstance     = pluginInstance;
-		widgetPluginCLR.initializeDelegate = gcnew WidgetPlugin_CLR::InitializeDelegate(pluginInstance, &IWidgetPlugin::Initialize);
-		widgetPluginCLR.updateDelegate     = gcnew WidgetPlugin_CLR::UpdateDelegate    (pluginInstance, &IWidgetPlugin::Update);
-		widgetPluginCLR.teardownDelegate   = gcnew WidgetPlugin_CLR::TeardownDelegate  (pluginInstance, &IWidgetPlugin::Teardown);
+		auto iInitialize = dynamic_cast<IWidgetInitialize^>(widgetPluginCLR.pluginInstance);
+		if (iInitialize)
+		{
+			widgetPluginCLR.initializeDelegate = gcnew WidgetPlugin_CLR::InitializeDelegate(iInitialize, &IWidgetInitialize::Initialize);
+			widgetPlugin->initialize = (WidgetPluginInitializeFn*) (void*) Marshal::GetFunctionPointerForDelegate(widgetPluginCLR.initializeDelegate);
+		}
 
-		widgetPlugin->initialize = (WidgetPluginInitializeFn*) (void*) Marshal::GetFunctionPointerForDelegate(widgetPluginCLR.initializeDelegate);
-		widgetPlugin->update     = (WidgetPluginUpdateFn*)     (void*) Marshal::GetFunctionPointerForDelegate(widgetPluginCLR.updateDelegate);
-		widgetPlugin->teardown   = (WidgetPluginTeardownFn*)   (void*) Marshal::GetFunctionPointerForDelegate(widgetPluginCLR.teardownDelegate);
+		auto iUpdate = dynamic_cast<IWidgetUpdate^>(widgetPluginCLR.pluginInstance);
+		if (iUpdate)
+		{
+			widgetPluginCLR.updateDelegate = gcnew WidgetPlugin_CLR::UpdateDelegate(iUpdate, &IWidgetUpdate::Update);
+			widgetPlugin->update = (WidgetPluginUpdateFn*) (void*) Marshal::GetFunctionPointerForDelegate(widgetPluginCLR.updateDelegate);
+		}
+
+		auto iTeardown = dynamic_cast<IWidgetTeardown^>(widgetPluginCLR.pluginInstance);
+		if (iTeardown)
+		{
+			widgetPluginCLR.teardownDelegate = gcnew WidgetPlugin_CLR::TeardownDelegate(iTeardown, &IWidgetTeardown::Teardown);
+			widgetPlugin->teardown = (WidgetPluginTeardownFn*) (void*) Marshal::GetFunctionPointerForDelegate(widgetPluginCLR.teardownDelegate);
+		}
 
 		return true;
 	}
