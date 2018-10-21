@@ -93,7 +93,7 @@ struct RendererState
 	List<InputLayout>  inputLayouts        = {};
 
 	XMFLOAT4X4         proj                = {};
-	V2i                renderSize          = {}; // TODO : Change this to unsigned
+	v2i                renderSize          = {}; // TODO : Change this to unsigned
 	DXGI_FORMAT        renderFormat        = DXGI_FORMAT_UNKNOWN;
 	u32                multisampleCount    = 1;
 	u32                qualityLevelCount   = 0;
@@ -267,7 +267,7 @@ LoadVertexShader(RendererState* s, c8* path, List<VertexAttribute> attributes, C
 static void UpdateRasterizerState(RendererState* s);
 
 b32
-Renderer_Initialize(RendererState* s, V2i renderSize)
+Renderer_Initialize(RendererState* s, v2i renderSize)
 {
 	// TODO: This assert style probably needs to be changed
 	Assert(s->d3dDevice                   == nullptr);

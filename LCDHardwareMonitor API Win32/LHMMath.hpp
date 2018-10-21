@@ -29,7 +29,7 @@ Clamp(i64 value, i64 min, i64 max)
 	return value;
 }
 
-union V2i
+union v2i
 {
 	struct
 	{
@@ -45,56 +45,56 @@ union V2i
 
 // Operators
 inline b32
-operator== (V2i lhs, V2i rhs)
+operator== (v2i lhs, v2i rhs)
 {
 	return lhs.x == rhs.x && lhs.y == rhs.y;
 }
 
 inline b32
-operator!= (V2i lhs, V2i rhs)
+operator!= (v2i lhs, v2i rhs)
 {
 	return !(lhs.x == rhs.x && lhs.y == rhs.y);
 }
 
-inline V2i
-operator+ (V2i lhs, V2i rhs)
+inline v2i
+operator+ (v2i lhs, v2i rhs)
 {
 	return {lhs.x + rhs.x, lhs.y + rhs.y};
 }
 
-inline V2i
-operator- (V2i lhs, V2i rhs)
+inline v2i
+operator- (v2i lhs, v2i rhs)
 {
 	return {lhs.x - rhs.x, lhs.y - rhs.y};
 }
 
-inline V2i
-operator* (i32 multiplier, V2i v)
+inline v2i
+operator* (i32 multiplier, v2i v)
 {
 	return {multiplier * v.x, multiplier * v.y};
 }
 
-inline V2i
-operator/ (V2i v, i32 dividend)
+inline v2i
+operator/ (v2i v, i32 dividend)
 {
 	return {v.x / dividend, v.y / dividend};
 }
 
 inline i32
-V2i::operator[] (i32 index)
+v2i::operator[] (i32 index)
 {
 	return arr[index];
 }
 
 inline void
-Clamp(V2i v, V2i maxSize)
+Clamp(v2i v, v2i maxSize)
 {
 	if (v.x > maxSize.x) v.x = maxSize.x;
 	if (v.y > maxSize.y) v.y = maxSize.y;
 }
 
 
-union V3
+union v3
 {
 	struct
 	{
@@ -123,49 +123,49 @@ union V3
 
 // Operators
 inline b32
-operator== (V3 lhs, V3 rhs)
+operator== (v3 lhs, v3 rhs)
 {
 	return lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z;
 }
 
 inline b32
-operator!= (V3 lhs, V3 rhs)
+operator!= (v3 lhs, v3 rhs)
 {
 	return !(lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z);
 }
 
-inline V3
-operator+ (V3 lhs, V3 rhs)
+inline v3
+operator+ (v3 lhs, v3 rhs)
 {
 	return {lhs.x + rhs.x, lhs.y + rhs.y, lhs.z + rhs.z};
 }
 
-inline V3
-operator- (V3 lhs, V3 rhs)
+inline v3
+operator- (v3 lhs, v3 rhs)
 {
 	return {lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z};
 }
 
-inline V3
-operator* (r32 multiplier, V3 v)
+inline v3
+operator* (r32 multiplier, v3 v)
 {
 	return {multiplier * v.x, multiplier * v.y, multiplier * v.z};
 }
 
-inline V3
-operator/ (V3 v, r32 dividend)
+inline v3
+operator/ (v3 v, r32 dividend)
 {
 	return {v.x / dividend, v.y / dividend, v.z / dividend};
 }
 
 inline r32
-V3::operator[] (i32 index)
+v3::operator[] (i32 index)
 {
 	return arr[index];
 }
 
 inline void
-Clamp(V3 v, V3 maxSize)
+Clamp(v3 v, v3 maxSize)
 {
 	if (v.x > maxSize.x) v.x = maxSize.x;
 	if (v.y > maxSize.y) v.y = maxSize.y;
@@ -173,7 +173,7 @@ Clamp(V3 v, V3 maxSize)
 }
 
 
-union V4
+union v4
 {
 	struct
 	{
@@ -198,50 +198,50 @@ union V4
 
 // Operators
 inline b32
-operator== (V4 lhs, V4 rhs)
+operator== (v4 lhs, v4 rhs)
 {
 	return lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z && lhs.w == rhs.w;
 }
 
 inline b32
-operator!= (V4 lhs, V4 rhs)
+operator!= (v4 lhs, v4 rhs)
 {
 	return !(lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z && lhs.w == rhs.w);
 }
 
-inline V4
-operator+ (V4 lhs, V4 rhs)
+inline v4
+operator+ (v4 lhs, v4 rhs)
 {
 	return {lhs.x + rhs.x, lhs.y + rhs.y, lhs.z + rhs.z, lhs.w + rhs.w};
 }
 
-inline V4
-operator- (V4 lhs, V4 rhs)
+inline v4
+operator- (v4 lhs, v4 rhs)
 {
 	return {lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z, lhs.w - rhs.w};
 }
 
-inline V4
-operator* (r32 multiplier, V4 v)
+inline v4
+operator* (r32 multiplier, v4 v)
 {
 	return {multiplier * v.x, multiplier * v.y, multiplier * v.z, multiplier * v.w};
 }
 
-inline V4
-operator/ (V4 v, r32 dividend)
+inline v4
+operator/ (v4 v, r32 dividend)
 {
 	return {v.x / dividend, v.y / dividend, v.z / dividend, v.w / dividend};
 }
 
 inline r32
-V4::operator[] (i32 index)
+v4::operator[] (i32 index)
 {
 	return arr[index];
 }
 
 
 inline void
-Clamp(V4 v, V4 maxSize)
+Clamp(v4 v, v4 maxSize)
 {
 	if (v.x > maxSize.x) v.x = maxSize.x;
 	if (v.y > maxSize.y) v.y = maxSize.y;

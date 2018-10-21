@@ -34,7 +34,6 @@ Sensor Plugins
 
 Refactoring
 	Rewrite List<T> (and rename to Array<T>)
-	Lower case vector names
 	Try out range based for loops
 	Ensure Platform function naming is uniform
 	Decide on 'plugin loader' naming on both sides of the managed boundary

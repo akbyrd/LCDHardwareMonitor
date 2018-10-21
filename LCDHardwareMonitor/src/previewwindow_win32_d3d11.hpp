@@ -6,8 +6,8 @@ struct PreviewWindowState
 	HWND                    hwnd                  = nullptr;
 	ComPtr<IDXGISwapChain>  swapChain             = nullptr;
 	ComPtr<ID3D11Texture2D> backBuffer            = nullptr;
-	V2i                     renderSize            = {};
-	V2i                     nonClientSize         = {};
+	v2i                     renderSize            = {};
+	v2i                     nonClientSize         = {};
 	u16                     zoomFactor            = 1;
 	i16                     mouseWheelAccumulator = 0;
 };
@@ -241,21 +241,21 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 				success = GetWindowRect(s->hwnd, &windowRect);
 				LOG_LAST_ERROR_IF(!success, "GetWindowRect failed", Severity::Warning, return 0);
 
-				V2i windowCenter;
+				v2i windowCenter;
 				windowCenter.x = (windowRect.right + windowRect.left) / 2;
 				windowCenter.y = (windowRect.bottom + windowRect.top) / 2;
 
-				V2i newClientSize = newZoomFactor * s->renderSize;
+				v2i newClientSize = newZoomFactor * s->renderSize;
 
 				RECT usableDesktopRect;
 				success = SystemParametersInfoA(SPI_GETWORKAREA, 0, &usableDesktopRect, 0);
 				LOG_LAST_ERROR_IF(!success, "SystemParametersInfo failed", Severity::Warning, return 0);
 
-				V2i usableDesktopSize;
+				v2i usableDesktopSize;
 				usableDesktopSize.x = usableDesktopRect.right - usableDesktopRect.left;
 				usableDesktopSize.y = usableDesktopRect.bottom - usableDesktopRect.top;
 
-				V2i newWindowSize = newClientSize + s->nonClientSize;
+				v2i newWindowSize = newClientSize + s->nonClientSize;
 				if (newWindowSize.x > usableDesktopSize.x || newWindowSize.y > usableDesktopSize.y)
 				{
 					if (newZoomFactor > s->zoomFactor)
@@ -265,7 +265,7 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 				// TODO: Try expanding from top left only
 				// TODO: Maybe account for the shadow? (window - client - border)
 				// or DwmGetWindowAttribute(hWnd, DWMWA_EXTENDED_FRAME_BOUNDS, &extendedRect, sizeof(extendedRect));
-				V2i newWindowTopLeft;
+				v2i newWindowTopLeft;
 				newWindowTopLeft.x = windowCenter.x - (newWindowSize.x / 2);
 				newWindowTopLeft.y = windowCenter.y - (newWindowSize.y / 2);
 

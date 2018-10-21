@@ -12,23 +12,23 @@ struct Widget2
 	struct PSConstants
 	{
 		// TODO: How do we get this? (Do the UV calculation in CPU, I think)
-		V2i   res;
+		v2i   res;
 
-		V4    borderColor = { 1.0f, 0.0f, 0.0f, 1.0f };
+		v4    borderColor = { 1.0f, 0.0f, 0.0f, 1.0f };
 		float borderSize  = 20.0f;
 		float borderBlur  = 20.0f;
 
-		V4    fillColor  = { 1.0f, 1.0f, 1.0f, 0.5f };
+		v4    fillColor  = { 1.0f, 1.0f, 1.0f, 0.5f };
 		float fillAmount = 0.5f;
 		float fillBlur   = 10.0f;
 
-		V4    backgroundColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+		v4    backgroundColor = { 0.0f, 0.0f, 0.0f, 1.0f };
 	};
 
 	//SensorRef sensorRef;
 	//Mesh      mesh;
-	V2i       position;
-	V2i       size;
+	v2i       position;
+	v2i       size;
 
 	VSConstants vsConstants;
 	PSConstants psConstants;

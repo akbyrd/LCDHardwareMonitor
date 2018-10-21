@@ -3,7 +3,7 @@ struct SimulationState
 	PluginLoaderState* pluginLoader;
 	RendererState*     renderer;
 
-	V2i                renderSize = { 320, 240 };
+	v2i                renderSize = { 320, 240 };
 	List<PluginHeader> pluginHeaders;
 	List<SensorPlugin> sensorPlugins;
 	List<WidgetPlugin> widgetPlugins;
