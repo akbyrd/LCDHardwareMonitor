@@ -58,6 +58,14 @@ struct Vertex
 	XMFLOAT2 uv;
 };
 
+ConstantBufferDesc ConstantBufferDesc::Null = {};
+
+struct ConstantBufferData
+{
+	ConstantBufferDesc   desc;
+	ComPtr<ID3D11Buffer> d3dConstantBuffer;
+};
+
 // TODO: Might be worth merging this into VertexShaderData
 struct InputLayout
 {
@@ -80,6 +88,7 @@ struct PixelShaderData
 {
 	String                    name;
 	ComPtr<ID3D11PixelShader> d3dPixelShader;
+	ConstantBufferData        constantBuffer;
 };
 
 struct RendererState
@@ -639,8 +648,9 @@ Renderer_LoadVertexShader(RendererState* s, c8* path, List<VertexAttribute> attr
 	return List_GetRefLast(s->vertexShaders);
 }
 
+// TODO: Unload functions
 PixelShader
-Renderer_LoadPixelShader(RendererState* s, c8* path)
+Renderer_LoadPixelShader(RendererState* s, c8* path, ConstantBufferDesc constantBuffer)
 {
 	HRESULT hr;
 	PixelShaderData ps = {};
@@ -658,6 +668,26 @@ Renderer_LoadPixelShader(RendererState* s, c8* path)
 		hr = s->d3dDevice->CreatePixelShader(psBytes.data, (u64) psBytes.length, nullptr, &ps.d3dPixelShader);
 		LOG_HRESULT_IF_FAILED(hr, "Failed to create pixel shader", Severity::Error, return PixelShader::Null);
 		SetDebugObjectName(ps.d3dPixelShader, "Pixel Shader");
+	}
+
+	// Constant Buffer
+	// TODO: Get this working
+	//if (ps->constantBuffer.desc != ConstantBufferDesc::Null)
+	if (constantBuffer.data)
+	{
+		ps.constantBuffer.desc = constantBuffer;
+
+		D3D11_BUFFER_DESC psConstBuffDes = {};
+		psConstBuffDes.ByteWidth           = constantBuffer.size;
+		psConstBuffDes.Usage               = D3D11_USAGE_DYNAMIC;
+		psConstBuffDes.BindFlags           = D3D11_BIND_CONSTANT_BUFFER;
+		psConstBuffDes.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
+		psConstBuffDes.MiscFlags           = 0;
+		psConstBuffDes.StructureByteStride = 0;
+
+		hr = s->d3dDevice->CreateBuffer(&psConstBuffDes, nullptr, &ps.constantBuffer.d3dConstantBuffer);
+		LOG_HRESULT_IF_FAILED(hr, "Failed to create vertex buffer", Severity::Error, return PixelShader::Null);
+		SetDebugObjectName(ps.constantBuffer.d3dConstantBuffer, "PS Constant Buffer");
 	}
 
 	// Commit
@@ -722,6 +752,23 @@ Renderer_Render(RendererState* s)
 		// Pixel Shader
 		s->d3dContext->PSSetShader(ps->d3dPixelShader.Get(), nullptr, 0);
 
+		// Update PS cbuffer
+		// TODO: Why isn't this working?
+		//if (ps->constantBuffer.desc != ConstantBufferDesc::Null)
+		if (ps->constantBuffer.desc.data)
+		{
+			D3D11_MAPPED_SUBRESOURCE psConstBuffMap = {};
+			hr = s->d3dContext->Map(ps->constantBuffer.d3dConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &psConstBuffMap);
+			LOG_HRESULT_IF_FAILED(hr, "Failed to map pixel shader constant buffer", Severity::Error, return false);
+
+			memcpy(psConstBuffMap.pData, ps->constantBuffer.desc.data, ps->constantBuffer.desc.size);
+			s->d3dContext->Unmap(ps->constantBuffer.d3dConstantBuffer.Get(), 0);
+
+			s->d3dContext->PSSetConstantBuffers(0, 1, ps->constantBuffer.d3dConstantBuffer.GetAddressOf());
+		}
+		// TODO: Leave the previous constant buffers bound?
+
+		// TODO: Un-hardcode this
 		// Update VS cbuffer
 		D3D11_MAPPED_SUBRESOURCE vsConstBuffMap = {};
 		hr = s->d3dContext->Map(vs->d3dConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &vsConstBuffMap);

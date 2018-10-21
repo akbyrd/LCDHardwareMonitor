@@ -9,15 +9,15 @@ cbuffer cbPerObject
 	// TODO: How do we get this? (Do the UV calculation in CPU, I think)
 	float2 res;
 
-	float4 borderColor = { 1.0f, 0.0f, 0.0f, 1.0f };
-	float  borderSize  = 20.0f;
-	float  borderBlur  = 20.0f;
+	float4 borderColor;
+	float  borderSize;
+	float  borderBlur;
 
-	float4 fillColor  = { 1.0f, 1.0f, 1.0f, 0.5f };
-	float  fillAmount = 0.5f;
-	float  fillBlur   = 10.0f;
+	float4 fillColor;
+	float  fillAmount;
+	float  fillBlur;
 
-	float4 backgroundColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+	float4 backgroundColor;
 };
 
 struct PixelFragment
@@ -37,13 +37,10 @@ float4 main(PixelFragment pIn) : SV_TARGET
 	float2 borderThing = smoothstep(0.5f - borderBlurUV - borderSizeUV, 0.5f - borderSizeUV, borderUV);
 	float borderMask = max(borderThing.x, borderThing.y);
 
-
 	// Fill
 	pIn.UV = (1.0f + 2.0f * borderSizeUV) * pIn.UV - borderSizeUV;
 	float t = smoothstep(fillAmount + fillBlur, fillAmount - fillBlur, pIn.UV.x);
 	float4 interiorColor = lerp(fillColor, backgroundColor, t);
 
-
 	return lerp(interiorColor, borderColor, borderMask);
-	return float4(1, 1, 1, 1);
 }

@@ -44,8 +44,9 @@ struct WidgetPlugin
 {
 	struct InitializeAPI
 	{
+		// TODO: Standardize by-value or by-ref
 		using AddWidgetDefinitionFn = void       (PluginContext*, WidgetDefinition*);
-		using LoadPixelShaderFn     = PixelShader(PluginContext*, c8* path);
+		using LoadPixelShaderFn     = PixelShader(PluginContext*, c8* path, ConstantBufferDesc);
 
 		AddWidgetDefinitionFn* AddWidgetDefinition;
 		LoadPixelShaderFn*     LoadPixelShader;
@@ -55,6 +56,7 @@ struct WidgetPlugin
 	{
 		using PushDrawCallFn = void(PluginContext*, DrawCall);
 
+		float t;
 		WidgetDefinition* widgetDefinition;
 		PushDrawCallFn*   PushDrawCall;
 	};

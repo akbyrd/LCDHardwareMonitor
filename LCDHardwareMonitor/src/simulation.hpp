@@ -8,6 +8,9 @@ struct SimulationState
 	List<SensorPlugin>     sensorPlugins;
 	List<WidgetPlugin>     widgetPlugins;
 	List<WidgetDefinition> widgetDefinitions;
+
+	u64   startTime;
+	float currentTime;
 };
 
 struct PluginContext
@@ -192,7 +195,7 @@ RemoveWidgetDefinitions(PluginContext* context)
 }
 
 static PixelShader
-LoadPixelShader(PluginContext* context, c8* _path)
+LoadPixelShader(PluginContext* context, c8* _path, ConstantBufferDesc constantBuffer)
 {
 	if (!context->success) return PixelShader::Null;
 	context->success = false;
@@ -203,7 +206,7 @@ LoadPixelShader(PluginContext* context, c8* _path)
 	context->success = String_Format(path, "%s/%s", pluginHeader->directory, _path);
 	LOG_IF(!context->success, "Failed to format pixel shader path", Severity::Warning, return PixelShader::Null);
 
-	PixelShader ps = Renderer_LoadPixelShader(context->s->renderer, path);
+	PixelShader ps = Renderer_LoadPixelShader(context->s->renderer, path, constantBuffer);
 	LOG_IF(!ps, "Failed to load pixel shader", Severity::Warning, return PixelShader::Null);
 
 	context->success = true;
@@ -305,6 +308,7 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 {
 	s->pluginLoader = pluginLoader;
 	s->renderer     = renderer;
+	s->startTime    = Platform_GetTicks();
 
 	b32 success = PluginLoader_Initialize(s->pluginLoader);
 	if (!success) return false;
@@ -348,7 +352,7 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 		// Pixel shader
 		{
 			// TODO: Assert that the ref equals expected value
-			PixelShader ps = Renderer_LoadPixelShader(s->renderer, "Shaders/Basic Pixel Shader.cso");
+			PixelShader ps = Renderer_LoadPixelShader(s->renderer, "Shaders/Basic Pixel Shader.cso", ConstantBufferDesc::Null);
 			LOG_IF(!ps, "Failed to load default pixel shader", Severity::Error, return false);
 		}
 	}
@@ -435,6 +439,10 @@ Simulation_Update(SimulationState* s)
 	{
 		WidgetPlugin::UpdateAPI api = {};
 		api.PushDrawCall = PushDrawCall;
+
+		i64 elapsedTicks = (i64) (Platform_GetTicks() - s->startTime);
+		s->currentTime = Platform_GetElapsedSeconds(elapsedTicks);
+		api.t = s->currentTime;
 
 		for (u32 i = 0; i < s->widgetDefinitions.length; i++)
 		{

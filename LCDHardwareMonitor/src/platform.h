@@ -7,13 +7,15 @@ enum struct Severity
 	Error
 };
 
-b32     Platform_Initialize      (PlatformState*);
-void    Platform_Teardown        (PlatformState*);
+b32     Platform_Initialize        (PlatformState*);
+void    Platform_Teardown          (PlatformState*);
 
-void    Platform_Print           (c8* message);
-void    Platform_Log             (c8* message, Severity severity, c8* file, i32 line, c8* function);
-Bytes   Platform_LoadFileBytes   (c8* fileName);
-String  Platform_LoadFileString  (c8* fileName);
+void    Platform_Print             (c8* message);
+void    Platform_Log               (c8* message, Severity severity, c8* file, i32 line, c8* function);
+Bytes   Platform_LoadFileBytes     (c8* fileName);
+String  Platform_LoadFileString    (c8* fileName);
+u64     Platform_GetTicks          ();
+float   Platform_GetElapsedSeconds (i64 elapsedTicks);
 
 #define LOCATION_ARGS __FILE__, __LINE__, __FUNCTION__
 #define LOG(message, severity) Platform_Log(message, severity, LOCATION_ARGS)

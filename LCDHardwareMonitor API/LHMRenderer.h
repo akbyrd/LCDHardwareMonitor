@@ -25,6 +25,15 @@ namespace StandardMesh
 	//static const Mesh Grid     = { 6 };
 };
 
+struct ConstantBufferDesc
+{
+	//b32   dirty;
+	u32   size;
+	void* data;
+
+	static ConstantBufferDesc Null;
+};
+
 namespace StandardVertexShader
 {
 	static const VertexShader Debug = { 0 };

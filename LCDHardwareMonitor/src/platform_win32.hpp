@@ -171,3 +171,22 @@ Platform_LoadFileString(c8* fileName)
 
 	return result;
 }
+
+u64 Platform_GetTicks()
+{
+	// TODO: Ensure we're not on XP
+	// NOTE: Never fails above XP
+	LARGE_INTEGER counter;
+	QueryPerformanceCounter(&counter);
+
+	return (u64) counter.QuadPart;
+}
+
+float Platform_GetElapsedSeconds(i64 elapsedTicks)
+{
+	// TODO: Ensure we're not on XP
+	// NOTE: Never fails above XP
+	LARGE_INTEGER frequency;
+	QueryPerformanceFrequency(&frequency);
+	return (float) elapsedTicks / (float) frequency.QuadPart;
+}

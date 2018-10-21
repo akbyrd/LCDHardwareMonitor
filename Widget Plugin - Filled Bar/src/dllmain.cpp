@@ -65,8 +65,34 @@ InitializeBarWidget(Widget* widget)
 	barWidget->size = { 240, 12 };
 }
 
+// TODO: Assert alignment in API
+// TODO: Assert size in API
+__declspec(align(16))
+#pragma pack(push)
+#pragma pack(4)
+struct PSConstants
+{
+	// TODO: How do we get this? (Do the UV calculation in CPU, I think)
+	v2  res = { 240, 12 };
+	r32 padding1[2];
+
+	v4  borderColor = Color32(47, 112, 22, 255);
+	r32 borderSize  = 1.0f;
+	r32 borderBlur  = 0.0f;
+	r32 padding2[2];
+
+	v4  fillColor  = Color32(47, 112, 22, 255);;
+	r32 fillAmount = 0.5f;
+	r32 fillBlur   = 0.0f;
+	r32 padding3[2];
+
+	v4 backgroundColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+};
+#pragma pack(pop)
+
 // TODO: Allocate in an application supplied arena.
 static PixelShader filledBarPS = {};
+static PSConstants psConstants = {};
 
 static void
 DrawBarWidget(PluginContext* context, WidgetPlugin::UpdateAPI api, Widget* widget, BarWidget* barWidget)
@@ -95,7 +121,10 @@ Initialize(PluginContext* context, WidgetPlugin::InitializeAPI api)
 	widgetDef.initialize = &InitializeBarWidget;
 	api.AddWidgetDefinition(context, &widgetDef);
 
-	filledBarPS = api.LoadPixelShader(context, "Filled Bar Pixel Shader.cso");
+	ConstantBufferDesc cBufferDesc = {};
+	cBufferDesc.size = sizeof(PSConstants);
+	cBufferDesc.data = &psConstants;
+	filledBarPS = api.LoadPixelShader(context, "Filled Bar Pixel Shader.cso", cBufferDesc);
 	return true;
 }
 
@@ -103,6 +132,8 @@ Initialize(PluginContext* context, WidgetPlugin::InitializeAPI api)
 EXPORT void
 Update(PluginContext* context, WidgetPlugin::UpdateAPI api)
 {
+	psConstants.fillAmount = sin(api.t) * sin(api.t);
+
 	// HACK: Nasty, hard-coded fuckery
 	u32 elemSize = sizeof(Widget) + sizeof(BarWidget);
 	u32 instanceCount = api.widgetDefinition->instances.length / elemSize;

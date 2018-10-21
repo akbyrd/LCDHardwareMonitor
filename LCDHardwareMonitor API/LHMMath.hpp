@@ -94,6 +94,71 @@ Clamp(v2i v, v2i maxSize)
 }
 
 
+union v2
+{
+	struct
+	{
+		r32 x;
+		r32 y;
+	};
+
+	// Aliases
+	r32 arr[2];
+
+	r32 operator[] (i32 index);
+};
+
+// Operators
+inline b32
+operator== (v2 lhs, v2 rhs)
+{
+	return lhs.x == rhs.x && lhs.y == rhs.y;
+}
+
+inline b32
+operator!= (v2 lhs, v2 rhs)
+{
+	return !(lhs.x == rhs.x && lhs.y == rhs.y);
+}
+
+inline v2
+operator+ (v2 lhs, v2 rhs)
+{
+	return {lhs.x + rhs.x, lhs.y + rhs.y};
+}
+
+inline v2
+operator- (v2 lhs, v2 rhs)
+{
+	return {lhs.x - rhs.x, lhs.y - rhs.y};
+}
+
+inline v2
+operator* (r32 multiplier, v2 v)
+{
+	return {multiplier * v.x, multiplier * v.y};
+}
+
+inline v2
+operator/ (v2 v, r32 dividend)
+{
+	return {v.x / dividend, v.y / dividend};
+}
+
+inline r32
+v2::operator[] (i32 index)
+{
+	return arr[index];
+}
+
+inline void
+Clamp(v2 v, v2 maxSize)
+{
+	if (v.x > maxSize.x) v.x = maxSize.x;
+	if (v.y > maxSize.y) v.y = maxSize.y;
+}
+
+
 union v3
 {
 	struct
@@ -247,6 +312,12 @@ Clamp(v4 v, v4 maxSize)
 	if (v.y > maxSize.y) v.y = maxSize.y;
 	if (v.z > maxSize.z) v.z = maxSize.z;
 	if (v.w > maxSize.w) v.w = maxSize.w;
+}
+
+v4
+Color32(u8 r, u8 g, u8 b, u8 a)
+{
+	return { r / 255.0f, g / 255.0f, b / 255.0f, a / 255.0f };
 }
 
 #endif
