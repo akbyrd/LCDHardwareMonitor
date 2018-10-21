@@ -10,21 +10,19 @@ Next
 		function, then ask the plugin to fill in a bunch of function pointers, we
 		1) Get better type safety since they'll have to match the function pointer
 		definition. 2) Reduce the amount of boilerplate on the application side.
+		// TODO: Un-hardcode this
 		// TODO: Plugin name in errors
 		// TODO: Ensure this is removed from the list in partial initialization conditions
 		// TODO: Widgets will be referencing these sensors.
-		// TODO: Matrix type?
-		// TODO: Assert that the ref equals expected value
-		// TODO: Unsigned vector type
-		// TODO: Assert alignment in API
-		// TODO: Assert size in API
 		// TODO: How do we get this? (Do the UV calculation in CPU, I think)
 		// TODO: I don't think drawing belongs in update
+		// TODO: Get this working
 		Support constant buffers of multiple scopes
 		Move constant buffers to shared headers
 		Stick PSConstants in BarWidget
 		It's time to figure out what happens when memory allocations fail
 		Support VS Code
+		Decide on error vs warning policy and update all logging
 
 	Design Pass
 		Can plugins share shaders? (maybe not)

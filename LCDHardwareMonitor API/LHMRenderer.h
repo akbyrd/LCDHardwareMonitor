@@ -10,7 +10,7 @@ struct DrawCall
 	Mesh         mesh;
 	VertexShader vs;
 	PixelShader  ps;
-	r32          worldM[4][4];
+	Matrix       worldM;
 };
 
 namespace StandardMesh

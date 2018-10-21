@@ -1,6 +1,13 @@
 #ifndef LHM_MATH
 #define LHM_MATH
 
+// Conventions:
+//   Right handed world
+//   +X right, +Y up, -Z forward
+//   Vectors are row vectors
+//   Matrices store axes and translation in rows
+//   v' = v * M
+
 const i32 i32Min = -2147483647 - 1;
 const i32 i32Max = 2147483647;
 const u32 u32Max = 4294967295;
@@ -377,4 +384,42 @@ Color32(u8 r, u8 g, u8 b, u8 a)
 	return result;
 }
 
+
+union Matrix
+{
+	struct
+	{
+		r32 m00, m01, m02, m03;
+		r32 m10, m11, m12, m13;
+		r32 m20, m21, m22, m23;
+		r32 m30, m31, m32, m33;
+	};
+
+	// Aliases
+	struct
+	{
+		r32 xx, xy, xz, m03;
+		r32 yx, yy, yz, m13;
+		r32 zx, zy, zz, m23;
+		r32 tx, ty, tz, m33;
+	};
+	struct
+	{
+		r32 sx,  m01, m02, m03;
+		r32 m10, sy,  m12, m13;
+		r32 m20, m21, sz,  m23;
+		r32 m30, m31, m32, m33;
+	};
+	r32 arr[4][4];
+	v4  row[4];
+
+	v4 operator[] (i32 row);
+};
+
+inline v4
+Matrix::operator[] (i32 _row)
+{
+	v4 result = row[_row];
+	return result;
+}
 #endif

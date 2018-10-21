@@ -340,9 +340,8 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 			List_Append(vsAttributes, va2);
 			List_Append(vsAttributes, va3);
 
-			// TODO: Matrix type?
 			ConstantBufferDesc cBufferDesc = {};
-			cBufferDesc.size = 4*4*sizeof(float);
+			cBufferDesc.size = sizeof(Matrix);
 
 			VertexShader vs = Renderer_LoadVertexShader(s->renderer, "Shaders/Basic Vertex Shader.cso", vsAttributes, cBufferDesc);
 			LOG_IF(!vs, "Failed to load default vertex shader", Severity::Error, return false);
