@@ -1,4 +1,7 @@
 #include "LHMAPI.h"
+// TODO: Remove this once args stabilize
+#include "LHMPluginHeader.h"
+#include "LHMSensorPlugin.h"
 
 struct Widget2
 {
@@ -37,6 +40,7 @@ struct Widget2
 	// TODO: drawFn? Widget type to function map?
 };
 
+#if false
 void
 DrawWidget_FilledBar(Widget& w /*, RendererState* renderer */)
 {
@@ -47,6 +51,7 @@ DrawWidget_FilledBar(Widget& w /*, RendererState* renderer */)
 	// Set Pixel Shader
 	// Set PS constant buffer
 }
+#endif
 
 //using ConstantBufferType = FilledBarConstants;
 

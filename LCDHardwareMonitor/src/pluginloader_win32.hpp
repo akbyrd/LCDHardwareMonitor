@@ -198,18 +198,18 @@ PluginLoader_LoadSensorPlugin(PluginLoaderState* s, PluginHeader* pluginHeader, 
 			success = false;
 			// TODO: Will this work with delay loaded dependencies?
 			SetDllDirectoryA(pluginHeader->directory);
-			pluginHeader->native.module = LoadLibraryA(pluginHeader->name);
-			LOG_IF(!pluginHeader->native.module, "Failed to load unmanaged Sensor plugin", Severity::Warning, break);
+			pluginHeader->userData = LoadLibraryA(pluginHeader->name);
+			LOG_IF(!pluginHeader->userData, "Failed to load unmanaged Sensor plugin", Severity::Warning, break);
 			SetDllDirectoryA("");
 
 			// TODO: Remove these casts
-			sensorPlugin->initialize = (SensorPluginInitializeFn) (void*) GetProcAddress((HMODULE) pluginHeader->native.module, "Initialize");
+			sensorPlugin->initialize = (SensorPluginInitializeFn*) (void*) GetProcAddress((HMODULE) pluginHeader->userData, "Initialize");
 			LOG_IF(!sensorPlugin->initialize, "Failed to find unmanaged Sensor Initialize function", Severity::Warning, break);
 
-			sensorPlugin->update = (SensorPluginUpdateFn) (void*) GetProcAddress((HMODULE) pluginHeader->native.module, "Update");
+			sensorPlugin->update = (SensorPluginUpdateFn*) (void*) GetProcAddress((HMODULE) pluginHeader->userData, "Update");
 			LOG_IF(!sensorPlugin->update, "Failed to find unmanaged Sensor Update function", Severity::Warning, break);
 
-			sensorPlugin->teardown = (SensorPluginTeardownFn) (void*) GetProcAddress((HMODULE) pluginHeader->native.module, "Teardown");
+			sensorPlugin->teardown = (SensorPluginTeardownFn*) (void*) GetProcAddress((HMODULE) pluginHeader->userData, "Teardown");
 			LOG_IF(!sensorPlugin->teardown, "Failed to find unmanaged Sensor Teardown function", Severity::Warning, break);
 			success = true;
 			break;
@@ -242,9 +242,9 @@ PluginLoader_UnloadSensorPlugin(PluginLoaderState* s, PluginHeader* pluginHeader
 
 		case PluginLanguage::Native:
 			// TODO: Remove this cast
-			success = FreeLibrary((HMODULE) pluginHeader->native.module);
+			success = FreeLibrary((HMODULE) pluginHeader->userData);
 			LOG_IF(!success, "Failed to unload unmanaged Sensor plugin", Severity::Warning, break);
-			pluginHeader->native = {};
+			pluginHeader->userData = nullptr;
 			break;
 
 		case PluginLanguage::Managed:
@@ -277,18 +277,18 @@ PluginLoader_LoadWidgetPlugin(PluginLoaderState* s, PluginHeader* pluginHeader, 
 			success = false;
 			// TODO: Will this work with delay loaded dependencies?
 			SetDllDirectoryA(pluginHeader->directory);
-			pluginHeader->native.module = LoadLibraryA(pluginHeader->name);
-			LOG_IF(!pluginHeader->native.module, "Failed to load unmanaged Widget plugin", Severity::Warning, break);
+			pluginHeader->userData = LoadLibraryA(pluginHeader->name);
+			LOG_IF(!pluginHeader->userData, "Failed to load unmanaged Widget plugin", Severity::Warning, break);
 			SetDllDirectoryA("");
 
 			// TODO: Remove these casts
-			widgetPlugin->initialize = (WidgetPluginInitializeFn) (void*) GetProcAddress((HMODULE) pluginHeader->native.module, "Initialize");
+			widgetPlugin->initialize = (WidgetPluginInitializeFn*) (void*) GetProcAddress((HMODULE) pluginHeader->userData, "Initialize");
 			LOG_IF(!widgetPlugin->initialize, "Failed to find unmanaged Widget Initialize function", Severity::Warning, break);
 
-			widgetPlugin->update = (WidgetPluginUpdateFn) (void*) GetProcAddress((HMODULE) pluginHeader->native.module, "Update");
+			widgetPlugin->update = (WidgetPluginUpdateFn*) (void*) GetProcAddress((HMODULE) pluginHeader->userData, "Update");
 			LOG_IF(!widgetPlugin->update, "Failed to find unmanaged Widget Update function", Severity::Warning, break);
 
-			widgetPlugin->teardown = (WidgetPluginTeardownFn) (void*) GetProcAddress((HMODULE) pluginHeader->native.module, "Teardown");
+			widgetPlugin->teardown = (WidgetPluginTeardownFn*) (void*) GetProcAddress((HMODULE) pluginHeader->userData, "Teardown");
 			LOG_IF(!widgetPlugin->teardown, "Failed to find unmanaged Widget Teardown function", Severity::Warning, break);
 			success = true;
 			break;
@@ -321,9 +321,9 @@ PluginLoader_UnloadWidgetPlugin(PluginLoaderState* s, PluginHeader* pluginHeader
 
 		case PluginLanguage::Native:
 			// TODO: Remove this cast
-			success = FreeLibrary((HMODULE) pluginHeader->native.module);
+			success = FreeLibrary((HMODULE) pluginHeader->userData);
 			LOG_IF(!success, "Failed to unload unmanaged Widget plugin", Severity::Warning, break);
-			pluginHeader->native = {};
+			pluginHeader->userData = nullptr;
 			break;
 
 		case PluginLanguage::Managed:

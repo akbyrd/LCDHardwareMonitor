@@ -1,5 +1,11 @@
 #pragma unmanaged
 #include "LHMAPI.h"
+#include "LHMPluginHeader.h"
+#include "LHMSensorPlugin.h"
+#include "LHMWidgetPlugin.h"
+
+// TODO: Restructure these to allow plugins to avoid implementing functions
+// they don't need. Don't spend time calling empty functions.
 
 #pragma managed
 public interface class ISensorPlugin

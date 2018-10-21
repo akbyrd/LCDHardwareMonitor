@@ -15,6 +15,7 @@ enum struct PluginLanguage
 	Managed,
 };
 
+// TODO: Maybe union SensorPlugin and WidgetPlugin into here?
 using PluginHeaderRef = List<struct PluginHeader>::RefT;
 struct PluginHeader
 {
@@ -25,21 +26,7 @@ struct PluginHeader
 	PluginKind      kind;
 	PluginLanguage  language;
 	PluginInfo      info;
-
-	union
-	{
-		struct
-		{
-			void* module;
-		} native;
-
-		// TODO: Try using COM pointers instead.
-		struct
-		{
-			void* appDomain;
-			void* pluginLoader;
-		} managed;
-	};
+	void*           userData;
 };
 
 #endif

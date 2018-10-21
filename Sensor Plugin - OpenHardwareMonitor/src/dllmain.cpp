@@ -1,5 +1,8 @@
 #pragma unmanaged
 #include "LHMAPI.h"
+// TODO: Remove this once args stabilize
+#include "LHMPluginHeader.h"
+#include "LHMSensorPlugin.h"
 
 #pragma managed
 #include <string.h>

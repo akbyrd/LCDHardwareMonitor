@@ -1,6 +1,9 @@
 #include "LHMAPI.h"
-
 #include "LHMString.hpp"
+#include "LHMPluginHeader.h"
+#include "LHMSensorPlugin.h"
+#include "LHMWidgetPlugin.h"
+
 #include "platform.h"
 #include "pluginloader.h"
 #include "renderer.h"
