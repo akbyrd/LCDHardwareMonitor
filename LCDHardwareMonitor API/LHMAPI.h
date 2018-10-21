@@ -9,9 +9,8 @@
 //#include "LHMString.hpp"
 #include "LHMDefer.hpp"
 
-// Public API
+// Plugins
 #include "LHMPluginInfo.h"
-#include "LHMPluginHeader.h"
 #include "LHMSensor.h"
 #include "LHMSensorPlugin.h"
 #include "LHMWidget.h"

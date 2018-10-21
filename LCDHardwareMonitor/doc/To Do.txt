@@ -1,14 +1,12 @@
 Next
+	Try implementing a list iterator
+	Would it be better to hide Context inside SimulationState so plugins don't have to worry about it?
+
 	Implement plugin API
-		Rewrite headers to be normal native headers. Move the CLR specific bits to a separate header.
 		Implement 'services' (mainly logging)
 		Can we typecheck plugin functions by making the plugin assign function pointers somewhere?
 		(Can probably do this in a header since we know the function names)
 		Questions
-			How do we deal with API that can fail?
-				Currently thinking context is a struct. Context has a fail flag and
-				reference to API struct. On fail set the flag and swap the API for a
-				bunch of empty functions.
 			How will managed code use native services and api? (probably dllimport)
 			Can we simplify the whole business?
 		Quirks

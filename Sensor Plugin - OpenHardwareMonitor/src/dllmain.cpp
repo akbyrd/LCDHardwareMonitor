@@ -28,7 +28,7 @@ public ref struct State : ISensorPlugin
 		array<IHardware^>^ hardware;
 	};
 
-	virtual void Initialize(PluginContext*, SensorPlugin::InitializeAPI*) {}
+	virtual b32  Initialize(PluginContext*, SensorPlugin::InitializeAPI*) { return true; }
 	virtual void Update    (PluginContext*, SensorPlugin::UpdateAPI*)     {}
 	virtual void Teardown  (PluginContext*, SensorPlugin::TeardownAPI*)   {}
 
@@ -52,6 +52,7 @@ public ref struct State : ISensorPlugin
 
 		auto stack = gcnew Stack<StackEntry>(10);
 		StackEntry current = { 0, computer->Hardware };
+		// TODO: Use u32?
 		for (i32 i = 0; i < current.hardware->Length; i++)
 		{
 			current.index = i;

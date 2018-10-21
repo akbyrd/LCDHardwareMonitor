@@ -2,6 +2,8 @@
 #define LHM_SENSORPLUGIN
 
 struct PluginContext;
+struct PluginHeader;
+using PluginHeaderRef = List<PluginHeader>::RefT;
 
 struct SensorPlugin
 {
@@ -9,7 +11,7 @@ struct SensorPlugin
 	struct UpdateAPI     {};
 	struct TeardownAPI   {};
 
-	using InitializeFn = void(PluginContext* context, InitializeAPI* api);
+	using InitializeFn = b32 (PluginContext* context, InitializeAPI* api);
 	using UpdateFn     = void(PluginContext* context, UpdateAPI*     api);
 	using TeardownFn   = void(PluginContext* context, TeardownAPI*   api);
 

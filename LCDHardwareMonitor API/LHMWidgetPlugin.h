@@ -2,14 +2,19 @@
 #define LHM_WIDGETPLUGIN
 
 struct PluginContext;
+struct PluginHeader;
+using PluginHeaderRef = List<PluginHeader>::RefT;
 
+// TODO: Some of this is per-plugin and some of this is per-widget.
 struct WidgetDefinition
 {
-	c8* name;
-	c8* author;
-	u32 version;
+	PluginHeaderRef ref;
+	c8*             name;
+	c8*             author;
+	u32             version;
 };
 
+// TODO: The API structs need to be part of the public API, but the data does not.
 struct WidgetPlugin
 {
 	struct InitializeAPI
@@ -22,7 +27,8 @@ struct WidgetPlugin
 	struct UpdateAPI   {};
 	struct TeardownAPI {};
 
-	using InitializeFn = void(PluginContext* context, InitializeAPI* api);
+	// TODO: Should probably pass api by value
+	using InitializeFn = b32 (PluginContext* context, InitializeAPI* api);
 	using UpdateFn     = void(PluginContext* context, UpdateAPI*     api);
 	using TeardownFn   = void(PluginContext* context, TeardownAPI*   api);
 

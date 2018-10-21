@@ -1,5 +1,6 @@
 #pragma unmanaged
 #include "LHMAPICLR.h"
+#include "LHMPluginHeader.h"
 
 #pragma managed
 using namespace System;

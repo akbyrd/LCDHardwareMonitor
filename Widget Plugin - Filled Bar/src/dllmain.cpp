@@ -6,7 +6,6 @@ struct Widget
 	__declspec(align(16))
 	struct VSConstants
 	{
-
 	};
 
 	__declspec(align(16))
@@ -53,7 +52,7 @@ DrawWidget_FilledBar(Widget& w /*, RendererState* renderer */)
 #endif
 
 EXPORT
-void
+b32
 Initialize(PluginContext* context, WidgetPlugin::InitializeAPI* api)
 {
 	WidgetDefinition widgetDef = {};
@@ -61,6 +60,7 @@ Initialize(PluginContext* context, WidgetPlugin::InitializeAPI* api)
 	widgetDef.author  = "akbyrd";
 	widgetDef.version = 1;
 	api->AddWidgetDefinition(context, &widgetDef);
+	return true;
 }
 
 EXPORT void Update   (PluginContext* context, WidgetPlugin::UpdateAPI*   api) { UNUSED(context); UNUSED(api); }
