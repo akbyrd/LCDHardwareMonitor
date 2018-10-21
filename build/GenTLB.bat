@@ -12,14 +12,13 @@ SET TARGET_NAME=%~2
 SET TARGET_FILE_NO_EXT=%OUT_DIR%%TARGET_NAME%
 SET DEPENDENCY_DIR=..\LCDHardwareMonitor API CLR\%OUT_DIR%
 
-ECHO.
 ECHO  **** Generating TLB
 
 tlbexp /nologo ^
   "%TARGET_FILE_NO_EXT%.dll" ^
   /out:"%TARGET_FILE_NO_EXT%.tlb" ^
   /asmpath:"%DEPENDENCY_DIR%." > NUL
-IF errorlevel 1 GOTO Abort
+IF ERRORLEVEL 1 GOTO Abort
 
 ECHO  **** Generation successful
 goto Exit

@@ -6,16 +6,14 @@ ECHO.
 ECHO  **** Copying output to run
 
 XCOPY /Y /I /S /B /EXCLUDE:..\build\ignored.txt "%OUT_DIR%*" "..\run\%SUB_DIR%" > NUL
-IF errorlevel 1 GOTO Abort
+IF ERRORLEVEL 1 GOTO Abort
 
 ECHO  **** Deployment successful
 GOTO Exit
 
 :Abort
   ECHO  **** WARNING - Deployment failed
-  ECHO.
   EXIT /B 1
 
 :Exit
-  ECHO.
   EXIT /B 0

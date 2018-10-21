@@ -98,7 +98,7 @@
       <PreprocessorDefinitions>DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <PostBuildEvent>
-      <Command>"..\build\Deploy.bat" "$(OutDir)"</Command>
+      <Command>"..\build\Deploy.bat" "$(OutDir)" &amp;&amp; ..\build\CopyD3DC.bat "$(WindowsSdkDir)" $(PlatformTarget)</Command>
     </PostBuildEvent>
     <Link />
     <Link>
@@ -114,7 +114,7 @@
       <PreprocessorDefinitions>DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <PostBuildEvent>
-      <Command>"..\build\Deploy.bat" "$(OutDir)"</Command>
+      <Command>"..\build\Deploy.bat" "$(OutDir)" &amp;&amp; ..\build\CopyD3DC.bat "$(WindowsSdkDir)" $(PlatformTarget)</Command>
     </PostBuildEvent>
     <Link />
     <Link>
@@ -136,7 +136,7 @@
       <AdditionalDependencies>mscoree.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>"..\build\Deploy.bat" "$(OutDir)"</Command>
+      <Command>"..\build\Deploy.bat" "$(OutDir)" &amp;&amp; ..\build\CopyD3DC.bat "$(WindowsSdkDir)" $(PlatformTarget)</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -154,7 +154,7 @@
       <AdditionalDependencies>mscoree.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>"..\build\Deploy.bat" "$(OutDir)"</Command>
+      <Command>"..\build\Deploy.bat" "$(OutDir)" &amp;&amp; ..\build\CopyD3DC.bat "$(WindowsSdkDir)" $(PlatformTarget)</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
