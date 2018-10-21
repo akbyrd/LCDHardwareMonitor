@@ -66,12 +66,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmdShow
 
 	// Debug
 	PreviewWindow_Initialize(&previewState, &rendererState, hInstance);
-	// TODO: Maybe a scope guard?
-	DEFER_TEARDOWN
-	{
-		if (previewState.hwnd)
-			PreviewWindow_Teardown(&previewState, &rendererState, hInstance);
-	};
+	auto previewGuard = guard { PreviewWindow_Teardown(&previewState, &rendererState, hInstance); };
 	success = RegisterHotKey(nullptr, togglePreviewWindowID, MOD_NOREPEAT, VK_F1);
 	LOG_LAST_ERROR_IF(!success, "RegisterHotKey failed", Severity::Warning);
 
@@ -99,10 +94,12 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmdShow
 						if (!previewState.hwnd)
 						{
 							PreviewWindow_Initialize(&previewState, &rendererState, hInstance);
+							previewGuard.dismiss = false;
 						}
 						else
 						{
 							PreviewWindow_Teardown(&previewState, &rendererState, hInstance);
+							previewGuard.dismiss = true;
 						}
 					}
 					break;

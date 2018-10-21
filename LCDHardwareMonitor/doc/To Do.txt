@@ -1,9 +1,9 @@
 Next
-	Finish scope guard
 	Memory pools
 		Replace array stack allocations with Lists out of a pool.
 		Remove ArrayLength/Size
 	Look over logging carefully
+	Add formatted logging
 
 	Is it worth abstracting a little to unify sensor and widget plugin handling?
 	Implement OHM plugin
