@@ -40,6 +40,7 @@ struct List
 	inline T& operator [](RefT r) { return data[r.index]; }
 	//inline T& operator [](u32 i)  { return data[i]; }
 	inline    operator T*()       { return data; }
+	// TODO: Maybe we want to be checking length, not data?
 	inline    operator b32()      { return data != nullptr; }
 };
 
@@ -156,6 +157,7 @@ template<typename T>
 inline ListRef<T>
 List_GetRef(List<T>& list, u32 index)
 {
+	UNUSED(list);
 	ListRef<T> ref = {};
 	ref.index = index;
 	return ref;

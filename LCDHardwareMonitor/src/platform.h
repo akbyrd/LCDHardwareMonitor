@@ -10,10 +10,10 @@ enum struct Severity
 b32     Platform_Initialize      (PlatformState*);
 void    Platform_Teardown        (PlatformState*);
 
-Bytes   Platform_LoadFileBytes   (c8* fileName);
-String  Platform_LoadFileString  (c8* fileName);
 void    Platform_Print           (c8* message);
 void    Platform_Log             (c8* message, Severity severity, c8* file, i32 line, c8* function);
+Bytes   Platform_LoadFileBytes   (c8* fileName);
+String  Platform_LoadFileString  (c8* fileName);
 
 #define LOCATION_ARGS __FILE__, __LINE__, __FUNCTION__
 #define LOG(message, severity) Platform_Log(message, severity, LOCATION_ARGS)

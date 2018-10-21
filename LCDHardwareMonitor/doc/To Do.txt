@@ -1,11 +1,8 @@
 Next
-	Use a macro to toggle cleanup code
-	Enforce C++ version
-	Enforce standard compliant
-	Leverage Scoped/defer everywhere
 	Memory pools
 		Replace array stack allocations with Lists out of a pool.
 		Remove ArrayLength/Size
+	Look over logging carefully
 
 	Is it worth abstracting a little to unify sensor and widget plugin handling?
 	Implement OHM plugin
@@ -18,7 +15,6 @@ Next
 			Rivatuner?
 			HWiNFO (promising!)
 
-	Implement dynamically sized allocations for logging and DetectPluginLanguage
 	Is it cleaner to use the auto-COM-interface of LHMPluginLoader?
 	Handle multiple plugins in the same file (probably just a detailed error)
 	Use #import instead of project references?
@@ -36,14 +32,16 @@ Sensor Plugins
 
 
 Refactoring
+	Rename LHMMSVC to LHMCompiler and leave room for other compilers
+	Rewrite List<T> (and rename to Array<T>)
+	Lower case vector names
 	Try out range based for loops
 	Ensure Platform function naming is uniform
 	Decide on 'plugin loader' naming on both sides of the managed boundary
-	Rewrite List<T>
 	Drop some of the variable name prefixes, such as d3d
 	Use this as parameter name for 'methods'
 	Should const be used on parameters and locals?
-	Include 'out' in out parameter names
+	Include 'out' in out parameter names?
 
 
 
@@ -70,4 +68,3 @@ Architecture
 	- Decide on static or dynamic linking to e.g. the CRT. Bundle redistributables
 	  if dynamically linking.
 	- Load default/fallback resources
-

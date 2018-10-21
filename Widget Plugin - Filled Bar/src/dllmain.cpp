@@ -49,3 +49,10 @@ DrawWidget_FilledBar(Widget& w /*, RendererState* renderer */)
 }
 
 //using ConstantBufferType = FilledBarConstants;
+
+extern "C"
+{
+	__declspec(dllexport) void Initialize(SP_INITIALIZE_ARGS) { UNUSED(s); }
+	__declspec(dllexport) void Update    (SP_UPDATE_ARGS    ) { UNUSED(s); }
+	__declspec(dllexport) void Teardown  (SP_TEARDOWN_ARGS  ) { UNUSED(s); }
+}

@@ -34,15 +34,15 @@ const u64 Gigabyte = 1024LL * Megabyte;
 //#endif
 
 #if DEBUG
-#define Assert(condition) if (!(condition)) { *((u8 *) 0) = 0; }
+	#define Assert(condition) if (!(condition)) { *((u8 *) 0) = 0; }
 #else
-#define Assert(condition)
+	#define Assert(condition)
 #endif
 
 #if __cplusplus_cli
-#define PUBLIC public
+	#define PUBLIC public
 #else
-#define PUBLIC
+	#define PUBLIC
 #endif
 
 #define nameof(x) #x

@@ -27,6 +27,7 @@ CreatePluginHeader(SimulationState* s, c8* directory, c8* name, PluginKind kind)
 	if (!pluginHeader)
 		pluginHeader = List_Append(s->pluginHeaders);
 
+	pluginHeader->ref       = List_GetRef(s->pluginHeaders, s->pluginHeaders.length - 1);
 	pluginHeader->name      = name;
 	pluginHeader->directory = directory;
 	pluginHeader->kind      = kind;

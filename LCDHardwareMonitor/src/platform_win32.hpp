@@ -1,64 +1,91 @@
-// TODO: Remove this
-#include <fstream>
+inline void
+Platform_Print(c8* message)
+{
+	// NOTE: printf will not go to Visual Studio's Output window :(
+	printf(message);
+	OutputDebugStringA(message);
+}
 
 void
 Platform_Log(c8* message, Severity severity, c8* file, i32 line, c8* function)
 {
-	// TODO: Dynamic allocation
-	// TODO: Check for snprintf failure (overflow).
-	c8 buffer[512];
-	snprintf(buffer, ArrayLength(buffer), "%s - %s\n\t%s(%i)\n", function, message, file, line);
-	Platform_Print(buffer);
+	String fullMessage = {};
+	b32 success = String_Format(fullMessage, "%s - %s\n\t%s(%i)\n", function, message, file, line);
+	if (!success)
+	{
+		Platform_Print("String_Format failed. Original message:\n\t");
+		Platform_Print(function);
+		Platform_Print(" - ");
+		Platform_Print(message);
+		Platform_Print("\n\t\t");
+		Platform_Print(file);
+		Platform_Print("\n");
+		return;
+	}
+	defer { List_Free(fullMessage); };
+
+	Platform_Print(fullMessage);
 
 	if (severity > Severity::Info)
 		__debugbreak();
 }
 
-inline void
-Platform_Print(c8* message)
-{
-	OutputDebugStringA(message);
-}
-
 static void
 LogFormatMessage(c8* message, Severity severity, u32 messageID, c8* file, i32 line, c8* function)
 {
-	// TODO: Dynamic allocation
-	c8 windowsMessage[256];
+	c8* windowsMessage = 0;
 	u32 uResult = FormatMessageA(
-		FORMAT_MESSAGE_FROM_SYSTEM,
+		FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER,
 		nullptr,
 		messageID,
 		0,
-		windowsMessage,
-		ArrayLength(windowsMessage) - 1,
+		(c8*) &windowsMessage,
+		0,
 		nullptr
 	);
-
-	// NOTE: If we fail this far down, just...fuck it.
-	// TODO: Dynamic allocation
-	c8 combinedMessage[256];
+	defer { LocalFree(windowsMessage); };
 	if (uResult == 0)
 	{
-		i32 iResult = snprintf(combinedMessage, ArrayLength(combinedMessage), "%s: %i", message, messageID);
-		if (iResult < 0)
-		{
-			Platform_Log("snprintf failed", Severity::Warning, LOCATION_ARGS);
-			Platform_Log(message, severity, file, line, function);
-		}
-	}
-	else
-	{
-		windowsMessage[uResult - 1] = '\0';
-		i32 iResult = snprintf(combinedMessage, ArrayLength(combinedMessage), "%s: %s", message, windowsMessage);
-		if (iResult < 0)
-		{
-			Platform_Log("snprintf failed", Severity::Warning, LOCATION_ARGS);
-			Platform_Log(message, severity, file, line, function);
-		}
+		Platform_Print("FormatMessageA failed. Original message:\n\t");
+		Platform_Print(function);
+		Platform_Print(" - ");
+		Platform_Print(message);
+		Platform_Print("\n\t\t");
+		Platform_Print(file);
+		Platform_Print("\n");
+		return;
 	}
 
-	Platform_Log(combinedMessage, severity, file, line, function);
+	String fullMessage = {};
+	b32 success = String_Format(
+		fullMessage,
+		"%s: %s - %s\n\t%s(%i)\n",
+		message,
+		windowsMessage,
+		function,
+		message,
+		file,
+		line
+	);
+	if (!success)
+	{
+		Platform_Print("String_Format failed. Original message:\n\t");
+		Platform_Print(function);
+		Platform_Print(" - ");
+		Platform_Print(message);
+		Platform_Print(": ");
+		Platform_Print(windowsMessage);
+		Platform_Print("\n\t\t");
+		Platform_Print(file);
+		Platform_Print("\n");
+		return;
+	}
+	defer { List_Free(fullMessage); };
+
+	Platform_Print(fullMessage);
+
+	if (severity > Severity::Info)
+		__debugbreak();
 }
 
 void
@@ -79,34 +106,41 @@ LogLastError(c8* message, Severity severity, c8* file, i32 line, c8* function)
 #define LOG_LAST_ERROR_IF(expression, message, severity, ...) IF(expression, LOG_LAST_ERROR(message, severity); __VA_ARGS__)
 
 static Bytes
-LoadFile(c8* fileName, i32 padding = 0)
+LoadFile(c8* fileName, u32 padding = 0)
 {
-	Assert(padding >= 0);
-
 	// TODO: Add cwd to errors
-	// TODO: Handle files larger than 4 GB
-	// TODO: Handle c8/void
 
+	b32 success;
 	Bytes result = {};
+	{
+		auto resultGuard = guard { List_Free(result); };
 
-	std::ifstream inFile(fileName, std::ios::binary | std::ios::ate);
-	LOG_IF(!inFile.is_open(), "Failed to open file: <file>. Working Directory: <cwd>", Severity::Error, goto Cleanup);
+		HANDLE file = CreateFileA(
+			fileName,
+			GENERIC_READ,
+			FILE_SHARE_READ,
+			nullptr,
+			OPEN_EXISTING,
+			FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN,
+			nullptr
+		);
+		LOG_LAST_ERROR_IF(file == INVALID_HANDLE_VALUE, "CreateFileA failed", Severity::Warning, return result);
+		defer { CloseHandle(file); };
 
-	LOG_IF(u32Max - inFile.tellg() - padding < 0, "File is too big to fit requested padding when loading: <file>", Severity::Error, goto Cleanup);
-	result.length   = (u32) inFile.tellg();
-	result.capacity = result.length + padding;
+		LARGE_INTEGER size_win32;
+		success = GetFileSizeEx(file, &size_win32);
+		LOG_LAST_ERROR_IF(!success, "GetFileSizeEx failed", Severity::Warning, return result);
+		LOG_IF(size_win32.QuadPart > u32Max - padding, "File is too large", Severity::Warning, return result);
 
-	result.data = (u8*) malloc(sizeof(u8) * result.capacity);
+		u32 size = (u32) size_win32.QuadPart;
+		List_Reserve(result, size + padding);
+		LOG_IF(!result, "Failed to allocate file memory", Severity::Warning, return result);
 
-	inFile.seekg(0);
-	LOG_IF(inFile.fail(), "Failed to seek file: <file>", Severity::Error, goto Cleanup);
-	inFile.read((c8*) result.data, result.length);
-	LOG_IF(inFile.fail(), "Failed to read file: <file>", Severity::Error, goto Cleanup);
+		success = ReadFile(file, result, size, (DWORD*) &result.length, nullptr);
+		LOG_LAST_ERROR_IF(!success, "ReadFile failed", Severity::Warning, return result);
 
-	return result;
-
-Cleanup:
-	List_Free(result);
+		resultGuard.dismiss = true;
+	}
 	return result;
 }
 

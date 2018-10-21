@@ -26,9 +26,20 @@ struct PluginHeader
 	PluginLanguage  language;
 	PluginInfo      info;
 
-	// TODO: Try using COM pointers instead.
-	void* appDomain;
-	void* pluginLoader;
+	union
+	{
+		struct
+		{
+			void* module;
+		} native;
+
+		// TODO: Try using COM pointers instead.
+		struct
+		{
+			void* appDomain;
+			void* pluginLoader;
+		} managed;
+	};
 };
 
 #endif

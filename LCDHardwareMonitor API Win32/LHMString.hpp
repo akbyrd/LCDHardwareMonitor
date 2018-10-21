@@ -1,67 +1,47 @@
 #ifndef LHM_STRING
 #define LHM_STRING
 
-// TODO: Seems questionable to alias *_Free(), but nothing else.
+
+// TODO: I think we want separate implementations for List, Bytes, and Strings
 // TODO: Static string when capacity < 0?
 // TODO: String views or slices (they need to know they don't own the string.
 // Actually, the 'static string' concept will work here I think).
 
 // NOTE: Strings are null terminated for C compatibility.
+//
+#include <stdarg.h>
 
 using Bytes  = List<u8>;
 using String = List<c8>;
 
-inline void
-Bytes_Free(Bytes& bytes)
+b32
+String_Format(String& string, c8* format, ...)
 {
-	List_Free(bytes);
+	Assert(string.data == nullptr);
+
+	String result = {};
+	defer { List_Free(result); };
+
+	va_list(args);
+	va_start(args, format);
+	i32 size = vsnprintf(nullptr, 0, format, args);
+	if (size < 0) return false;
+	va_end(args);
+
+	b32 success = List_Reserve(result, (u32) size + 1);
+	if (!success) return false;
+	defer { List_Free(result); };
+
+	va_list(args2);
+	va_start(args2, format);
+	i32 written = vsnprintf(result.data, result.capacity, format, args2);
+	if (written < 0 || (u32) written >= result.capacity) return false;
+	result.length = (u32) written + 1;
+	va_end(args2);
+
+	string = result;
+	result = {};
+	return true;
 }
-
-inline void
-String_Free(String& string)
-{
-	List_Free(string);
-}
-
-#if false
-struct Bytes
-{
-	u32   length;
-	u32   capacity;
-	void* data;
-
-	inline operator void*() { return data; }
-	inline operator b32()   { return data != nullptr; }
-};
-
-struct String
-{
-	u32 length;
-	u32 capacity;
-	c8* data;
-
-	inline c8& operator[](u32 i) { return data[i]; }
-	inline     operator c8*()    { return data; }
-	inline     operator b32()    { return data != nullptr; }
-};
-
-void
-FreeBytes(Bytes& bytes)
-{
-	if (bytes.capacity > 0)
-		free(bytes.data);
-
-	bytes = {};
-}
-
-void
-FreeString(String& string)
-{
-	if (string.capacity > 0)
-		free(string.data);
-
-	string = {};
-}
-#endif
 
 #endif

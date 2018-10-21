@@ -193,7 +193,7 @@ PreviewWindow_Render(PreviewWindowState* s, RendererState* rendererState)
 LRESULT CALLBACK
 PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 {
-	auto s = (PreviewWindowState*) GetWindowLongPtrW(hwnd, GWLP_USERDATA);
+	auto s = (PreviewWindowState*) GetWindowLongPtrA(hwnd, GWLP_USERDATA);
 
 
 	switch (uMsg)
@@ -207,7 +207,7 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 			// https://msdn.microsoft.com/en-us/library/windows/desktop/ms644898.aspx
 			SetLastError(0);
 
-			i64 iResult = SetWindowLongPtrW(hwnd, GWLP_USERDATA, (LPARAM) s);
+			i64 iResult = SetWindowLongPtrA(hwnd, GWLP_USERDATA, (LPARAM) s);
 			if (iResult == 0 && GetLastError() != 0)
 			{
 				LOG_LAST_ERROR("SetWindowLongPtr failed", Severity::Error);
@@ -248,7 +248,7 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 				V2i newClientSize = newZoomFactor * s->renderSize;
 
 				RECT usableDesktopRect;
-				success = SystemParametersInfoW(SPI_GETWORKAREA, 0, &usableDesktopRect, 0);
+				success = SystemParametersInfoA(SPI_GETWORKAREA, 0, &usableDesktopRect, 0);
 				LOG_LAST_ERROR_IF(!success, "SystemParametersInfo failed", Severity::Warning, return 0);
 
 				V2i usableDesktopSize;
@@ -304,15 +304,12 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 
 		case WM_CLOSE:
 		{
-			b32 success = PostMessageW(nullptr, WM_PREVIEWWINDOWCLOSED, 0, 0);
+			// TODO: If we hold onto the necessary pointers, we could just teardown directly
+			b32 success = PostMessageA(nullptr, WM_PREVIEWWINDOWCLOSED, 0, 0);
 			LOG_LAST_ERROR_IF(!success, "PostMessage failed", Severity::Warning);
-
-			// NOTE: The window can be toggle at will. Don't stop the simulation
-			// just because it's not open.
-			//PostQuitMessage(0);
 			return 0;
 		}
 	}
 
-	return DefWindowProcW(hwnd, uMsg, wParam, lParam);
+	return DefWindowProcA(hwnd, uMsg, wParam, lParam);
 }

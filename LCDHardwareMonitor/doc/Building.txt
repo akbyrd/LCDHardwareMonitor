@@ -1,5 +1,5 @@
 Compiler: MSVC 2015
-Lanuage: C++ (03 mostly? TODO: Decide)
+Language: C++14
 
 
 

@@ -8,4 +8,5 @@
 #pragma warning (disable: 4626) // Assignment operator implicitly deleted
 #pragma warning (disable: 4668) // Macro not defined
 #pragma warning (disable: 4710) // Function not inlined
+#pragma warning (disable: 4774) // printf format not a literal
 #pragma warning (disable: 4820) // Struct padding added

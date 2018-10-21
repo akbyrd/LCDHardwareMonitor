@@ -48,7 +48,7 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 		success = LoadPlugin(pluginHeader);
 		if (!success) return false;
 
-		LHMPluginLoader^ pluginLoader = (LHMPluginLoader^) ((GCHandle) (IntPtr) pluginHeader->pluginLoader).Target;
+		LHMPluginLoader^ pluginLoader = (LHMPluginLoader^) ((GCHandle) (IntPtr) pluginHeader->managed.pluginLoader).Target;
 		success = pluginLoader->InitializeSensorPlugin(pluginHeader, sensorPlugin);
 		if (!success) return false;
 
@@ -60,7 +60,7 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	{
 		PluginHeader*    pluginHeader = (PluginHeader*) _pluginHeader;
 		SensorPlugin*    sensorPlugin = (SensorPlugin*) _sensorPlugin;
-		LHMPluginLoader^ pluginLoader = (LHMPluginLoader^) ((GCHandle) (IntPtr) pluginHeader->pluginLoader).Target;
+		LHMPluginLoader^ pluginLoader = (LHMPluginLoader^) ((GCHandle) (IntPtr) pluginHeader->managed.pluginLoader).Target;
 
 		b32 success;
 		success = pluginLoader->TeardownSensorPlugin(pluginHeader, sensorPlugin);
@@ -82,7 +82,7 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 		success = LoadPlugin(pluginHeader);
 		if (!success) return false;
 
-		LHMPluginLoader^ pluginLoader = (LHMPluginLoader^) ((GCHandle) (IntPtr) pluginHeader->pluginLoader).Target;
+		LHMPluginLoader^ pluginLoader = (LHMPluginLoader^) ((GCHandle) (IntPtr) pluginHeader->managed.pluginLoader).Target;
 		success = pluginLoader->InitializeWidgetPlugin(pluginHeader, widgetPlugin);
 		if (!success) return false;
 
@@ -94,7 +94,7 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	{
 		PluginHeader*    pluginHeader = (PluginHeader*) _pluginHeader;
 		WidgetPlugin*    widgetPlugin = (WidgetPlugin*) _widgetPlugin;
-		LHMPluginLoader^ pluginLoader = (LHMPluginLoader^) ((GCHandle) (IntPtr) pluginHeader->pluginLoader).Target;
+		LHMPluginLoader^ pluginLoader = (LHMPluginLoader^) ((GCHandle) (IntPtr) pluginHeader->managed.pluginLoader).Target;
 
 		b32 success;
 		success = pluginLoader->TeardownWidgetPlugin(pluginHeader, widgetPlugin);
@@ -135,23 +135,23 @@ private:
 		// objects will definitely go away when then AppDomain is unloaded and we
 		// need them for the entire life of the domain.
 		// NOTE: We can't pin the AppDomain pointer. Yay.
-		pluginHeader->appDomain    = (void*) (IntPtr) GCHandle::Alloc(appDomain);
-		pluginHeader->pluginLoader = (void*) (IntPtr) GCHandle::Alloc(appDomain->DomainManager);
+		pluginHeader->managed.appDomain    = (void*) (IntPtr) GCHandle::Alloc(appDomain);
+		pluginHeader->managed.pluginLoader = (void*) (IntPtr) GCHandle::Alloc(appDomain->DomainManager);
 		return true;
 	}
 
 	b32
 	UnloadPlugin(PluginHeader* pluginHeader)
 	{
-		GCHandle appDomainHandle    = ((GCHandle) (IntPtr) pluginHeader->appDomain);
-		GCHandle pluginLoaderHandle = ((GCHandle) (IntPtr) pluginHeader->pluginLoader);
+		GCHandle appDomainHandle    = ((GCHandle) (IntPtr) pluginHeader->managed.appDomain);
+		GCHandle pluginLoaderHandle = ((GCHandle) (IntPtr) pluginHeader->managed.pluginLoader);
 
 		AppDomain::Unload((AppDomain^) appDomainHandle.Target);
 		appDomainHandle.Free();
-		pluginHeader->appDomain = nullptr;
+		pluginHeader->managed.appDomain = nullptr;
 
 		pluginLoaderHandle.Free();
-		pluginHeader->pluginLoader = nullptr;
+		pluginHeader->managed.pluginLoader = nullptr;
 		return true;
 	}
 

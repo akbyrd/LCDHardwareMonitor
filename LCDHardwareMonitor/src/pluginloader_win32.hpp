@@ -107,20 +107,18 @@ PluginLoader_Teardown(PluginLoaderState* s)
 	}
 }
 
-using ScopedHandle = Scoped<HANDLE, decltype(CloseHandle), CloseHandle>;
-
 static b32
 DetectPluginLanguage(PluginHeader* pluginHeader)
 {
 	// TODO: Move memory mapping to platform API?
 
-	// TODO: Dynamic allocation
-	// TODO: Check snprintf error
-	c8 buffer[512];
-	snprintf(buffer, ArrayLength(buffer), "%s\\%s.dll", pluginHeader->directory, pluginHeader->name);
+	String pluginPath = {};
+	b32 success = String_Format(pluginPath, "%s\\%s.dll", pluginHeader->directory, pluginHeader->name);
+	if (!success) return false;
+	defer { List_Free(pluginPath); };
 
-	ScopedHandle pluginFile = CreateFileA(
-		buffer,
+	HANDLE pluginFile = CreateFileA(
+		pluginPath,
 		GENERIC_READ,
 		FILE_SHARE_READ,
 		nullptr,
@@ -129,8 +127,9 @@ DetectPluginLanguage(PluginHeader* pluginHeader)
 		nullptr
 	);
 	LOG_LAST_ERROR_IF(pluginFile == INVALID_HANDLE_VALUE, "Failed to open plugin file.", Severity::Warning, return false);
+	defer { CloseHandle(pluginFile); };
 
-	ScopedHandle pluginFileMap = CreateFileMappingW(
+	HANDLE pluginFileMap = CreateFileMappingA(
 		pluginFile,
 		nullptr,
 		PAGE_READONLY,
@@ -138,6 +137,7 @@ DetectPluginLanguage(PluginHeader* pluginHeader)
 		nullptr
 	);
 	LOG_LAST_ERROR_IF(!pluginFileMap, "Failed to create plugin file mapping.", Severity::Warning, return false);
+	defer { CloseHandle(pluginFileMap); };
 
 	// TODO: We could map the DOS header, get the PE offset, then remap starting there
 	// NOTE: Can't map a fixed number of bytes because the DOS stub is of unknown length
@@ -194,17 +194,35 @@ PluginLoader_LoadSensorPlugin(PluginLoaderState* s, PluginHeader* pluginHeader, 
 			break;
 
 		case PluginLanguage::Native:
-			// TODO: Implement LoadNativeSensorPlugin
-			Assert(false);
+		{
 			success = false;
+			// TODO: Will this work with delay loaded dependencies?
+			SetDllDirectoryA(pluginHeader->directory);
+			pluginHeader->native.module = LoadLibraryA(pluginHeader->name);
+			LOG_IF(!pluginHeader->native.module, "Failed to load unmanaged Sensor plugin", Severity::Warning, break);
+			SetDllDirectoryA("");
+
+			// TODO: Remove these casts
+			sensorPlugin->initialize = (SensorPluginInitializeFn) (void*) GetProcAddress((HMODULE) pluginHeader->native.module, "Initialize");
+			LOG_IF(!sensorPlugin->initialize, "Failed to find unmanaged Sensor Initialize function", Severity::Warning, break);
+
+			sensorPlugin->update = (SensorPluginUpdateFn) (void*) GetProcAddress((HMODULE) pluginHeader->native.module, "Update");
+			LOG_IF(!sensorPlugin->update, "Failed to find unmanaged Sensor Update function", Severity::Warning, break);
+
+			sensorPlugin->teardown = (SensorPluginTeardownFn) (void*) GetProcAddress((HMODULE) pluginHeader->native.module, "Teardown");
+			LOG_IF(!sensorPlugin->teardown, "Failed to find unmanaged Sensor Teardown function", Severity::Warning, break);
+			success = true;
 			break;
+		}
 
 		case PluginLanguage::Managed:
+		{
 			// NOTE: fuslogvw is great for debugging managed assembly loading.
 			// TODO: Do we need to try/catch the managed code?
 			success = s->lhmPluginLoader->LoadSensorPlugin(pluginHeader, sensorPlugin);
-			LOG_IF(!success, "Failed to load managed sensor plugin", Severity::Warning);
+			LOG_IF(!success, "Failed to load managed Sensor plugin", Severity::Warning);
 			break;
+		}
 	}
 	if (!success) return false;
 
@@ -223,18 +241,20 @@ PluginLoader_UnloadSensorPlugin(PluginLoaderState* s, PluginHeader* pluginHeader
 			break;
 
 		case PluginLanguage::Native:
-			// TODO: Implement UnloadNativeSensorPlugin
-			Assert(false);
-			success = false;
+			// TODO: Remove this cast
+			success = FreeLibrary((HMODULE) pluginHeader->native.module);
+			LOG_IF(!success, "Failed to unload unmanaged Sensor plugin", Severity::Warning, break);
+			pluginHeader->native = {};
 			break;
 
 		case PluginLanguage::Managed:
 			success = s->lhmPluginLoader->UnloadSensorPlugin(pluginHeader, sensorPlugin);
-			LOG_IF(!success, "Failed to unload managed sensor plugin", Severity::Warning);
+			LOG_IF(!success, "Failed to unload managed Sensor plugin", Severity::Warning);
 			break;
 	}
 	if (!success) return false;
 
+	pluginHeader->isLoaded = false;
 	return true;
 }
 
@@ -253,17 +273,35 @@ PluginLoader_LoadWidgetPlugin(PluginLoaderState* s, PluginHeader* pluginHeader, 
 			break;
 
 		case PluginLanguage::Native:
-			// TODO: Implement LoadNativeWidgetPlugin
-			Assert(false);
+		{
 			success = false;
+			// TODO: Will this work with delay loaded dependencies?
+			SetDllDirectoryA(pluginHeader->directory);
+			pluginHeader->native.module = LoadLibraryA(pluginHeader->name);
+			LOG_IF(!pluginHeader->native.module, "Failed to load unmanaged Widget plugin", Severity::Warning, break);
+			SetDllDirectoryA("");
+
+			// TODO: Remove these casts
+			widgetPlugin->initialize = (WidgetPluginInitializeFn) (void*) GetProcAddress((HMODULE) pluginHeader->native.module, "Initialize");
+			LOG_IF(!widgetPlugin->initialize, "Failed to find unmanaged Widget Initialize function", Severity::Warning, break);
+
+			widgetPlugin->update = (WidgetPluginUpdateFn) (void*) GetProcAddress((HMODULE) pluginHeader->native.module, "Update");
+			LOG_IF(!widgetPlugin->update, "Failed to find unmanaged Widget Update function", Severity::Warning, break);
+
+			widgetPlugin->teardown = (WidgetPluginTeardownFn) (void*) GetProcAddress((HMODULE) pluginHeader->native.module, "Teardown");
+			LOG_IF(!widgetPlugin->teardown, "Failed to find unmanaged Widget Teardown function", Severity::Warning, break);
+			success = true;
 			break;
+		}
 
 		case PluginLanguage::Managed:
+		{
 			// NOTE: fuslogvw is great for debugging managed assembly loading.
 			// TODO: Do we need to try/catch the managed code?
 			success = s->lhmPluginLoader->LoadWidgetPlugin(pluginHeader, widgetPlugin);
 			LOG_IF(!success, "Failed to load managed Widget plugin", Severity::Warning);
 			break;
+		}
 	}
 	if (!success) return false;
 
@@ -282,9 +320,10 @@ PluginLoader_UnloadWidgetPlugin(PluginLoaderState* s, PluginHeader* pluginHeader
 			break;
 
 		case PluginLanguage::Native:
-			// TODO: Implement UnloadNativeWidgetPlugin
-			Assert(false);
-			success = false;
+			// TODO: Remove this cast
+			success = FreeLibrary((HMODULE) pluginHeader->native.module);
+			LOG_IF(!success, "Failed to unload unmanaged Widget plugin", Severity::Warning, break);
+			pluginHeader->native = {};
 			break;
 
 		case PluginLanguage::Managed:
@@ -294,5 +333,6 @@ PluginLoader_UnloadWidgetPlugin(PluginLoaderState* s, PluginHeader* pluginHeader
 	}
 	if (!success) return false;
 
+	pluginHeader->isLoaded = false;
 	return true;
 }
