@@ -11,9 +11,8 @@ using Microsoft::WRL::ComPtr;
 // folder directly, but we need to know the correct config subfolder.
 #import "..\\run\\LCDHardwareMonitor PluginLoader CLR.tlb" no_namespace
 
-class LHMHostControl final : public IHostControl
+struct LHMHostControl final : public IHostControl
 {
-public:
 	// TODO: Double check that this doesn't get called for each new AppDomain
 	HRESULT __stdcall SetAppDomainManager(DWORD dwAppDomainID, IUnknown* pUnkAppDomainManager)
 	{
@@ -30,7 +29,6 @@ public:
 	ULONG   __stdcall AddRef()  { return 0; }
 	ULONG   __stdcall Release() { return 0; }
 
-private:
 	ComPtr<ILHMPluginLoader> lhmPluginLoader;
 };
 
@@ -202,15 +200,10 @@ PluginLoader_LoadSensorPlugin(PluginLoaderState* s, PluginHeader* pluginHeader, 
 			LOG_IF(!pluginHeader->userData, "Failed to load unmanaged Sensor plugin", Severity::Warning, break);
 			SetDllDirectoryA("");
 
-			// TODO: Remove these casts
-			sensorPlugin->initialize = (SensorPluginInitializeFn*) (void*) GetProcAddress((HMODULE) pluginHeader->userData, "Initialize");
-			LOG_IF(!sensorPlugin->initialize, "Failed to find unmanaged Sensor Initialize function", Severity::Warning, break);
-
-			sensorPlugin->update = (SensorPluginUpdateFn*) (void*) GetProcAddress((HMODULE) pluginHeader->userData, "Update");
-			LOG_IF(!sensorPlugin->update, "Failed to find unmanaged Sensor Update function", Severity::Warning, break);
-
-			sensorPlugin->teardown = (SensorPluginTeardownFn*) (void*) GetProcAddress((HMODULE) pluginHeader->userData, "Teardown");
-			LOG_IF(!sensorPlugin->teardown, "Failed to find unmanaged Sensor Teardown function", Severity::Warning, break);
+			HMODULE pluginModule = (HMODULE) pluginHeader->userData;
+			sensorPlugin->initialize = (SensorPluginInitializeFn*) (void*) GetProcAddress(pluginModule, "Initialize");
+			sensorPlugin->update     = (SensorPluginUpdateFn*)     (void*) GetProcAddress(pluginModule, "Update");
+			sensorPlugin->teardown   = (SensorPluginTeardownFn*)   (void*) GetProcAddress(pluginModule, "Teardown");
 			success = true;
 			break;
 		}
@@ -241,7 +234,6 @@ PluginLoader_UnloadSensorPlugin(PluginLoaderState* s, PluginHeader* pluginHeader
 			break;
 
 		case PluginLanguage::Native:
-			// TODO: Remove this cast
 			success = FreeLibrary((HMODULE) pluginHeader->userData);
 			LOG_IF(!success, "Failed to unload unmanaged Sensor plugin", Severity::Warning, break);
 			pluginHeader->userData = nullptr;
@@ -281,15 +273,10 @@ PluginLoader_LoadWidgetPlugin(PluginLoaderState* s, PluginHeader* pluginHeader, 
 			LOG_IF(!pluginHeader->userData, "Failed to load unmanaged Widget plugin", Severity::Warning, break);
 			SetDllDirectoryA("");
 
-			// TODO: Remove these casts
-			widgetPlugin->initialize = (WidgetPluginInitializeFn*) (void*) GetProcAddress((HMODULE) pluginHeader->userData, "Initialize");
-			LOG_IF(!widgetPlugin->initialize, "Failed to find unmanaged Widget Initialize function", Severity::Warning, break);
-
-			widgetPlugin->update = (WidgetPluginUpdateFn*) (void*) GetProcAddress((HMODULE) pluginHeader->userData, "Update");
-			LOG_IF(!widgetPlugin->update, "Failed to find unmanaged Widget Update function", Severity::Warning, break);
-
-			widgetPlugin->teardown = (WidgetPluginTeardownFn*) (void*) GetProcAddress((HMODULE) pluginHeader->userData, "Teardown");
-			LOG_IF(!widgetPlugin->teardown, "Failed to find unmanaged Widget Teardown function", Severity::Warning, break);
+			HMODULE pluginModule = (HMODULE) pluginHeader->userData;
+			widgetPlugin->initialize = (WidgetPluginInitializeFn*) (void*) GetProcAddress(pluginModule, "Initialize");
+			widgetPlugin->update     = (WidgetPluginUpdateFn*)     (void*) GetProcAddress(pluginModule, "Update");
+			widgetPlugin->teardown   = (WidgetPluginTeardownFn*)   (void*) GetProcAddress(pluginModule, "Teardown");
 			success = true;
 			break;
 		}
@@ -320,7 +307,6 @@ PluginLoader_UnloadWidgetPlugin(PluginLoaderState* s, PluginHeader* pluginHeader
 			break;
 
 		case PluginLanguage::Native:
-			// TODO: Remove this cast
 			success = FreeLibrary((HMODULE) pluginHeader->userData);
 			LOG_IF(!success, "Failed to unload unmanaged Widget plugin", Severity::Warning, break);
 			pluginHeader->userData = nullptr;

@@ -133,7 +133,6 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 		return true;
 	}
 
-	private:
 	LHMPluginLoader^
 	GetDomainResidentLoader (PluginHeader* pluginHeader)
 	{

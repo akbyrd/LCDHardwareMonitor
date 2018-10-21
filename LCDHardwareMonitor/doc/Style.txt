@@ -97,6 +97,12 @@ Style Notes
 
 - Prefer plain old data and functions over objects.
 
-- Don't include header files from other header files.
+- Don't include header files from other header files. Exception: platform
+  specific includes should be in platform specific headers such as
+  pluginloader_win32.
+
+- Indent preprocessor directives and access specifiers (public: and private:).
+  This is purely because the folding in VS Code is garbage and based on
+  indentation instead of language semantics.
 
 - Namespaces?
