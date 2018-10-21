@@ -1,19 +1,8 @@
 Next
-	Rendering!
-		Next: set constant buffer from plugin (then use application memory arena)
+	Cleanup Pass
+		Allocate constant buffers from a simulation owned arena
 		Implement materials
-		Can plugins share shaders? (maybe not)
-		Runtime shader compilation
-		Shader hot-reloading
-		Should plugins get a raw pointer to D3D instead of having an abstracted API?
-
-	API cleanup
-		Probably have plugins fill a struct full of function pointers
-
-	Drop 'Plugin' from plugin file names
-
-	Implement plugin API
-		Implement 'services' (mainly logging)
+		API: Probably have plugins fill a struct full of function pointers
 		Can we typecheck plugin functions by making the plugin assign function
 		pointers somewhere? (Can probably do this in a header since we know the
 		function names). Actually, maybe this is the right way to get plugin
@@ -21,12 +10,35 @@ Next
 		function, then ask the plugin to fill in a bunch of function pointers, we
 		1) Get better type safety since they'll have to match the function pointer
 		definition. 2) Reduce the amount of boilerplate on the application side.
-		Questions
-			How will managed code use native services and api? (probably dllimport)
-			Would it be better to hide Context inside SimulationState so plugins
-			don't have to worry about it?
-			Do we need to support people using objects in plugins (e.g do we need to
-			give dtors an opportunity to run?)
+		// TODO: Plugin name in errors
+		// TODO: Ensure this is removed from the list in partial initialization conditions
+		// TODO: Widgets will be referencing these sensors.
+		// TODO: Matrix type?
+		// TODO: Assert that the ref equals expected value
+		// TODO: Unsigned vector type
+		// TODO: Assert alignment in API
+		// TODO: Assert size in API
+		// TODO: How do we get this? (Do the UV calculation in CPU, I think)
+		// TODO: I don't think drawing belongs in update
+		Support constant buffers of multiple scopes
+		Move constant buffers to shared headers
+		Stick PSConstants in BarWidget
+		It's time to figure out what happens when memory allocations fail
+		Support VS Code
+
+	Design Pass
+		Can plugins share shaders? (maybe not)
+		Should plugins get a raw pointer to D3D instead of having an abstracted API?
+		Implement 'services' (mainly logging)
+		How will managed code use native services and api? (probably dllimport)
+		Would it be better to hide Context inside SimulationState so plugins
+		don't have to worry about it?
+		Do we need to support people using objects in plugins (e.g do we need to
+		give dtors an opportunity to run?)
+
+	Rendering!
+		Runtime shader compilation
+		Shader hot-reloading
 
 	Implement OHM plugin
 		Show on the LCD!

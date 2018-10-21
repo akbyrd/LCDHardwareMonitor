@@ -6,7 +6,6 @@
 
 cbuffer cbPerObject
 {
-	// TODO: How do we get this? (Do the UV calculation in CPU, I think)
 	float2 res;
 
 	float4 borderColor;
