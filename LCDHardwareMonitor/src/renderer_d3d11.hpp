@@ -562,6 +562,8 @@ Renderer_LoadVertexShader(RendererState* s, c8* path, List<VertexAttribute> attr
 		SetDebugObjectName(vs.d3dVertexShader, "Vertex Shader");
 
 		// Per-object constant buffer
+		LOG_IF(!IsMultipleOf(cBufDesc.size, 16), "VS constant buffer size is not a multiple of 16", Severity::Error, return VertexShader::Null);
+
 		D3D11_BUFFER_DESC vsConstBuffDes = {};
 		vsConstBuffDes.ByteWidth           = cBufDesc.size;
 		vsConstBuffDes.Usage               = D3D11_USAGE_DYNAMIC;
@@ -675,6 +677,8 @@ Renderer_LoadPixelShader(RendererState* s, c8* path, ConstantBufferDesc constant
 	//if (ps->constantBuffer.desc != ConstantBufferDesc::Null)
 	if (constantBuffer.data)
 	{
+		LOG_IF(!IsMultipleOf(constantBuffer.size, 16), "PS constant buffer size is not a multiple of 16", Severity::Error, return PixelShader::Null);
+
 		ps.constantBuffer.desc = constantBuffer;
 
 		D3D11_BUFFER_DESC psConstBuffDes = {};

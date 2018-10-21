@@ -10,314 +10,371 @@ const r32 r32Max = 3.402823466e+38f;
 const r32 r32Epsilon = 31.192092896e-07f;
 const r32 r32Pi      = 3.141592654f;
 
-
-i32
-Clamp(i32 value, i32 min, i32 max)
+template<typename T, typename U>
+inline b32
+IsMultipleOf (T size, U multiple)
 {
-	if (value < min) value = min;
-	if (value > max) value = max;
-
-	return value;
+	T mod = size % multiple;
+	return mod == 0;
 }
 
-i64
-Clamp(i64 value, i64 min, i64 max)
+template<typename T, typename U>
+inline T
+Min(T lhs, U rhs)
 {
-	if (value < min) value = min;
-	if (value > max) value = max;
-
-	return value;
+	T result = lhs < rhs ? lhs : rhs;
+	return result;
 }
 
-union v2i
+template<typename T, typename U>
+inline T
+Max(T lhs, U rhs)
+{
+	T result = lhs > rhs ? lhs : rhs;
+	return result;
+}
+
+template<typename T, typename U, typename V>
+inline T
+Clamp(T value, U min, V max)
+{
+	T result = value < min ? min
+	         : value > max ? max
+	         : value;
+	return result;
+}
+
+template<typename T>
+union v2t
 {
 	struct
 	{
-		i32 x;
-		i32 y;
+		T x;
+		T y;
 	};
 
 	// Aliases
-	i32 arr[2];
+	T arr[2];
 
-	i32 operator[] (i32 index);
+	T operator[] (i32 index);
 };
 
+using v2  = v2t<r32>;
+using v2r = v2t<r32>;
+using v2i = v2t<i32>;
+using v2u = v2t<u32>;
+
 // Operators
+template<typename T, typename U>
 inline b32
-operator== (v2i lhs, v2i rhs)
+operator== (v2t<T> lhs, v2t<U> rhs)
 {
-	return lhs.x == rhs.x && lhs.y == rhs.y;
+	b32 result = lhs.x == rhs.x && lhs.y == rhs.y;
+	return result;
 }
 
+template<typename T, typename U>
 inline b32
-operator!= (v2i lhs, v2i rhs)
+operator!= (v2t<T> lhs, v2t<U> rhs)
 {
-	return !(lhs.x == rhs.x && lhs.y == rhs.y);
+	b32 result = !(lhs.x == rhs.x && lhs.y == rhs.y);
+	return result;
 }
 
-inline v2i
-operator+ (v2i lhs, v2i rhs)
+template<typename T, typename U>
+inline v2t<T>
+operator+ (v2t<T> lhs, v2t<U> rhs)
 {
-	return {lhs.x + rhs.x, lhs.y + rhs.y};
+	v2t<T> result = { lhs.x + rhs.x, lhs.y + rhs.y };
+	return result;
 }
 
-inline v2i
-operator- (v2i lhs, v2i rhs)
+template<typename T, typename U>
+inline v2t<T>
+operator- (v2t<T> lhs, v2t<U> rhs)
 {
-	return {lhs.x - rhs.x, lhs.y - rhs.y};
+	v2t<T> result = { lhs.x - rhs.x, lhs.y - rhs.y };
+	return result;
 }
 
-inline v2i
-operator* (i32 multiplier, v2i v)
+template<typename T, typename U>
+inline v2t<T>
+operator* (U multiplier, v2t<T> v)
 {
-	return {multiplier * v.x, multiplier * v.y};
+	v2t<T> result = { multiplier * v.x, multiplier * v.y };
+	return result;
 }
 
-inline v2i
-operator/ (v2i v, i32 dividend)
+template<typename T, typename U>
+inline v2t<T>
+operator/ (v2t<T> v, U dividend)
 {
-	return {v.x / dividend, v.y / dividend};
+	v2t<T> result = { v.x / dividend, v.y / dividend };
+	return result;
 }
 
-inline i32
-v2i::operator[] (i32 index)
+template<typename T>
+inline T
+v2t<T>::operator[] (i32 index)
 {
-	return arr[index];
+	T result = arr[index];
+	return result;
 }
 
-inline void
-Clamp(v2i v, v2i maxSize)
+template<typename T, typename U>
+inline v2t<T>
+Min(v2t<T> lhs, v2t<U> rhs)
 {
-	if (v.x > maxSize.x) v.x = maxSize.x;
-	if (v.y > maxSize.y) v.y = maxSize.y;
+	v2t<T> result = { Min(lhs.x, rhs.x), Min(lhs.y, rhs.y) };
+	return result;
 }
 
+template<typename T, typename U>
+inline v2t<T>
+Max(v2t<T> lhs, v2t<U> rhs)
+{
+	v2t<T> result = { Max(lhs.x, rhs.x), Max(lhs.y, rhs.y) };
+	return result;
+}
 
-union v2
+template<typename T, typename U, typename V>
+inline v2t<T>
+Clamp(v2t<T> v, v2t<U> min, v2t<V> max)
+{
+	v2t<T> result = { Clamp(v.x, min.x, max.x), Clamp(v.y, min.y, max.y) };
+	return result;
+}
+
+template<typename T>
+union v3t
 {
 	struct
 	{
-		r32 x;
-		r32 y;
-	};
-
-	// Aliases
-	r32 arr[2];
-
-	r32 operator[] (i32 index);
-};
-
-// Operators
-inline b32
-operator== (v2 lhs, v2 rhs)
-{
-	return lhs.x == rhs.x && lhs.y == rhs.y;
-}
-
-inline b32
-operator!= (v2 lhs, v2 rhs)
-{
-	return !(lhs.x == rhs.x && lhs.y == rhs.y);
-}
-
-inline v2
-operator+ (v2 lhs, v2 rhs)
-{
-	return {lhs.x + rhs.x, lhs.y + rhs.y};
-}
-
-inline v2
-operator- (v2 lhs, v2 rhs)
-{
-	return {lhs.x - rhs.x, lhs.y - rhs.y};
-}
-
-inline v2
-operator* (r32 multiplier, v2 v)
-{
-	return {multiplier * v.x, multiplier * v.y};
-}
-
-inline v2
-operator/ (v2 v, r32 dividend)
-{
-	return {v.x / dividend, v.y / dividend};
-}
-
-inline r32
-v2::operator[] (i32 index)
-{
-	return arr[index];
-}
-
-inline void
-Clamp(v2 v, v2 maxSize)
-{
-	if (v.x > maxSize.x) v.x = maxSize.x;
-	if (v.y > maxSize.y) v.y = maxSize.y;
-}
-
-
-union v3
-{
-	struct
-	{
-		r32 x;
-		r32 y;
-		r32 z;
+		T x;
+		T y;
+		T z;
 	};
 
 	// Aliases
 	struct
 	{
-		r32 r;
-		r32 g;
-		r32 b;
+		T r;
+		T g;
+		T b;
 	};
 	struct
 	{
-		r32 radius;
-		r32 theta;
-		r32 phi;
+		T radius;
+		T theta;
+		T phi;
 	};
-	r32 arr[3];
+	T arr[3];
 
-	r32 operator[] (i32 index);
+	T operator[] (i32 index);
 };
 
+using v3  = v3t<r32>;
+using v3r = v3t<r32>;
+using v3i = v3t<i32>;
+using v3u = v3t<u32>;
+
 // Operators
+template<typename T, typename U>
 inline b32
-operator== (v3 lhs, v3 rhs)
+operator== (v3t<T> lhs, v3t<U> rhs)
 {
-	return lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z;
+	b32 result = lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z;
+	return result;
 }
 
+template<typename T, typename U>
 inline b32
-operator!= (v3 lhs, v3 rhs)
+operator!= (v3t<T> lhs, v3t<U> rhs)
 {
-	return !(lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z);
+	b32 result = !(lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z);
+	return result;
 }
 
-inline v3
-operator+ (v3 lhs, v3 rhs)
+template<typename T, typename U>
+inline v3t<T>
+operator+ (v3t<T> lhs, v3t<U> rhs)
 {
-	return {lhs.x + rhs.x, lhs.y + rhs.y, lhs.z + rhs.z};
+	v3t<T> result = { lhs.x + rhs.x, lhs.y + rhs.y, lhs.z + rhs.z };
+	return result;
 }
 
-inline v3
-operator- (v3 lhs, v3 rhs)
+template<typename T, typename U>
+inline v3t<T>
+operator- (v3t<T> lhs, v3t<U> rhs)
 {
-	return {lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z};
+	v3t<T> result = { lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z };
+	return result;
 }
 
-inline v3
-operator* (r32 multiplier, v3 v)
+template<typename T, typename U>
+inline v3t<T>
+operator* (U multiplier, v3t<T> v)
 {
-	return {multiplier * v.x, multiplier * v.y, multiplier * v.z};
+	v3t<T> result = { multiplier * v.x, multiplier * v.y, multiplier * v.z };
+	return result;
 }
 
-inline v3
-operator/ (v3 v, r32 dividend)
+template<typename T, typename U>
+inline v3t<T>
+operator/ (v3t<T> v, U dividend)
 {
-	return {v.x / dividend, v.y / dividend, v.z / dividend};
+	v3t<T> result = { v.x / dividend, v.y / dividend, v.z / dividend };
+	return result;
 }
 
-inline r32
-v3::operator[] (i32 index)
+template<typename T>
+inline T
+v3t<T>::operator[] (i32 index)
 {
-	return arr[index];
+	T result = arr[index];
+	return result;
 }
 
-inline void
-Clamp(v3 v, v3 maxSize)
+template<typename T, typename U>
+inline v3t<T>
+Min(v3t<T> lhs, v3t<U> rhs)
 {
-	if (v.x > maxSize.x) v.x = maxSize.x;
-	if (v.y > maxSize.y) v.y = maxSize.y;
-	if (v.z > maxSize.z) v.y = maxSize.z;
+	v3t<T> result = { Min(lhs.x, rhs.x), Min(lhs.y, rhs.y), Min(lhs.z, rhs.z) };
+	return result;
+}
+
+template<typename T, typename U>
+inline v3t<T>
+Max(v3t<T> lhs, v3t<U> rhs)
+{
+	v3t<T> result = { Max(lhs.x, rhs.x), Max(lhs.y, rhs.y), Max(lhs.z, rhs.z) };
+	return result;
+}
+
+template<typename T, typename U, typename V>
+inline v3t<T>
+Clamp(v3t<T> v, v3t<U> min, v3t<V> max)
+{
+	v3t<T> result = { Clamp(v.x, min.x, max.x), Clamp(v.y, min.y, max.y), Clamp(v.z, min.z, max.z) };
+	return result;
 }
 
 
-union v4
+template<typename T>
+union v4t
 {
 	struct
 	{
-		r32 x;
-		r32 y;
-		r32 z;
-		r32 w;
+		T x;
+		T y;
+		T z;
+		T w;
 	};
 
 	// Aliases
 	struct
 	{
-		r32 r;
-		r32 g;
-		r32 b;
-		r32 a;
+		T r;
+		T g;
+		T b;
+		T a;
 	};
-	r32 arr[4];
+	T arr[4];
 
-	r32 operator[] (i32 index);
+	T operator[] (i32 index);
 };
 
+using v4  = v4t<r32>;
+using v4r = v4t<r32>;
+using v4i = v4t<i32>;
+using v4u = v4t<u32>;
+
 // Operators
+template<typename T, typename U>
 inline b32
-operator== (v4 lhs, v4 rhs)
+operator== (v4t<T> lhs, v4t<U> rhs)
 {
-	return lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z && lhs.w == rhs.w;
+	b32 result = lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z && lhs.w == rhs.w;
+	return result;
 }
 
+template<typename T, typename U>
 inline b32
-operator!= (v4 lhs, v4 rhs)
+operator!= (v4t<T> lhs, v4t<U> rhs)
 {
-	return !(lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z && lhs.w == rhs.w);
+	v4t<T> result = !(lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z && lhs.w == rhs.w);
+	return result;
+}
+
+template<typename T, typename U>
+inline v4t<T>
+operator+ (v4t<T> lhs, v4t<U> rhs)
+{
+	v4t<T> result = { lhs.x + rhs.x, lhs.y + rhs.y, lhs.z + rhs.z, lhs.w + rhs.w };
+	return result;
+}
+
+template<typename T, typename U>
+inline v4t<T>
+operator- (v4t<T> lhs, v4t<U> rhs)
+{
+	v4t<T> result = { lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z, lhs.w - rhs.w };
+	return result;
+}
+
+template<typename T, typename U>
+inline v4t<T>
+operator* (U multiplier, v4t<T> v)
+{
+	v4t<T> result = { multiplier * v.x, multiplier * v.y, multiplier * v.z, multiplier * v.w };
+	return result;
+}
+
+template<typename T, typename U>
+inline v4t<T>
+operator/ (v4t<T> v, U dividend)
+{
+	v4t<T> result = { v.x / dividend, v.y / dividend, v.z / dividend, v.w / dividend };
+	return result;
+}
+
+template<typename T>
+inline T
+v4t<T>::operator[] (i32 index)
+{
+	T result = arr[index];
+	return result;
+}
+
+template<typename T, typename U>
+inline v4t<T>
+Min(v4t<T> lhs, v4t<U> rhs)
+{
+	v4t<T> result = { Min(lhs.x, rhs.x), Min(lhs.y, rhs.y), Min(lhs.z, rhs.z), Min(lhs.w, rhs.w) };
+	return result;
+}
+
+template<typename T, typename U>
+inline v4t<T>
+Max(v4t<T> lhs, v4t<U> rhs)
+{
+	v4t<T> result = { Max(lhs.x, rhs.x), Max(lhs.y, rhs.y), Max(lhs.z, rhs.z), Max(lhs.w, rhs.w) };
+	return result;
+}
+
+template<typename T, typename U, typename V>
+inline v4t<T>
+Clamp(v4t<T> v, v4t<U> min, v4t<V> max)
+{
+	v4t<T> result = { Clamp(v.x, min.x, max.x), Clamp(v.y, min.y, max.y), Clamp(v.z, min.z, max.z), Clamp(v.w, min.w, max.w) };
+	return result;
 }
 
 inline v4
-operator+ (v4 lhs, v4 rhs)
-{
-	return {lhs.x + rhs.x, lhs.y + rhs.y, lhs.z + rhs.z, lhs.w + rhs.w};
-}
-
-inline v4
-operator- (v4 lhs, v4 rhs)
-{
-	return {lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z, lhs.w - rhs.w};
-}
-
-inline v4
-operator* (r32 multiplier, v4 v)
-{
-	return {multiplier * v.x, multiplier * v.y, multiplier * v.z, multiplier * v.w};
-}
-
-inline v4
-operator/ (v4 v, r32 dividend)
-{
-	return {v.x / dividend, v.y / dividend, v.z / dividend, v.w / dividend};
-}
-
-inline r32
-v4::operator[] (i32 index)
-{
-	return arr[index];
-}
-
-
-inline void
-Clamp(v4 v, v4 maxSize)
-{
-	if (v.x > maxSize.x) v.x = maxSize.x;
-	if (v.y > maxSize.y) v.y = maxSize.y;
-	if (v.z > maxSize.z) v.z = maxSize.z;
-	if (v.w > maxSize.w) v.w = maxSize.w;
-}
-
-v4
 Color32(u8 r, u8 g, u8 b, u8 a)
 {
-	return { r / 255.0f, g / 255.0f, b / 255.0f, a / 255.0f };
+	v4 result = { r / 255.0f, g / 255.0f, b / 255.0f, a / 255.0f };
+	return result;
 }
 
 #endif

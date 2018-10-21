@@ -2,8 +2,7 @@
 
 struct BarWidget
 {
-	// TODO: Unsigned vector type
-	v2i size;
+	v2u size;
 };
 
 // TODO: Standardize plugin functions
@@ -14,11 +13,9 @@ InitializeBarWidget(Widget* widget)
 	barWidget->size = { 240, 12 };
 }
 
-// TODO: Assert alignment in API
-// TODO: Assert size in API
-__declspec(align(16))
-#pragma pack(push)
-#pragma pack(4)
+// NOTE: I don't *think* the CPU side struct actually needs to be aligned. We
+// memcpy to a GPU buffer and that will be aligned by the API.
+#pragma pack(push, 4)
 struct PSConstants
 {
 	// TODO: How do we get this? (Do the UV calculation in CPU, I think)

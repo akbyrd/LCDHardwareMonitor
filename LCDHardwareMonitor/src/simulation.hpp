@@ -344,16 +344,16 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 			ConstantBufferDesc cBufferDesc = {};
 			cBufferDesc.size = 4*4*sizeof(float);
 
-			// TODO: Assert that the ref equals expected value
 			VertexShader vs = Renderer_LoadVertexShader(s->renderer, "Shaders/Basic Vertex Shader.cso", vsAttributes, cBufferDesc);
 			LOG_IF(!vs, "Failed to load default vertex shader", Severity::Error, return false);
+			Assert(vs == StandardVertexShader::Debug);
 		}
 
 		// Pixel shader
 		{
-			// TODO: Assert that the ref equals expected value
 			PixelShader ps = Renderer_LoadPixelShader(s->renderer, "Shaders/Basic Pixel Shader.cso", ConstantBufferDesc::Null);
 			LOG_IF(!ps, "Failed to load default pixel shader", Severity::Error, return false);
+			Assert(ps == StandardPixelShader::Debug);
 		}
 	}
 
