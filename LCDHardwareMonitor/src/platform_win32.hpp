@@ -17,7 +17,7 @@ Platform_Log(c8* message, Severity severity, c8* file, i32 line, c8* function)
 		Platform_Print(function);
 		Platform_Print(" - ");
 		Platform_Print(message);
-		Platform_Print("\n\t\t");
+		Platform_Print("\n\t");
 		Platform_Print(file);
 		Platform_Print("\n");
 		return;
@@ -44,26 +44,31 @@ LogFormatMessage(c8* message, Severity severity, u32 messageID, c8* file, i32 li
 		nullptr
 	);
 	defer { LocalFree(windowsMessage); };
+
 	if (uResult == 0)
 	{
 		Platform_Print("FormatMessageA failed. Original message:\n\t");
 		Platform_Print(function);
 		Platform_Print(" - ");
 		Platform_Print(message);
-		Platform_Print("\n\t\t");
+		Platform_Print("\n\t");
 		Platform_Print(file);
 		Platform_Print("\n");
 		return;
 	}
 
+	//Strip trailing new line
+	u32 length = uResult;
+	while (length > 0 && (windowsMessage[length - 1] == '\n' || windowsMessage[length - 1] == '\r'))
+		windowsMessage[(length--) - 1] = '\0';
+
 	String fullMessage = {};
 	b32 success = String_Format(
 		fullMessage,
-		"%s: %s - %s\n\t%s(%i)\n",
-		message,
-		windowsMessage,
+		"%s - %s: %s\n\t%s(%i)\n",
 		function,
 		message,
+		windowsMessage,
 		file,
 		line
 	);
@@ -75,7 +80,7 @@ LogFormatMessage(c8* message, Severity severity, u32 messageID, c8* file, i32 li
 		Platform_Print(message);
 		Platform_Print(": ");
 		Platform_Print(windowsMessage);
-		Platform_Print("\n\t\t");
+		Platform_Print("\n\t");
 		Platform_Print(file);
 		Platform_Print("\n");
 		return;
