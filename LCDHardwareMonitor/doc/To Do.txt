@@ -1,5 +1,4 @@
 Next
-	Support frame debugger when preview window isn't open
 	Finish scope guard
 	Memory pools
 		Replace array stack allocations with Lists out of a pool.

@@ -18,9 +18,6 @@
 // TODO: Remove window clamping
 // TODO: Support x86 and x64
 // TODO: Reduce link dependencies
-// TODO: Probably want to use this as some point so frame debugger works without
-// the preview window
-// https://msdn.microsoft.com/en-us/library/hh780905.aspx
 
 static const i32 togglePreviewWindowID = 0;
 

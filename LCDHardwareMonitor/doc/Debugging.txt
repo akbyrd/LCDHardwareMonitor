@@ -1,0 +1,12 @@
+Visual Studio Graphics Debugging
+	The graphics debugger will not work properly if you don't have a swap chain and call present.
+	Capturing a frame will hang indefinitely. The solution appears to be capturing frames
+	programmatically: https://msdn.microsoft.com/en-us/library/hh780905.aspx. Unfortunately, this
+	doesn't allow you to use the Graphics Debugger GUI to capture. You have to capture from code and
+	load the log in the GUI. The gist of the capture process is:
+		#define DONT_SAVE_VSGLOG_TO_TEMP
+		#include <vsgcapture.h>
+		VsgDbgInit("relpath/to/some.vsglog");
+		VsgDbgEndCapture();
+		VsgDbgBeginCapture();
+		VsgDbgUnInit();

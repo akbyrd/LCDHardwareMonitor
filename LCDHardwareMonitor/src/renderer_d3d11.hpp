@@ -310,7 +310,7 @@ Renderer_Initialize(RendererState* s, V2i renderSize)
 		SetDebugObjectName(s->d3dContext, "Device Context");
 
 		// Check feature level
-		if ((featureLevel & D3D_FEATURE_LEVEL_11_0) != D3D_FEATURE_LEVEL_11_0)
+		if (!HAS_FLAG(featureLevel, D3D_FEATURE_LEVEL_11_0))
 		{
 			LOG("Created device does not support D3D 11", Severity::Error);
 			return false;
