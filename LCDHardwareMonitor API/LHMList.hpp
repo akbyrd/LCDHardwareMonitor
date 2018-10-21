@@ -118,6 +118,18 @@ List_Append(List<T>& list)
 
 template<typename T>
 inline b32
+List_AppendRange(List<T>& list, List<T> items)
+{
+	if (!List_Reserve(list, list.length + items.length))
+		return false;
+
+	memcpy(&list.data[list.length], items.data, items.length);
+
+	return true;
+}
+
+template<typename T>
+inline b32
 List_Contains(List<T>& list, T* item)
 {
 	if (list.length == 0)
