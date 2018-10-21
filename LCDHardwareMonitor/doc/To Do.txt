@@ -1,6 +1,5 @@
 Next
 	Try implementing a list iterator
-	Would it be better to hide Context inside SimulationState so plugins don't have to worry about it?
 
 	Implement plugin API
 		Implement 'services' (mainly logging)
@@ -8,7 +7,8 @@ Next
 		(Can probably do this in a header since we know the function names)
 		Questions
 			How will managed code use native services and api? (probably dllimport)
-			Can we simplify the whole business?
+			Would it be better to hide Context inside SimulationState so plugins don't have to worry about
+			it?
 		Quirks
 			Have to pass a context parameter that plugins have to forward along.
 

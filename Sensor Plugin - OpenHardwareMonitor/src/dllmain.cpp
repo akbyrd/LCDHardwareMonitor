@@ -16,7 +16,7 @@ using namespace OpenHardwareMonitor::Hardware;
 template<typename T>
 using SList = System::Collections::Generic::List<T>;
 
-public ref struct State : ISensorPlugin
+public ref struct State : ISensorPlugin, ISensorInitialize, ISensorUpdate, ISensorTeardown
 {
 	Computer^          computer;
 	SList<ISensor^>^   activeSensors;

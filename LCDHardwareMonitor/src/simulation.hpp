@@ -236,6 +236,9 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 	List_Reserve(s->widgetPlugins, 8);
 	LOG_IF(!s->widgetPlugins, "Failed to allocate widget plugins list", Severity::Error, return false);
 
+	List_Reserve(s->widgetDefinitions, 8);
+	LOG_IF(!s->widgetDefinitions, "Failed to allocate widget definitions list", Severity::Error, return false);
+
 	//List_Reserve(s->widgets, 8);
 	//LOG_IF(!s->widgets, "Failed to allocate widgets list", Severity::Error, return false);
 
@@ -265,6 +268,7 @@ Simulation_Teardown(SimulationState* s)
 	// case.
 
 	//List_Free(s->widgets);
+	List_Free(s->widgetDefinitions);
 
 	for (u32 i = 0; i < s->widgetPlugins.length; i++)
 		UnloadWidgetPlugin(s, &s->widgetPlugins[i]);
