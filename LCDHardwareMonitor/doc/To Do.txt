@@ -33,7 +33,6 @@ Sensor Plugins
 
 
 Refactoring
-	Rename LHMMSVC to LHMCompiler and leave room for other compilers
 	Rewrite List<T> (and rename to Array<T>)
 	Lower case vector names
 	Try out range based for loops

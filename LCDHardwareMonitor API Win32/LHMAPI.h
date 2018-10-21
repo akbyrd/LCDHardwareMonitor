@@ -1,6 +1,6 @@
 // TODO: Eventually these should be reorganized into public, private, and utility headers.
 
-#include "LHMMSVC.h"
+#include "LHMCompiler.h"
 #include "LHMCommon.h"
 
 // Utility
