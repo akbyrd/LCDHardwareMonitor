@@ -9,9 +9,13 @@ using namespace System;
 using namespace System::Reflection;
 using namespace System::Runtime::InteropServices;
 
+// NOTE: Cross domain function calls average 200ns with the delegate pattern.
+// Try playing with security settings if optimizing this
+
 // TODO: *Really* want to default to non-visible so TLBs aren't bloated to
 // hell, but I can't find a way to allow native types in as parameters to
 // ILHMPluginLoader functions without setting the entire assembly to visible.
+// And currently I prefer the bloat to passing void* parameters and casting.
 //[assembly:ComVisible(false)];
 
 [ComVisible(true)]
@@ -181,21 +185,23 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	SensorPlugin_CLR sensorPluginCLR;
 	WidgetPlugin_CLR widgetPluginCLR;
 
-	b32
-	InitializeSensorPlugin(PluginHeader* pluginHeader, SensorPlugin* sensorPlugin)
+	generic <typename T>
+	static b32
+	LoadAssemblyAndInstantiateType (c8* _fileName, T% instance)
 	{
-		auto name = gcnew String(pluginHeader->name);
+		// NOTE: T^ and T^% map back to plain T
+		String^ typeName = T::typeid->FullName;
+		String^ fileName = gcnew String(_fileName);
 
-		ISensorPlugin^ pluginInstance = nullptr;
-		auto assembly = Assembly::Load(name);
+		auto assembly = Assembly::Load(fileName);
 		for each (Type^ type in assembly->GetExportedTypes())
 		{
-			bool isPlugin = type->GetInterface(ISensorPlugin::typeid->FullName) != nullptr;
+			bool isPlugin = type->GetInterface(typeName) != nullptr;
 			if (isPlugin)
 			{
-				if (!pluginInstance)
+				if (!instance)
 				{
-					pluginInstance = (ISensorPlugin^) Activator::CreateInstance(type);
+					instance = (T) Activator::CreateInstance(type);
 				}
 				else
 				{
@@ -204,7 +210,20 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 			}
 		}
 		// TODO: Logging
-		//LOG_IF(!pluginInstance, "Failed to find a managed sensor plugin class", Severity::Warning, return false);
+		//LOG_IF(!instance, "Failed to find a managed sensor plugin class", Severity::Warning, return false);
+
+		return true;
+	}
+
+	b32
+	InitializeSensorPlugin(PluginHeader* pluginHeader, SensorPlugin* sensorPlugin)
+	{
+		b32 success;
+
+		ISensorPlugin^ pluginInstance = nullptr;
+		success = LoadAssemblyAndInstantiateType(pluginHeader->name, pluginInstance);
+		if (!success) return false;
+
 		sensorPluginCLR.pluginInstance     = pluginInstance;
 		sensorPluginCLR.initializeDelegate = gcnew SensorPlugin_CLR::InitializeDelegate(pluginInstance, &ISensorPlugin::Initialize);
 		sensorPluginCLR.updateDelegate     = gcnew SensorPlugin_CLR::UpdateDelegate    (pluginInstance, &ISensorPlugin::Update);
@@ -233,27 +252,12 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	b32
 	InitializeWidgetPlugin(PluginHeader* pluginHeader, WidgetPlugin* widgetPlugin)
 	{
-		auto name = gcnew String(pluginHeader->name);
+		b32 success;
 
 		IWidgetPlugin^ pluginInstance = nullptr;
-		auto assembly = Assembly::Load(name);
-		for each (Type^ type in assembly->GetExportedTypes())
-		{
-			bool isPlugin = type->GetInterface(IWidgetPlugin::typeid->FullName) != nullptr;
-			if (isPlugin)
-			{
-				if (!pluginInstance)
-				{
-					pluginInstance = (IWidgetPlugin^) Activator::CreateInstance(type);
-				}
-				else
-				{
-					// TODO: Warning: multiple plugins in same file
-				}
-			}
-		}
-		// TODO: Logging
-		//LOG_IF(!pluginInstance, "Failed to find a managed sensor plugin class", Severity::Warning, return false);
+		success = LoadAssemblyAndInstantiateType(pluginHeader->name, pluginInstance);
+		if (!success) return false;
+
 		widgetPluginCLR.pluginInstance     = pluginInstance;
 		widgetPluginCLR.initializeDelegate = gcnew WidgetPlugin_CLR::InitializeDelegate(pluginInstance, &IWidgetPlugin::Initialize);
 		widgetPluginCLR.updateDelegate     = gcnew WidgetPlugin_CLR::UpdateDelegate    (pluginInstance, &IWidgetPlugin::Update);
@@ -279,6 +283,3 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 		return true;
 	}
 };
-
-// NOTE: Cross domain function calls average 200ns with the delegate pattern.
-// Try playing with security settings if optimizing this
