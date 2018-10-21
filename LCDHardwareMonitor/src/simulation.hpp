@@ -15,6 +15,7 @@ struct PluginContext
 	SimulationState* s;
 	PluginHeaderRef  ref;
 	b32              success;
+	DrawCall         onFailDC;
 };
 
 static PluginHeader*
@@ -45,11 +46,48 @@ CreatePluginHeader(SimulationState* s, c8* directory, c8* name, PluginKind kind)
 static PluginHeader*
 GetPluginHeader(SimulationState* s, PluginHeaderRef ref)
 {
+	// NOTE: Why did I even implement this? Ref is an index!
+	#if false
 	for (u32 i = 0; i < s->pluginHeaders.length; i++)
 	{
 		PluginHeader* pluginHeader = &s->pluginHeaders[i];
 		if (pluginHeader->ref == ref)
 			return pluginHeader;
+	}
+
+	// Unreachable
+	Assert(false);
+	return nullptr;
+	#else
+	PluginHeader* pluginHeader = &s->pluginHeaders[ref];
+	Assert(pluginHeader->ref == ref);
+	return pluginHeader;
+	#endif
+}
+
+static SensorPlugin*
+GetSensorPlugin(SimulationState* s, PluginHeaderRef ref)
+{
+	for (u32 i = 0; i < s->sensorPlugins.length; i++)
+	{
+		SensorPlugin* sensorPlugin = &s->sensorPlugins[i];
+		if (sensorPlugin->pluginHeaderRef == ref)
+			return sensorPlugin;
+	}
+
+	// Unreachable
+	Assert(false);
+	return nullptr;
+}
+
+static WidgetPlugin*
+GetWidgetPlugin(SimulationState* s, PluginHeaderRef ref)
+{
+	for (u32 i = 0; i < s->widgetPlugins.length; i++)
+	{
+		WidgetPlugin* widgetPlugin = &s->widgetPlugins[i];
+		if (widgetPlugin->pluginHeaderRef == ref)
+			return widgetPlugin;
 	}
 
 	// Unreachable
@@ -84,7 +122,7 @@ LoadSensorPlugin(SimulationState* s, c8* directory, c8* name)
 		context.success = true;
 
 		SensorPlugin::InitializeAPI api = {};
-		success = sensorPlugin->initialize(&context, &api);
+		success = sensorPlugin->initialize(&context, api);
 		success &= context.success;
 		LOG_IF(!success, "Failed to initialize sensor plugin", Severity::Warning, return nullptr);
 	}
@@ -110,7 +148,7 @@ UnloadSensorPlugin(SimulationState* s, SensorPlugin* sensorPlugin)
 		context.success = true;
 
 		SensorPlugin::TeardownAPI api = {};
-		sensorPlugin->teardown(&context, &api);
+		sensorPlugin->teardown(&context, api);
 	}
 
 	b32 success;
@@ -127,20 +165,19 @@ UnloadSensorPlugin(SimulationState* s, SensorPlugin* sensorPlugin)
 	return true;
 }
 
-static b32
+static void
 AddWidgetDefinition(PluginContext* context, WidgetDefinition* widgetDef)
 {
-	if (!context->success) return false;
+	if (!context->success) return;
 	context->success = false;
 
 	// TODO: Use empty slots
 	widgetDef = List_Append(context->s->widgetDefinitions, *widgetDef);
-	LOG_IF(!widgetDef, "Failed to allocate space for widget definition", Severity::Warning, return false);
+	LOG_IF(!widgetDef, "Failed to allocate space for widget definition", Severity::Warning, return);
 
 	widgetDef->ref = context->ref;
 
 	context->success = true;
-	return true;
 }
 
 static void
@@ -178,7 +215,7 @@ LoadWidgetPlugin(SimulationState* s, c8* directory, c8* name)
 		WidgetPlugin::InitializeAPI api = {};
 		api.AddWidgetDefinition = AddWidgetDefinition;
 
-		success = widgetPlugin->initialize(&context, &api);
+		success = widgetPlugin->initialize(&context, api);
 		success &= context.success;
 		if (!success)
 		{
@@ -212,7 +249,7 @@ UnloadWidgetPlugin(SimulationState* s, WidgetPlugin* widgetPlugin)
 	if (widgetPlugin->teardown)
 	{
 		WidgetPlugin::TeardownAPI api = {};
-		widgetPlugin->teardown(&context, &api);
+		widgetPlugin->teardown(&context, api);
 	}
 
 	RemoveWidgetDefinitions(&context);
@@ -234,8 +271,10 @@ CreateWidget(WidgetDefinition* widgetDef)
 {
 	u32 widgetOffset = widgetDef->instances.length;
 	u32 size = sizeof(Widget) + widgetDef->size;
+
 	b32 success = List_Reserve(widgetDef->instances, widgetDef->instances.length + size);
 	LOG_IF(!success, "Failed to allocate widget", Severity::Error, return nullptr);
+	widgetDef->instances.length += size;
 
 	Widget* widget = (Widget*) &widgetDef->instances[widgetOffset];
 	return widget;
@@ -285,6 +324,92 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 	return true;
 }
 
+static void
+PushDrawCall(PluginContext* context, DrawCall dc)
+{
+	if (!context->success) return;
+	context->success = false;
+
+	DrawCall* drawCall = Renderer_PushDrawCall(context->s->renderer);
+	LOG_IF(!drawCall, "Failed to allocate space for draw call", Severity::Warning, return);
+	*drawCall = dc;
+
+	context->success = true;
+}
+
+void
+Simulation_Update(SimulationState* s)
+{
+	PluginContext context = {};
+	context.s = s;
+
+	// TODO: Only update plugins that are actually being used
+
+	// Update Sensors
+	{
+		SensorPlugin::UpdateAPI api = {};
+		for (u32 i = 0; i < s->sensorPlugins.length; i++)
+		{
+			SensorPlugin* sensorPlugin = &s->sensorPlugins[i];
+
+			// TODO: try/catch?
+			if (sensorPlugin->update)
+			{
+				context.ref     = sensorPlugin->pluginHeaderRef;
+				context.success = true;
+				sensorPlugin->update(&context, api);
+			}
+		}
+	}
+
+	// Update Widgets
+	#if false
+	{
+		WidgetPlugin::UpdateAPI api = {};
+		for (u32 i = 0; i < s->widgetPlugins.length; i++)
+		{
+			WidgetPlugin* widgetPlugin = &s->widgetPlugins[i];
+
+			// TODO: try/catch?
+			if (widgetPlugin->update)
+			{
+				context.ref     = widgetPlugin->pluginHeaderRef;
+				context.success = true;
+				widgetPlugin->update(&context, api);
+			}
+		}
+	}
+	#else
+	{
+		WidgetPlugin::UpdateAPI api = {};
+		api.PushDrawCall = PushDrawCall;
+
+		for (u32 i = 0; i < s->widgetDefinitions.length; i++)
+		{
+			WidgetDefinition* widgetDef = &s->widgetDefinitions[i];
+
+			if (widgetDef->instances.length > 0)
+			{
+				WidgetPlugin* widgetPlugin = GetWidgetPlugin(s, widgetDef->ref);
+
+				// DEBUG: Remove this once we have proper API to draw widgets
+				Assert(widgetPlugin->update);
+
+				// TODO: try/catch?
+				if (widgetPlugin->update)
+				{
+					context.ref     = widgetPlugin->pluginHeaderRef;
+					context.success = true;
+
+					api.widgetDefinition = widgetDef;
+					widgetPlugin->update(&context, api);
+				}
+			}
+		}
+	}
+	#endif
+}
+
 void
 Simulation_Teardown(SimulationState* s)
 {
@@ -308,53 +433,4 @@ Simulation_Teardown(SimulationState* s)
 	List_Free(s->pluginHeaders);
 
 	PluginLoader_Teardown(s->pluginLoader);
-}
-
-void
-Simulation_Update(SimulationState* s)
-{
-	PluginContext context = {};
-	context.s = s;
-
-	// TODO: Only update plugins that are actually being used
-
-	// Update Sensors
-	{
-		SensorPlugin::UpdateAPI api = {};
-		for (u32 i = 0; i < s->sensorPlugins.length; i++)
-		{
-			SensorPlugin* sensorPlugin = &s->sensorPlugins[i];
-
-			// TODO: try/catch?
-			if (sensorPlugin->update)
-			{
-				context.ref     = sensorPlugin->pluginHeaderRef;
-				context.success = true;
-				sensorPlugin->update(&context, &api);
-			}
-		}
-	}
-
-	// Update Widgets
-	{
-		WidgetPlugin::UpdateAPI api = {};
-		for (u32 i = 0; i < s->widgetPlugins.length; i++)
-		{
-			WidgetPlugin* widgetPlugin = &s->widgetPlugins[i];
-
-			// TODO: try/catch?
-			if (widgetPlugin->update)
-			{
-				context.ref     = widgetPlugin->pluginHeaderRef;
-				context.success = true;
-				widgetPlugin->update(&context, &api);
-			}
-		}
-	}
-
-	// NOTE: Build a command list of things to draw. Let the renderer handle
-	// sorting and iterating the list. Here, we should just be parameters that go
-	// with the command.
-	//for (u32 i = 0; i < s->widgets.length; i++)
-	//	;
 }

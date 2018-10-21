@@ -34,27 +34,34 @@ template <typename T>
 inline static T*
 GetWidgetData(Widget* widget)
 {
-	T* widgetData = (T*) (widget + sizeof(*widget));
+	T* widgetData = (T*) (widget + 1);
 	return widgetData;
 }
 
-// TODO: The API structs need to be part of the public API, but the data does not.
+// TODO: The API structs need to be part of the public API, but the data does
+// not.
 struct WidgetPlugin
 {
 	struct InitializeAPI
 	{
-		using AddWidgetDefinitionFn = b32(PluginContext*, WidgetDefinition*);
+		using AddWidgetDefinitionFn = void(PluginContext*, WidgetDefinition*);
 
 		AddWidgetDefinitionFn* AddWidgetDefinition;
 	};
 
-	struct UpdateAPI   {};
+	struct UpdateAPI
+	{
+		using PushDrawCallFn = void(PluginContext*, DrawCall);
+
+		WidgetDefinition* widgetDefinition;
+		PushDrawCallFn*   PushDrawCall;
+	};
+
 	struct TeardownAPI {};
 
-	// TODO: Should probably pass api by value
-	using InitializeFn = b32 (PluginContext* context, InitializeAPI* api);
-	using UpdateFn     = void(PluginContext* context, UpdateAPI*     api);
-	using TeardownFn   = void(PluginContext* context, TeardownAPI*   api);
+	using InitializeFn = b32 (PluginContext* context, InitializeAPI api);
+	using UpdateFn     = void(PluginContext* context, UpdateAPI     api);
+	using TeardownFn   = void(PluginContext* context, TeardownAPI   api);
 
 	PluginHeaderRef pluginHeaderRef;
 	InitializeFn*   initialize;

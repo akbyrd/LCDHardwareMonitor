@@ -48,6 +48,35 @@ struct MeshData
 	XMFLOAT4X4  world   = {};
 };
 
+enum struct VertexAttributeSemantic
+{
+	None,
+	Position,
+	Color,
+	Count
+};
+
+enum struct VertexAttributeFormat
+{
+	None,
+	Float3,
+	Float4,
+	Count
+};
+
+struct VertexAttribute
+{
+	VertexAttributeSemantic semantic;
+	VertexAttributeFormat   format;
+};
+
+struct ConstantBufferDesc
+{
+	//b32   dirty;
+	u32   size;
+	//void* data;
+};
+
 struct Vertex
 {
 	XMFLOAT3 position;
@@ -60,7 +89,7 @@ struct InputLayout
 	ComPtr<ID3D11InputLayout> d3dInputLayout = nullptr;
 };
 
-struct VertexShader
+struct VertexShaderData
 {
 	String                     name;
 	// TODO: Needs to be ref counted
@@ -89,7 +118,7 @@ struct RendererState
 	ComPtr<IDirect3DTexture9>      d3d9RenderTexture           = nullptr;
 	ComPtr<IDirect3DSurface9>      d3d9RenderSurface0          = nullptr;
 
-	List<VertexShader> vertexShaders       = {};
+	List<VertexShaderData> vertexShaders   = {};
 	List<InputLayout>  inputLayouts        = {};
 
 	XMFLOAT4X4         proj                = {};
@@ -98,9 +127,10 @@ struct RendererState
 	u32                multisampleCount    = 1;
 	u32                qualityLevelCount   = 0;
 
-	MeshData           meshes[Mesh::Count] = {};
+	List<MeshData>     meshes              = {};
 	b32                isWireframeEnabled  = false;
 
+	// TODO: List!
 	DrawCall           drawCalls[32]       = {};
 	u32                drawCallCount       = 0;
 };
@@ -144,7 +174,8 @@ SetDebugObjectName(const ComPtr<IDXGIObject> &resource, const c8 (&name)[TNameLe
 }
 
 // TODO: Should a failed load mark the file as bad?
-static VertexShader*
+// TODO: Perhaps a read-only List would be a good idea.
+static VertexShaderData*
 LoadVertexShader(RendererState* s, c8* path, List<VertexAttribute> attributes, ConstantBufferDesc cBufDesc)
 {
 	HRESULT hr;
@@ -161,7 +192,7 @@ LoadVertexShader(RendererState* s, c8* path, List<VertexAttribute> attributes, C
 	// TODO: Copy name
 	// TODO: Find a way to include shader name in errors
 	// Vertex Shader
-	VertexShader vs = {};
+	VertexShaderData vs = {};
 	defer {
 		vs.d3dConstantBuffer.Reset();
 		vs.d3dVertexShader.Reset();
@@ -196,9 +227,7 @@ LoadVertexShader(RendererState* s, c8* path, List<VertexAttribute> attributes, C
 
 	// Input layout
 	InputLayout il = {};
-	defer {
-		il.d3dInputLayout.Reset();
-	};
+	defer { il.d3dInputLayout.Reset(); };
 	{
 		// TODO: Why are we duplicating these?
 		il.attibutes = List_Duplicate(attributes);
@@ -249,7 +278,7 @@ LoadVertexShader(RendererState* s, c8* path, List<VertexAttribute> attributes, C
 
 
 	// Commit
-	VertexShader* vs2 = nullptr;
+	VertexShaderData* vs2 = nullptr;
 	{
 		InputLayout* il2 = List_Append(s->inputLayouts, il);
 		LOG_IF(!il2, "Failed to allocate space for input layout", Severity::Warning, return nullptr);
@@ -540,8 +569,7 @@ Renderer_Initialize(RendererState* s, v2i renderSize)
 	}
 
 
-	// DEBUG: Create a draw call
-	// TODO: This should be done in the application, not the renderer
+	// TODO: Debug assets should be done in the application, not the renderer
 	{
 		// Create vertices
 		Vertex vertices[4];
@@ -571,7 +599,7 @@ Renderer_Initialize(RendererState* s, v2i renderSize)
 		vertBuffInitData.SysMemPitch      = 0;
 		vertBuffInitData.SysMemSlicePitch = 0;
 
-		MeshData* mesh = &s->meshes[Mesh::Quad];
+		MeshData* mesh = List_Append(s->meshes);
 		mesh->vStride = sizeof(vertices[0]);
 		mesh->vOffset = 0;
 
@@ -614,16 +642,6 @@ Renderer_Initialize(RendererState* s, v2i renderSize)
 		SetDebugObjectName(iBuffer, "Quad Indices");
 
 		s->d3dContext->IASetIndexBuffer(iBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
-
-		// TODO: Remove
-		// Draw call
-		DrawCall* dc;
-		dc = Renderer_PushDrawCall(s);
-		if (dc == nullptr) return false;
-
-		dc->mesh = Mesh::Quad;
-		dc->vs   = &s->vertexShaders[0];
-		XMStoreFloat4x4((XMFLOAT4X4*) &dc->worldM, XMMatrixScaling(160, 160, 160) * XMMatrixIdentity());
 	}
 
 	return true;
@@ -729,9 +747,9 @@ Renderer_Render(RendererState* s)
 	// TODO: Sort draws
 	for (u32 i = 0; i < s->drawCallCount; i++)
 	{
-		DrawCall*     dc   = &s->drawCalls[i];
-		MeshData*     mesh = &s->meshes[dc->mesh];
-		VertexShader* vs   = dc->vs;
+		DrawCall*         dc   = &s->drawCalls[i];
+		MeshData*         mesh = &s->meshes[dc->mesh];
+		VertexShaderData* vs   = &s->vertexShaders[dc->vs];
 
 		XMMATRIX W = XMMATRIX((r32*) &dc->worldM);
 		XMMATRIX P = XMLoadFloat4x4(&s->proj);
@@ -754,7 +772,7 @@ Renderer_Render(RendererState* s)
 		Assert(mesh->vOffset < i32Max);
 		s->d3dContext->DrawIndexed(mesh->iCount, 0, (i32) mesh->vOffset);
 	}
-	//s->drawCallCount = 0;
+	s->drawCallCount = 0;
 
 	// TODO: Why is this here again? I think it's for the WPF app
 	//s->d3dContext->Flush();

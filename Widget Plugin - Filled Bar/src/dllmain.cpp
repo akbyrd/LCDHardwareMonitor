@@ -65,8 +65,23 @@ InitializeBarWidget(Widget* widget)
 	barWidget->size = { 240, 12 };
 }
 
+static void
+DrawBarWidget(PluginContext* context, WidgetPlugin::UpdateAPI api, Widget* widget, BarWidget* barWidget)
+{
+	DrawCall dc = {};
+	dc.mesh         = StandardMesh::Quad;
+	dc.vs           = StandardVertexShader::Debug;
+	dc.worldM[0][0] = r32(barWidget->size.x);
+	dc.worldM[1][1] = r32(barWidget->size.y);
+	dc.worldM[2][2] = 1.0f;
+	dc.worldM[3][3] = 1.0f;
+	dc.worldM[3][0] = r32(widget->position.x);
+	dc.worldM[3][1] = r32(widget->position.y);
+	api.PushDrawCall(context, dc);
+}
+
 EXPORT b32
-Initialize(PluginContext* context, WidgetPlugin::InitializeAPI* api)
+Initialize(PluginContext* context, WidgetPlugin::InitializeAPI api)
 {
 	WidgetDefinition widgetDef = {};
 	widgetDef.name       = "Filled Bar";
@@ -74,34 +89,27 @@ Initialize(PluginContext* context, WidgetPlugin::InitializeAPI* api)
 	widgetDef.version    = 1;
 	widgetDef.size       = sizeof(BarWidget);
 	widgetDef.initialize = &InitializeBarWidget;
-	api->AddWidgetDefinition(context, &widgetDef);
+	api.AddWidgetDefinition(context, &widgetDef);
 	return true;
 }
 
+// TODO: I don't think drawing belongs in update
 EXPORT void
-Update(PluginContext* context, WidgetPlugin::UpdateAPI* api)
+Update(PluginContext* context, WidgetPlugin::UpdateAPI api)
 {
-	UNUSED(context); UNUSED(api);
-
-	// TODO: It's not clear whether or not drawing belongs in update
+	// HACK: Nasty, hard-coded fuckery
+	u32 elemSize = sizeof(Widget) + sizeof(BarWidget);
+	u32 instanceCount = api.widgetDefinition->instances.length / elemSize;
+	for (u32 i = 0; i < instanceCount; i++)
+	{
+		Widget* widget = (Widget*) &api.widgetDefinition->instances[i * elemSize];
+		BarWidget* barWidget = (BarWidget*) ((u8*) widget + sizeof(Widget));
+		DrawBarWidget(context, api, widget, barWidget);
+	}
 }
 
 EXPORT void
-Teardown(PluginContext* context, WidgetPlugin::TeardownAPI* api)
+Teardown(PluginContext* context, WidgetPlugin::TeardownAPI api)
 {
 	UNUSED(context); UNUSED(api);
 }
-
-/*
- * How do we create a bar widget?
- * Maybe a CreateWidget function is part of the WidgetDefinition?
- * When the plugin adds a definition it adds a create function.
- * We'll need a memory arena thing to store widgets
- * Widget size given in Initialize so an arena can be created
- * App: plugin initialize
- * Plug: add widget definition
- * App: create widget
- * Plug: add widget to arena
- * App: plugin update
- * Plug: submit draw commands for each
- */

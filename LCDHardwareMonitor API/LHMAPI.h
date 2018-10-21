@@ -8,6 +8,7 @@
 #include "LHMList.hpp"
 //#include "LHMString.hpp"
 #include "LHMDefer.hpp"
+#include "LHMRenderer.h"
 
 // Plugins
 #include "LHMPluginInfo.h"

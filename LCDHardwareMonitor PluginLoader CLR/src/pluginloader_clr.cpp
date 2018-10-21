@@ -31,9 +31,9 @@ public value struct
 SensorPlugin_CLR
 {
 	#define Attributes UnmanagedFunctionPointer(CallingConvention::Cdecl)
-	[Attributes] delegate b32  InitializeDelegate(PluginContext* context, SensorPlugin::InitializeAPI* api);
-	[Attributes] delegate void UpdateDelegate    (PluginContext* context, SensorPlugin::UpdateAPI*     api);
-	[Attributes] delegate void TeardownDelegate  (PluginContext* context, SensorPlugin::TeardownAPI*   api);
+	[Attributes] delegate b32  InitializeDelegate(PluginContext* context, SensorPlugin::InitializeAPI api);
+	[Attributes] delegate void UpdateDelegate    (PluginContext* context, SensorPlugin::UpdateAPI     api);
+	[Attributes] delegate void TeardownDelegate  (PluginContext* context, SensorPlugin::TeardownAPI   api);
 	#undef Attributes
 
 	ISensorPlugin^      pluginInstance;
@@ -47,9 +47,9 @@ public value struct
 WidgetPlugin_CLR
 {
 	#define Attributes UnmanagedFunctionPointer(CallingConvention::Cdecl)
-	[Attributes] delegate b32 InitializeDelegate(PluginContext* context, WidgetPlugin::InitializeAPI* api);
-	[Attributes] delegate void UpdateDelegate    (PluginContext* context, WidgetPlugin::UpdateAPI*     api);
-	[Attributes] delegate void TeardownDelegate  (PluginContext* context, WidgetPlugin::TeardownAPI*   api);
+	[Attributes] delegate b32 InitializeDelegate(PluginContext* context, WidgetPlugin::InitializeAPI api);
+	[Attributes] delegate void UpdateDelegate   (PluginContext* context, WidgetPlugin::UpdateAPI     api);
+	[Attributes] delegate void TeardownDelegate (PluginContext* context, WidgetPlugin::TeardownAPI   api);
 	#undef Attributes
 
 	IWidgetPlugin^      pluginInstance;

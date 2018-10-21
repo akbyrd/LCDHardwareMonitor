@@ -28,9 +28,9 @@ public ref struct State : ISensorPlugin, ISensorInitialize, ISensorUpdate, ISens
 		array<IHardware^>^ hardware;
 	};
 
-	virtual b32  Initialize(PluginContext*, SensorPlugin::InitializeAPI*) { return true; }
-	virtual void Update    (PluginContext*, SensorPlugin::UpdateAPI*)     {}
-	virtual void Teardown  (PluginContext*, SensorPlugin::TeardownAPI*)   {}
+	virtual b32  Initialize(PluginContext*, SensorPlugin::InitializeAPI) { return true; }
+	virtual void Update    (PluginContext*, SensorPlugin::UpdateAPI)     {}
+	virtual void Teardown  (PluginContext*, SensorPlugin::TeardownAPI)   {}
 
 	#if false
 	virtual void
