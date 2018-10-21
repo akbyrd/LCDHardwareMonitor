@@ -71,6 +71,7 @@ DrawBarWidget(PluginContext* context, WidgetPlugin::UpdateAPI api, Widget* widge
 	DrawCall dc = {};
 	dc.mesh         = StandardMesh::Quad;
 	dc.vs           = StandardVertexShader::Debug;
+	dc.ps           = StandardPixelShader::Debug;
 	dc.worldM[0][0] = r32(barWidget->size.x);
 	dc.worldM[1][1] = r32(barWidget->size.y);
 	dc.worldM[2][2] = 1.0f;

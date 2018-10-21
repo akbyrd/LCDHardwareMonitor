@@ -26,8 +26,17 @@ template<typename T>
 struct ListRef
 {
 	u32 index;
+	// TODO: These shouldn't be needed
 	bool operator==(const ListRef& other) { return index == other.index; }
+	bool operator!=(const ListRef& other) { return index != other.index; }
+
+	// TODO: Switch to 0 being a null asset everywhere
+	static const ListRef<T> Null;
+	operator bool() { return *this != Null; }
 };
+
+template<typename T>
+const ListRef<T> ListRef<T>::Null = { u32Max };
 
 template<typename T>
 struct List
@@ -173,6 +182,20 @@ List_GetRef(List<T>& list, u32 index)
 	ListRef<T> ref = {};
 	ref.index = index;
 	return ref;
+}
+
+template<typename T>
+inline ListRef<T>
+List_GetRefFirst(List<T>& list)
+{
+	return List_GetRef(list, 0);
+}
+
+template<typename T>
+inline ListRef<T>
+List_GetRefLast(List<T>& list)
+{
+	return List_GetRef(list, list.length - 1);
 }
 
 template<typename T>

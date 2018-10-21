@@ -301,6 +301,36 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 	List_Reserve(s->widgetDefinitions, 8);
 	LOG_IF(!s->widgetDefinitions, "Failed to allocate widget definitions list", Severity::Error, return false);
 
+	// Load Default Assets
+	{
+		// Vertex shader
+		{
+			List<VertexAttribute> vsAttributes = {};
+			List_Reserve(vsAttributes, 2);
+			LOG_IF(!vsAttributes, "Failed to allocate default vertex shader attributes", Severity::Error, return false);
+
+			VertexAttribute va1 = { VertexAttributeSemantic::Position, VertexAttributeFormat::Float3 };
+			VertexAttribute va2 = { VertexAttributeSemantic::Color,    VertexAttributeFormat::Float4 };
+			List_Append(vsAttributes, va1);
+			List_Append(vsAttributes, va2);
+
+			// TODO: Matrix type?
+			ConstantBufferDesc cBufferDesc = {};
+			cBufferDesc.size = 4*4*sizeof(float);
+
+			// TODO: Assert that the ref equals expected value
+			VertexShader vs = Renderer_LoadVertexShader(s->renderer, "Shaders/Basic Vertex Shader.cso", vsAttributes, cBufferDesc);
+			LOG_IF(!vs, "Failed to load default vertex shader", Severity::Error, return false);
+		}
+
+		// Pixel shader
+		{
+			// TODO: Assert that the ref equals expected value
+			PixelShader ps = Renderer_LoadPixelShader(s->renderer, "Shaders/Basic Pixel Shader.cso");
+			LOG_IF(!ps, "Failed to load default pixel shader", Severity::Error, return false);
+		}
+	}
+
 	// DEBUG: Testing
 	{
 		//SensorPlugin* ohmPlugin = LoadSensorPlugin(s, "Sensor Plugins\\OpenHardwareMonitor", "Sensor Plugin - OpenHardwareMonitor");

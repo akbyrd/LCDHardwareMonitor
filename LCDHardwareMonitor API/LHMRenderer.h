@@ -3,12 +3,14 @@
 
 using Mesh         = List<struct MeshData>::RefT;
 using VertexShader = List<struct VertexShaderData>::RefT;
+using PixelShader  = List<struct PixelShaderData>::RefT;
 
 struct DrawCall
 {
-	Mesh          mesh;
-	VertexShader  vs;
-	r32           worldM[4][4];
+	Mesh         mesh;
+	VertexShader vs;
+	PixelShader  ps;
+	r32          worldM[4][4];
 };
 
 namespace StandardMesh
@@ -28,6 +30,13 @@ namespace StandardVertexShader
 	static const VertexShader Debug = { 0 };
 	//static const VertexShader Null  = { 0 };
 	//static const VertexShader Debug = { 1 };
+};
+
+namespace StandardPixelShader
+{
+	static const PixelShader Debug = { 0 };
+	//static const PixelShader Null  = { 0 };
+	//static const PixelShader Debug = { 1 };
 };
 
 #endif
