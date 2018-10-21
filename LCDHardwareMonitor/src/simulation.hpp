@@ -85,7 +85,6 @@ LoadSensorPlugin(SimulationState* s, c8* directory, c8* name)
 		context.success = true;
 
 		SensorPlugin::InitializeAPI api = {};
-
 		success = sensorPlugin->initialize(&context, &api);
 		success &= context.success;
 		LOG_IF(!success, "Failed to initialize sensor plugin", Severity::Warning, return nullptr);
@@ -105,7 +104,15 @@ UnloadSensorPlugin(SimulationState* s, SensorPlugin* sensorPlugin)
 
 	// TODO: try/catch?
 	if (sensorPlugin->teardown)
-		sensorPlugin->teardown(nullptr, nullptr);
+	{
+		PluginContext context = {};
+		context.s       = s;
+		context.ref     = pluginHeader->ref;
+		context.success = true;
+
+		SensorPlugin::TeardownAPI api = {};
+		sensorPlugin->teardown(&context, &api);
+	}
 
 	b32 success;
 	success = PluginLoader_UnloadSensorPlugin(s->pluginLoader, pluginHeader, sensorPlugin);
@@ -163,13 +170,13 @@ LoadWidgetPlugin(SimulationState* s, c8* directory, c8* name)
 	if (widgetPlugin->initialize)
 	{
 		// TODO: Hoist these parameters up
-		WidgetPlugin::InitializeAPI api = {};
-		api.AddWidgetDefinition = AddWidgetDefinition;
-
 		PluginContext context = {};
 		context.s       = s;
 		context.ref     = pluginHeader->ref;
 		context.success = true;
+
+		WidgetPlugin::InitializeAPI api = {};
+		api.AddWidgetDefinition = AddWidgetDefinition;
 
 		success = widgetPlugin->initialize(&context, &api);
 		success &= context.success;
@@ -196,14 +203,18 @@ UnloadWidgetPlugin(SimulationState* s, WidgetPlugin* widgetPlugin)
 	PluginHeader* pluginHeader = GetPluginHeader(s, widgetPlugin->pluginHeaderRef);
 	auto pluginGuard = guard { pluginHeader->isWorking = false; };
 
-	// TODO: try/catch?
-	if (widgetPlugin->teardown)
-		widgetPlugin->teardown(nullptr, nullptr);
-
 	PluginContext context = {};
 	context.s       = s;
 	context.ref     = pluginHeader->ref;
 	context.success = true;
+
+	// TODO: try/catch?
+	if (widgetPlugin->teardown)
+	{
+		WidgetPlugin::TeardownAPI api = {};
+		widgetPlugin->teardown(&context, &api);
+	}
+
 	RemoveWidgetDefinitions(&context);
 
 	b32 success;
