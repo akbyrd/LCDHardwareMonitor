@@ -10,7 +10,7 @@ struct DrawCall
 	Mesh         mesh;
 	VertexShader vs;
 	PixelShader  ps;
-	Matrix       worldM;
+	Matrix       world;
 };
 
 namespace StandardMesh
@@ -25,9 +25,9 @@ namespace StandardMesh
 	//static const Mesh Grid     = { 6 };
 };
 
+// TODO: Dirty flag?
 struct ConstantBufferDesc
 {
-	//b32   dirty;
 	u32   size;
 	void* data;
 

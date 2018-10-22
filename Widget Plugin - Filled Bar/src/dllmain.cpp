@@ -47,12 +47,12 @@ DrawBarWidget(PluginContext* context, WidgetPlugin::UpdateAPI api, Widget* widge
 	dc.mesh       = StandardMesh::Quad;
 	dc.vs         = StandardVertexShader::Debug;
 	dc.ps         = filledBarPS;
-	dc.worldM.sx  = r32(barWidget->size.x);
-	dc.worldM.sy  = r32(barWidget->size.y);
-	dc.worldM.sz  = 1.0f;
-	dc.worldM.m33 = 1.0f;
-	dc.worldM.tx  = r32(widget->position.x);
-	dc.worldM.ty  = r32(widget->position.y);
+	dc.world.sx  = r32(barWidget->size.x);
+	dc.world.sy  = r32(barWidget->size.y);
+	dc.world.sz  = 1.0f;
+	dc.world.m33 = 1.0f;
+	dc.world.tx  = r32(widget->position.x);
+	dc.world.ty  = r32(widget->position.y);
 	api.PushDrawCall(context, dc);
 }
 

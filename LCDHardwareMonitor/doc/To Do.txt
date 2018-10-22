@@ -10,7 +10,6 @@ Next
 		function, then ask the plugin to fill in a bunch of function pointers, we
 		1) Get better type safety since they'll have to match the function pointer
 		definition. 2) Reduce the amount of boilerplate on the application side.
-		// TODO: Un-hardcode this
 		// TODO: Plugin name in errors
 		// TODO: Ensure this is removed from the list in partial initialization conditions
 		// TODO: Widgets will be referencing these sensors.
@@ -23,6 +22,7 @@ Next
 		It's time to figure out what happens when memory allocations fail
 		Support VS Code
 		Decide on error vs warning policy and update all logging
+		Move InputLayout into VertexShader probably
 
 	Design Pass
 		Can plugins share shaders? (maybe not)
@@ -81,6 +81,7 @@ Refactoring
 	Use this as parameter name for 'methods'
 	Should const be used on parameters and locals?
 	Include 'out' in out parameter names?
+	Decide on in-struct initializers or not. Unify things.
 
 
 

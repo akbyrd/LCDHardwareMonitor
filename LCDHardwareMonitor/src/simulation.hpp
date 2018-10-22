@@ -49,23 +49,9 @@ CreatePluginHeader(SimulationState* s, c8* directory, c8* name, PluginKind kind)
 static PluginHeader*
 GetPluginHeader(SimulationState* s, PluginHeaderRef ref)
 {
-	// NOTE: Why did I even implement this? Ref is an index!
-	#if false
-	for (u32 i = 0; i < s->pluginHeaders.length; i++)
-	{
-		PluginHeader* pluginHeader = &s->pluginHeaders[i];
-		if (pluginHeader->ref == ref)
-			return pluginHeader;
-	}
-
-	// Unreachable
-	Assert(false);
-	return nullptr;
-	#else
 	PluginHeader* pluginHeader = &s->pluginHeaders[ref];
 	Assert(pluginHeader->ref == ref);
 	return pluginHeader;
-	#endif
 }
 
 static SensorPlugin*
@@ -342,6 +328,7 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 
 			ConstantBufferDesc cBufferDesc = {};
 			cBufferDesc.size = sizeof(Matrix);
+			cBufferDesc.data = Renderer_GetWVPPointer(s->renderer);
 
 			VertexShader vs = Renderer_LoadVertexShader(s->renderer, "Shaders/Basic Vertex Shader.cso", vsAttributes, cBufferDesc);
 			LOG_IF(!vs, "Failed to load default vertex shader", Severity::Error, return false);

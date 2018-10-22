@@ -76,19 +76,18 @@ struct InputLayout
 struct VertexShaderData
 {
 	String                     name;
-	// TODO: Needs to be ref counted
+	// TODO: Needs to be ref counted or folded in
 	InputLayout*               inputLayout;
-	// TODO: Better names?
+	ConstantBufferData         constantBuffer;
 	ComPtr<ID3D11VertexShader> d3dVertexShader;
-	ComPtr<ID3D11Buffer>       d3dConstantBuffer;
 	D3D_PRIMITIVE_TOPOLOGY     d3dPrimitveTopology;
 };
 
 struct PixelShaderData
 {
 	String                    name;
-	ComPtr<ID3D11PixelShader> d3dPixelShader;
 	ConstantBufferData        constantBuffer;
+	ComPtr<ID3D11PixelShader> d3dPixelShader;
 };
 
 struct RendererState
@@ -114,6 +113,7 @@ struct RendererState
 	List<PixelShaderData>  pixelShaders    = {};
 
 	XMFLOAT4X4         proj                = {};
+	XMFLOAT4X4         wvp                 = {};
 	v2i                renderSize          = {}; // TODO : Change this to unsigned
 	DXGI_FORMAT        renderFormat        = DXGI_FORMAT_UNKNOWN;
 	u32                multisampleCount    = 1;
@@ -487,12 +487,15 @@ void
 Renderer_Teardown(RendererState* s)
 {
 	for (u32 i = 0; i < s->pixelShaders.length; i++)
+	{
 		s->pixelShaders[i].d3dPixelShader.Reset();
+		s->pixelShaders[i].constantBuffer.d3dConstantBuffer.Reset();
+	}
 
 	for (u32 i = 0; i < s->vertexShaders.length; i++)
 	{
 		s->vertexShaders[i].d3dVertexShader.Reset();
-		s->vertexShaders[i].d3dConstantBuffer.Reset();
+		s->vertexShaders[i].constantBuffer.d3dConstantBuffer.Reset();
 	}
 
 	for (u32 i = 0; i < s->inputLayouts.length; i++)
@@ -533,10 +536,37 @@ Renderer_Teardown(RendererState* s)
 	}
 }
 
+// TODO: Make private functions static
+static b32
+Renderer_CreateConstantBuffer(RendererState* s, ConstantBufferData* constantBuffer)
+{
+	// TODO: Get this working
+	//if (ps->constantBuffer.desc != ConstantBufferDesc::Null)
+	if (constantBuffer->desc.data)
+	{
+		LOG_IF(!IsMultipleOf(constantBuffer->desc.size, 16), "Constant buffer size is not a multiple of 16", Severity::Error, return false);
+
+		D3D11_BUFFER_DESC d3dDesc = {};
+		d3dDesc.ByteWidth           = constantBuffer->desc.size;
+		d3dDesc.Usage               = D3D11_USAGE_DYNAMIC;
+		d3dDesc.BindFlags           = D3D11_BIND_CONSTANT_BUFFER;
+		d3dDesc.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
+		d3dDesc.MiscFlags           = 0;
+		d3dDesc.StructureByteStride = 0;
+
+		HRESULT hr = s->d3dDevice->CreateBuffer(&d3dDesc, nullptr, &constantBuffer->d3dConstantBuffer);
+		LOG_HRESULT_IF_FAILED(hr, "Failed to create constant buffer", Severity::Error, return false);
+		SetDebugObjectName(constantBuffer->d3dConstantBuffer, "Constant Buffer (Per-Object)");
+	}
+
+	return true;
+}
+
 // TODO: Should a failed load mark the file as bad?
 // TODO: Perhaps a read-only List would be a good idea.
+// TODO: Unify the error handling / commit semantics of LoadVertexShader and LoadPixelShader
 VertexShader
-Renderer_LoadVertexShader(RendererState* s, c8* path, List<VertexAttribute> attributes, ConstantBufferDesc cBufDesc)
+Renderer_LoadVertexShader(RendererState* s, c8* path, List<VertexAttribute> attributes, ConstantBufferDesc cBufferDesc)
 {
 	HRESULT hr;
 
@@ -545,7 +575,7 @@ Renderer_LoadVertexShader(RendererState* s, c8* path, List<VertexAttribute> attr
 	// Vertex Shader
 	VertexShaderData vs = {};
 	defer {
-		vs.d3dConstantBuffer.Reset();
+		vs.constantBuffer.d3dConstantBuffer.Reset();
 		vs.d3dVertexShader.Reset();
 	};
 
@@ -561,20 +591,10 @@ Renderer_LoadVertexShader(RendererState* s, c8* path, List<VertexAttribute> attr
 		LOG_HRESULT_IF_FAILED(hr, "Failed to create vertex shader", Severity::Error, return VertexShader::Null);
 		SetDebugObjectName(vs.d3dVertexShader, "Vertex Shader");
 
-		// Per-object constant buffer
-		LOG_IF(!IsMultipleOf(cBufDesc.size, 16), "VS constant buffer size is not a multiple of 16", Severity::Error, return VertexShader::Null);
-
-		D3D11_BUFFER_DESC vsConstBuffDes = {};
-		vsConstBuffDes.ByteWidth           = cBufDesc.size;
-		vsConstBuffDes.Usage               = D3D11_USAGE_DYNAMIC;
-		vsConstBuffDes.BindFlags           = D3D11_BIND_CONSTANT_BUFFER;
-		vsConstBuffDes.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
-		vsConstBuffDes.MiscFlags           = 0;
-		vsConstBuffDes.StructureByteStride = 0;
-
-		hr = s->d3dDevice->CreateBuffer(&vsConstBuffDes, nullptr, &vs.d3dConstantBuffer);
-		LOG_HRESULT_IF_FAILED(hr, "Failed to create vertex buffer", Severity::Error, return VertexShader::Null);
-		SetDebugObjectName(vs.d3dConstantBuffer, "VS Constant Buffer (Per-Object)");
+		// Constant Buffer
+		vs.constantBuffer.desc = cBufferDesc;
+		b32 success = Renderer_CreateConstantBuffer(s, &vs.constantBuffer);
+		if (!success) return VertexShader::Null;
 	}
 
 
@@ -652,7 +672,7 @@ Renderer_LoadVertexShader(RendererState* s, c8* path, List<VertexAttribute> attr
 
 // TODO: Unload functions
 PixelShader
-Renderer_LoadPixelShader(RendererState* s, c8* path, ConstantBufferDesc constantBuffer)
+Renderer_LoadPixelShader(RendererState* s, c8* path, ConstantBufferDesc cBufferDesc)
 {
 	HRESULT hr;
 	PixelShaderData ps = {};
@@ -673,25 +693,10 @@ Renderer_LoadPixelShader(RendererState* s, c8* path, ConstantBufferDesc constant
 	}
 
 	// Constant Buffer
-	// TODO: Get this working
-	//if (ps->constantBuffer.desc != ConstantBufferDesc::Null)
-	if (constantBuffer.data)
 	{
-		LOG_IF(!IsMultipleOf(constantBuffer.size, 16), "PS constant buffer size is not a multiple of 16", Severity::Error, return PixelShader::Null);
-
-		ps.constantBuffer.desc = constantBuffer;
-
-		D3D11_BUFFER_DESC psConstBuffDes = {};
-		psConstBuffDes.ByteWidth           = constantBuffer.size;
-		psConstBuffDes.Usage               = D3D11_USAGE_DYNAMIC;
-		psConstBuffDes.BindFlags           = D3D11_BIND_CONSTANT_BUFFER;
-		psConstBuffDes.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
-		psConstBuffDes.MiscFlags           = 0;
-		psConstBuffDes.StructureByteStride = 0;
-
-		hr = s->d3dDevice->CreateBuffer(&psConstBuffDes, nullptr, &ps.constantBuffer.d3dConstantBuffer);
-		LOG_HRESULT_IF_FAILED(hr, "Failed to create vertex buffer", Severity::Error, return PixelShader::Null);
-		SetDebugObjectName(ps.constantBuffer.d3dConstantBuffer, "PS Constant Buffer");
+		ps.constantBuffer.desc = cBufferDesc;
+		b32 success = Renderer_CreateConstantBuffer(s, &ps.constantBuffer);
+		if (!success) return PixelShader::Null;
 	}
 
 	// Commit
@@ -705,11 +710,35 @@ Renderer_LoadPixelShader(RendererState* s, c8* path, ConstantBufferDesc constant
 	return List_GetRefLast(s->pixelShaders);
 }
 
+void*
+Renderer_GetWVPPointer(RendererState* s)
+{
+	return &s->wvp;
+}
+
 DrawCall*
 Renderer_PushDrawCall(RendererState* s)
 {
 	DrawCall* drawCall = List_Append(s->drawCalls);
 	return drawCall;
+}
+
+static b32
+Renderer_UpdateConstantBuffer(RendererState* s, ConstantBufferData constantBuffer)
+{
+	// TODO: Why isn't this working?
+	//if (constantBuffer.desc != ConstantBufferDesc::Null)
+	if (constantBuffer.desc.data)
+	{
+		D3D11_MAPPED_SUBRESOURCE map = {};
+		HRESULT hr = s->d3dContext->Map(constantBuffer.d3dConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
+		LOG_HRESULT_IF_FAILED(hr, "Failed to map constant buffer", Severity::Error, return false);
+
+		memcpy(map.pData, constantBuffer.desc.data, constantBuffer.desc.size);
+		s->d3dContext->Unmap(constantBuffer.d3dConstantBuffer.Get(), 0);
+	}
+
+	return true;
 }
 
 b32
@@ -721,8 +750,7 @@ Renderer_Render(RendererState* s)
 	Assert(s->d3dContext       != nullptr);
 	Assert(s->d3dRenderTexture != nullptr);
 
-
-	HRESULT hr;
+	b32 success;
 
 	s->d3dContext->ClearRenderTargetView(s->d3dRenderTargetView.Get(), DirectX::Colors::Black);
 	s->d3dContext->ClearDepthStencilView(s->d3dDepthBufferView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
@@ -733,6 +761,7 @@ Renderer_Render(RendererState* s)
 	XMVECTOR up     = {0, 1, 0};
 
 	XMMATRIX V = XMMatrixLookAtLH(pos, target, up);
+	XMMATRIX P = XMLoadFloat4x4(&s->proj);
 
 	// TODO: Sort draws
 	for (u32 i = 0; i < s->drawCalls.length; i++)
@@ -742,44 +771,28 @@ Renderer_Render(RendererState* s)
 		VertexShaderData* vs   = &s->vertexShaders[dc->vs];
 		PixelShaderData*  ps   = &s->pixelShaders[dc->ps];
 
-		XMMATRIX W = XMMATRIX((r32*) &dc->worldM);
-		XMMATRIX P = XMLoadFloat4x4(&s->proj);
+		XMMATRIX W = XMMATRIX((r32*) &dc->world.arr);
 		XMMATRIX WVP = XMMatrixTranspose(W * V * P);
+		XMStoreFloat4x4(&s->wvp, WVP);
 
 		// Vertex Shader
+		success = Renderer_UpdateConstantBuffer(s, vs->constantBuffer);
+		if (!success) continue;
+
 		s->d3dContext->VSSetShader(vs->d3dVertexShader.Get(), nullptr, 0);
-		s->d3dContext->VSSetConstantBuffers(0, 1, vs->d3dConstantBuffer.GetAddressOf());
+		s->d3dContext->VSSetConstantBuffers(0, 1, vs->constantBuffer.d3dConstantBuffer.GetAddressOf());
 		s->d3dContext->IASetInputLayout(vs->inputLayout->d3dInputLayout.Get());
 		//s->d3dContext->IASetVertexBuffers(0, 1, vBuffer.GetAddressOf(), &mesh->vStride, &mesh->vOffset);
 		s->d3dContext->IASetPrimitiveTopology(vs->d3dPrimitveTopology);
 
 		// Pixel Shader
+		success = Renderer_UpdateConstantBuffer(s, ps->constantBuffer);
+		if (!success) continue;
+
 		s->d3dContext->PSSetShader(ps->d3dPixelShader.Get(), nullptr, 0);
+		s->d3dContext->PSSetConstantBuffers(0, 1, ps->constantBuffer.d3dConstantBuffer.GetAddressOf());
 
-		// Update PS cbuffer
-		// TODO: Why isn't this working?
-		//if (ps->constantBuffer.desc != ConstantBufferDesc::Null)
-		if (ps->constantBuffer.desc.data)
-		{
-			D3D11_MAPPED_SUBRESOURCE psConstBuffMap = {};
-			hr = s->d3dContext->Map(ps->constantBuffer.d3dConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &psConstBuffMap);
-			LOG_HRESULT_IF_FAILED(hr, "Failed to map pixel shader constant buffer", Severity::Error, return false);
-
-			memcpy(psConstBuffMap.pData, ps->constantBuffer.desc.data, ps->constantBuffer.desc.size);
-			s->d3dContext->Unmap(ps->constantBuffer.d3dConstantBuffer.Get(), 0);
-
-			s->d3dContext->PSSetConstantBuffers(0, 1, ps->constantBuffer.d3dConstantBuffer.GetAddressOf());
-		}
-		// TODO: Leave the previous constant buffers bound?
-
-		// TODO: Un-hardcode this
-		// Update VS cbuffer
-		D3D11_MAPPED_SUBRESOURCE vsConstBuffMap = {};
-		hr = s->d3dContext->Map(vs->d3dConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &vsConstBuffMap);
-		LOG_HRESULT_IF_FAILED(hr, "Failed to map constant buffer", Severity::Error, return false);
-
-		memcpy(vsConstBuffMap.pData, &WVP, sizeof(WVP));
-		s->d3dContext->Unmap(vs->d3dConstantBuffer.Get(), 0);
+		// TODO: Leave constant buffers bound?
 
 		Assert(mesh->vOffset < i32Max);
 		s->d3dContext->DrawIndexed(mesh->iCount, 0, (i32) mesh->vOffset);
@@ -792,7 +805,7 @@ Renderer_Render(RendererState* s)
 	return true;
 }
 
-b32
+static b32
 Renderer_CreateSharedD3D9RenderTexture(RendererState* s)
 {
 	Assert(s->d3d9                        == nullptr);
@@ -854,7 +867,8 @@ Renderer_CreateSharedD3D9RenderTexture(RendererState* s)
 	return true;
 }
 
-void Renderer_DestroySharedD3D9RenderTarget(RendererState* s)
+static void
+Renderer_DestroySharedD3D9RenderTarget(RendererState* s)
 {
 	s->d3d9              .Reset();
 	s->d3d9Device        .Reset();
