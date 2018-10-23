@@ -1,5 +1,8 @@
 Next
 	Cleanup Pass
+		Support constant buffers of multiple scopes
+		Stick PSConstants in BarWidget
+		Move constant buffers to shared headers
 		Allocate constant buffers from a simulation owned arena
 		Implement materials
 		API: Probably have plugins fill a struct full of function pointers
@@ -16,9 +19,6 @@ Next
 		// TODO: How do we get this? (Do the UV calculation in CPU, I think)
 		// TODO: I don't think drawing belongs in update
 		// TODO: Get this working
-		Support constant buffers of multiple scopes
-		Move constant buffers to shared headers
-		Stick PSConstants in BarWidget
 		It's time to figure out what happens when memory allocations fail
 		Support VS Code
 		Decide on error vs warning policy and update all logging

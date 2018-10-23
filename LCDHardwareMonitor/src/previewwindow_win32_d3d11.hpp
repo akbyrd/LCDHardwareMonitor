@@ -6,8 +6,8 @@ struct PreviewWindowState
 	HWND                    hwnd                  = nullptr;
 	ComPtr<IDXGISwapChain>  swapChain             = nullptr;
 	ComPtr<ID3D11Texture2D> backBuffer            = nullptr;
-	v2i                     renderSize            = {};
-	v2i                     nonClientSize         = {};
+	v2u                     renderSize            = {};
+	v2u                     nonClientSize         = {};
 	u16                     zoomFactor            = 1;
 	i16                     mouseWheelAccumulator = 0;
 };
@@ -42,7 +42,7 @@ PreviewWindow_Initialize(PreviewWindowState* s, RendererState* rendererState, HI
 		auto windowStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE;
 
 		b32 success;
-		RECT windowRect = { 0, 0, rendererState->renderSize.x, rendererState->renderSize.y };
+		RECT windowRect = { 0, 0, (i32) rendererState->renderSize.x, (i32) rendererState->renderSize.y };
 		success = AdjustWindowRect(&windowRect, (u32) windowStyle, false);
 		LOG_LAST_ERROR_IF(!success, "AdjustWindowRect failed", Severity::Warning);
 
@@ -56,8 +56,8 @@ PreviewWindow_Initialize(PreviewWindowState* s, RendererState* rendererState, HI
 			"LHM Preview",
 			(u32) windowStyle,
 			CW_USEDEFAULT, CW_USEDEFAULT,
-			s->renderSize.x + s->nonClientSize.x,
-			s->renderSize.y + s->nonClientSize.y,
+			(i32) (s->renderSize.x + s->nonClientSize.x),
+			(i32) (s->renderSize.y + s->nonClientSize.y),
 			nullptr,
 			nullptr,
 			hInstance,
@@ -101,8 +101,8 @@ PreviewWindow_Initialize(PreviewWindowState* s, RendererState* rendererState, HI
 		// of any previous swap chains before creating a new one.
 		// https://msdn.microsoft.com/en-us/library/windows/desktop/ff476425(v=vs.85).aspx#Defer_Issues_with_Flip
 		DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
-		swapChainDesc.BufferDesc.Width                   = (u32) rendererState->renderSize.x;
-		swapChainDesc.BufferDesc.Height                  = (u32) rendererState->renderSize.y;
+		swapChainDesc.BufferDesc.Width                   = rendererState->renderSize.x;
+		swapChainDesc.BufferDesc.Height                  = rendererState->renderSize.y;
 		// TODO: Get values from system (match desktop. what happens if it changes?)
 		swapChainDesc.BufferDesc.RefreshRate.Numerator   = 60;
 		swapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
@@ -245,17 +245,17 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 				windowCenter.x = (windowRect.right + windowRect.left) / 2;
 				windowCenter.y = (windowRect.bottom + windowRect.top) / 2;
 
-				v2i newClientSize = newZoomFactor * s->renderSize;
+				v2u newClientSize = newZoomFactor * s->renderSize;
 
 				RECT usableDesktopRect;
 				success = SystemParametersInfoA(SPI_GETWORKAREA, 0, &usableDesktopRect, 0);
 				LOG_LAST_ERROR_IF(!success, "SystemParametersInfo failed", Severity::Warning, return 0);
 
-				v2i usableDesktopSize;
-				usableDesktopSize.x = usableDesktopRect.right - usableDesktopRect.left;
-				usableDesktopSize.y = usableDesktopRect.bottom - usableDesktopRect.top;
+				v2u usableDesktopSize;
+				usableDesktopSize.x = (u32) (usableDesktopRect.right - usableDesktopRect.left);
+				usableDesktopSize.y = (u32) (usableDesktopRect.bottom - usableDesktopRect.top);
 
-				v2i newWindowSize = newClientSize + s->nonClientSize;
+				v2u newWindowSize = newClientSize + s->nonClientSize;
 				if (newWindowSize.x > usableDesktopSize.x || newWindowSize.y > usableDesktopSize.y)
 				{
 					if (newZoomFactor > s->zoomFactor)
@@ -266,8 +266,8 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 				// TODO: Maybe account for the shadow? (window - client - border)
 				// or DwmGetWindowAttribute(hWnd, DWMWA_EXTENDED_FRAME_BOUNDS, &extendedRect, sizeof(extendedRect));
 				v2i newWindowTopLeft;
-				newWindowTopLeft.x = windowCenter.x - (newWindowSize.x / 2);
-				newWindowTopLeft.y = windowCenter.y - (newWindowSize.y / 2);
+				newWindowTopLeft.x = windowCenter.x - ((i32) newWindowSize.x / 2);
+				newWindowTopLeft.y = windowCenter.y - ((i32) newWindowSize.y / 2);
 
 				if (newWindowTopLeft.x < 0) newWindowTopLeft.x = 0;
 				if (newWindowTopLeft.y < 0) newWindowTopLeft.y = 0;
@@ -277,8 +277,8 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 					nullptr,
 					newWindowTopLeft.x,
 					newWindowTopLeft.y,
-					newWindowSize.x,
-					newWindowSize.y,
+					(i32) newWindowSize.x,
+					(i32) newWindowSize.y,
 					0
 				);
 				LOG_LAST_ERROR_IF(!success, "SetWindowPos failed", Severity::Warning, return 0);

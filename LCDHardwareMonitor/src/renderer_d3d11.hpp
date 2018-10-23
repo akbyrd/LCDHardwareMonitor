@@ -75,18 +75,22 @@ struct InputLayout
 
 struct VertexShaderData
 {
+	VertexShader               ref;
 	String                     name;
 	// TODO: Needs to be ref counted or folded in
 	InputLayout*               inputLayout;
-	ConstantBufferData         constantBuffer;
+	ConstantBufferData         perFrameBuffer;
+	ConstantBufferData         perObjectBuffer;
 	ComPtr<ID3D11VertexShader> d3dVertexShader;
 	D3D_PRIMITIVE_TOPOLOGY     d3dPrimitveTopology;
 };
 
 struct PixelShaderData
 {
+	PixelShader               ref;
 	String                    name;
-	ConstantBufferData        constantBuffer;
+	ConstantBufferData        perFrameBuffer;
+	ConstantBufferData        perObjectBuffer;
 	ComPtr<ID3D11PixelShader> d3dPixelShader;
 };
 
@@ -114,7 +118,7 @@ struct RendererState
 
 	XMFLOAT4X4         proj                = {};
 	XMFLOAT4X4         wvp                 = {};
-	v2i                renderSize          = {}; // TODO : Change this to unsigned
+	v2u                renderSize          = {};
 	DXGI_FORMAT        renderFormat        = DXGI_FORMAT_UNKNOWN;
 	u32                multisampleCount    = 1;
 	u32                qualityLevelCount   = 0;
@@ -144,7 +148,7 @@ SetDebugObjectName(const ComPtr<T>& resource, const c8 (&name)[TNameLength])
 static void UpdateRasterizerState(RendererState* s);
 
 b32
-Renderer_Initialize(RendererState* s, v2i renderSize)
+Renderer_Initialize(RendererState* s, v2u renderSize)
 {
 	// TODO: This assert style probably needs to be changed
 	Assert(s->d3dDevice                   == nullptr);
@@ -260,8 +264,8 @@ Renderer_Initialize(RendererState* s, v2i renderSize)
 			);
 			LOG_HRESULT_IF_FAILED(hr, "CheckMultisampleQualityLevels failed", Severity::Error, return false);
 
-			renderTextureDesc.Width              = (u32) renderSize.x;
-			renderTextureDesc.Height             = (u32) renderSize.y;
+			renderTextureDesc.Width              = renderSize.x;
+			renderTextureDesc.Height             = renderSize.y;
 			renderTextureDesc.MipLevels          = 1;
 			renderTextureDesc.ArraySize          = 1;
 			// TODO: Switch to DXGI_FORMAT_B8G8R8A8_UNORM_SRGB for linear rendering
@@ -295,8 +299,8 @@ Renderer_Initialize(RendererState* s, v2i renderSize)
 		// Create depth buffer
 		{
 			D3D11_TEXTURE2D_DESC depthDesc = {};
-			depthDesc.Width              = (u32) s->renderSize.x;
-			depthDesc.Height             = (u32) s->renderSize.y;
+			depthDesc.Width              = s->renderSize.x;
+			depthDesc.Height             = s->renderSize.y;
 			depthDesc.MipLevels          = 1;
 			depthDesc.ArraySize          = 1;
 			depthDesc.Format             = DXGI_FORMAT_D24_UNORM_S8_UINT;
@@ -489,13 +493,15 @@ Renderer_Teardown(RendererState* s)
 	for (u32 i = 0; i < s->pixelShaders.length; i++)
 	{
 		s->pixelShaders[i].d3dPixelShader.Reset();
-		s->pixelShaders[i].constantBuffer.d3dConstantBuffer.Reset();
+		s->pixelShaders[i].perFrameBuffer.d3dConstantBuffer.Reset();
+		s->pixelShaders[i].perObjectBuffer.d3dConstantBuffer.Reset();
 	}
 
 	for (u32 i = 0; i < s->vertexShaders.length; i++)
 	{
 		s->vertexShaders[i].d3dVertexShader.Reset();
-		s->vertexShaders[i].constantBuffer.d3dConstantBuffer.Reset();
+		s->vertexShaders[i].perFrameBuffer.d3dConstantBuffer.Reset();
+		s->vertexShaders[i].perObjectBuffer.d3dConstantBuffer.Reset();
 	}
 
 	for (u32 i = 0; i < s->inputLayouts.length; i++)
@@ -556,7 +562,8 @@ Renderer_CreateConstantBuffer(RendererState* s, ConstantBufferData* constantBuff
 
 		HRESULT hr = s->d3dDevice->CreateBuffer(&d3dDesc, nullptr, &constantBuffer->d3dConstantBuffer);
 		LOG_HRESULT_IF_FAILED(hr, "Failed to create constant buffer", Severity::Error, return false);
-		SetDebugObjectName(constantBuffer->d3dConstantBuffer, "Constant Buffer (Per-Object)");
+		// TODO: Include update frequency, shader type, and shader name in buffer name
+		SetDebugObjectName(constantBuffer->d3dConstantBuffer, "Constant Buffer");
 	}
 
 	return true;
@@ -566,7 +573,7 @@ Renderer_CreateConstantBuffer(RendererState* s, ConstantBufferData* constantBuff
 // TODO: Perhaps a read-only List would be a good idea.
 // TODO: Unify the error handling / commit semantics of LoadVertexShader and LoadPixelShader
 VertexShader
-Renderer_LoadVertexShader(RendererState* s, c8* path, List<VertexAttribute> attributes, ConstantBufferDesc cBufferDesc)
+Renderer_LoadVertexShader(RendererState* s, c8* path, List<VertexAttribute> attributes, ConstantBufferDesc perFrameBufferDesc)
 {
 	HRESULT hr;
 
@@ -575,7 +582,8 @@ Renderer_LoadVertexShader(RendererState* s, c8* path, List<VertexAttribute> attr
 	// Vertex Shader
 	VertexShaderData vs = {};
 	defer {
-		vs.constantBuffer.d3dConstantBuffer.Reset();
+		vs.perFrameBuffer.d3dConstantBuffer.Reset();
+		vs.perObjectBuffer.d3dConstantBuffer.Reset();
 		vs.d3dVertexShader.Reset();
 	};
 
@@ -592,8 +600,8 @@ Renderer_LoadVertexShader(RendererState* s, c8* path, List<VertexAttribute> attr
 		SetDebugObjectName(vs.d3dVertexShader, "Vertex Shader");
 
 		// Constant Buffer
-		vs.constantBuffer.desc = cBufferDesc;
-		b32 success = Renderer_CreateConstantBuffer(s, &vs.constantBuffer);
+		vs.perFrameBuffer.desc = perFrameBufferDesc;
+		b32 success = Renderer_CreateConstantBuffer(s, &vs.perFrameBuffer);
 		if (!success) return VertexShader::Null;
 	}
 
@@ -667,12 +675,13 @@ Renderer_LoadVertexShader(RendererState* s, c8* path, List<VertexAttribute> attr
 	}
 
 	// TODO: Eventually lists will reuse slots
-	return List_GetRefLast(s->vertexShaders);
+	vs.ref = List_GetRefLast(s->vertexShaders);
+	return vs.ref;
 }
 
 // TODO: Unload functions
 PixelShader
-Renderer_LoadPixelShader(RendererState* s, c8* path, ConstantBufferDesc cBufferDesc)
+Renderer_LoadPixelShader(RendererState* s, c8* path, ConstantBufferDesc perObjectBufferDesc)
 {
 	HRESULT hr;
 	PixelShaderData ps = {};
@@ -694,8 +703,8 @@ Renderer_LoadPixelShader(RendererState* s, c8* path, ConstantBufferDesc cBufferD
 
 	// Constant Buffer
 	{
-		ps.constantBuffer.desc = cBufferDesc;
-		b32 success = Renderer_CreateConstantBuffer(s, &ps.constantBuffer);
+		ps.perObjectBuffer.desc = perObjectBufferDesc;
+		b32 success = Renderer_CreateConstantBuffer(s, &ps.perObjectBuffer);
 		if (!success) return PixelShader::Null;
 	}
 
@@ -707,7 +716,8 @@ Renderer_LoadPixelShader(RendererState* s, c8* path, ConstantBufferDesc cBufferD
 	}
 
 	// TODO: Eventually lists will reuse slots
-	return List_GetRefLast(s->pixelShaders);
+	ps.ref = List_GetRefLast(s->pixelShaders);
+	return ps.ref;
 }
 
 void*
@@ -756,12 +766,15 @@ Renderer_Render(RendererState* s)
 	s->d3dContext->ClearDepthStencilView(s->d3dDepthBufferView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
 
 	// Update Camera
-	XMVECTOR pos    = {0, 0, 0};
-	XMVECTOR target = {0, 0, 1};
-	XMVECTOR up     = {0, 1, 0};
+	XMVECTOR pos    = { 0, 0, 0 };
+	XMVECTOR target = { 0, 0, 1 };
+	XMVECTOR up     = { 0, 1, 0 };
 
 	XMMATRIX V = XMMatrixLookAtLH(pos, target, up);
 	XMMATRIX P = XMLoadFloat4x4(&s->proj);
+
+	VertexShader lastVS = VertexShader::Null;
+	 PixelShader lastPS =  PixelShader::Null;
 
 	// TODO: Sort draws
 	for (u32 i = 0; i < s->drawCalls.length; i++)
@@ -775,22 +788,44 @@ Renderer_Render(RendererState* s)
 		XMMATRIX WVP = XMMatrixTranspose(W * V * P);
 		XMStoreFloat4x4(&s->wvp, WVP);
 
-		// Vertex Shader
-		success = Renderer_UpdateConstantBuffer(s, vs->constantBuffer);
-		if (!success) continue;
+		// TODO: Slot numbers are wrong
 
-		s->d3dContext->VSSetShader(vs->d3dVertexShader.Get(), nullptr, 0);
-		s->d3dContext->VSSetConstantBuffers(0, 1, vs->constantBuffer.d3dConstantBuffer.GetAddressOf());
-		s->d3dContext->IASetInputLayout(vs->inputLayout->d3dInputLayout.Get());
-		//s->d3dContext->IASetVertexBuffers(0, 1, vBuffer.GetAddressOf(), &mesh->vStride, &mesh->vOffset);
-		s->d3dContext->IASetPrimitiveTopology(vs->d3dPrimitveTopology);
+		// Vertex Shader
+		{
+			s->d3dContext->VSSetShader(vs->d3dVertexShader.Get(), nullptr, 0);
+			s->d3dContext->IASetInputLayout(vs->inputLayout->d3dInputLayout.Get());
+			//s->d3dContext->IASetVertexBuffers(0, 1, vBuffer.GetAddressOf(), &mesh->vStride, &mesh->vOffset);
+			s->d3dContext->IASetPrimitiveTopology(vs->d3dPrimitveTopology);
+
+			if (vs->ref != lastVS)
+			{
+				success = Renderer_UpdateConstantBuffer(s, vs->perFrameBuffer);
+				if (!success) continue;
+				s->d3dContext->VSSetConstantBuffers(0, 1, vs->perFrameBuffer.d3dConstantBuffer.GetAddressOf());
+			}
+			lastVS = vs->ref;
+
+			//success = Renderer_UpdateConstantBuffer(s, vs->perObjectBuffer);
+			//if (!success) continue;
+			//s->d3dContext->VSSetConstantBuffers(0, 1, vs->perObjectBuffer.d3dConstantBuffer.GetAddressOf());
+		}
 
 		// Pixel Shader
-		success = Renderer_UpdateConstantBuffer(s, ps->constantBuffer);
-		if (!success) continue;
+		{
+			s->d3dContext->PSSetShader(ps->d3dPixelShader.Get(), nullptr, 0);
 
-		s->d3dContext->PSSetShader(ps->d3dPixelShader.Get(), nullptr, 0);
-		s->d3dContext->PSSetConstantBuffers(0, 1, ps->constantBuffer.d3dConstantBuffer.GetAddressOf());
+			if (ps->ref != lastPS)
+			{
+				//success = Renderer_UpdateConstantBuffer(s, ps->perFrameBuffer);
+				//if (!success) continue;
+				//s->d3dContext->PSSetConstantBuffers(0, 1, ps->perFrameBuffer.d3dConstantBuffer.GetAddressOf());
+			}
+			lastPS = ps->ref;
+
+			success = Renderer_UpdateConstantBuffer(s, ps->perObjectBuffer);
+			if (!success) continue;
+			s->d3dContext->PSSetConstantBuffers(0, 1, ps->perObjectBuffer.d3dConstantBuffer.GetAddressOf());
+		}
 
 		// TODO: Leave constant buffers bound?
 
@@ -848,8 +883,8 @@ Renderer_CreateSharedD3D9RenderTexture(RendererState* s)
 
 	Assert(s->renderFormat == DXGI_FORMAT_B8G8R8A8_UNORM);
 	hr = s->d3d9Device->CreateTexture(
-		(u32) s->renderSize.x,
-		(u32) s->renderSize.y,
+		s->renderSize.x,
+		s->renderSize.y,
 		1,
 		D3DUSAGE_RENDERTARGET,
 		D3DFMT_A8R8G8B8,
