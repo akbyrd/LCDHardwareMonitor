@@ -181,7 +181,7 @@ RemoveWidgetDefinitions(PluginContext* context)
 }
 
 static PixelShader
-LoadPixelShader(PluginContext* context, c8* _path, List<ConstantBufferDesc> cBufDescs)
+LoadPixelShader(PluginContext* context, c8* _path, Slice<ConstantBufferDesc> cBufDescs)
 {
 	if (!context->success) return PixelShader::Null;
 	context->success = false;
@@ -315,30 +315,18 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 	{
 		// Vertex shader
 		{
-			List<VertexAttribute> vsAttributes = {};
-			List_Reserve(vsAttributes, 2);
-			LOG_IF(!vsAttributes, "Failed to allocate default vertex shader attributes", Severity::Error, return false);
-			defer { List_Free(vsAttributes); };
-
-			VertexAttribute va1 = { VertexAttributeSemantic::Position, VertexAttributeFormat::Float3 };
-			VertexAttribute va2 = { VertexAttributeSemantic::Color,    VertexAttributeFormat::Float4 };
-			VertexAttribute va3 = { VertexAttributeSemantic::TexCoord, VertexAttributeFormat::Float2 };
-			List_Append(vsAttributes, va1);
-			List_Append(vsAttributes, va2);
-			List_Append(vsAttributes, va3);
-
-			List<ConstantBufferDesc> cBufDescs = {};
-			List_Reserve(cBufDescs, 1);
-			LOG_IF(!cBufDescs, "Failed to allocate default vertex shader constant buffer descs", Severity::Error, return false);
-			defer { List_Free(cBufDescs); };
+			VertexAttribute vsAttributes[] = {
+				{ VertexAttributeSemantic::Position, VertexAttributeFormat::Float3 },
+				{ VertexAttributeSemantic::Color,    VertexAttributeFormat::Float4 },
+				{ VertexAttributeSemantic::TexCoord, VertexAttributeFormat::Float2 },
+			};
 
 			ConstantBufferDesc cBufDesc = {};
 			cBufDesc.size      = sizeof(Matrix);
 			cBufDesc.data      = Renderer_GetWVPPointer(s->renderer);
 			cBufDesc.frequency = ConstantBufferFrequency::PerObject;
-			List_Append(cBufDescs, cBufDesc);
 
-			VertexShader vs = Renderer_LoadVertexShader(s->renderer, "Shaders/Basic Vertex Shader.cso", vsAttributes, cBufDescs);
+			VertexShader vs = Renderer_LoadVertexShader(s->renderer, "Shaders/Basic Vertex Shader.cso", vsAttributes, cBufDesc);
 			LOG_IF(!vs, "Failed to load default vertex shader", Severity::Error, return false);
 			Assert(vs == StandardVertexShader::Debug);
 		}

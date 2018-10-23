@@ -46,7 +46,7 @@ struct WidgetPlugin
 	{
 		// TODO: Standardize by-value or by-ref
 		using AddWidgetDefinitionFn = void       (PluginContext*, WidgetDefinition*);
-		using LoadPixelShaderFn     = PixelShader(PluginContext*, c8* path, List<ConstantBufferDesc>);
+		using LoadPixelShaderFn     = PixelShader(PluginContext*, c8* path, Slice<ConstantBufferDesc>);
 
 		AddWidgetDefinitionFn* AddWidgetDefinition;
 		LoadPixelShaderFn*     LoadPixelShader;

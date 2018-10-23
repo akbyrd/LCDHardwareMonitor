@@ -4,11 +4,10 @@
 
 // TODO: I think we want separate implementations for List, Bytes, and Strings
 // TODO: Static string when capacity < 0?
-// TODO: String views or slices (they need to know they don't own the string.
 // Actually, the 'static string' concept will work here I think).
 
 // NOTE: Strings are null terminated for C compatibility.
-//
+
 #include <stdarg.h>
 
 using String = List<c8>;

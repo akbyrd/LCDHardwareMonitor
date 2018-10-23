@@ -9,7 +9,7 @@
 //   be called upon the copy-assignment. Using the provided functions is
 //   recommended.
 //
-// - Does *not* support move semantics. Items are copy-assigned into spots.
+// - Does *not* support move semantics. Items are copy-assigned into slots.
 //   Using classes with single ownership semantics (i.e. ones that will free a
 //   resource in the destructor) are not recommended.
 //
@@ -21,6 +21,21 @@
 //   Append return a nullptr instead of a pointer to the new slot.
 
 #include <memory>
+
+template<typename T>
+struct Slice
+{
+	u32 length;
+	T*  data;
+
+	// TODO: Wish we didn't have all these constructors just to support implicit conversions for single elements.
+	Slice() { length = 0; data = nullptr; }
+	Slice(u32 length, T* data) { Slice::length = length; Slice::data = data; }
+	Slice(T& element) { length = 1; data = &element; }
+	template<typename T, u32 Length>
+	Slice(T(&arr)[Length]) { length = Length; data = arr; }
+	inline T& operator [](u32 i) { return data[i]; }
+};
 
 template<typename T>
 struct ListRef
@@ -51,6 +66,7 @@ struct List
 	inline    operator T*()       { return data; }
 	// TODO: Maybe we want to be checking length, not data?
 	inline    operator b32()      { return data != nullptr; }
+	inline    operator Slice<T>() { return { length, data }; }
 };
 
 template<typename T>
@@ -127,7 +143,7 @@ List_Append(List<T>& list)
 
 template<typename T>
 inline b32
-List_AppendRange(List<T>& list, List<T> items)
+List_AppendRange(List<T>& list, Slice<T> items)
 {
 	if (!List_Reserve(list, list.length + items.length))
 		return false;

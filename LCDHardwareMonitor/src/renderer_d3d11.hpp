@@ -577,7 +577,7 @@ Renderer_CreateConstantBuffer(RendererState* s, ConstantBufferData* constantBuff
 // TODO: Perhaps a read-only List would be a good idea.
 // TODO: Unify the error handling / commit semantics of LoadVertexShader and LoadPixelShader
 VertexShader
-Renderer_LoadVertexShader(RendererState* s, c8* path, List<VertexAttribute> attributes, List<ConstantBufferDesc> cBufDescs)
+Renderer_LoadVertexShader(RendererState* s, c8* path, Slice<VertexAttribute> attributes, Slice<ConstantBufferDesc> cBufDescs)
 {
 	HRESULT hr;
 
@@ -628,8 +628,8 @@ Renderer_LoadVertexShader(RendererState* s, c8* path, List<VertexAttribute> attr
 	InputLayout il = {};
 	defer { il.d3dInputLayout.Reset(); };
 	{
-		il.attibutes = List_Duplicate(attributes);
-		LOG_IF(!il.attibutes, "Failed to allocate space for input layout attributes", Severity::Warning, return VertexShader::Null);
+		b32 success = List_AppendRange(il.attibutes, attributes);
+		LOG_IF(!success, "Failed to allocate space for input layout attributes", Severity::Warning, return VertexShader::Null);
 
 		List<D3D11_INPUT_ELEMENT_DESC> vsInputDescs = {};
 		List_Reserve(vsInputDescs, attributes.length);
@@ -700,7 +700,7 @@ Renderer_LoadVertexShader(RendererState* s, c8* path, List<VertexAttribute> attr
 
 // TODO: Unload functions
 PixelShader
-Renderer_LoadPixelShader(RendererState* s, c8* path, List<ConstantBufferDesc> cBufDescs)
+Renderer_LoadPixelShader(RendererState* s, c8* path, Slice<ConstantBufferDesc> cBufDescs)
 {
 	HRESULT hr;
 	PixelShaderData ps = {};
