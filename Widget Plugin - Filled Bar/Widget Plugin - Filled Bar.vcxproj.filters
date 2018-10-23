@@ -19,4 +19,7 @@
       <Filter>Resources</Filter>
     </FxCompile>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\Filled Bar Constant Buffer.h" />
+  </ItemGroup>
 </Project>

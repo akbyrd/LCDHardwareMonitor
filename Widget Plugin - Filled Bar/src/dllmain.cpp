@@ -1,4 +1,5 @@
 #include "LHMAPI.h"
+#include "Filled Bar Constant Buffer.h"
 
 struct BarWidget
 {
@@ -12,29 +13,6 @@ InitializeBarWidget(Widget* widget)
 	BarWidget* barWidget = GetWidgetData<BarWidget>(widget);
 	barWidget->size = { 240, 12 };
 }
-
-// NOTE: I don't *think* the CPU side struct actually needs to be aligned. We
-// memcpy to a GPU buffer and that will be aligned by the API.
-#pragma pack(push, 4)
-struct PSConstants
-{
-	// TODO: How do we get this? (Do the UV calculation in CPU, I think)
-	v2  res = { 240, 12 };
-	r32 padding1[2];
-
-	v4  borderColor = Color32(47, 112, 22, 255);
-	r32 borderSize  = 1.0f;
-	r32 borderBlur  = 0.0f;
-	r32 padding2[2];
-
-	v4  fillColor  = Color32(47, 112, 22, 255);;
-	r32 fillAmount = 0.5f;
-	r32 fillBlur   = 0.0f;
-	r32 padding3[2];
-
-	v4 backgroundColor = { 0.0f, 0.0f, 0.0f, 1.0f };
-};
-#pragma pack(pop)
 
 // TODO: Allocate in an application supplied arena.
 static PixelShader filledBarPS = {};

@@ -1,7 +1,6 @@
 Next
 	Cleanup Pass
 		Stick PSConstants in BarWidget
-		Move constant buffers to shared headers
 		Allocate constant buffers from a simulation owned arena
 		Move InputLayout into VertexShader probably
 		Implement materials

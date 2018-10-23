@@ -4,20 +4,8 @@
 // TODO: Corners in the border blur don't look right
 // TODO: The border blur size isn't quite correct (give it large numbers, expect it to cap out. Not sure if it does?)
 
-cbuffer cbPerObject
-{
-	float2 res;
-
-	float4 borderColor;
-	float  borderSize;
-	float  borderBlur;
-
-	float4 fillColor;
-	float  fillAmount;
-	float  fillBlur;
-
-	float4 backgroundColor;
-};
+// TODO: Move
+#include "../src/Filled Bar Constant Buffer.h"
 
 struct PixelFragment
 {
