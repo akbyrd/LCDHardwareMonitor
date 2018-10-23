@@ -25,11 +25,19 @@ namespace StandardMesh
 	//static const Mesh Grid     = { 6 };
 };
 
+enum struct ConstantBufferFrequency
+{
+	Null,
+	PerFrame,
+	PerObject,
+};
+
 // TODO: Dirty flag?
 struct ConstantBufferDesc
 {
-	u32   size;
-	void* data;
+	u32                     size;
+	void*                   data;
+	ConstantBufferFrequency frequency;
 
 	static ConstantBufferDesc Null;
 };

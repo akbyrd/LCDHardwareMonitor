@@ -23,6 +23,8 @@ Next
 		Support VS Code
 		Decide on error vs warning policy and update all logging
 		Move InputLayout into VertexShader probably
+		Pass lists as an ArrayView. Let List<T> and T[] implictly convert to ArrayView.
+		This will allow passing stack allocated arrays!
 
 	Design Pass
 		Can plugins share shaders? (maybe not)

@@ -67,10 +67,18 @@ Initialize(PluginContext* context, WidgetPlugin::InitializeAPI api)
 	widgetDef.initialize = &InitializeBarWidget;
 	api.AddWidgetDefinition(context, &widgetDef);
 
-	ConstantBufferDesc cBufferDesc = {};
-	cBufferDesc.size = sizeof(PSConstants);
-	cBufferDesc.data = &psConstants;
-	filledBarPS = api.LoadPixelShader(context, "Filled Bar Pixel Shader.cso", cBufferDesc);
+	List<ConstantBufferDesc> cBufDescs = {};
+	List_Reserve(cBufDescs, 1);
+	//LOG_IF(!cBufDescs, "Failed to allocate default vertex shader constant buffer descs", Severity::Error, return false);
+	defer { List_Free(cBufDescs); };
+
+	ConstantBufferDesc cBufDesc = {};
+	cBufDesc.size      = sizeof(PSConstants);
+	cBufDesc.data      = &psConstants;
+	cBufDesc.frequency = ConstantBufferFrequency::PerObject;
+	List_Append(cBufDescs, cBufDesc);
+
+	filledBarPS = api.LoadPixelShader(context, "Filled Bar Pixel Shader.cso", cBufDescs);
 	return true;
 }
 

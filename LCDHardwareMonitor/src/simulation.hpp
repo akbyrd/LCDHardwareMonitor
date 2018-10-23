@@ -181,7 +181,7 @@ RemoveWidgetDefinitions(PluginContext* context)
 }
 
 static PixelShader
-LoadPixelShader(PluginContext* context, c8* _path, ConstantBufferDesc constantBuffer)
+LoadPixelShader(PluginContext* context, c8* _path, List<ConstantBufferDesc> cBufDescs)
 {
 	if (!context->success) return PixelShader::Null;
 	context->success = false;
@@ -192,7 +192,7 @@ LoadPixelShader(PluginContext* context, c8* _path, ConstantBufferDesc constantBu
 	context->success = String_Format(path, "%s/%s", pluginHeader->directory, _path);
 	LOG_IF(!context->success, "Failed to format pixel shader path", Severity::Warning, return PixelShader::Null);
 
-	PixelShader ps = Renderer_LoadPixelShader(context->s->renderer, path, constantBuffer);
+	PixelShader ps = Renderer_LoadPixelShader(context->s->renderer, path, cBufDescs);
 	LOG_IF(!ps, "Failed to load pixel shader", Severity::Warning, return PixelShader::Null);
 
 	context->success = true;
@@ -318,6 +318,7 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 			List<VertexAttribute> vsAttributes = {};
 			List_Reserve(vsAttributes, 2);
 			LOG_IF(!vsAttributes, "Failed to allocate default vertex shader attributes", Severity::Error, return false);
+			defer { List_Free(vsAttributes); };
 
 			VertexAttribute va1 = { VertexAttributeSemantic::Position, VertexAttributeFormat::Float3 };
 			VertexAttribute va2 = { VertexAttributeSemantic::Color,    VertexAttributeFormat::Float4 };
@@ -326,18 +327,25 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 			List_Append(vsAttributes, va2);
 			List_Append(vsAttributes, va3);
 
-			ConstantBufferDesc cBufferDesc = {};
-			cBufferDesc.size = sizeof(Matrix);
-			cBufferDesc.data = Renderer_GetWVPPointer(s->renderer);
+			List<ConstantBufferDesc> cBufDescs = {};
+			List_Reserve(cBufDescs, 1);
+			LOG_IF(!cBufDescs, "Failed to allocate default vertex shader constant buffer descs", Severity::Error, return false);
+			defer { List_Free(cBufDescs); };
 
-			VertexShader vs = Renderer_LoadVertexShader(s->renderer, "Shaders/Basic Vertex Shader.cso", vsAttributes, cBufferDesc);
+			ConstantBufferDesc cBufDesc = {};
+			cBufDesc.size      = sizeof(Matrix);
+			cBufDesc.data      = Renderer_GetWVPPointer(s->renderer);
+			cBufDesc.frequency = ConstantBufferFrequency::PerObject;
+			List_Append(cBufDescs, cBufDesc);
+
+			VertexShader vs = Renderer_LoadVertexShader(s->renderer, "Shaders/Basic Vertex Shader.cso", vsAttributes, cBufDescs);
 			LOG_IF(!vs, "Failed to load default vertex shader", Severity::Error, return false);
 			Assert(vs == StandardVertexShader::Debug);
 		}
 
 		// Pixel shader
 		{
-			PixelShader ps = Renderer_LoadPixelShader(s->renderer, "Shaders/Basic Pixel Shader.cso", ConstantBufferDesc::Null);
+			PixelShader ps = Renderer_LoadPixelShader(s->renderer, "Shaders/Basic Pixel Shader.cso", {});
 			LOG_IF(!ps, "Failed to load default pixel shader", Severity::Error, return false);
 			Assert(ps == StandardPixelShader::Debug);
 		}

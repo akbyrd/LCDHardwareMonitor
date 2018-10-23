@@ -278,7 +278,6 @@ using Bytes = List<u8>;
 // TODO: Settle on references or pointers
 // TODO: Handle cases where this may fail
 // TODO: Where should memory be included?
-// TODO: Create can fail too! Yay!
 // TODO: List_Shrink - if <=25% full shrink to 50%
 // TODO: Allow foreach style usage
 // TODO: Use placement new to avoid calling destructors on garbage objects?

@@ -79,8 +79,7 @@ struct VertexShaderData
 	String                     name;
 	// TODO: Needs to be ref counted or folded in
 	InputLayout*               inputLayout;
-	ConstantBufferData         perFrameBuffer;
-	ConstantBufferData         perObjectBuffer;
+	List<ConstantBufferData>   constantBuffers;
 	ComPtr<ID3D11VertexShader> d3dVertexShader;
 	D3D_PRIMITIVE_TOPOLOGY     d3dPrimitveTopology;
 };
@@ -89,8 +88,7 @@ struct PixelShaderData
 {
 	PixelShader               ref;
 	String                    name;
-	ConstantBufferData        perFrameBuffer;
-	ConstantBufferData        perObjectBuffer;
+	List<ConstantBufferData>  constantBuffers;
 	ComPtr<ID3D11PixelShader> d3dPixelShader;
 };
 
@@ -492,16 +490,22 @@ Renderer_Teardown(RendererState* s)
 {
 	for (u32 i = 0; i < s->pixelShaders.length; i++)
 	{
-		s->pixelShaders[i].d3dPixelShader.Reset();
-		s->pixelShaders[i].perFrameBuffer.d3dConstantBuffer.Reset();
-		s->pixelShaders[i].perObjectBuffer.d3dConstantBuffer.Reset();
+		PixelShaderData* ps = &s->pixelShaders[i];
+
+		ps->d3dPixelShader.Reset();
+		for (u32 j = 0; j < ps->constantBuffers.length; j++)
+			ps->constantBuffers[j].d3dConstantBuffer.Reset();
+		List_Free(ps->constantBuffers);
 	}
 
 	for (u32 i = 0; i < s->vertexShaders.length; i++)
 	{
-		s->vertexShaders[i].d3dVertexShader.Reset();
-		s->vertexShaders[i].perFrameBuffer.d3dConstantBuffer.Reset();
-		s->vertexShaders[i].perObjectBuffer.d3dConstantBuffer.Reset();
+		VertexShaderData* vs = &s->vertexShaders[i];
+
+		vs->d3dVertexShader.Reset();
+		for (u32 j = 0; j < vs->constantBuffers.length; j++)
+			vs->constantBuffers[j].d3dConstantBuffer.Reset();
+		List_Free(vs->constantBuffers);
 	}
 
 	for (u32 i = 0; i < s->inputLayouts.length; i++)
@@ -573,7 +577,7 @@ Renderer_CreateConstantBuffer(RendererState* s, ConstantBufferData* constantBuff
 // TODO: Perhaps a read-only List would be a good idea.
 // TODO: Unify the error handling / commit semantics of LoadVertexShader and LoadPixelShader
 VertexShader
-Renderer_LoadVertexShader(RendererState* s, c8* path, List<VertexAttribute> attributes, ConstantBufferDesc perFrameBufferDesc)
+Renderer_LoadVertexShader(RendererState* s, c8* path, List<VertexAttribute> attributes, List<ConstantBufferDesc> cBufDescs)
 {
 	HRESULT hr;
 
@@ -582,9 +586,11 @@ Renderer_LoadVertexShader(RendererState* s, c8* path, List<VertexAttribute> attr
 	// Vertex Shader
 	VertexShaderData vs = {};
 	defer {
-		vs.perFrameBuffer.d3dConstantBuffer.Reset();
-		vs.perObjectBuffer.d3dConstantBuffer.Reset();
 		vs.d3dVertexShader.Reset();
+
+		for (u32 i = 0; i < vs.constantBuffers.length; i++)
+			vs.constantBuffers[i].d3dConstantBuffer.Reset();
+		List_Free(vs.constantBuffers);
 	};
 
 	Bytes vsBytes = {};
@@ -599,10 +605,22 @@ Renderer_LoadVertexShader(RendererState* s, c8* path, List<VertexAttribute> attr
 		LOG_HRESULT_IF_FAILED(hr, "Failed to create vertex shader", Severity::Error, return VertexShader::Null);
 		SetDebugObjectName(vs.d3dVertexShader, "Vertex Shader");
 
-		// Constant Buffer
-		vs.perFrameBuffer.desc = perFrameBufferDesc;
-		b32 success = Renderer_CreateConstantBuffer(s, &vs.perFrameBuffer);
-		if (!success) return VertexShader::Null;
+		// Constant Buffers
+		if (cBufDescs.length)
+		{
+			List_Reserve(vs.constantBuffers, cBufDescs.length);
+			LOG_IF(!vs.constantBuffers, "Failed to allocate space for vertex shader constant buffers", Severity::Error, return VertexShader::Null);
+
+			for (u32 i = 0; i < cBufDescs.length; i++)
+			{
+				ConstantBufferData* cBuf = List_Append(vs.constantBuffers);
+				LOG_IF(cBufDescs[i].frequency == ConstantBufferFrequency::Null, "Constant buffer frequency not set.", Severity::Warning, continue);
+
+				cBuf->desc = cBufDescs[i];
+				b32 success = Renderer_CreateConstantBuffer(s, cBuf);
+				if (!success) return VertexShader::Null;
+			}
+		}
 	}
 
 
@@ -610,7 +628,6 @@ Renderer_LoadVertexShader(RendererState* s, c8* path, List<VertexAttribute> attr
 	InputLayout il = {};
 	defer { il.d3dInputLayout.Reset(); };
 	{
-		// TODO: Why are we duplicating these?
 		il.attibutes = List_Duplicate(attributes);
 		LOG_IF(!il.attibutes, "Failed to allocate space for input layout attributes", Severity::Warning, return VertexShader::Null);
 
@@ -663,28 +680,37 @@ Renderer_LoadVertexShader(RendererState* s, c8* path, List<VertexAttribute> attr
 
 
 	// Commit
+	VertexShaderData* vs2 = nullptr;
 	{
 		InputLayout* il2 = List_Append(s->inputLayouts, il);
 		LOG_IF(!il2, "Failed to allocate space for input layout", Severity::Warning, return VertexShader::Null);
 		il = {};
 
-		vs.inputLayout = il2;
-		VertexShaderData* vs2 = List_Append(s->vertexShaders, vs);
+		vs2 = List_Append(s->vertexShaders, vs);
 		LOG_IF(!vs2, "Failed to allocate space for vertex shader", Severity::Warning, return VertexShader::Null);
 		vs = {};
+
+		vs2->inputLayout = il2;
+		// TODO: Eventually lists will reuse slots
+		vs2->ref = List_GetRefLast(s->vertexShaders);
 	}
 
-	// TODO: Eventually lists will reuse slots
-	vs.ref = List_GetRefLast(s->vertexShaders);
-	return vs.ref;
+	return vs2->ref;
 }
 
 // TODO: Unload functions
 PixelShader
-Renderer_LoadPixelShader(RendererState* s, c8* path, ConstantBufferDesc perObjectBufferDesc)
+Renderer_LoadPixelShader(RendererState* s, c8* path, List<ConstantBufferDesc> cBufDescs)
 {
 	HRESULT hr;
 	PixelShaderData ps = {};
+	defer {
+		ps.d3dPixelShader.Reset();
+
+		for (u32 i = 0; i < ps.constantBuffers.length; i++)
+			ps.constantBuffers[i].d3dConstantBuffer.Reset();
+		List_Free(ps.constantBuffers);
+	};
 
 	// Load
 	Bytes psBytes = {};
@@ -701,23 +727,35 @@ Renderer_LoadPixelShader(RendererState* s, c8* path, ConstantBufferDesc perObjec
 		SetDebugObjectName(ps.d3dPixelShader, "Pixel Shader");
 	}
 
-	// Constant Buffer
+	// Constant Buffers
+	if (cBufDescs.length)
 	{
-		ps.perObjectBuffer.desc = perObjectBufferDesc;
-		b32 success = Renderer_CreateConstantBuffer(s, &ps.perObjectBuffer);
-		if (!success) return PixelShader::Null;
+		List_Reserve(ps.constantBuffers, cBufDescs.length);
+		LOG_IF(!ps.constantBuffers, "Failed to allocate space for pixel shader constant buffers", Severity::Error, return PixelShader::Null);
+
+		for (u32 i = 0; i < cBufDescs.length; i++)
+		{
+			ConstantBufferData* cBuf = List_Append(ps.constantBuffers);
+			LOG_IF(cBufDescs[i].frequency == ConstantBufferFrequency::Null, "Constant buffer frequency not set.", Severity::Warning, continue);
+
+			cBuf->desc = cBufDescs[i];
+			b32 success = Renderer_CreateConstantBuffer(s, cBuf);
+			if (!success) return PixelShader::Null;
+		}
 	}
 
 	// Commit
+	PixelShaderData* ps2 = nullptr;
 	{
-		PixelShaderData* ps2 = List_Append(s->pixelShaders, ps);
+		ps2 = List_Append(s->pixelShaders, ps);
 		LOG_IF(!ps2, "Failed to allocate space for pixel shader", Severity::Warning, return PixelShader::Null);
 		ps = {};
+
+		// TODO: Eventually lists will reuse slots
+		ps2->ref = List_GetRefLast(s->pixelShaders);
 	}
 
-	// TODO: Eventually lists will reuse slots
-	ps.ref = List_GetRefLast(s->pixelShaders);
-	return ps.ref;
+	return ps2->ref;
 }
 
 void*
@@ -760,8 +798,6 @@ Renderer_Render(RendererState* s)
 	Assert(s->d3dContext       != nullptr);
 	Assert(s->d3dRenderTexture != nullptr);
 
-	b32 success;
-
 	s->d3dContext->ClearRenderTargetView(s->d3dRenderTargetView.Get(), DirectX::Colors::Black);
 	s->d3dContext->ClearDepthStencilView(s->d3dDepthBufferView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
 
@@ -797,34 +833,54 @@ Renderer_Render(RendererState* s)
 			//s->d3dContext->IASetVertexBuffers(0, 1, vBuffer.GetAddressOf(), &mesh->vStride, &mesh->vOffset);
 			s->d3dContext->IASetPrimitiveTopology(vs->d3dPrimitveTopology);
 
-			if (vs->ref != lastVS)
+			for (u32 j = 0; j < vs->constantBuffers.length; j++)
 			{
-				success = Renderer_UpdateConstantBuffer(s, vs->perFrameBuffer);
+				ConstantBufferData* cBuf = &vs->constantBuffers[j];
+				switch (cBuf->desc.frequency)
+				{
+					default: Assert(false); continue;
+					case ConstantBufferFrequency::Null: continue;
+
+					case ConstantBufferFrequency::PerFrame:
+						break;
+
+					case ConstantBufferFrequency::PerObject:
+						if (vs->ref == lastVS) continue;
+						break;
+				}
+
+				b32 success = Renderer_UpdateConstantBuffer(s, *cBuf);
 				if (!success) continue;
-				s->d3dContext->VSSetConstantBuffers(0, 1, vs->perFrameBuffer.d3dConstantBuffer.GetAddressOf());
+				s->d3dContext->VSSetConstantBuffers(j, 1, cBuf->d3dConstantBuffer.GetAddressOf());
 			}
 			lastVS = vs->ref;
-
-			//success = Renderer_UpdateConstantBuffer(s, vs->perObjectBuffer);
-			//if (!success) continue;
-			//s->d3dContext->VSSetConstantBuffers(0, 1, vs->perObjectBuffer.d3dConstantBuffer.GetAddressOf());
 		}
 
 		// Pixel Shader
 		{
 			s->d3dContext->PSSetShader(ps->d3dPixelShader.Get(), nullptr, 0);
 
-			if (ps->ref != lastPS)
+			for (u32 j = 0; j < ps->constantBuffers.length; j++)
 			{
-				//success = Renderer_UpdateConstantBuffer(s, ps->perFrameBuffer);
-				//if (!success) continue;
-				//s->d3dContext->PSSetConstantBuffers(0, 1, ps->perFrameBuffer.d3dConstantBuffer.GetAddressOf());
+				ConstantBufferData* cBuf = &ps->constantBuffers[j];
+				switch (cBuf->desc.frequency)
+				{
+					default: Assert(false); continue;
+					case ConstantBufferFrequency::Null: continue;
+
+					case ConstantBufferFrequency::PerFrame:
+						break;
+
+					case ConstantBufferFrequency::PerObject:
+						if (ps->ref == lastPS) continue;
+						break;
+				}
+
+				b32 success = Renderer_UpdateConstantBuffer(s, *cBuf);
+				if (!success) continue;
+				s->d3dContext->PSSetConstantBuffers(j, 1, cBuf->d3dConstantBuffer.GetAddressOf());
 			}
 			lastPS = ps->ref;
-
-			success = Renderer_UpdateConstantBuffer(s, ps->perObjectBuffer);
-			if (!success) continue;
-			s->d3dContext->PSSetConstantBuffers(0, 1, ps->perObjectBuffer.d3dConstantBuffer.GetAddressOf());
 		}
 
 		// TODO: Leave constant buffers bound?
