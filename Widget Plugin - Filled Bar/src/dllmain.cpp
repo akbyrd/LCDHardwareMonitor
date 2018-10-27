@@ -4,6 +4,8 @@
 struct BarWidget
 {
 	v2u         size;
+	r32         borderSize;
+	r32         borderBlur;
 	PSConstants constants;
 };
 
@@ -12,9 +14,17 @@ static void
 InitializeBarWidget(Widget* widget)
 {
 	BarWidget* barWidget = GetWidgetData<BarWidget>(widget);
-	*barWidget = {};
-	barWidget->size = { 240, 12 };
-	barWidget->constants.size = { (r32) barWidget->size.x, (r32) barWidget->size.y };
+
+	barWidget->size       = { 240, 12 };
+	barWidget->borderSize = 1.0f;
+	barWidget->borderBlur = 0.0f;
+
+	v2 pixelsPerUV = { 1.0f / barWidget->size.x, 1.0f / barWidget->size.y };
+	barWidget->constants.borderSizeUV    = barWidget->borderSize * pixelsPerUV;
+	barWidget->constants.borderBlurUV    = barWidget->borderBlur * pixelsPerUV;
+	barWidget->constants.borderColor     = Color32(47, 112, 22, 255);
+	barWidget->constants.fillColor       = Color32(47, 112, 22, 255);
+	barWidget->constants.backgroundColor = Color32( 0,   0,  0, 255);
 }
 
 // TODO: Allocate in an application supplied arena.
@@ -24,13 +34,9 @@ static void
 DrawBarWidget(PluginContext* context, WidgetPlugin::UpdateAPI api, Widget* widget, BarWidget* barWidget)
 {
 	DrawCall dc = {};
-	dc.mesh             = StandardMesh::Quad;
-	dc.world.sx         = r32(barWidget->size.x);
-	dc.world.sy         = r32(barWidget->size.y);
-	dc.world.sz         = 1.0f;
-	dc.world.m33        = 1.0f;
-	dc.world.tx         = r32(widget->position.x);
-	dc.world.ty         = r32(widget->position.y);
+	dc.mesh = StandardMesh::Quad;
+	SetPosition(dc.world, (v2) widget->position);
+	SetScale   (dc.world, (v2) barWidget->size);
 
 	dc.vs               = StandardVertexShader::Debug;
 	dc.cBufPerObjDataVS = api.GetWVPPointer(context);
@@ -72,7 +78,9 @@ Update(PluginContext* context, WidgetPlugin::UpdateAPI api)
 	{
 		Widget* widget = (Widget*) &api.widgetDefinition->instances[i * elemSize];
 		BarWidget* barWidget = (BarWidget*) ((u8*) widget + sizeof(Widget));
-		barWidget->constants.fillAmount = sin(api.t) * sin(api.t);
+
+		r32 phase = (r32) i / (r32) (instanceCount + 1);
+		barWidget->constants.fillAmount = sin(api.t + phase) * sin(api.t + phase);
 		DrawBarWidget(context, api, widget, barWidget);
 	}
 }

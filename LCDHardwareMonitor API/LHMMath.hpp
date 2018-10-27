@@ -64,6 +64,9 @@ union v2t
 	T arr[2];
 
 	T operator[] (i32 index);
+
+	template<typename U>
+	explicit operator v2t<U>();
 };
 
 using v2  = v2t<r32>;
@@ -128,6 +131,15 @@ v2t<T>::operator[] (i32 index)
 	return result;
 }
 
+template<typename T>
+template<typename U>
+inline
+v2t<T>::operator v2t<U>()
+{
+	v2t<U> result = { (U) x, (U) y };
+	return result;
+}
+
 template<typename T, typename U>
 inline v2t<T>
 Min(v2t<T> lhs, v2t<U> rhs)
@@ -178,6 +190,9 @@ union v3t
 	T arr[3];
 
 	T operator[] (i32 index);
+
+	template<typename U>
+	explicit operator v2t<U>();
 };
 
 using v3  = v3t<r32>;
@@ -242,6 +257,15 @@ v3t<T>::operator[] (i32 index)
 	return result;
 }
 
+template<typename T>
+template<typename U>
+inline
+v3t<T>::operator v3t<U>()
+{
+	v3t<U> result = { (U) x, (U) y, (U) z };
+	return result;
+}
+
 template<typename T, typename U>
 inline v3t<T>
 Min(v3t<T> lhs, v3t<U> rhs)
@@ -289,6 +313,9 @@ union v4t
 	T arr[4];
 
 	T operator[] (i32 index);
+
+	template<typename U>
+	explicit operator v2t<U>();
 };
 
 using v4  = v4t<r32>;
@@ -353,6 +380,15 @@ v4t<T>::operator[] (i32 index)
 	return result;
 }
 
+template<typename T>
+template<typename U>
+inline
+v4t<T>::operator v4t<U>()
+{
+	v4t<U> result = { (U) x, (U) y, (U) z, (U) w };
+	return result;
+}
+
 template<typename T, typename U>
 inline v4t<T>
 Min(v4t<T> lhs, v4t<U> rhs)
@@ -410,8 +446,13 @@ union Matrix
 		r32 m20, m21, sz,  m23;
 		r32 m30, m31, m32, m33;
 	};
-	r32 arr[4][4];
-	v4  row[4];
+	r32 arr[4][4] = {
+		1.0f, 0.0f, 0.0f, 0.0f,
+		0.0f, 1.0f, 0.0f, 0.0f,
+		0.0f, 0.0f, 1.0f, 0.0f,
+		0.0f, 0.0f, 0.0f, 1.0f,
+	};
+	v4 row[4];
 
 	v4 operator[] (i32 row);
 };
@@ -421,5 +462,39 @@ Matrix::operator[] (i32 _row)
 {
 	v4 result = row[_row];
 	return result;
+}
+
+template<typename T>
+inline void
+SetPosition(Matrix& m, v2t<T> pos)
+{
+	m.tx = pos.x;
+	m.ty = pos.y;
+}
+
+template<typename T>
+inline void
+SetPosition(Matrix& m, v3t<T> pos)
+{
+	m.tx = pos.x;
+	m.ty = pos.y;
+	m.tz = pos.z;
+}
+
+template<typename T>
+inline void
+SetScale(Matrix& m, v2t<T> scale)
+{
+	m.sx = scale.x;
+	m.sy = scale.y;
+}
+
+template<typename T>
+inline void
+SetScale(Matrix& m, v3t<T> scale)
+{
+	m.sx = scale.x;
+	m.sy = scale.y;
+	m.sz = scale.z;
 }
 #endif

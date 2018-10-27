@@ -58,7 +58,7 @@ struct WidgetPlugin
 		using GetWVPPointerFn = Matrix*(PluginContext*);
 
 
-		float t;
+		r32 t;
 		WidgetDefinition* widgetDefinition;
 		PushDrawCallFn*   PushDrawCall;
 		GetWVPPointerFn*  GetWVPPointer;

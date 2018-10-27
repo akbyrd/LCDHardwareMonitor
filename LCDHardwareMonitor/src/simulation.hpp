@@ -9,8 +9,8 @@ struct SimulationState
 	List<WidgetPlugin>     widgetPlugins;
 	List<WidgetDefinition> widgetDefinitions;
 
-	u64   startTime;
-	float currentTime;
+	u64 startTime;
+	r32 currentTime;
 };
 
 struct PluginContext

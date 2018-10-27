@@ -16,15 +16,10 @@ struct PixelFragment
 
 float4 main(PixelFragment pIn) : SV_TARGET
 {
-	// TODO: Move a bunch of this to the constant buffer
-
 	// Border
-	float2 pixelsPerUV = rcp(size);
-	float2 borderSizeUV = borderSize * pixelsPerUV;
-	float2 borderBlurUV = borderBlur * pixelsPerUV;
-	float2 borderUV = abs(pIn.UV - 0.5f); //[-.5, .5]
+	float2 borderUV    = abs(pIn.UV - 0.5f); //[-.5, .5]
 	float2 borderThing = smoothstep(0.5f - borderBlurUV - borderSizeUV, 0.5f - borderSizeUV, borderUV);
-	float borderMask = max(borderThing.x, borderThing.y);
+	float  borderMask  = max(borderThing.x, borderThing.y);
 
 	// Fill
 	pIn.UV = (1.0f + 2.0f * borderSizeUV) * pIn.UV - borderSizeUV;

@@ -1,6 +1,9 @@
 Next
 	Cleanup Pass
-		Stick PSConstants in BarWidget
+		Combine VS and PS cbuf updating
+		Extend cbufs to support all shader stages
+		Simplify cbuf implementation
+
 		Allocate constant buffers from a simulation owned arena
 		Move InputLayout into VertexShader probably
 		Implement materials
@@ -15,7 +18,6 @@ Next
 		// TODO: Plugin name in errors
 		// TODO: Ensure this is removed from the list in partial initialization conditions
 		// TODO: Widgets will be referencing these sensors.
-		// TODO: How do we get this? (Do the UV calculation in CPU, I think)
 		// TODO: I don't think drawing belongs in update
 		// TODO: Get this working
 		It's time to figure out what happens when memory allocations fail
