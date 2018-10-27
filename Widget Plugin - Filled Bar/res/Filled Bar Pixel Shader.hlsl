@@ -16,8 +16,10 @@ struct PixelFragment
 
 float4 main(PixelFragment pIn) : SV_TARGET
 {
+	// TODO: Move a bunch of this to the constant buffer
+
 	// Border
-	float2 pixelsPerUV = rcp(res);
+	float2 pixelsPerUV = rcp(size);
 	float2 borderSizeUV = borderSize * pixelsPerUV;
 	float2 borderBlurUV = borderBlur * pixelsPerUV;
 	float2 borderUV = abs(pIn.UV - 0.5f); //[-.5, .5]

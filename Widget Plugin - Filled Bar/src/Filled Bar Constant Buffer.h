@@ -11,7 +11,7 @@
 cbuffer cbPerObject
 {
 	// TODO: How do we get this? (Do the UV calculation in CPU, I think)
-	float2 res = { 240, 12 };
+	float2 size;
 	float2 padding1;
 
 	float4 borderColor = Color32(47, 112, 22, 255);

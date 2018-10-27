@@ -54,11 +54,14 @@ struct WidgetPlugin
 
 	struct UpdateAPI
 	{
-		using PushDrawCallFn = void(PluginContext*, DrawCall);
+		using PushDrawCallFn  = void   (PluginContext*, DrawCall);
+		using GetWVPPointerFn = Matrix*(PluginContext*);
+
 
 		float t;
 		WidgetDefinition* widgetDefinition;
 		PushDrawCallFn*   PushDrawCall;
+		GetWVPPointerFn*  GetWVPPointer;
 	};
 
 	struct TeardownAPI {};

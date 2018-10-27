@@ -182,11 +182,17 @@ u64 Platform_GetTicks()
 	return (u64) counter.QuadPart;
 }
 
-float Platform_GetElapsedSeconds(i64 elapsedTicks)
+float Platform_TicksToSeconds(i64 ticks)
 {
 	// TODO: Ensure we're not on XP
 	// NOTE: Never fails above XP
 	LARGE_INTEGER frequency;
 	QueryPerformanceFrequency(&frequency);
-	return (float) elapsedTicks / (float) frequency.QuadPart;
+	return (float) ticks / (float) frequency.QuadPart;
+}
+
+float Platform_GetElapsedSeconds(u64 startTicks)
+{
+	i64 elapsedTicks = (i64) (Platform_GetTicks() - startTicks);
+	return Platform_TicksToSeconds(elapsedTicks);
 }

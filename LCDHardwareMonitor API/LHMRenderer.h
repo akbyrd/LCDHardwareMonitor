@@ -8,9 +8,13 @@ using PixelShader  = List<struct PixelShaderData>::RefT;
 struct DrawCall
 {
 	Mesh         mesh;
-	VertexShader vs;
-	PixelShader  ps;
 	Matrix       world;
+
+	VertexShader vs;
+	void*        cBufPerObjDataVS;
+
+	PixelShader  ps;
+	void*        cBufPerObjDataPS;
 };
 
 namespace StandardMesh

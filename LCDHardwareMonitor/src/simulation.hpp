@@ -323,7 +323,6 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 
 			ConstantBufferDesc cBufDesc = {};
 			cBufDesc.size      = sizeof(Matrix);
-			cBufDesc.data      = Renderer_GetWVPPointer(s->renderer);
 			cBufDesc.frequency = ConstantBufferFrequency::PerObject;
 
 			VertexShader vs = Renderer_LoadVertexShader(s->renderer, "Shaders/Basic Vertex Shader.cso", vsAttributes, cBufDesc);
@@ -375,6 +374,12 @@ PushDrawCall(PluginContext* context, DrawCall dc)
 	context->success = true;
 }
 
+static Matrix*
+GetWVPPointer(PluginContext* context)
+{
+	return Renderer_GetWVPPointer(context->s->renderer);
+}
+
 void
 Simulation_Update(SimulationState* s)
 {
@@ -420,11 +425,9 @@ Simulation_Update(SimulationState* s)
 	#else
 	{
 		WidgetPlugin::UpdateAPI api = {};
-		api.PushDrawCall = PushDrawCall;
-
-		i64 elapsedTicks = (i64) (Platform_GetTicks() - s->startTime);
-		s->currentTime = Platform_GetElapsedSeconds(elapsedTicks);
-		api.t = s->currentTime;
+		api.t             = Platform_GetElapsedSeconds(s->startTime);
+		api.PushDrawCall  = PushDrawCall;
+		api.GetWVPPointer = GetWVPPointer;
 
 		for (u32 i = 0; i < s->widgetDefinitions.length; i++)
 		{

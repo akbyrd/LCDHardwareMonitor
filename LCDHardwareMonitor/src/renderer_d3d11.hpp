@@ -48,7 +48,6 @@ struct MeshData
 	UINT        iBase   = 0;
 	UINT        iCount  = 0;
 	DXGI_FORMAT iFormat = DXGI_FORMAT_UNKNOWN;
-	XMFLOAT4X4  world   = {};
 };
 
 struct Vertex
@@ -550,25 +549,35 @@ Renderer_Teardown(RendererState* s)
 static b32
 Renderer_CreateConstantBuffer(RendererState* s, ConstantBufferData* constantBuffer)
 {
-	// TODO: Get this working
-	//if (ps->constantBuffer.desc != ConstantBufferDesc::Null)
-	if (constantBuffer->desc.data)
+	// TODO: if (ps->constantBuffer.desc != ConstantBufferDesc::Null)
+
+	// TODO: Actually, it seems like it makes more sense to have the buffer on
+	// the widget, not the draw call. However, that means getting a pointer to
+	// the plugin when drawing. Which is equally lame.
+
+	if (constantBuffer->desc.frequency == ConstantBufferFrequency::PerObject)
 	{
-		LOG_IF(!IsMultipleOf(constantBuffer->desc.size, 16), "Constant buffer size is not a multiple of 16", Severity::Error, return false);
-
-		D3D11_BUFFER_DESC d3dDesc = {};
-		d3dDesc.ByteWidth           = constantBuffer->desc.size;
-		d3dDesc.Usage               = D3D11_USAGE_DYNAMIC;
-		d3dDesc.BindFlags           = D3D11_BIND_CONSTANT_BUFFER;
-		d3dDesc.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
-		d3dDesc.MiscFlags           = 0;
-		d3dDesc.StructureByteStride = 0;
-
-		HRESULT hr = s->d3dDevice->CreateBuffer(&d3dDesc, nullptr, &constantBuffer->d3dConstantBuffer);
-		LOG_HRESULT_IF_FAILED(hr, "Failed to create constant buffer", Severity::Error, return false);
-		// TODO: Include update frequency, shader type, and shader name in buffer name
-		SetDebugObjectName(constantBuffer->d3dConstantBuffer, "Constant Buffer");
+		LOG_IF(constantBuffer->desc.data, "Per-object constant buffer has non-per-object data pointer set", Severity::Error, return false);
 	}
+	else
+	{
+		LOG_IF(!constantBuffer->desc.data, "Constant buffer does not have data pointer set", Severity::Error, return false);
+	}
+
+	LOG_IF(!IsMultipleOf(constantBuffer->desc.size, 16), "Constant buffer size is not a multiple of 16", Severity::Error, return false);
+
+	D3D11_BUFFER_DESC d3dDesc = {};
+	d3dDesc.ByteWidth           = constantBuffer->desc.size;
+	d3dDesc.Usage               = D3D11_USAGE_DYNAMIC;
+	d3dDesc.BindFlags           = D3D11_BIND_CONSTANT_BUFFER;
+	d3dDesc.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
+	d3dDesc.MiscFlags           = 0;
+	d3dDesc.StructureByteStride = 0;
+
+	HRESULT hr = s->d3dDevice->CreateBuffer(&d3dDesc, nullptr, &constantBuffer->d3dConstantBuffer);
+	LOG_HRESULT_IF_FAILED(hr, "Failed to create constant buffer", Severity::Error, return false);
+	// TODO: Include update frequency, shader type, and shader name in buffer name
+	SetDebugObjectName(constantBuffer->d3dConstantBuffer, "Constant Buffer");
 
 	return true;
 }
@@ -758,10 +767,10 @@ Renderer_LoadPixelShader(RendererState* s, c8* path, Slice<ConstantBufferDesc> c
 	return ps2->ref;
 }
 
-void*
+Matrix*
 Renderer_GetWVPPointer(RendererState* s)
 {
-	return &s->wvp;
+	return (Matrix*) &s->wvp;
 }
 
 DrawCall*
@@ -842,15 +851,24 @@ Renderer_Render(RendererState* s)
 					case ConstantBufferFrequency::Null: continue;
 
 					case ConstantBufferFrequency::PerFrame:
-						break;
-
-					case ConstantBufferFrequency::PerObject:
+					{
 						if (vs->ref == lastVS) continue;
+						b32 success = Renderer_UpdateConstantBuffer(s, *cBuf);
+						if (!success) continue;
 						break;
+					}
+
+					// TODO: Log warnings during widget creation if per-object buffer is null/not null based on update frequency
+					case ConstantBufferFrequency::PerObject:
+					{
+						cBuf->desc.data = dc->cBufPerObjDataVS;
+						b32 success = Renderer_UpdateConstantBuffer(s, *cBuf);
+						cBuf->desc.data = nullptr;
+						if (!success) continue;
+						break;
+					}
 				}
 
-				b32 success = Renderer_UpdateConstantBuffer(s, *cBuf);
-				if (!success) continue;
 				s->d3dContext->VSSetConstantBuffers(j, 1, cBuf->d3dConstantBuffer.GetAddressOf());
 			}
 			lastVS = vs->ref;
@@ -869,15 +887,23 @@ Renderer_Render(RendererState* s)
 					case ConstantBufferFrequency::Null: continue;
 
 					case ConstantBufferFrequency::PerFrame:
+					{
+						if (ps->ref == lastPS) continue;
+						b32 success = Renderer_UpdateConstantBuffer(s, *cBuf);
+						if (!success) continue;
 						break;
+					}
 
 					case ConstantBufferFrequency::PerObject:
-						if (ps->ref == lastPS) continue;
+					{
+						cBuf->desc.data = dc->cBufPerObjDataPS;
+						b32 success = Renderer_UpdateConstantBuffer(s, *cBuf);
+						cBuf->desc.data = nullptr;
+						if (!success) continue;
 						break;
+					}
 				}
 
-				b32 success = Renderer_UpdateConstantBuffer(s, *cBuf);
-				if (!success) continue;
 				s->d3dContext->PSSetConstantBuffers(j, 1, cBuf->d3dConstantBuffer.GetAddressOf());
 			}
 			lastPS = ps->ref;
@@ -899,10 +925,10 @@ Renderer_Render(RendererState* s)
 static b32
 Renderer_CreateSharedD3D9RenderTexture(RendererState* s)
 {
-	Assert(s->d3d9                        == nullptr);
-	Assert(s->d3d9Device                  == nullptr);
-	Assert(s->d3d9RenderTexture           == nullptr);
-	Assert(s->d3d9RenderSurface0          == nullptr);
+	Assert(s->d3d9               == nullptr);
+	Assert(s->d3d9Device         == nullptr);
+	Assert(s->d3d9RenderTexture  == nullptr);
+	Assert(s->d3d9RenderSurface0 == nullptr);
 
 	HRESULT hr;
 
