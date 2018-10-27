@@ -192,7 +192,7 @@ union v3t
 	T operator[] (i32 index);
 
 	template<typename U>
-	explicit operator v2t<U>();
+	explicit operator v3t<U>();
 };
 
 using v3  = v3t<r32>;
@@ -315,7 +315,7 @@ union v4t
 	T operator[] (i32 index);
 
 	template<typename U>
-	explicit operator v2t<U>();
+	explicit operator v4t<U>();
 };
 
 using v4  = v4t<r32>;
