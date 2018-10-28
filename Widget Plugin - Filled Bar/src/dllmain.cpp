@@ -19,7 +19,7 @@ InitializeBarWidget(Widget* widget)
 	barWidget->borderSize = 1.0f;
 	barWidget->borderBlur = 0.0f;
 
-	v2 pixelsPerUV = { 1.0f / barWidget->size.x, 1.0f / barWidget->size.y };
+	v2 pixelsPerUV = 1.0f / (v2) barWidget->size;
 	barWidget->constants.borderSizeUV    = barWidget->borderSize * pixelsPerUV;
 	barWidget->constants.borderBlurUV    = barWidget->borderBlur * pixelsPerUV;
 	barWidget->constants.borderColor     = Color32(47, 112, 22, 255);
@@ -35,8 +35,15 @@ DrawBarWidget(PluginContext* context, WidgetPlugin::UpdateAPI api, Widget* widge
 {
 	DrawCall dc = {};
 	dc.mesh = StandardMesh::Quad;
-	SetPosition(dc.world, (v2) widget->position);
-	SetScale   (dc.world, (v2) barWidget->size);
+
+	v2 size = (v2) barWidget->size;
+	v2 position = widget->position;
+
+	position += (v2{ 0.5f, 0.5f } - widget->pivot) * size;
+	v3 position3 = { position.x, position.y, -widget->depth };
+
+	SetPosition(dc.world, position3);
+	SetScale   (dc.world, size);
 
 	dc.vs               = StandardVertexShader::Debug;
 	dc.cBufPerObjDataVS = api.GetWVPPointer(context);
@@ -79,7 +86,7 @@ Update(PluginContext* context, WidgetPlugin::UpdateAPI api)
 		Widget* widget = (Widget*) &api.widgetDefinition->instances[i * elemSize];
 		BarWidget* barWidget = (BarWidget*) ((u8*) widget + sizeof(Widget));
 
-		r32 phase = (r32) i / (r32) (instanceCount + 1);
+		r32 phase = (r32) i / (r32) (instanceCount + 1) * 0.5f * r32Pi;
 		barWidget->constants.fillAmount = sin(api.t + phase) * sin(api.t + phase);
 		DrawBarWidget(context, api, widget, barWidget);
 	}

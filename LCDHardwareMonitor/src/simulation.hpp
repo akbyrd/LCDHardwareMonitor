@@ -352,10 +352,14 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 		if (!filledBarPlugin) return false;
 
 		WidgetDefinition* widgetDef = &s->widgetDefinitions[0];
-		Widget* widget = CreateWidget(widgetDef);
-		if (!widget) return false;
-		widget->position = { 10, 10 };
-		widgetDef->initialize(widget);
+		for (i32 i = 0; i < 16; i++)
+		{
+			Widget* widget = CreateWidget(widgetDef);
+			if (!widget) return false;
+
+			widget->position = { i * 4.0f + 10.0f, i * 15.0f + 2.0f};
+			widgetDef->initialize(widget);
+		}
 	}
 
 	return true;

@@ -389,10 +389,10 @@ Renderer_Initialize(RendererState* s, v2u renderSize)
 		// Create vertices
 		Vertex vertices[4];
 
-		vertices[0].position = XMFLOAT3(-.5f, -.5f, 0);
-		vertices[1].position = XMFLOAT3(-.5f,  .5f, 0);
-		vertices[2].position = XMFLOAT3( .5f,  .5f, 0);
-		vertices[3].position = XMFLOAT3( .5f, -.5f, 0);
+		vertices[0].position = XMFLOAT3(-0.5f, -0.5f, 0.0f);
+		vertices[1].position = XMFLOAT3(-0.5f,  0.5f, 0.0f);
+		vertices[2].position = XMFLOAT3( 0.5f,  0.5f, 0.0f);
+		vertices[3].position = XMFLOAT3( 0.5f, -0.5f, 0.0f);
 
 		XMStoreFloat4(&vertices[0].color, Colors::Red);
 		XMStoreFloat4(&vertices[1].color, Colors::Green);
@@ -811,8 +811,9 @@ Renderer_Render(RendererState* s)
 	s->d3dContext->ClearDepthStencilView(s->d3dDepthBufferView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
 
 	// Update Camera
-	XMVECTOR pos    = { 0, 0, 0 };
-	XMVECTOR target = { 0, 0, 1 };
+	v2 offset = (v2) s->renderSize / 2.0f;
+	XMVECTOR pos    = { offset.x, offset.y, 0 };
+	XMVECTOR target = { offset.x, offset.y, 1 };
 	XMVECTOR up     = { 0, 1, 0 };
 
 	XMMATRIX V = XMMatrixLookAtLH(pos, target, up);

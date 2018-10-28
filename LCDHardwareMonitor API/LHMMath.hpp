@@ -8,6 +8,9 @@
 //   Matrices store axes and translation in rows
 //   v' = v * M
 
+
+// === General =====================================================================================
+
 const i32 i32Min = -2147483647 - 1;
 const i32 i32Max = 2147483647;
 const u32 u32Max = 4294967295;
@@ -51,6 +54,13 @@ Clamp(T value, U min, V max)
 	return result;
 }
 
+template<typename T> union v2t;
+template<typename T> union v3t;
+template<typename T> union v4t;
+
+
+// === v2 ==========================================================================================
+
 template<typename T>
 union v2t
 {
@@ -64,9 +74,9 @@ union v2t
 	T arr[2];
 
 	T operator[] (i32 index);
-
-	template<typename U>
-	explicit operator v2t<U>();
+	template<typename U> explicit operator v2t<U>();
+	template<typename U> explicit operator v3t<U>();
+	template<typename U> explicit operator v4t<U>();
 };
 
 using v2  = v2t<r32>;
@@ -100,11 +110,25 @@ operator+ (v2t<T> lhs, v2t<U> rhs)
 }
 
 template<typename T, typename U>
+inline void
+operator+= (v2t<T>& lhs, U rhs)
+{
+	lhs = lhs + rhs;
+}
+
+template<typename T, typename U>
 inline v2t<T>
 operator- (v2t<T> lhs, v2t<U> rhs)
 {
 	v2t<T> result = { lhs.x - rhs.x, lhs.y - rhs.y };
 	return result;
+}
+
+template<typename T, typename U>
+inline void
+operator-= (v2t<T>& lhs, U rhs)
+{
+	lhs = lhs - rhs;
 }
 
 template<typename T, typename U>
@@ -117,10 +141,40 @@ operator* (U multiplier, v2t<T> v)
 
 template<typename T, typename U>
 inline v2t<T>
-operator/ (v2t<T> v, U dividend)
+operator* (v2t<T> lhs, v2t<U> rhs)
 {
-	v2t<T> result = { v.x / dividend, v.y / dividend };
+	v2t<T> result = { lhs.x * rhs.x, lhs.y * rhs.y };
 	return result;
+}
+
+template<typename T, typename U>
+inline void
+operator*= (v2t<T>& lhs, U rhs)
+{
+	lhs = lhs * rhs;
+}
+
+template<typename T, typename U>
+inline v2t<T>
+operator/ (v2t<T> v, U divisor)
+{
+	v2t<T> result = { v.x / divisor, v.y / divisor };
+	return result;
+}
+
+template<typename T, typename U>
+inline v2t<T>
+operator/ (U dividend, v2t<T> v)
+{
+	v2t<T> result = { dividend / v.x, dividend / v.y };
+	return result;
+}
+
+template<typename T, typename U>
+inline void
+operator/= (v2t<T>& lhs, U rhs)
+{
+	lhs = lhs / rhs;
 }
 
 template<typename T>
@@ -137,6 +191,24 @@ inline
 v2t<T>::operator v2t<U>()
 {
 	v2t<U> result = { (U) x, (U) y };
+	return result;
+}
+
+template<typename T>
+template<typename U>
+inline
+v2t<T>::operator v3t<U>()
+{
+	v3t<U> result = { (U) x, (U) y, 0 };
+	return result;
+}
+
+template<typename T>
+template<typename U>
+inline
+v2t<T>::operator v4t<U>()
+{
+	v4t<U> result = { (U) x, (U) y, 0, 0 };
 	return result;
 }
 
@@ -164,6 +236,9 @@ Clamp(v2t<T> v, v2t<U> min, v2t<V> max)
 	return result;
 }
 
+
+// === v3 ==========================================================================================
+
 template<typename T>
 union v3t
 {
@@ -190,9 +265,9 @@ union v3t
 	T arr[3];
 
 	T operator[] (i32 index);
-
-	template<typename U>
-	explicit operator v3t<U>();
+	template<typename U> explicit operator v2t<U>();
+	template<typename U> explicit operator v3t<U>();
+	template<typename U> explicit operator v4t<U>();
 };
 
 using v3  = v3t<r32>;
@@ -226,11 +301,25 @@ operator+ (v3t<T> lhs, v3t<U> rhs)
 }
 
 template<typename T, typename U>
+inline void
+operator+= (v3t<T>& lhs, U rhs)
+{
+	lhs = lhs + rhs;
+}
+
+template<typename T, typename U>
 inline v3t<T>
 operator- (v3t<T> lhs, v3t<U> rhs)
 {
 	v3t<T> result = { lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z };
 	return result;
+}
+
+template<typename T, typename U>
+inline void
+operator-= (v3t<T>& lhs, U rhs)
+{
+	lhs = lhs - rhs;
 }
 
 template<typename T, typename U>
@@ -243,9 +332,39 @@ operator* (U multiplier, v3t<T> v)
 
 template<typename T, typename U>
 inline v3t<T>
-operator/ (v3t<T> v, U dividend)
+operator* (v3t<T> lhs, v3t<U> rhs)
 {
-	v3t<T> result = { v.x / dividend, v.y / dividend, v.z / dividend };
+	v3t<T> result = { lhs.x * rhs.x, lhs.y * rhs.y, lhs.z * rhs.z };
+	return result;
+}
+
+template<typename T, typename U>
+inline void
+operator*= (v3t<T>& lhs, U rhs)
+{
+	lhs = lhs * rhs;
+}
+
+template<typename T, typename U>
+inline v3t<T>
+operator/ (v3t<T> v, U divisor)
+{
+	v3t<T> result = { v.x / divisor, v.y / divisor, v.z / divisor };
+	return result;
+}
+
+template<typename T, typename U>
+inline void
+operator/= (v3t<T>& lhs, U rhs)
+{
+	lhs = lhs / rhs;
+}
+
+template<typename T, typename U>
+inline v3t<T>
+operator/ (U dividend, v3t<T> v)
+{
+	v3t<T> result = { dividend / v.x, dividend / v.y, dividend / v.z };
 	return result;
 }
 
@@ -260,9 +379,27 @@ v3t<T>::operator[] (i32 index)
 template<typename T>
 template<typename U>
 inline
+v3t<T>::operator v2t<U>()
+{
+	v2t<U> result = { (U) x, (U) y };
+	return result;
+}
+
+template<typename T>
+template<typename U>
+inline
 v3t<T>::operator v3t<U>()
 {
 	v3t<U> result = { (U) x, (U) y, (U) z };
+	return result;
+}
+
+template<typename T>
+template<typename U>
+inline
+v3t<T>::operator v4t<U>()
+{
+	v4t<U> result = { (U) x, (U) y, (U) z, 0 };
 	return result;
 }
 
@@ -291,6 +428,8 @@ Clamp(v3t<T> v, v3t<U> min, v3t<V> max)
 }
 
 
+// === v4 ==========================================================================================
+
 template<typename T>
 union v4t
 {
@@ -313,9 +452,9 @@ union v4t
 	T arr[4];
 
 	T operator[] (i32 index);
-
-	template<typename U>
-	explicit operator v4t<U>();
+	template<typename U> explicit operator v2t<U>();
+	template<typename U> explicit operator v3t<U>();
+	template<typename U> explicit operator v4t<U>();
 };
 
 using v4  = v4t<r32>;
@@ -349,11 +488,25 @@ operator+ (v4t<T> lhs, v4t<U> rhs)
 }
 
 template<typename T, typename U>
+inline void
+operator+= (v4t<T>& lhs, U rhs)
+{
+	lhs = lhs + rhs;
+}
+
+template<typename T, typename U>
 inline v4t<T>
 operator- (v4t<T> lhs, v4t<U> rhs)
 {
 	v4t<T> result = { lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z, lhs.w - rhs.w };
 	return result;
+}
+
+template<typename T, typename U>
+inline void
+operator-= (v4t<T>& lhs, U rhs)
+{
+	lhs = lhs - rhs;
 }
 
 template<typename T, typename U>
@@ -366,10 +519,40 @@ operator* (U multiplier, v4t<T> v)
 
 template<typename T, typename U>
 inline v4t<T>
-operator/ (v4t<T> v, U dividend)
+operator* (v4t<T> lhs, v4t<U> rhs)
 {
-	v4t<T> result = { v.x / dividend, v.y / dividend, v.z / dividend, v.w / dividend };
+	v4t<T> result = { lhs.x * rhs.x, lhs.y * rhs.y, lhs.z * rhs.z, lhs.w * rhs.w };
 	return result;
+}
+
+template<typename T, typename U>
+inline void
+operator*= (v4t<T>& lhs, U rhs)
+{
+	lhs = lhs * rhs;
+}
+
+template<typename T, typename U>
+inline v4t<T>
+operator/ (v4t<T> v, U divisor)
+{
+	v4t<T> result = { v.x / divisor, v.y / divisor, v.z / divisor, v.w / divisor };
+	return result;
+}
+
+template<typename T, typename U>
+inline v4t<T>
+operator/ (U dividend, v4t<T> v)
+{
+	v4t<T> result = { dividend / v.x, dividend / v.y, dividend / v.z, dividend / v.w };
+	return result;
+}
+
+template<typename T, typename U>
+inline void
+operator/= (v4t<T>& lhs, U rhs)
+{
+	lhs = lhs / rhs;
 }
 
 template<typename T>
@@ -377,6 +560,24 @@ inline T
 v4t<T>::operator[] (i32 index)
 {
 	T result = arr[index];
+	return result;
+}
+
+template<typename T>
+template<typename U>
+inline
+v4t<T>::operator v2t<U>()
+{
+	v2t<U> result = { (U) x, (U) y };
+	return result;
+}
+
+template<typename T>
+template<typename U>
+inline
+v4t<T>::operator v3t<U>()
+{
+	v3t<U> result = { (U) x, (U) y, (U) z };
 	return result;
 }
 
@@ -420,6 +621,8 @@ Color32(u8 r, u8 g, u8 b, u8 a)
 	return result;
 }
 
+
+// === Matrix ======================================================================================
 
 union Matrix
 {
