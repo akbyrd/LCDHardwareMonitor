@@ -7,6 +7,8 @@ using Microsoft::WRL::ComPtr;
 #include <CorHdr.h>
 #pragma warning(pop)
 
+#pragma comment(lib, "MSCorEE.lib")
+
 // TODO: Don't really need this in run/. Want to reach into the project output
 // folder directly, but we need to know the correct config subfolder.
 #import "..\\run\\LCDHardwareMonitor PluginLoader CLR.tlb" no_namespace

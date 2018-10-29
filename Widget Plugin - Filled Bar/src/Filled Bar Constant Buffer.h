@@ -4,8 +4,6 @@
 	#define float1      r32
 	#define float2      v2
 	#define float4      v4
-#else
-	#define Color32(r, g, b, a) 0
 #endif
 
 cbuffer cbPerObject

@@ -5,21 +5,22 @@ Language: C++14
 
 Projects
 LCDHardwareMonitor
-Project dependencies: LCDHardwareMonitor CLR Helper
-Include directories: include/ and ../shared/
-Library dependencies: mscoree.lib
+Project dependencies: LCDHardwareMonitor PluginLoader CLR
+Include directories: ../LCDHardwareMonitor API/
+Library dependencies: MSCorEE.lib, D3D11.lib, D3D9.lib, DXGI.lib, d3dcompiler.lib
 Output: exe
+Post build: "..\build\Deploy.bat" "$(OutDir)" && ..\build\CopyD3DC.bat "$(WindowsSdkDir)" $(PlatformTarget)
 This is the main project. Contains the the core application as well as unmanaged
-hosting code the starts the CLR and communicates with LCDHardwareMonitor CLR
-Helper on the managed side.
+hosting code the starts the CLR and communicates with LCDHardwareMonitor
+PluginLoader CLR on the managed side.
 
-LCDHardwareMonitor CLR Helper
-Project dependencies: LCDHardwareMonitor CLR API
-Include directories: include/ and ../shared/
-References: LCDHardwareMonitor CLR API
+LCDHardwareMonitor PluginLoader CLR
+Project dependencies: LCDHardwareMonitor API CLR
+Include directories: ../LCDHardwareMonitor API/
+References: LCDHardwareMonitor API CLR
 Output: dll
 Compiler flags: /clr
-Post build: tlbexp <output file.dll> /out:<output file.tlb>
+Post build: "..\build\GenTLB.bat" "$(OutDir)" "$(TargetName)" && "..\build\Deploy.bat" "$(OutDir)"
 Helps handle managed plugins. The code in this assembly is responsible for
 creating and destroying AppDomains and doing bookkeeping for managed plugins.
 The code here will be injected into the AppDomain for each plugin to deal with
@@ -28,34 +29,43 @@ instantiates the main class through a COM interface (unfortunately). Due to the
 COM usage, the assembly must be parsed into .tlb file for the core application
 to use and avoid registering the COM type on the system.
 
-LCDHardwareMonitor CLR API
-Include directories: include/ and ../shared/
+LCDHardwareMonitor API CLR
+Include directories: ../LCDHardwareMonitor API/
 Output: dll
 Compiler flags: /clr
+Post build: "..\build\Deploy.bat" "$(OutDir)"
 Contains managed descriptions of all interfaces available to plugins.
 
 OpenHardwareMonitor Plugin
-Project dependencies: LCDHardwareMonitor CLR API
-Include directories: include/ and ../shared/
+Project dependencies: LCDHardwareMonitor API CLR
+Include directories: ../LCDHardwareMonitor API/
 Type: sensor plugin
 Output: dll
 Compiler flags: /clr
+Post build: "..\build\Deploy.bat" "$(OutDir)" "Sensor Plugins\OpenHardwareMonitor"
+
+Filled Bar Plugin
+Project dependencies: LCDHardwareMonitor API CLR
+Include directories: ../LCDHardwareMonitor API/
+Type: sensor plugin
+Output: dll
+Compiler flags: /clr
+Post build: "..\build\Deploy.bat" "$(OutDir)" "Widget Plugins\Filled Bar"
 
 
 
 Directory Structure
 The run directory must have the following structure:
 LCDHardwareMonitor.exe
-LCDHardwareMonitor CLR API.dll
-LCDHardwareMonitor CLR Helper.dll
-LCDHardwareMonitor CLR Helper.tlb
+LCDHardwareMonitor API CLR.dll
+LCDHardwareMonitor PluginLoader CLR.dll
+LCDHardwareMonitor PluginLoader CLR.tlb
 Sensor Plugins/
 	Plugin Name/
 		Plugin Name.dll
 Widget Plugins/
 	Plugin Name/
 		Plugin Name.dll
+		Plugin Shader.cso
 Shaders/
-
-shared/Deploy.bat can be used to copy the output from each project into a run
-directory. See comments in the script for usage.
+	Built-in Shader.cso
