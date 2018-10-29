@@ -1,7 +1,5 @@
 Next
 	Cleanup Pass
-		Move additional include directories out of VC++ Directories in VS
-
 		API: Probably have plugins fill a struct full of function pointers
 		Can we typecheck plugin functions by making the plugin assign function
 		pointers somewhere? (Can probably do this in a header since we know the

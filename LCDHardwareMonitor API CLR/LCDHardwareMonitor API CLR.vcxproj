@@ -74,22 +74,18 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(ProjectDir)include;$(SolutionDir)LCDHardwareMonitor API;$(IncludePath)</IncludePath>
     <OutDir>bin\$(Configuration)_$(Platform)\</OutDir>
     <IntDir>obj\$(Configuration)_$(Platform)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(ProjectDir)include;$(SolutionDir)LCDHardwareMonitor API;$(IncludePath)</IncludePath>
     <OutDir>bin\$(Configuration)_$(Platform)\</OutDir>
     <IntDir>obj\$(Configuration)_$(Platform)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(ProjectDir)include;$(SolutionDir)LCDHardwareMonitor API;$(IncludePath)</IncludePath>
     <OutDir>bin\$(Configuration)_$(Platform)\</OutDir>
     <IntDir>obj\$(Configuration)_$(Platform)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(ProjectDir)include;$(SolutionDir)LCDHardwareMonitor API;$(IncludePath)</IncludePath>
     <OutDir>bin\$(Configuration)_$(Platform)\</OutDir>
     <IntDir>obj\$(Configuration)_$(Platform)\</IntDir>
   </PropertyGroup>
@@ -99,6 +95,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <AdditionalOptions>/std:c++14 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;$(SolutionDir)LCDHardwareMonitor API</AdditionalIncludeDirectories>
     </ClCompile>
     <PostBuildEvent>
       <Command>"..\build\Deploy.bat" "$(OutDir)"</Command>
@@ -113,6 +110,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <AdditionalOptions>/std:c++14 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;$(SolutionDir)LCDHardwareMonitor API</AdditionalIncludeDirectories>
     </ClCompile>
     <PostBuildEvent>
       <Command>"..\build\Deploy.bat" "$(OutDir)"</Command>
@@ -129,6 +127,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <AdditionalOptions>/std:c++14 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;$(SolutionDir)LCDHardwareMonitor API</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -146,6 +145,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <AdditionalOptions>/std:c++14 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;$(SolutionDir)LCDHardwareMonitor API</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>

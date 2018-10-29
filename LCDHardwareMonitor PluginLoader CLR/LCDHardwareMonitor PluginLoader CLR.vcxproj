@@ -87,20 +87,16 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>bin\$(Configuration)_$(Platform)\</OutDir>
     <IntDir>obj\$(Configuration)_$(Platform)\</IntDir>
-    <IncludePath>$(ProjectDir)include;$(SolutionDir)LCDHardwareMonitor\src;$(SolutionDir)LCDHardwareMonitor API;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(ProjectDir)include;$(SolutionDir)LCDHardwareMonitor\src;$(SolutionDir)LCDHardwareMonitor API;$(IncludePath)</IncludePath>
     <OutDir>bin\$(Configuration)_$(Platform)\</OutDir>
     <IntDir>obj\$(Configuration)_$(Platform)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>bin\$(Configuration)_$(Platform)\</OutDir>
     <IntDir>obj\$(Configuration)_$(Platform)\</IntDir>
-    <IncludePath>$(ProjectDir)include;$(SolutionDir)LCDHardwareMonitor\src;$(SolutionDir)LCDHardwareMonitor API;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(ProjectDir)include;$(SolutionDir)LCDHardwareMonitor\src;$(SolutionDir)LCDHardwareMonitor API;$(IncludePath)</IncludePath>
     <OutDir>bin\$(Configuration)_$(Platform)\</OutDir>
     <IntDir>obj\$(Configuration)_$(Platform)\</IntDir>
   </PropertyGroup>
@@ -110,6 +106,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <AdditionalOptions>/std:c++14 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;$(SolutionDir)LCDHardwareMonitor\src;$(SolutionDir)LCDHardwareMonitor API</AdditionalIncludeDirectories>
     </ClCompile>
     <PostBuildEvent>
       <Command>"..\build\GenTLB.bat" "$(OutDir)" "$(TargetName)" &amp;&amp; ^
@@ -127,6 +124,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <AdditionalOptions>/std:c++14 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;$(SolutionDir)LCDHardwareMonitor\src;$(SolutionDir)LCDHardwareMonitor API</AdditionalIncludeDirectories>
     </ClCompile>
     <PostBuildEvent>
       <Command>"..\build\GenTLB.bat" "$(OutDir)" "$(TargetName)" &amp;&amp; ^
@@ -146,6 +144,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <AdditionalOptions>/std:c++14 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;$(SolutionDir)LCDHardwareMonitor\src;$(SolutionDir)LCDHardwareMonitor API</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -166,6 +165,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <AdditionalOptions>/std:c++14 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;$(SolutionDir)LCDHardwareMonitor\src;$(SolutionDir)LCDHardwareMonitor API</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
