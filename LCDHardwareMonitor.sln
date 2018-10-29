@@ -19,7 +19,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "LCDHardwareMonitor API", "L
 		LCDHardwareMonitor API\LHMDefer.hpp = LCDHardwareMonitor API\LHMDefer.hpp
 		LCDHardwareMonitor API\LHMList.hpp = LCDHardwareMonitor API\LHMList.hpp
 		LCDHardwareMonitor API\LHMMath.hpp = LCDHardwareMonitor API\LHMMath.hpp
-		LCDHardwareMonitor API\LHMPluginHeader.h = LCDHardwareMonitor API\LHMPluginHeader.h
 		LCDHardwareMonitor API\LHMPluginInfo.h = LCDHardwareMonitor API\LHMPluginInfo.h
 		LCDHardwareMonitor API\LHMSensor.h = LCDHardwareMonitor API\LHMSensor.h
 		LCDHardwareMonitor API\LHMSensorPlugin.h = LCDHardwareMonitor API\LHMSensorPlugin.h

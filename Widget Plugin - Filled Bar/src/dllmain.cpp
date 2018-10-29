@@ -31,7 +31,7 @@ InitializeBarWidget(Widget* widget)
 static PixelShader filledBarPS = {};
 
 static void
-DrawBarWidget(PluginContext* context, WidgetPlugin::UpdateAPI api, Widget* widget, BarWidget* barWidget)
+DrawBarWidget(PluginContext* context, WidgetPluginAPI::Update api, Widget* widget, BarWidget* barWidget)
 {
 	DrawCall dc = {};
 	dc.mesh = StandardMesh::Quad;
@@ -55,7 +55,7 @@ DrawBarWidget(PluginContext* context, WidgetPlugin::UpdateAPI api, Widget* widge
 }
 
 EXPORT b32
-Initialize(PluginContext* context, WidgetPlugin::InitializeAPI api)
+Initialize(PluginContext* context, WidgetPluginAPI::Initialize api)
 {
 	WidgetDefinition widgetDef = {};
 	widgetDef.name       = "Filled Bar";
@@ -76,7 +76,7 @@ Initialize(PluginContext* context, WidgetPlugin::InitializeAPI api)
 
 // TODO: I don't think drawing belongs in update
 EXPORT void
-Update(PluginContext* context, WidgetPlugin::UpdateAPI api)
+Update(PluginContext* context, WidgetPluginAPI::Update api)
 {
 	// HACK: Nasty, hard-coded fuckery
 	u32 elemSize = sizeof(Widget) + sizeof(BarWidget);
@@ -93,7 +93,7 @@ Update(PluginContext* context, WidgetPlugin::UpdateAPI api)
 }
 
 EXPORT void
-Teardown(PluginContext* context, WidgetPlugin::TeardownAPI api)
+Teardown(PluginContext* context, WidgetPluginAPI::Teardown api)
 {
 	UNUSED(context); UNUSED(api);
 }

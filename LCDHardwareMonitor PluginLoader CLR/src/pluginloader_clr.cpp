@@ -1,6 +1,13 @@
 #pragma unmanaged
 #include "LHMAPICLR.h"
-#include "LHMPluginHeader.h"
+
+#pragma unmanaged
+#include "pluginheader.h"
+
+#pragma managed
+#pragma make_public(PluginHeader)
+#pragma make_public(SensorPlugin)
+#pragma make_public(WidgetPlugin)
 
 #pragma managed
 using namespace System;
@@ -31,9 +38,9 @@ public value struct
 SensorPlugin_CLR
 {
 	#define Attributes UnmanagedFunctionPointer(CallingConvention::Cdecl)
-	[Attributes] delegate b32  InitializeDelegate(PluginContext* context, SensorPlugin::InitializeAPI api);
-	[Attributes] delegate void UpdateDelegate    (PluginContext* context, SensorPlugin::UpdateAPI     api);
-	[Attributes] delegate void TeardownDelegate  (PluginContext* context, SensorPlugin::TeardownAPI   api);
+	[Attributes] delegate b32  InitializeDelegate(PluginContext* context, SensorPluginAPI::Initialize api);
+	[Attributes] delegate void UpdateDelegate    (PluginContext* context, SensorPluginAPI::Update     api);
+	[Attributes] delegate void TeardownDelegate  (PluginContext* context, SensorPluginAPI::Teardown   api);
 	#undef Attributes
 
 	ISensorPlugin^      pluginInstance;
@@ -47,9 +54,9 @@ public value struct
 WidgetPlugin_CLR
 {
 	#define Attributes UnmanagedFunctionPointer(CallingConvention::Cdecl)
-	[Attributes] delegate b32 InitializeDelegate(PluginContext* context, WidgetPlugin::InitializeAPI api);
-	[Attributes] delegate void UpdateDelegate   (PluginContext* context, WidgetPlugin::UpdateAPI     api);
-	[Attributes] delegate void TeardownDelegate (PluginContext* context, WidgetPlugin::TeardownAPI   api);
+	[Attributes] delegate b32 InitializeDelegate(PluginContext* context, WidgetPluginAPI::Initialize api);
+	[Attributes] delegate void UpdateDelegate   (PluginContext* context, WidgetPluginAPI::Update     api);
+	[Attributes] delegate void TeardownDelegate (PluginContext* context, WidgetPluginAPI::Teardown   api);
 	#undef Attributes
 
 	IWidgetPlugin^      pluginInstance;

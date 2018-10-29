@@ -1,12 +1,5 @@
 Next
 	Cleanup Pass
-		Combine VS and PS cbuf updating
-		Extend cbufs to support all shader stages
-		Simplify cbuf implementation
-
-		Allocate constant buffers from a simulation owned arena
-		Move InputLayout into VertexShader probably
-		Implement materials
 		API: Probably have plugins fill a struct full of function pointers
 		Can we typecheck plugin functions by making the plugin assign function
 		pointers somewhere? (Can probably do this in a header since we know the
@@ -15,6 +8,14 @@ Next
 		function, then ask the plugin to fill in a bunch of function pointers, we
 		1) Get better type safety since they'll have to match the function pointer
 		definition. 2) Reduce the amount of boilerplate on the application side.
+
+		Move additional include directories out of VC++ Directories in VS
+		Move InputLayout into VertexShader probably
+		Combine VS and PS cbuf updating
+		Extend cbufs to support all shader stages
+		Simplify cbuf implementation
+		Implement materials
+		Allocate constant buffers from a simulation owned arena
 		// TODO: Plugin name in errors
 		// TODO: Ensure this is removed from the list in partial initialization conditions
 		// TODO: Widgets will be referencing these sensors.

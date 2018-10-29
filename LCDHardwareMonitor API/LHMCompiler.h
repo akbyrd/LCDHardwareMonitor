@@ -22,8 +22,6 @@
 	// NOTE: This warning is surpiously raised when using #pragma make_public on
 	// a nested native type.
 	#pragma warning (disable: 4692) // Non-private member contains private type
-
-	//public struct PluginContext {};
 #endif
 
 #endif

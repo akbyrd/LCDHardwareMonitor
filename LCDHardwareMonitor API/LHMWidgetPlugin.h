@@ -6,7 +6,6 @@ struct PluginContext;
 struct PluginHeader;
 using PluginHeaderRef = List<PluginHeader>::RefT;
 
-// TODO: Some of this is per-plugin and some of this is per-widget.
 struct WidgetDefinition
 {
 	using InitializeFn = void(Widget*);
@@ -18,6 +17,7 @@ struct WidgetDefinition
 	u32             size;
 	InitializeFn*   initialize;
 
+	// TODO: Can this be removed so plugins don't see it?
 	// Filled by application
 	PluginHeaderRef ref;
 	Bytes           instances;
@@ -38,11 +38,9 @@ GetWidgetData(Widget* widget)
 	return widgetData;
 }
 
-// TODO: The API structs need to be part of the public API, but the data does
-// not.
-struct WidgetPlugin
+struct WidgetPluginAPI
 {
-	struct InitializeAPI
+	struct Initialize
 	{
 		// TODO: Standardize by-value or by-ref
 		using AddWidgetDefinitionFn = void       (PluginContext*, WidgetDefinition*);
@@ -52,11 +50,10 @@ struct WidgetPlugin
 		LoadPixelShaderFn*     LoadPixelShader;
 	};
 
-	struct UpdateAPI
+	struct Update
 	{
 		using PushDrawCallFn  = void   (PluginContext*, DrawCall);
 		using GetWVPPointerFn = Matrix*(PluginContext*);
-
 
 		r32 t;
 		WidgetDefinition* widgetDefinition;
@@ -64,16 +61,7 @@ struct WidgetPlugin
 		GetWVPPointerFn*  GetWVPPointer;
 	};
 
-	struct TeardownAPI {};
-
-	using InitializeFn = b32 (PluginContext* context, InitializeAPI api);
-	using UpdateFn     = void(PluginContext* context, UpdateAPI     api);
-	using TeardownFn   = void(PluginContext* context, TeardownAPI   api);
-
-	PluginHeaderRef pluginHeaderRef;
-	InitializeFn*   initialize;
-	UpdateFn*       update;
-	TeardownFn*     teardown;
+	struct Teardown {};
 };
 
 #endif

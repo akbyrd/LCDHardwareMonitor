@@ -28,13 +28,13 @@ public ref struct State : ISensorPlugin, ISensorInitialize, ISensorUpdate, ISens
 		array<IHardware^>^ hardware;
 	};
 
-	virtual b32  Initialize(PluginContext*, SensorPlugin::InitializeAPI) { return true; }
-	virtual void Update    (PluginContext*, SensorPlugin::UpdateAPI)     {}
-	virtual void Teardown  (PluginContext*, SensorPlugin::TeardownAPI)   {}
+	virtual b32  Initialize (PluginContext*, SensorPluginAPI::Initialize) { return true; }
+	virtual void Update     (PluginContext*, SensorPluginAPI::Update)     {}
+	virtual void Teardown   (PluginContext*, SensorPluginAPI::Teardown)   {}
 
 	#if false
 	virtual void
-	Initialize(PluginContext* context, SensorPlugin::InitializeAPI* api)
+	Initialize(PluginContext* context, SensorPluginAPI::Initialize* api)
 	{
 		computer       = gcnew Computer();
 		activeSensors  = gcnew SList<ISensor^>;
@@ -125,7 +125,7 @@ public ref struct State : ISensorPlugin, ISensorInitialize, ISensorUpdate, ISens
 	}
 
 	virtual void
-	Update(PluginContext* context, SensorPlugin::UpdateAPI* api)
+	Update(PluginContext* context, SensorPluginAPI::Update* api)
 	{
 		for (i32 i = 0; i < State::activeHardware->Count; i++)
 			State::activeHardware[i]->Update();
@@ -149,7 +149,7 @@ public ref struct State : ISensorPlugin, ISensorInitialize, ISensorUpdate, ISens
 	}
 
 	virtual void
-	Teardown(PluginContext* context, SensorPlugin::TeardownAPI* api)
+	Teardown(PluginContext* context, SensorPluginAPI::Teardown* api)
 	{
 		for (u32 i = 0; i < s->sensors.length; i++)
 		{

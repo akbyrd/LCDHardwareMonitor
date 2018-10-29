@@ -38,6 +38,9 @@
     <ClInclude Include="src\pluginloader_win32.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\pluginheader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="res\Basic Vertex Shader.hlsl">

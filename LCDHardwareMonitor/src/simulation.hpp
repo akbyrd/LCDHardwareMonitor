@@ -110,7 +110,7 @@ LoadSensorPlugin(SimulationState* s, c8* directory, c8* name)
 		context.ref     = pluginHeader->ref;
 		context.success = true;
 
-		SensorPlugin::InitializeAPI api = {};
+		SensorPluginAPI::Initialize api = {};
 		success = sensorPlugin->initialize(&context, api);
 		success &= context.success;
 		LOG_IF(!success, "Failed to initialize sensor plugin", Severity::Warning, return nullptr);
@@ -136,7 +136,7 @@ UnloadSensorPlugin(SimulationState* s, SensorPlugin* sensorPlugin)
 		context.ref     = pluginHeader->ref;
 		context.success = true;
 
-		SensorPlugin::TeardownAPI api = {};
+		SensorPluginAPI::Teardown api = {};
 		sensorPlugin->teardown(&context, api);
 	}
 
@@ -220,7 +220,7 @@ LoadWidgetPlugin(SimulationState* s, c8* directory, c8* name)
 		context.ref     = pluginHeader->ref;
 		context.success = true;
 
-		WidgetPlugin::InitializeAPI api = {};
+		WidgetPluginAPI::Initialize api = {};
 		api.AddWidgetDefinition = AddWidgetDefinition;
 		api.LoadPixelShader     = LoadPixelShader;
 
@@ -257,7 +257,7 @@ UnloadWidgetPlugin(SimulationState* s, WidgetPlugin* widgetPlugin)
 	// TODO: try/catch?
 	if (widgetPlugin->teardown)
 	{
-		WidgetPlugin::TeardownAPI api = {};
+		WidgetPluginAPI::Teardown api = {};
 		widgetPlugin->teardown(&context, api);
 	}
 
@@ -394,7 +394,7 @@ Simulation_Update(SimulationState* s)
 
 	// Update Sensors
 	{
-		SensorPlugin::UpdateAPI api = {};
+		SensorPluginAPI::Update api = {};
 		for (u32 i = 0; i < s->sensorPlugins.length; i++)
 		{
 			SensorPlugin* sensorPlugin = &s->sensorPlugins[i];
@@ -412,7 +412,7 @@ Simulation_Update(SimulationState* s)
 	// Update Widgets
 	#if false
 	{
-		WidgetPlugin::UpdateAPI api = {};
+		WidgetPluginAPI::Update api = {};
 		for (u32 i = 0; i < s->widgetPlugins.length; i++)
 		{
 			WidgetPlugin* widgetPlugin = &s->widgetPlugins[i];
@@ -428,7 +428,7 @@ Simulation_Update(SimulationState* s)
 	}
 	#else
 	{
-		WidgetPlugin::UpdateAPI api = {};
+		WidgetPluginAPI::Update api = {};
 		api.t             = Platform_GetElapsedSeconds(s->startTime);
 		api.PushDrawCall  = PushDrawCall;
 		api.GetWVPPointer = GetWVPPointer;

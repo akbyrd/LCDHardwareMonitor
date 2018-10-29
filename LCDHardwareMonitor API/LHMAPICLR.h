@@ -2,14 +2,13 @@
 #define LHM_APICLR
 
 #pragma unmanaged
-public struct PluginContext {};
+struct PluginContext {};
 
 #include "LHMAPI.h"
 
 #pragma managed
-#pragma make_public(PluginHeader)
 #pragma make_public(PluginContext)
-#pragma make_public(SensorPlugin)
-#pragma make_public(WidgetPlugin)
+#pragma make_public(SensorPluginAPI)
+#pragma make_public(WidgetPluginAPI)
 
 #endif

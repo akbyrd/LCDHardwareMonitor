@@ -3,26 +3,15 @@
 
 struct PluginContext;
 
-struct PluginHeader;
-using PluginHeaderRef = List<PluginHeader>::RefT;
-
-struct SensorPlugin
+struct SensorPluginAPI
 {
-	struct InitializeAPI {};
-	struct UpdateAPI     {};
-	struct TeardownAPI   {};
+	struct Initialize {};
+	struct Update     {};
+	struct Teardown   {};
 
-	using InitializeFn = b32 (PluginContext* context, InitializeAPI api);
-	using UpdateFn     = void(PluginContext* context, UpdateAPI     api);
-	using TeardownFn   = void(PluginContext* context, TeardownAPI   api);
-
-	PluginHeaderRef pluginHeaderRef;
-	InitializeFn*   initialize;
-	UpdateFn*       update;
-	TeardownFn*     teardown;
-
-	List<Sensor>    sensors;
-	//List<SensorRef> activeSensors;
+	using InitializeFn = b32 (PluginContext* context, Initialize api);
+	using UpdateFn     = void(PluginContext* context, Update     api);
+	using TeardownFn   = void(PluginContext* context, Teardown   api);
 };
 
 #endif

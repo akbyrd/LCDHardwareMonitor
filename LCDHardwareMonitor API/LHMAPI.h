@@ -11,7 +11,6 @@
 #include "LHMRenderer.h"
 
 // Plugins
-#include "LHMPluginInfo.h"
 #include "LHMSensor.h"
 #include "LHMSensorPlugin.h"
 #include "LHMWidget.h"
