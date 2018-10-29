@@ -1,0 +1,20 @@
+{
+  "files.exclude": {
+    "**/bin":        true,
+    "**/obj":        true,
+    "run":           true,
+
+    ".git*":         true,
+    "modules":       true,
+
+    ".vs":           true,
+    "*.sdf":         true,
+    "*.db":          true,
+    "*.opendb":      true,
+  },
+
+  "search.exclude": {
+    "*.sln":         true,
+    "**/*.vcxproj*": true,
+  },
+}

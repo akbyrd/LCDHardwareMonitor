@@ -21,7 +21,6 @@ Next
 		// TODO: I don't think drawing belongs in update
 		// TODO: Get this working
 		It's time to figure out what happens when memory allocations fail
-		Support VS Code
 		Decide on error vs warning policy and update all logging
 
 	Design Pass
