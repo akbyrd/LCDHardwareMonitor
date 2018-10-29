@@ -3,24 +3,24 @@
 
 struct PluginContext;
 
-struct PluginHeader;
-using PluginHeaderRef = List<PluginHeader>::RefT;
+struct PluginInfo;
+using PluginInfoRef = List<PluginInfo>::RefT;
 
 struct WidgetDefinition
 {
 	using InitializeFn = void(Widget*);
 
 	// Filled by plugin
-	c8*             name;
-	c8*             author;
-	u32             version;
-	u32             size;
-	InitializeFn*   initialize;
+	c8*           name;
+	c8*           author;
+	u32           version;
+	u32           size;
+	InitializeFn* initialize;
 
 	// TODO: Can this be removed so plugins don't see it?
 	// Filled by application
-	PluginHeaderRef ref;
-	Bytes           instances;
+	PluginInfoRef ref;
+	Bytes         instances;
 };
 
 template <typename T>

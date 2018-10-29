@@ -4,7 +4,7 @@ struct SimulationState
 	RendererState*         renderer;
 
 	v2u                    renderSize = { 320, 240 };
-	List<PluginHeader>     pluginHeaders;
+	List<PluginInfo>       pluginInfos;
 	List<SensorPlugin>     sensorPlugins;
 	List<WidgetPlugin>     widgetPlugins;
 	List<WidgetDefinition> widgetDefinitions;
@@ -16,51 +16,51 @@ struct SimulationState
 struct PluginContext
 {
 	SimulationState* s;
-	PluginHeaderRef  ref;
+	PluginInfoRef    ref;
 	b32              success;
 	DrawCall         onFailDC;
 };
 
-static PluginHeader*
-CreatePluginHeader(SimulationState* s, c8* directory, c8* name, PluginKind kind)
+static PluginInfo*
+CreatePluginInfo(SimulationState* s, c8* directory, c8* name, PluginKind kind)
 {
 	// Reuse any empty spots left by unloading plugins
-	PluginHeader* pluginHeader = nullptr;
-	for (u32 i = 0; i < s->pluginHeaders.length; i++)
+	PluginInfo* pluginInfo = nullptr;
+	for (u32 i = 0; i < s->pluginInfos.length; i++)
 	{
-		PluginHeader* pluginSlot = &s->pluginHeaders[i];
+		PluginInfo* pluginSlot = &s->pluginInfos[i];
 		if (!pluginSlot->name)
 		{
-			pluginHeader = pluginSlot;
+			pluginInfo = pluginSlot;
 			break;
 		}
 	}
-	if (!pluginHeader)
-		pluginHeader = List_Append(s->pluginHeaders);
+	if (!pluginInfo)
+		pluginInfo = List_Append(s->pluginInfos);
 
-	pluginHeader->ref       = List_GetRef(s->pluginHeaders, s->pluginHeaders.length - 1);
-	pluginHeader->name      = name;
-	pluginHeader->directory = directory;
-	pluginHeader->kind      = kind;
+	pluginInfo->ref       = List_GetRef(s->pluginInfos, s->pluginInfos.length - 1);
+	pluginInfo->name      = name;
+	pluginInfo->directory = directory;
+	pluginInfo->kind      = kind;
 
-	return pluginHeader;
+	return pluginInfo;
 }
 
-static PluginHeader*
-GetPluginHeader(SimulationState* s, PluginHeaderRef ref)
+static PluginInfo*
+GetPluginInfo(SimulationState* s, PluginInfoRef ref)
 {
-	PluginHeader* pluginHeader = &s->pluginHeaders[ref];
-	Assert(pluginHeader->ref == ref);
-	return pluginHeader;
+	PluginInfo* pluginInfo = &s->pluginInfos[ref];
+	Assert(pluginInfo->ref == ref);
+	return pluginInfo;
 }
 
 static SensorPlugin*
-GetSensorPlugin(SimulationState* s, PluginHeaderRef ref)
+GetSensorPlugin(SimulationState* s, PluginInfoRef ref)
 {
 	for (u32 i = 0; i < s->sensorPlugins.length; i++)
 	{
 		SensorPlugin* sensorPlugin = &s->sensorPlugins[i];
-		if (sensorPlugin->pluginHeaderRef == ref)
+		if (sensorPlugin->pluginInfoRef == ref)
 			return sensorPlugin;
 	}
 
@@ -70,12 +70,12 @@ GetSensorPlugin(SimulationState* s, PluginHeaderRef ref)
 }
 
 static WidgetPlugin*
-GetWidgetPlugin(SimulationState* s, PluginHeaderRef ref)
+GetWidgetPlugin(SimulationState* s, PluginInfoRef ref)
 {
 	for (u32 i = 0; i < s->widgetPlugins.length; i++)
 	{
 		WidgetPlugin* widgetPlugin = &s->widgetPlugins[i];
-		if (widgetPlugin->pluginHeaderRef == ref)
+		if (widgetPlugin->pluginInfoRef == ref)
 			return widgetPlugin;
 	}
 
@@ -89,14 +89,14 @@ LoadSensorPlugin(SimulationState* s, c8* directory, c8* name)
 {
 	// TODO: Plugin name in errors
 
-	PluginHeader* pluginHeader = CreatePluginHeader(s, directory, name, PluginKind::Sensor);
+	PluginInfo* pluginInfo = CreatePluginInfo(s, directory, name, PluginKind::Sensor);
 
 	// TODO: Ensure this is removed from the list in partial initialization conditions
 	SensorPlugin* sensorPlugin = List_Append(s->sensorPlugins);
-	sensorPlugin->pluginHeaderRef = pluginHeader->ref;
+	sensorPlugin->pluginInfoRef = pluginInfo->ref;
 
 	b32 success;
-	success = PluginLoader_LoadSensorPlugin(s->pluginLoader, pluginHeader, sensorPlugin);
+	success = PluginLoader_LoadSensorPlugin(s->pluginLoader, pluginInfo, sensorPlugin);
 	LOG_IF(!success, "Failed to load sensor plugin", Severity::Warning, return nullptr);
 
 	List_Reserve(sensorPlugin->sensors, 32);
@@ -107,7 +107,7 @@ LoadSensorPlugin(SimulationState* s, c8* directory, c8* name)
 	{
 		PluginContext context = {};
 		context.s       = s;
-		context.ref     = pluginHeader->ref;
+		context.ref     = pluginInfo->ref;
 		context.success = true;
 
 		SensorPluginAPI::Initialize api = {};
@@ -116,7 +116,7 @@ LoadSensorPlugin(SimulationState* s, c8* directory, c8* name)
 		LOG_IF(!success, "Failed to initialize sensor plugin", Severity::Warning, return nullptr);
 	}
 
-	pluginHeader->isWorking = true;
+	pluginInfo->isWorking = true;
 	return sensorPlugin;
 }
 
@@ -125,15 +125,15 @@ UnloadSensorPlugin(SimulationState* s, SensorPlugin* sensorPlugin)
 {
 	// TODO: Plugin name in errors
 
-	PluginHeader* pluginHeader = GetPluginHeader(s, sensorPlugin->pluginHeaderRef);
-	auto pluginGuard = guard { pluginHeader->isWorking = false; };
+	PluginInfo* pluginInfo = GetPluginInfo(s, sensorPlugin->pluginInfoRef);
+	auto pluginGuard = guard { pluginInfo->isWorking = false; };
 
 	// TODO: try/catch?
 	if (sensorPlugin->teardown)
 	{
 		PluginContext context = {};
 		context.s       = s;
-		context.ref     = pluginHeader->ref;
+		context.ref     = pluginInfo->ref;
 		context.success = true;
 
 		SensorPluginAPI::Teardown api = {};
@@ -141,14 +141,14 @@ UnloadSensorPlugin(SimulationState* s, SensorPlugin* sensorPlugin)
 	}
 
 	b32 success;
-	success = PluginLoader_UnloadSensorPlugin(s->pluginLoader, pluginHeader, sensorPlugin);
+	success = PluginLoader_UnloadSensorPlugin(s->pluginLoader, pluginInfo, sensorPlugin);
 	// TODO: Widgets will be referencing these sensors.
 	List_Free(sensorPlugin->sensors);
 	*sensorPlugin = {};
 	LOG_IF(!success, "Failed to unload sensor plugin.", Severity::Warning, return false);
 
-	// TODO: Add and remove plugin headers based on directory contents instead of loaded state.
-	*pluginHeader = {};
+	// TODO: Add and remove plugin infos based on directory contents instead of loaded state.
+	*pluginInfo = {};
 
 	pluginGuard.dismiss = true;
 	return true;
@@ -186,10 +186,10 @@ LoadPixelShader(PluginContext* context, c8* _path, Slice<ConstantBufferDesc> cBu
 	if (!context->success) return PixelShader::Null;
 	context->success = false;
 
-	PluginHeader* pluginHeader = GetPluginHeader(context->s, context->ref);
+	PluginInfo* pluginInfo = GetPluginInfo(context->s, context->ref);
 	String path = {};
 	// TODO: Why doesn't this return the string?
-	context->success = String_Format(path, "%s/%s", pluginHeader->directory, _path);
+	context->success = String_Format(path, "%s/%s", pluginInfo->directory, _path);
 	LOG_IF(!context->success, "Failed to format pixel shader path", Severity::Warning, return PixelShader::Null);
 
 	PixelShader ps = Renderer_LoadPixelShader(context->s->renderer, path, cBufDescs);
@@ -202,13 +202,13 @@ LoadPixelShader(PluginContext* context, c8* _path, Slice<ConstantBufferDesc> cBu
 static WidgetPlugin*
 LoadWidgetPlugin(SimulationState* s, c8* directory, c8* name)
 {
-	PluginHeader* pluginHeader = CreatePluginHeader(s, directory, name, PluginKind::Widget);
+	PluginInfo* pluginInfo = CreatePluginInfo(s, directory, name, PluginKind::Widget);
 
 	WidgetPlugin* widgetPlugin = List_Append(s->widgetPlugins);
-	widgetPlugin->pluginHeaderRef = pluginHeader->ref;
+	widgetPlugin->pluginInfoRef = pluginInfo->ref;
 
 	b32 success;
-	success = PluginLoader_LoadWidgetPlugin(s->pluginLoader, pluginHeader, widgetPlugin);
+	success = PluginLoader_LoadWidgetPlugin(s->pluginLoader, pluginInfo, widgetPlugin);
 	LOG_IF(!success, "Failed to load widget plugin", Severity::Warning, return nullptr);
 
 	// TODO: try/catch?
@@ -217,7 +217,7 @@ LoadWidgetPlugin(SimulationState* s, c8* directory, c8* name)
 		// TODO: Hoist these parameters up
 		PluginContext context = {};
 		context.s       = s;
-		context.ref     = pluginHeader->ref;
+		context.ref     = pluginInfo->ref;
 		context.success = true;
 
 		WidgetPluginAPI::Initialize api = {};
@@ -237,7 +237,7 @@ LoadWidgetPlugin(SimulationState* s, c8* directory, c8* name)
 		}
 	}
 
-	pluginHeader->isWorking = true;
+	pluginInfo->isWorking = true;
 	return widgetPlugin;
 }
 
@@ -246,12 +246,12 @@ UnloadWidgetPlugin(SimulationState* s, WidgetPlugin* widgetPlugin)
 {
 	// TODO: Plugin name in errors
 
-	PluginHeader* pluginHeader = GetPluginHeader(s, widgetPlugin->pluginHeaderRef);
-	auto pluginGuard = guard { pluginHeader->isWorking = false; };
+	PluginInfo* pluginInfo = GetPluginInfo(s, widgetPlugin->pluginInfoRef);
+	auto pluginGuard = guard { pluginInfo->isWorking = false; };
 
 	PluginContext context = {};
 	context.s       = s;
-	context.ref     = pluginHeader->ref;
+	context.ref     = pluginInfo->ref;
 	context.success = true;
 
 	// TODO: try/catch?
@@ -264,10 +264,10 @@ UnloadWidgetPlugin(SimulationState* s, WidgetPlugin* widgetPlugin)
 	RemoveWidgetDefinitions(&context);
 
 	b32 success;
-	success = PluginLoader_UnloadWidgetPlugin(s->pluginLoader, pluginHeader, widgetPlugin);
+	success = PluginLoader_UnloadWidgetPlugin(s->pluginLoader, pluginInfo, widgetPlugin);
 	LOG_IF(!success, "Failed to unload widget plugin.", Severity::Warning, return false);
 
-	// TODO: Add and remove plugin headers based on directory contents instead
+	// TODO: Add and remove plugin infos based on directory contents instead
 	// of loaded state.
 	*widgetPlugin = {};
 
@@ -299,8 +299,8 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 	b32 success = PluginLoader_Initialize(s->pluginLoader);
 	if (!success) return false;
 
-	List_Reserve(s->pluginHeaders, 16);
-	LOG_IF(!s->pluginHeaders, "Failed to allocate plugin headers list", Severity::Error, return false);
+	List_Reserve(s->pluginInfos, 16);
+	LOG_IF(!s->pluginInfos, "Failed to allocate plugin infos list", Severity::Error, return false);
 
 	List_Reserve(s->sensorPlugins, 8);
 	LOG_IF(!s->sensorPlugins, "Failed to allocate sensor plugins list", Severity::Error, return false);
@@ -402,7 +402,7 @@ Simulation_Update(SimulationState* s)
 			// TODO: try/catch?
 			if (sensorPlugin->update)
 			{
-				context.ref     = sensorPlugin->pluginHeaderRef;
+				context.ref     = sensorPlugin->pluginInfoRef;
 				context.success = true;
 				sensorPlugin->update(&context, api);
 			}
@@ -420,7 +420,7 @@ Simulation_Update(SimulationState* s)
 			// TODO: try/catch?
 			if (widgetPlugin->update)
 			{
-				context.ref     = widgetPlugin->pluginHeaderRef;
+				context.ref     = widgetPlugin->pluginInfoRef;
 				context.success = true;
 				widgetPlugin->update(&context, api);
 			}
@@ -447,7 +447,7 @@ Simulation_Update(SimulationState* s)
 				// TODO: try/catch?
 				if (widgetPlugin->update)
 				{
-					context.ref     = widgetPlugin->pluginHeaderRef;
+					context.ref     = widgetPlugin->pluginInfoRef;
 					context.success = true;
 
 					api.widgetDefinition = widgetDef;
@@ -479,7 +479,7 @@ Simulation_Teardown(SimulationState* s)
 		UnloadSensorPlugin(s, &s->sensorPlugins[i]);
 	List_Free(s->sensorPlugins);
 
-	List_Free(s->pluginHeaders);
+	List_Free(s->pluginInfos);
 
 	PluginLoader_Teardown(s->pluginLoader);
 }

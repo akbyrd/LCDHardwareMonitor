@@ -2,10 +2,10 @@
 #include "LHMAPICLR.h"
 
 #pragma unmanaged
-#include "pluginheader.h"
+#include "plugin_shared.h"
 
 #pragma managed
-#pragma make_public(PluginHeader)
+#pragma make_public(PluginInfo)
 #pragma make_public(SensorPlugin)
 #pragma make_public(WidgetPlugin)
 
@@ -27,10 +27,10 @@ using namespace System::Runtime::InteropServices;
 public interface class
 ILHMPluginLoader
 {
-	b32 LoadSensorPlugin   (PluginHeader* pluginHeader, SensorPlugin* sensorPlugin);
-	b32 UnloadSensorPlugin (PluginHeader* pluginHeader, SensorPlugin* sensorPlugin);
-	b32 LoadWidgetPlugin   (PluginHeader* pluginHeader, WidgetPlugin* widgetPlugin);
-	b32 UnloadWidgetPlugin (PluginHeader* pluginHeader, WidgetPlugin* widgetPlugin);
+	b32 LoadSensorPlugin   (PluginInfo* pluginInfo, SensorPlugin* sensorPlugin);
+	b32 UnloadSensorPlugin (PluginInfo* pluginInfo, SensorPlugin* sensorPlugin);
+	b32 LoadWidgetPlugin   (PluginInfo* pluginInfo, WidgetPlugin* widgetPlugin);
+	b32 UnloadWidgetPlugin (PluginInfo* pluginInfo, WidgetPlugin* widgetPlugin);
 };
 
 [ComVisible(false)]
@@ -79,79 +79,79 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	}
 
 	virtual b32
-	LoadSensorPlugin(PluginHeader* pluginHeader, SensorPlugin* sensorPlugin)
+	LoadSensorPlugin(PluginInfo* pluginInfo, SensorPlugin* sensorPlugin)
 	{
 		b32 success;
 
-		success = LoadPlugin(pluginHeader);
+		success = LoadPlugin(pluginInfo);
 		if (!success) return false;
 
-		LHMPluginLoader^ pluginLoader = GetDomainResidentLoader(pluginHeader);
-		success = pluginLoader->InitializeSensorPlugin(pluginHeader, sensorPlugin);
+		LHMPluginLoader^ pluginLoader = GetDomainResidentLoader(pluginInfo);
+		success = pluginLoader->InitializeSensorPlugin(pluginInfo, sensorPlugin);
 		if (!success) return false;
 
 		return true;
 	}
 
 	virtual b32
-	UnloadSensorPlugin(PluginHeader* pluginHeader, SensorPlugin* sensorPlugin)
+	UnloadSensorPlugin(PluginInfo* pluginInfo, SensorPlugin* sensorPlugin)
 	{
 		b32 success;
 
-		LHMPluginLoader^ pluginLoader = GetDomainResidentLoader(pluginHeader);
-		success = pluginLoader->TeardownSensorPlugin(pluginHeader, sensorPlugin);
+		LHMPluginLoader^ pluginLoader = GetDomainResidentLoader(pluginInfo);
+		success = pluginLoader->TeardownSensorPlugin(pluginInfo, sensorPlugin);
 		if (!success) return false;
 
-		success = UnloadPlugin(pluginHeader);
+		success = UnloadPlugin(pluginInfo);
 		if (!success) return false;
 
 		return true;
 	}
 
 	virtual b32
-	LoadWidgetPlugin(PluginHeader* pluginHeader, WidgetPlugin* widgetPlugin)
+	LoadWidgetPlugin(PluginInfo* pluginInfo, WidgetPlugin* widgetPlugin)
 	{
 		b32 success;
 
-		success = LoadPlugin(pluginHeader);
+		success = LoadPlugin(pluginInfo);
 		if (!success) return false;
 
-		LHMPluginLoader^ pluginLoader = GetDomainResidentLoader(pluginHeader);
-		success = pluginLoader->InitializeWidgetPlugin(pluginHeader, widgetPlugin);
+		LHMPluginLoader^ pluginLoader = GetDomainResidentLoader(pluginInfo);
+		success = pluginLoader->InitializeWidgetPlugin(pluginInfo, widgetPlugin);
 		if (!success) return false;
 
 		return true;
 	}
 
 	virtual b32
-	UnloadWidgetPlugin(PluginHeader* pluginHeader, WidgetPlugin* widgetPlugin)
+	UnloadWidgetPlugin(PluginInfo* pluginInfo, WidgetPlugin* widgetPlugin)
 	{
 		b32 success;
 
-		LHMPluginLoader^ pluginLoader = GetDomainResidentLoader(pluginHeader);
-		success = pluginLoader->TeardownWidgetPlugin(pluginHeader, widgetPlugin);
+		LHMPluginLoader^ pluginLoader = GetDomainResidentLoader(pluginInfo);
+		success = pluginLoader->TeardownWidgetPlugin(pluginInfo, widgetPlugin);
 		if (!success) return false;
 
-		success = UnloadPlugin(pluginHeader);
+		success = UnloadPlugin(pluginInfo);
 		if (!success) return false;
 
 		return true;
 	}
 
 	LHMPluginLoader^
-	GetDomainResidentLoader (PluginHeader* pluginHeader)
+	GetDomainResidentLoader (PluginInfo* pluginInfo)
 	{
-		GCHandle         appDomainHandle = (GCHandle) (IntPtr) pluginHeader->userData;
+		GCHandle         appDomainHandle = (GCHandle) (IntPtr) pluginInfo->userData;
 		AppDomain^       appDomain       = (AppDomain^) appDomainHandle.Target;
 		LHMPluginLoader^ pluginLoader    = (LHMPluginLoader^) appDomain->DomainManager;
 		return pluginLoader;
 	}
 
 	b32
-	LoadPlugin(PluginHeader* pluginHeader)
+	LoadPlugin(PluginInfo* pluginInfo)
 	{
-		auto name      = gcnew String(pluginHeader->name);
-		auto directory = gcnew String(pluginHeader->directory);
+		auto name      = gcnew String(pluginInfo->name);
+		auto directory = gcnew String(pluginInfo->directory);
 
 		// NOTE: LHMAppDomainManager is going to get loaded into each new
 		// AppDomain so we need to let ApplicationBase get inherited from the
@@ -167,18 +167,18 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 		//domainSetup.ShadowCopyFiles       = true
 
 		AppDomain^ appDomain = CreateDomain(name, nullptr, domainSetup);
-		pluginHeader->userData = (void*) (IntPtr) GCHandle::Alloc(appDomain);
+		pluginInfo->userData = (void*) (IntPtr) GCHandle::Alloc(appDomain);
 		return true;
 	}
 
 	b32
-	UnloadPlugin(PluginHeader* pluginHeader)
+	UnloadPlugin(PluginInfo* pluginInfo)
 	{
-		GCHandle appDomainHandle = (GCHandle) (IntPtr) pluginHeader->userData;
+		GCHandle appDomainHandle = (GCHandle) (IntPtr) pluginInfo->userData;
 
 		AppDomain::Unload((AppDomain^) appDomainHandle.Target);
 		appDomainHandle.Free();
-		pluginHeader->userData = nullptr;
+		pluginInfo->userData = nullptr;
 		return true;
 	}
 
@@ -220,9 +220,9 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	}
 
 	b32
-	InitializeSensorPlugin(PluginHeader* pluginHeader, SensorPlugin* sensorPlugin)
+	InitializeSensorPlugin(PluginInfo* pluginInfo, SensorPlugin* sensorPlugin)
 	{
-		b32 success = LoadAssemblyAndInstantiateType(pluginHeader->name, sensorPluginCLR.pluginInstance);
+		b32 success = LoadAssemblyAndInstantiateType(pluginInfo->name, sensorPluginCLR.pluginInstance);
 		if (!success) return false;
 
 		auto iInitialize = dynamic_cast<ISensorInitialize^>(sensorPluginCLR.pluginInstance);
@@ -250,9 +250,9 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	}
 
 	b32
-	TeardownSensorPlugin(PluginHeader* pluginHeader, SensorPlugin* sensorPlugin)
+	TeardownSensorPlugin(PluginInfo* pluginInfo, SensorPlugin* sensorPlugin)
 	{
-		UNUSED(pluginHeader);
+		UNUSED(pluginInfo);
 
 		sensorPlugin->initialize = 0;
 		sensorPlugin->update     = 0;
@@ -263,9 +263,9 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	}
 
 	b32
-	InitializeWidgetPlugin(PluginHeader* pluginHeader, WidgetPlugin* widgetPlugin)
+	InitializeWidgetPlugin(PluginInfo* pluginInfo, WidgetPlugin* widgetPlugin)
 	{
-		b32 success = LoadAssemblyAndInstantiateType(pluginHeader->name, widgetPluginCLR.pluginInstance);
+		b32 success = LoadAssemblyAndInstantiateType(pluginInfo->name, widgetPluginCLR.pluginInstance);
 		if (!success) return false;
 
 		auto iInitialize = dynamic_cast<IWidgetInitialize^>(widgetPluginCLR.pluginInstance);
@@ -293,9 +293,9 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	}
 
 	b32
-	TeardownWidgetPlugin(PluginHeader* pluginHeader, WidgetPlugin* widgetPlugin)
+	TeardownWidgetPlugin(PluginInfo* pluginInfo, WidgetPlugin* widgetPlugin)
 	{
-		UNUSED(pluginHeader);
+		UNUSED(pluginInfo);
 
 		widgetPlugin->initialize = 0;
 		widgetPlugin->update     = 0;

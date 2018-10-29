@@ -2,9 +2,10 @@
 #include "LHMString.hpp"
 
 #include "platform.h"
-#include "pluginheader.h"
 #include "pluginloader.h"
 #include "renderer.h"
+
+#include "plugin_shared.h"
 #include "simulation.hpp"
 
 #define VC_EXTRALEAN

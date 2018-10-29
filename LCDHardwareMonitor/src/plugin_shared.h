@@ -1,5 +1,3 @@
-// TODO: Rename this file
-
 enum struct PluginKind
 {
 	Null,
@@ -14,22 +12,23 @@ enum struct PluginLanguage
 	Managed,
 };
 
-using PluginHeaderRef = List<struct PluginHeader>::RefT;
+struct PluginInfo;
+using PluginInfoRef = List<PluginInfo>::RefT;
 
 // TODO: Maybe union SensorPlugin and WidgetPlugin into here?
-// TODO: Right now I don't think it's possible to get from a PluginHeader to
+// TODO: Right now I don't think it's possible to get from a PluginInfo to
 // the actual Sensor/WidgetPlugin
 // TODO: Rename to PluginInfo
-struct PluginHeader
+struct PluginInfo
 {
-	PluginHeaderRef ref;
-	b32             isLoaded;
-	b32             isWorking;
-	c8*             name;
-	c8*             directory;
-	PluginKind      kind;
-	PluginLanguage  language;
-	void*           userData;
+	PluginInfoRef  ref;
+	b32            isLoaded;
+	b32            isWorking;
+	c8*            name;
+	c8*            directory;
+	PluginKind     kind;
+	PluginLanguage language;
+	void*          userData;
 };
 
 struct WidgetPlugin
@@ -38,10 +37,10 @@ struct WidgetPlugin
 	using UpdateFn     = void(PluginContext* context, WidgetPluginAPI::Update     api);
 	using TeardownFn   = void(PluginContext* context, WidgetPluginAPI::Teardown   api);
 
-	PluginHeaderRef pluginHeaderRef;
-	InitializeFn*   initialize;
-	UpdateFn*       update;
-	TeardownFn*     teardown;
+	PluginInfoRef pluginInfoRef;
+	InitializeFn* initialize;
+	UpdateFn*     update;
+	TeardownFn*   teardown;
 };
 
 struct SensorPlugin
@@ -50,11 +49,11 @@ struct SensorPlugin
 	using UpdateFn     = void(PluginContext* context, SensorPluginAPI::Update     api);
 	using TeardownFn   = void(PluginContext* context, SensorPluginAPI::Teardown   api);
 
-	PluginHeaderRef pluginHeaderRef;
-	InitializeFn*   initialize;
-	UpdateFn*       update;
-	TeardownFn*     teardown;
+	PluginInfoRef pluginInfoRef;
+	InitializeFn* initialize;
+	UpdateFn*     update;
+	TeardownFn*   teardown;
 
-	List<Sensor>    sensors;
+	List<Sensor>  sensors;
 	//List<SensorRef> activeSensors;
 };

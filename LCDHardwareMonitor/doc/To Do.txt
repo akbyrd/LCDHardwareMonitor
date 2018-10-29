@@ -1,5 +1,7 @@
 Next
 	Cleanup Pass
+		Move additional include directories out of VC++ Directories in VS
+
 		API: Probably have plugins fill a struct full of function pointers
 		Can we typecheck plugin functions by making the plugin assign function
 		pointers somewhere? (Can probably do this in a header since we know the
@@ -9,7 +11,6 @@ Next
 		1) Get better type safety since they'll have to match the function pointer
 		definition. 2) Reduce the amount of boilerplate on the application side.
 
-		Move additional include directories out of VC++ Directories in VS
 		Move InputLayout into VertexShader probably
 		Combine VS and PS cbuf updating
 		Extend cbufs to support all shader stages
