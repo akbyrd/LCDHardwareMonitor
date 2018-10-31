@@ -128,22 +128,14 @@ public ref struct State : ISensorPlugin, ISensorInitialize, ISensorUpdate, ISens
 		for (i32 i = 0; i < State::activeHardware->Count; i++)
 			State::activeHardware[i]->Update();
 
-		// TODO: This is stupid
+		// TODO: This is stupid. Something something activeSensors
 		for (u32 i = 0; i < api.sensors.length; i++)
 		{
 			Sensor* sensor = &api.sensors[i];
+			ISensor^ ohmSensor = State::activeSensors[(i32) i];
 
-			String^ sensorName = gcnew String(sensor->name);
-			for (i32 j = 0; j < State::activeSensors->Count; j++)
-			{
-				ISensor^ ohmSensor = State::activeSensors[j];
-				if (ohmSensor->Name == sensorName)
-				{
-					// TODO: This string could disappear
-					sensor->value = ohmSensor->Value.GetValueOrDefault();
-					break;
-				}
-			}
+			// TODO: This string could disappear
+			sensor->value = ohmSensor->Value.GetValueOrDefault();
 		}
 	}
 

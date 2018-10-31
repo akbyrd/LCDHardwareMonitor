@@ -23,21 +23,6 @@
 #include <memory>
 
 template<typename T>
-struct Slice
-{
-	u32 length;
-	T*  data;
-
-	// TODO: Wish we didn't have all these constructors just to support implicit conversions for single elements.
-	Slice() { length = 0; data = nullptr; }
-	Slice(u32 length, T* data) { Slice::length = length; Slice::data = data; }
-	Slice(T& element) { length = 1; data = &element; }
-	template<typename T, u32 Length>
-	Slice(T(&arr)[Length]) { length = Length; data = arr; }
-	inline T& operator [](u32 i) { return data[i]; }
-};
-
-template<typename T>
 struct ListRef
 {
 	u32 index;
@@ -48,6 +33,27 @@ struct ListRef
 	// TODO: Switch to 0 being a null asset everywhere
 	static const ListRef<T> Null;
 	operator bool() { return *this != Null; }
+};
+
+template<typename T>
+struct Slice
+{
+	u32 length;
+	T*  data;
+
+	// TODO: Wish we didn't have all these constructors just to support implicit
+	// conversions for single elements.
+	Slice() { length = 0; data = nullptr; }
+	Slice(u32 length, T* data) { Slice::length = length; Slice::data = data; }
+	Slice(T& element) { length = 1; data = &element; }
+	template<typename T, u32 Length>
+	Slice(T(&arr)[Length]) { length = Length; data = arr; }
+	inline T& operator [](u32 i) { return data[i]; }
+
+	// TODO: There's no guarantee a ref is even valid on a slice. I'm not sure
+	// this should exist.
+	using RefT = ListRef<T>;
+	inline T& operator [](RefT r) { return data[r.index]; }
 };
 
 template<typename T>

@@ -83,8 +83,18 @@ Update(PluginContext* context, WidgetPluginAPI::Update api)
 		Widget* widget = (Widget*) &api.widgetInstances[i * elemSize];
 		BarWidget* barWidget = (BarWidget*) ((u8*) widget + sizeof(Widget));
 
-		r32 phase = (r32) i / (r32) (instanceCount + 1) * 0.5f * r32Pi;
-		barWidget->constants.fillAmount = sin(api.t + phase) * sin(api.t + phase);
+		if (widget->sensor)
+		{
+			Sensor* sensor = &api.sensors[widget->sensor];
+			float value = sensor->value / 100.0f;
+			barWidget->constants.fillAmount = Lerp(barWidget->constants.fillAmount, value, 0.10f);
+		}
+		else
+		{
+			r32 phase = (r32) i / (r32) (instanceCount + 1) * 0.5f * r32Pi;
+			barWidget->constants.fillAmount = sin(api.t + phase) * sin(api.t + phase);
+		}
+
 		DrawBarWidget(context, api, widget, barWidget);
 	}
 }

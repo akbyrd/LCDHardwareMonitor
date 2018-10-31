@@ -3,6 +3,9 @@
 
 struct PluginContext;
 
+struct Sensor;
+using SensorRef = List<Sensor>::RefT;
+
 struct Sensor
 {
 	c8* name;
@@ -12,6 +15,9 @@ struct Sensor
 	// TODO: Range struct?
 	r32 minValue;
 	r32 maxValue;
+
+	// TODO: Might want an integer Type field with a plugin provided to-string
+	// function.
 };
 
 struct SensorPluginAPI

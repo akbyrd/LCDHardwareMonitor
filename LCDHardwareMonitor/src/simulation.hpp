@@ -405,8 +405,28 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 
 			//widget->sensor = List_GetRef(ohmPlugin->sensors, 0);
 			widget->position = { i * 4.0f + 10.0f, i * 15.0f + 2.0f};
+			widget->sensor = SensorRef::Null;
 			widgetInstances->definition.initialize(widget);
 		}
+		u32 stride = sizeof(Widget) + widgetInstances->definition.size;
+		Widget* widget;
+		widget = (Widget*) (widgetInstances->instances.data +  0*stride); widget->sensor.index =  6; // CPU 0 %
+		widget = (Widget*) (widgetInstances->instances.data +  1*stride); widget->sensor.index =  7; // CPU 1 %
+		widget = (Widget*) (widgetInstances->instances.data +  2*stride); widget->sensor.index =  8; // CPU 2 %
+		widget = (Widget*) (widgetInstances->instances.data +  3*stride); widget->sensor.index =  9; // CPU 3 %
+		widget = (Widget*) (widgetInstances->instances.data +  4*stride); widget->sensor.index = 10; // CPU Avg %
+		widget = (Widget*) (widgetInstances->instances.data +  5*stride); widget->sensor.index = 15; // CPU Avg Temp
+		widget = (Widget*) (widgetInstances->instances.data +  6*stride); widget->sensor.index = 33; // GPU %
+		widget = (Widget*) (widgetInstances->instances.data +  7*stride); widget->sensor.index = 28; // GPU Temp
+		widget = (Widget*) (widgetInstances->instances.data +  8*stride); widget->sensor.index = 29; // GPU Fan
+		widget = (Widget*) (widgetInstances->instances.data +  9*stride); widget->sensor.index =  0; // Fan 1
+		widget = (Widget*) (widgetInstances->instances.data + 10*stride); widget->sensor.index =  1; // Fan 2
+		widget = (Widget*) (widgetInstances->instances.data + 11*stride); widget->sensor.index =  2; // Fan 3
+		widget = (Widget*) (widgetInstances->instances.data + 12*stride); widget->sensor.index =  3; // Fan 4
+		widget = (Widget*) (widgetInstances->instances.data + 13*stride); widget->sensor.index = 25; // RAM %
+		widget = (Widget*) (widgetInstances->instances.data + 14*stride); widget->sensor.index = 40; // GPU RAM %
+		widget = (Widget*) (widgetInstances->instances.data + 15*stride); widget->sensor.index = 42; // HDD 0 %
+		widget = nullptr;
 	}
 
 	return true;
@@ -443,6 +463,11 @@ Simulation_Update(SimulationState* s)
 	{
 		WidgetPluginAPI::Update api = {};
 		api.t             = Platform_GetElapsedSeconds(s->startTime);
+		// HACK TODO: Fuuuuck. Sensors separated by plugin, so refs need to know
+		// which plugin they're referring to. Maaaybe a Slice<Slice<Sensor>> will
+		// work once we add a stride? Can also make it a 2 part ref: plugin +
+		// sensor.
+		api.sensors       = s->sensorPlugins[0].sensors;
 		api.PushDrawCall  = PushDrawCall;
 		api.GetWVPPointer = GetWVPPointer;
 
@@ -455,6 +480,17 @@ Simulation_Update(SimulationState* s)
 			{
 				WidgetInstances* widgetInstances = &widgetPlugin->widgetInstances[i];
 				if (widgetInstances->instances.length == 0) continue;
+
+				// TODO: How sensor values propagate to widgets is an open
+				// question. Does the application spin through the widgets and
+				// update the values (Con: iterating over the list twice. Con: Lots
+				// of sensor lookups)? Do we store a map from sensors to widgets
+				// that use them and update widgets when the sensor value changes
+				// (Con: complexity maybe)? Do we store a pointer in widgets to the
+				// sensor value (Con: Have to patch up the pointer when sensors
+				// resize) (could be a relative pointer so update happens on a
+				// single base pointer) (Con: drawing likely needs access to the
+				// full sensor)?
 
 				context.ref     = widgetPlugin->pluginHeaderRef;
 				context.success = true;

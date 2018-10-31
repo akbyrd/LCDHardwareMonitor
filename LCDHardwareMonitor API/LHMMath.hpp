@@ -54,6 +54,15 @@ Clamp(T value, U min, V max)
 	return result;
 }
 
+// TODO: Vector versions
+template<typename T, typename U>
+inline T
+Lerp(T a, U b, r32 t)
+{
+	T result = (1.0f - t)*a + t*b;
+	return result;
+}
+
 template<typename T> union v2t;
 template<typename T> union v3t;
 template<typename T> union v4t;

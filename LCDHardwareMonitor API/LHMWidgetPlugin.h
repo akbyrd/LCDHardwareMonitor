@@ -6,10 +6,11 @@ struct PluginContext;
 struct Widget
 {
 	// TODO: Should plugins or the renderer be responsible for creating a matrix from this information?
-	v2  position;
-	//v2  scale;
-	v2  pivot;
-	r32 depth;
+	v2        position;
+	//v2        scale;
+	v2        pivot;
+	r32       depth;
+	SensorRef sensor; // TODO: Rename
 };
 
 struct WidgetDefinition
@@ -53,20 +54,23 @@ struct WidgetPluginAPI
 		using GetWVPPointerFn = Matrix*(PluginContext*);
 
 		r32 t;
-		// TODO: Bytes is a lame data structure here. Strongly typed Slice with a stride?! Also, I
-		// think we need to pass the definitions along with the instances or else the plugin won't
-		// know what it's updating/drawing. This likely informs the resolution to the teardown issue
-		// mentioned below.
+		// TODO: Bytes is a lame data structure here. Strongly typed Slice with a
+		// stride?! Also, I think we need to pass the definitions along with the
+		// instances or else the plugin won't know what it's updating/drawing.
+		// This likely informs the resolution to the teardown issue mentioned
+		// below.
 		Bytes             widgetInstances;
+		Slice<Sensor>     sensors;
 		PushDrawCallFn*   PushDrawCall;
 		GetWVPPointerFn*  GetWVPPointer;
 	};
 
 	struct Teardown
 	{
-		// TODO: Need to do teardown for multiple WidgetInstances because the plugin might need to
-		// release resources on every widget instance. We don't want to call teardown multiple times
-		// though so this needs some thought.
+		// TODO: Need to do teardown for multiple WidgetInstances because the
+		// plugin might need to release resources on every widget instance. We
+		// don't want to call teardown multiple times though so this needs some
+		// thought.
 		//Bytes widgetInstances;
 	};
 };
