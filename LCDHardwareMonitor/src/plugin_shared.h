@@ -12,47 +12,45 @@ enum struct PluginLanguage
 	Managed,
 };
 
-struct PluginInfo;
-using PluginInfoRef = List<PluginInfo>::RefT;
+struct PluginHeader;
+using PluginHeaderRef = List<PluginHeader>::RefT;
 
 // TODO: Maybe union SensorPlugin and WidgetPlugin into here?
-// TODO: Right now I don't think it's possible to get from a PluginInfo to
+// TODO: Right now I don't think it's possible to get from a PluginHeader to
 // the actual Sensor/WidgetPlugin
-// TODO: Rename to PluginInfo
-struct PluginInfo
+struct PluginHeader
 {
-	PluginInfoRef  ref;
-	b32            isLoaded;
-	b32            isWorking;
-	c8*            name;
-	c8*            directory;
-	PluginKind     kind;
-	PluginLanguage language;
-	void*          userData;
+	PluginHeaderRef ref;
+	b32             isLoaded;
+	b32             isWorking;
+	c8*             fileName;
+	c8*             directory;
+	PluginKind      kind;
+	PluginLanguage  language;
+	void*           userData;
+};
+
+struct WidgetInstances
+{
+	WidgetDefinition definition;
+	Bytes            instances;
 };
 
 struct WidgetPlugin
 {
-	using InitializeFn = b32 (PluginContext* context, WidgetPluginAPI::Initialize api);
-	using UpdateFn     = void(PluginContext* context, WidgetPluginAPI::Update     api);
-	using TeardownFn   = void(PluginContext* context, WidgetPluginAPI::Teardown   api);
+	PluginHeaderRef       pluginHeaderRef;
+	PluginInfo            pluginInfo;
+	WidgetPluginFunctions functions;
 
-	PluginInfoRef pluginInfoRef;
-	InitializeFn* initialize;
-	UpdateFn*     update;
-	TeardownFn*   teardown;
+	// TODO: Rename this (WidgetTypes?)
+	List<WidgetInstances> widgetInstances;
 };
 
 struct SensorPlugin
 {
-	using InitializeFn = b32 (PluginContext* context, SensorPluginAPI::Initialize api);
-	using UpdateFn     = void(PluginContext* context, SensorPluginAPI::Update     api);
-	using TeardownFn   = void(PluginContext* context, SensorPluginAPI::Teardown   api);
-
-	PluginInfoRef pluginInfoRef;
-	InitializeFn* initialize;
-	UpdateFn*     update;
-	TeardownFn*   teardown;
+	PluginHeaderRef       pluginHeaderRef;
+	PluginInfo            pluginInfo;
+	SensorPluginFunctions functions;
 
 	List<Sensor>  sensors;
 	//List<SensorRef> activeSensors;

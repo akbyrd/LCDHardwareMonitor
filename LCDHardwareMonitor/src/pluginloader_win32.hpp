@@ -108,12 +108,12 @@ PluginLoader_Teardown(PluginLoaderState* s)
 }
 
 static b32
-DetectPluginLanguage(PluginInfo* pluginInfo)
+DetectPluginLanguage(PluginHeader* pluginHeader)
 {
 	// TODO: Move memory mapping to platform API?
 
 	String pluginPath = {};
-	b32 success = String_Format(pluginPath, "%s\\%s.dll", pluginInfo->directory, pluginInfo->name);
+	b32 success = String_Format(pluginPath, "%s\\%s.dll", pluginHeader->directory, pluginHeader->fileName);
 	if (!success) return false;
 	defer { List_Free(pluginPath); };
 
@@ -168,26 +168,26 @@ DetectPluginLanguage(PluginInfo* pluginInfo)
 
 	if (optionalHeader->NumberOfRvaAndSizes <= IMAGE_DIRECTORY_ENTRY_COMHEADER)
 	{
-		pluginInfo->language = PluginLanguage::Native;
+		pluginHeader->language = PluginLanguage::Native;
 	}
 	else
 	{
 		IMAGE_DATA_DIRECTORY* clrDirectory = &optionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_COMHEADER];
-		pluginInfo->language = clrDirectory->Size == 0 ? PluginLanguage::Native : PluginLanguage::Managed;
+		pluginHeader->language = clrDirectory->Size == 0 ? PluginLanguage::Native : PluginLanguage::Managed;
 	}
 
 	return true;
 }
 
 b32
-PluginLoader_LoadSensorPlugin(PluginLoaderState* s, PluginInfo* pluginInfo, SensorPlugin* sensorPlugin)
+PluginLoader_LoadSensorPlugin(PluginLoaderState* s, PluginHeader* pluginHeader, SensorPlugin* sensorPlugin)
 {
 	b32 success = false;
 
-	success = DetectPluginLanguage(pluginInfo);
+	success = DetectPluginLanguage(pluginHeader);
 	if (!success) return false;
 
-	switch (pluginInfo->language)
+	switch (pluginHeader->language)
 	{
 		case PluginLanguage::Null:
 			success = false;
@@ -197,15 +197,18 @@ PluginLoader_LoadSensorPlugin(PluginLoaderState* s, PluginInfo* pluginInfo, Sens
 		{
 			success = false;
 			// TODO: Will this work with delay loaded dependencies?
-			SetDllDirectoryA(pluginInfo->directory);
-			pluginInfo->userData = LoadLibraryA(pluginInfo->name);
-			LOG_IF(!pluginInfo->userData, "Failed to load unmanaged Sensor plugin", Severity::Warning, break);
+			SetDllDirectoryA(pluginHeader->directory);
+			pluginHeader->userData = LoadLibraryA(pluginHeader->fileName);
+			LOG_IF(!pluginHeader->userData, "Failed to load unmanaged Sensor plugin", Severity::Warning, break);
 			SetDllDirectoryA("");
 
-			HMODULE pluginModule = (HMODULE) pluginInfo->userData;
-			sensorPlugin->initialize = (SensorPlugin::InitializeFn*) (void*) GetProcAddress(pluginModule, "Initialize");
-			sensorPlugin->update     = (SensorPlugin::UpdateFn*)     (void*) GetProcAddress(pluginModule, "Update");
-			sensorPlugin->teardown   = (SensorPlugin::TeardownFn*)   (void*) GetProcAddress(pluginModule, "Teardown");
+			HMODULE pluginModule = (HMODULE) pluginHeader->userData;
+			sensorPlugin->functions.getPluginInfo = (SensorPluginFunctions::GetPluginInfoFn*) (void*) GetProcAddress(pluginModule, "GetSensorPluginInfo");
+			LOG_IF(!sensorPlugin->functions.getPluginInfo, "Failed to find unmanaged GetSensorPluginInfo", Severity::Warning, break);
+
+			sensorPlugin->functions.getPluginInfo(&sensorPlugin->pluginInfo, &sensorPlugin->functions);
+			// TODO: Check name and version and such
+
 			success = true;
 			break;
 		}
@@ -214,53 +217,53 @@ PluginLoader_LoadSensorPlugin(PluginLoaderState* s, PluginInfo* pluginInfo, Sens
 		{
 			// NOTE: fuslogvw is great for debugging managed assembly loading.
 			// TODO: Do we need to try/catch the managed code?
-			success = s->lhmPluginLoader->LoadSensorPlugin(pluginInfo, sensorPlugin);
+			success = s->lhmPluginLoader->LoadSensorPlugin(pluginHeader, sensorPlugin);
 			LOG_IF(!success, "Failed to load managed Sensor plugin", Severity::Warning);
 			break;
 		}
 	}
 	if (!success) return false;
 
-	pluginInfo->isLoaded = true;
+	pluginHeader->isLoaded = true;
 	return true;
 }
 
 b32
-PluginLoader_UnloadSensorPlugin(PluginLoaderState* s, PluginInfo* pluginInfo, SensorPlugin* sensorPlugin)
+PluginLoader_UnloadSensorPlugin(PluginLoaderState* s, PluginHeader* pluginHeader, SensorPlugin* sensorPlugin)
 {
 	b32 success = false;
-	switch (pluginInfo->language)
+	switch (pluginHeader->language)
 	{
 		case PluginLanguage::Null:
 			success = false;
 			break;
 
 		case PluginLanguage::Native:
-			success = FreeLibrary((HMODULE) pluginInfo->userData);
+			success = FreeLibrary((HMODULE) pluginHeader->userData);
 			LOG_IF(!success, "Failed to unload unmanaged Sensor plugin", Severity::Warning, break);
-			pluginInfo->userData = nullptr;
+			pluginHeader->userData = nullptr;
 			break;
 
 		case PluginLanguage::Managed:
-			success = s->lhmPluginLoader->UnloadSensorPlugin(pluginInfo, sensorPlugin);
+			success = s->lhmPluginLoader->UnloadSensorPlugin(pluginHeader, sensorPlugin);
 			LOG_IF(!success, "Failed to unload managed Sensor plugin", Severity::Warning);
 			break;
 	}
 	if (!success) return false;
 
-	pluginInfo->isLoaded = false;
+	pluginHeader->isLoaded = false;
 	return true;
 }
 
 b32
-PluginLoader_LoadWidgetPlugin(PluginLoaderState* s, PluginInfo* pluginInfo, WidgetPlugin* widgetPlugin)
+PluginLoader_LoadWidgetPlugin(PluginLoaderState* s, PluginHeader* pluginHeader, WidgetPlugin* widgetPlugin)
 {
 	b32 success = false;
 
-	success = DetectPluginLanguage(pluginInfo);
+	success = DetectPluginLanguage(pluginHeader);
 	if (!success) return false;
 
-	switch (pluginInfo->language)
+	switch (pluginHeader->language)
 	{
 		case PluginLanguage::Null:
 			success = false;
@@ -270,15 +273,18 @@ PluginLoader_LoadWidgetPlugin(PluginLoaderState* s, PluginInfo* pluginInfo, Widg
 		{
 			success = false;
 			// TODO: Will this work with delay loaded dependencies?
-			SetDllDirectoryA(pluginInfo->directory);
-			pluginInfo->userData = LoadLibraryA(pluginInfo->name);
-			LOG_IF(!pluginInfo->userData, "Failed to load unmanaged Widget plugin", Severity::Warning, break);
+			SetDllDirectoryA(pluginHeader->directory);
+			pluginHeader->userData = LoadLibraryA(pluginHeader->fileName);
+			LOG_IF(!pluginHeader->userData, "Failed to load unmanaged Widget plugin", Severity::Warning, break);
 			SetDllDirectoryA("");
 
-			HMODULE pluginModule = (HMODULE) pluginInfo->userData;
-			widgetPlugin->initialize = (WidgetPlugin::InitializeFn*) (void*) GetProcAddress(pluginModule, "Initialize");
-			widgetPlugin->update     = (WidgetPlugin::UpdateFn*)     (void*) GetProcAddress(pluginModule, "Update");
-			widgetPlugin->teardown   = (WidgetPlugin::TeardownFn*)   (void*) GetProcAddress(pluginModule, "Teardown");
+			HMODULE pluginModule = (HMODULE) pluginHeader->userData;
+			widgetPlugin->functions.getPluginInfo = (WidgetPluginFunctions::GetPluginInfoFn*) (void*) GetProcAddress(pluginModule, "GetWidgetPluginInfo");
+			LOG_IF(!widgetPlugin->functions.getPluginInfo, "Failed to find unmanaged GetWidgetPluginInfo", Severity::Warning, break);
+
+			widgetPlugin->functions.getPluginInfo(&widgetPlugin->pluginInfo, &widgetPlugin->functions);
+			// TODO: Check name and version and such
+
 			success = true;
 			break;
 		}
@@ -287,40 +293,40 @@ PluginLoader_LoadWidgetPlugin(PluginLoaderState* s, PluginInfo* pluginInfo, Widg
 		{
 			// NOTE: fuslogvw is great for debugging managed assembly loading.
 			// TODO: Do we need to try/catch the managed code?
-			success = s->lhmPluginLoader->LoadWidgetPlugin(pluginInfo, widgetPlugin);
+			success = s->lhmPluginLoader->LoadWidgetPlugin(pluginHeader, widgetPlugin);
 			LOG_IF(!success, "Failed to load managed Widget plugin", Severity::Warning);
 			break;
 		}
 	}
 	if (!success) return false;
 
-	pluginInfo->isLoaded = true;
+	pluginHeader->isLoaded = true;
 	return true;
 }
 
 b32
-PluginLoader_UnloadWidgetPlugin(PluginLoaderState* s, PluginInfo* pluginInfo, WidgetPlugin* widgetPlugin)
+PluginLoader_UnloadWidgetPlugin(PluginLoaderState* s, PluginHeader* pluginHeader, WidgetPlugin* widgetPlugin)
 {
 	b32 success = false;
-	switch (pluginInfo->language)
+	switch (pluginHeader->language)
 	{
 		case PluginLanguage::Null:
 			success = false;
 			break;
 
 		case PluginLanguage::Native:
-			success = FreeLibrary((HMODULE) pluginInfo->userData);
+			success = FreeLibrary((HMODULE) pluginHeader->userData);
 			LOG_IF(!success, "Failed to unload unmanaged Widget plugin", Severity::Warning, break);
-			pluginInfo->userData = nullptr;
+			pluginHeader->userData = nullptr;
 			break;
 
 		case PluginLanguage::Managed:
-			success = s->lhmPluginLoader->UnloadWidgetPlugin(pluginInfo, widgetPlugin);
+			success = s->lhmPluginLoader->UnloadWidgetPlugin(pluginHeader, widgetPlugin);
 			LOG_IF(!success, "Failed to unload managed Widget plugin", Severity::Warning);
 			break;
 	}
 	if (!success) return false;
 
-	pluginInfo->isLoaded = false;
+	pluginHeader->isLoaded = false;
 	return true;
 }

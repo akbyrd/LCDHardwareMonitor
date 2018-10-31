@@ -28,13 +28,8 @@ public ref struct State : ISensorPlugin, ISensorInitialize, ISensorUpdate, ISens
 		array<IHardware^>^ hardware;
 	};
 
-	virtual b32  Initialize (PluginContext*, SensorPluginAPI::Initialize) { return true; }
-	virtual void Update     (PluginContext*, SensorPluginAPI::Update)     {}
-	virtual void Teardown   (PluginContext*, SensorPluginAPI::Teardown)   {}
-
-	#if false
-	virtual void
-	Initialize(PluginContext* context, SensorPluginAPI::Initialize* api)
+	virtual b32
+	Initialize(PluginContext* context, SensorPluginAPI::Initialize api)
 	{
 		computer       = gcnew Computer();
 		activeSensors  = gcnew SList<ISensor^>;
@@ -93,8 +88,7 @@ public ref struct State : ISensorPlugin, ISensorInitialize, ISensorUpdate, ISens
 				sensor.name       = (c8*) Marshal::StringToHGlobalAnsi(ohmSensor->Name).ToPointer();
 				sensor.identifier = (c8*) Marshal::StringToHGlobalAnsi(ohmSensor->Identifier->ToString()).ToPointer();
 				sensor.string     = (c8*) Marshal::StringToHGlobalAnsi(value).ToPointer();
-
-				List_Append(s->sensors, sensor);
+				api.AddSensor(context, sensor);
 			}
 
 			// Sub-Hardware
@@ -122,26 +116,31 @@ public ref struct State : ISensorPlugin, ISensorInitialize, ISensorUpdate, ISens
 		//IHardware::SensorRemoved
 		//computer->HardwareAdded   += OnHardwareAdded;
 		//computer->HardwareRemoved += OnHardwareRemoved;
+
+		return true;
 	}
 
 	virtual void
-	Update(PluginContext* context, SensorPluginAPI::Update* api)
+	Update(PluginContext* context, SensorPluginAPI::Update api)
 	{
+		UNUSED(context);
+
 		for (i32 i = 0; i < State::activeHardware->Count; i++)
 			State::activeHardware[i]->Update();
 
 		// TODO: This is stupid
-		for (u32 i = 0; i < s->sensors.length; i++)
+		for (u32 i = 0; i < api.sensors.length; i++)
 		{
-			Sensor& sensor = s->sensors[i];
+			Sensor* sensor = &api.sensors[i];
 
-			String^ sensorName = gcnew String(sensor.name);
+			String^ sensorName = gcnew String(sensor->name);
 			for (i32 j = 0; j < State::activeSensors->Count; j++)
 			{
 				ISensor^ ohmSensor = State::activeSensors[j];
 				if (ohmSensor->Name == sensorName)
 				{
-					sensor.value = ohmSensor->Value.GetValueOrDefault();
+					// TODO: This string could disappear
+					sensor->value = ohmSensor->Value.GetValueOrDefault();
 					break;
 				}
 			}
@@ -149,19 +148,19 @@ public ref struct State : ISensorPlugin, ISensorInitialize, ISensorUpdate, ISens
 	}
 
 	virtual void
-	Teardown(PluginContext* context, SensorPluginAPI::Teardown* api)
+	Teardown(PluginContext* context, SensorPluginAPI::Teardown api)
 	{
-		for (u32 i = 0; i < s->sensors.length; i++)
+		UNUSED(context);
+
+		for (u32 i = 0; i < api.sensors.length; i++)
 		{
-			Sensor& sensor = s->sensors[i];
+			Sensor* sensor = &api.sensors[i];
 
-			Marshal::FreeHGlobal((IntPtr) sensor.name);
-			Marshal::FreeHGlobal((IntPtr) sensor.identifier);
-			Marshal::FreeHGlobal((IntPtr) sensor.string);
+			Marshal::FreeHGlobal((IntPtr) sensor->name);
+			Marshal::FreeHGlobal((IntPtr) sensor->identifier);
+			Marshal::FreeHGlobal((IntPtr) sensor->string);
 
-			sensor = {};
+			*sensor = {};
 		}
-		List_Clear(s->sensors);
 	}
-	#endif
 };

@@ -8,12 +8,13 @@
 #include "LHMList.hpp"
 //#include "LHMString.hpp"
 #include "LHMDefer.hpp"
+
+// Systems
 #include "LHMRenderer.h"
 
 // Plugins
-#include "LHMSensor.h"
+#include "LHMPlugin.h"
 #include "LHMSensorPlugin.h"
-#include "LHMWidget.h"
 #include "LHMWidgetPlugin.h"
 
 #endif

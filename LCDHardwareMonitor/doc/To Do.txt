@@ -1,37 +1,45 @@
 Next
-	Cleanup Pass
-		API: Probably have plugins fill a struct full of function pointers
-		Can we typecheck plugin functions by making the plugin assign function
-		pointers somewhere? (Can probably do this in a header since we know the
-		function names). Actually, maybe this is the right way to get plugin
-		functions in the first place. If we only find a single RegisterPlugin
-		function, then ask the plugin to fill in a bunch of function pointers, we
-		1) Get better type safety since they'll have to match the function pointer
-		definition. 2) Reduce the amount of boilerplate on the application side.
+	Hook a sensor up to the test widgets. It'll feel good.
+	OHM updates seem slow. Might just be in VS though. Profile.
 
-		Move InputLayout into VertexShader probably
-		Combine VS and PS cbuf updating
-		Extend cbufs to support all shader stages
-		Simplify cbuf implementation
-		Implement materials
-		Allocate constant buffers from a simulation owned arena
-		// TODO: Plugin name in errors
-		// TODO: Ensure this is removed from the list in partial initialization conditions
-		// TODO: Widgets will be referencing these sensors.
-		// TODO: I don't think drawing belongs in update
-		// TODO: Get this working
-		It's time to figure out what happens when memory allocations fail
-		Decide on error vs warning policy and update all logging
+	Cleanup Pass
+		General
+			Managed side plugin loading still needs to be updated.
+			Inline PluginHeader
+			Move InputLayout into VertexShader probably
+			// TODO: Ensure this is removed from the list in partial initialization conditions
+			// TODO: Widgets will be referencing these sensors.
+			// TODO: Get this working
+			It's time to figure out what happens when memory allocations fail
+			If we give Slice a stride parameter, magic will occur
+		Constant Buffers / Materials
+			Combine VS and PS cbuf updating
+			Extend cbufs to support all shader stages
+			Simplify cbuf implementation
+			Implement materials
+			Allocate constant buffers from a simulation owned arena
+		Logging
+			// TODO: Plugin name in errors
+			Decide on error vs warning policy and update all logging
+			Look over logging carefully
+			Add formatted logging
 
 	Design Pass
 		Can plugins share shaders? (maybe not)
 		Should plugins get a raw pointer to D3D instead of having an abstracted API?
 		Implement 'services' (mainly logging)
-		How will managed code use native services and api? (probably dllimport)
+		How will managed code use native services and api? (~~probably dllimport~~) (er, function ptr like everything else?)
 		Would it be better to hide Context inside SimulationState so plugins
 		don't have to worry about it?
 		Do we need to support people using objects in plugins (e.g do we need to
 		give dtors an opportunity to run?)
+		Consider *requiring* Update (and potentially other functions) for plugins. Does it make sense
+			to have a Widget plugin that never draws anything (drawing happens in Update)? Or a Sensor
+			that never updates sensors values (I don't think we want to encourage out-of-band updaing
+			from a plugin). For Initialize, what's a WidgetPlugin that doesn't add WidgetDefinitions?
+			SensorPlugins don't need Initialize though. If you have a plugin to monitor fan speeds but
+			have no fans, it seems fine to provide no Sensors. Ok, but it still should have the
+			opportunity to look, right?
 
 	Rendering!
 		Runtime shader compilation
@@ -49,8 +57,6 @@ Next
 	Memory pools
 		Replace array stack allocations with Lists out of a pool.
 		Remove ArrayLength/Size
-	Look over logging carefully
-	Add formatted logging
 
 
 

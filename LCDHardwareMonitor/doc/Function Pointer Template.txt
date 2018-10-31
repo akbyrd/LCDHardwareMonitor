@@ -11,9 +11,9 @@
 	}
 
 	b32
-	InitializeSensorPlugin(PluginInfo* pluginInfo, SensorPlugin* sensorPlugin)
+	InitializeSensorPlugin(PluginHeader* pluginHeader, SensorPlugin* sensorPlugin)
 	{
-		b32 success = LoadAssemblyAndInstantiateType(pluginInfo->name, sensorPluginCLR.instance);
+		b32 success = LoadAssemblyAndInstantiateType(pluginHeader->name, sensorPluginCLR.instance);
 		if (!success) return false;
 
 		GetPluginFunctionPointer<ISensorInitialize>(sensorPluginCLR.instance, sensorPluginCLR.initializeDelegate, sensorPlugin->initialize);
@@ -24,9 +24,9 @@
 	}
 
 	b32
-	InitializeWidgetPlugin(PluginInfo* pluginInfo, WidgetPlugin* widgetPlugin)
+	InitializeWidgetPlugin(PluginHeader* pluginHeader, WidgetPlugin* widgetPlugin)
 	{
-		b32 success = LoadAssemblyAndInstantiateType(pluginInfo->name, widgetPluginCLR.instance);
+		b32 success = LoadAssemblyAndInstantiateType(pluginHeader->name, widgetPluginCLR.instance);
 		if (!success) return false;
 
 		GetPluginFunctionPointer<IWidgetInitialize>(widgetPluginCLR.instance, widgetPluginCLR.initializeDelegate, widgetPlugin->initialize);

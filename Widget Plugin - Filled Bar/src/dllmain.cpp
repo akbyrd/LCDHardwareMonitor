@@ -54,16 +54,14 @@ DrawBarWidget(PluginContext* context, WidgetPluginAPI::Update api, Widget* widge
 	api.PushDrawCall(context, dc);
 }
 
-EXPORT b32
+b32
 Initialize(PluginContext* context, WidgetPluginAPI::Initialize api)
 {
 	WidgetDefinition widgetDef = {};
 	widgetDef.name       = "Filled Bar";
-	widgetDef.author     = "akbyrd";
-	widgetDef.version    = 1;
 	widgetDef.size       = sizeof(BarWidget);
 	widgetDef.initialize = &InitializeBarWidget;
-	api.AddWidgetDefinition(context, &widgetDef);
+	api.AddWidgetDefinition(context, widgetDef);
 
 	// TODO: This feels janky. Would like to unify the handling of cbufs in some way
 	ConstantBufferDesc cBufDesc = {};
@@ -74,16 +72,15 @@ Initialize(PluginContext* context, WidgetPluginAPI::Initialize api)
 	return true;
 }
 
-// TODO: I don't think drawing belongs in update
-EXPORT void
+void
 Update(PluginContext* context, WidgetPluginAPI::Update api)
 {
 	// HACK: Nasty, hard-coded fuckery
 	u32 elemSize = sizeof(Widget) + sizeof(BarWidget);
-	u32 instanceCount = api.widgetDefinition->instances.length / elemSize;
+	u32 instanceCount = api.widgetInstances.length / elemSize;
 	for (u32 i = 0; i < instanceCount; i++)
 	{
-		Widget* widget = (Widget*) &api.widgetDefinition->instances[i * elemSize];
+		Widget* widget = (Widget*) &api.widgetInstances[i * elemSize];
 		BarWidget* barWidget = (BarWidget*) ((u8*) widget + sizeof(Widget));
 
 		r32 phase = (r32) i / (r32) (instanceCount + 1) * 0.5f * r32Pi;
@@ -92,8 +89,20 @@ Update(PluginContext* context, WidgetPluginAPI::Update api)
 	}
 }
 
-EXPORT void
+void
 Teardown(PluginContext* context, WidgetPluginAPI::Teardown api)
 {
 	UNUSED(context); UNUSED(api);
+}
+
+EXPORT void
+GetWidgetPluginInfo(PluginInfo* info, WidgetPluginFunctions* functions)
+{
+	info->name    = "Filled Bar";
+	info->author  = "akbyrd";
+	info->version = 1;
+
+	functions->initialize = Initialize;
+	functions->update     = Update;
+	functions->teardown   = Teardown;
 }

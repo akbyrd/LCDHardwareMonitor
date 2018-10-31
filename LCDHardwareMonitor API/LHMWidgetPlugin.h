@@ -3,24 +3,22 @@
 
 struct PluginContext;
 
-struct PluginInfo;
-using PluginInfoRef = List<PluginInfo>::RefT;
+struct Widget
+{
+	// TODO: Should plugins or the renderer be responsible for creating a matrix from this information?
+	v2  position;
+	//v2  scale;
+	v2  pivot;
+	r32 depth;
+};
 
 struct WidgetDefinition
 {
 	using InitializeFn = void(Widget*);
 
-	// Filled by plugin
 	c8*           name;
-	c8*           author;
-	u32           version;
 	u32           size;
 	InitializeFn* initialize;
-
-	// TODO: Can this be removed so plugins don't see it?
-	// Filled by application
-	PluginInfoRef ref;
-	Bytes         instances;
 };
 
 template <typename T>
@@ -42,8 +40,7 @@ struct WidgetPluginAPI
 {
 	struct Initialize
 	{
-		// TODO: Standardize by-value or by-ref
-		using AddWidgetDefinitionFn = void       (PluginContext*, WidgetDefinition*);
+		using AddWidgetDefinitionFn = void       (PluginContext*, WidgetDefinition);
 		using LoadPixelShaderFn     = PixelShader(PluginContext*, c8* path, Slice<ConstantBufferDesc>);
 
 		AddWidgetDefinitionFn* AddWidgetDefinition;
@@ -56,12 +53,35 @@ struct WidgetPluginAPI
 		using GetWVPPointerFn = Matrix*(PluginContext*);
 
 		r32 t;
-		WidgetDefinition* widgetDefinition;
+		// TODO: Bytes is a lame data structure here. Strongly typed Slice with a stride?! Also, I
+		// think we need to pass the definitions along with the instances or else the plugin won't
+		// know what it's updating/drawing. This likely informs the resolution to the teardown issue
+		// mentioned below.
+		Bytes             widgetInstances;
 		PushDrawCallFn*   PushDrawCall;
 		GetWVPPointerFn*  GetWVPPointer;
 	};
 
-	struct Teardown {};
+	struct Teardown
+	{
+		// TODO: Need to do teardown for multiple WidgetInstances because the plugin might need to
+		// release resources on every widget instance. We don't want to call teardown multiple times
+		// though so this needs some thought.
+		//Bytes widgetInstances;
+	};
+};
+
+struct WidgetPluginFunctions
+{
+	using GetPluginInfoFn = void(PluginInfo* info, WidgetPluginFunctions* functions);
+	using InitializeFn    = b32 (PluginContext* context, WidgetPluginAPI::Initialize api);
+	using UpdateFn        = void(PluginContext* context, WidgetPluginAPI::Update     api);
+	using TeardownFn      = void(PluginContext* context, WidgetPluginAPI::Teardown   api);
+
+	GetPluginInfoFn* getPluginInfo;
+	InitializeFn*    initialize;
+	UpdateFn*        update;
+	TeardownFn*      teardown;
 };
 
 #endif
