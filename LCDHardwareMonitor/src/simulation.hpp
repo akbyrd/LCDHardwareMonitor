@@ -397,6 +397,7 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 		WidgetPlugin* filledBarPlugin = LoadWidgetPlugin(s, "Widget Plugins\\Filled Bar", "Widget Plugin - Filled Bar");
 		if (!filledBarPlugin) return false;
 
+		#if false
 		WidgetInstances* widgetInstances = &filledBarPlugin->widgetInstances[0];
 		for (i32 i = 0; i < 16; i++)
 		{
@@ -408,25 +409,27 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 			widget->sensor = SensorRef::Null;
 			widgetInstances->definition.initialize(widget);
 		}
+		#else
+		WidgetInstances* widgetInstances = &filledBarPlugin->widgetInstances[0];
+		for (i32 i = 0; i < 5; i++)
+		{
+			Widget* widget = CreateWidget(widgetInstances);
+			if (!widget) return false;
+
+			widget->position = ((v2) s->renderSize - v2{ 240, 12 }) / 2.0f;
+			widget->position.y += (i - 2) * 15.0f;
+			widget->sensor = SensorRef::Null;
+			widgetInstances->definition.initialize(widget);
+		}
 		u32 stride = sizeof(Widget) + widgetInstances->definition.size;
 		Widget* widget;
 		widget = (Widget*) (widgetInstances->instances.data +  0*stride); widget->sensor.index =  6; // CPU 0 %
 		widget = (Widget*) (widgetInstances->instances.data +  1*stride); widget->sensor.index =  7; // CPU 1 %
 		widget = (Widget*) (widgetInstances->instances.data +  2*stride); widget->sensor.index =  8; // CPU 2 %
 		widget = (Widget*) (widgetInstances->instances.data +  3*stride); widget->sensor.index =  9; // CPU 3 %
-		widget = (Widget*) (widgetInstances->instances.data +  4*stride); widget->sensor.index = 10; // CPU Avg %
-		widget = (Widget*) (widgetInstances->instances.data +  5*stride); widget->sensor.index = 15; // CPU Avg Temp
-		widget = (Widget*) (widgetInstances->instances.data +  6*stride); widget->sensor.index = 33; // GPU %
-		widget = (Widget*) (widgetInstances->instances.data +  7*stride); widget->sensor.index = 28; // GPU Temp
-		widget = (Widget*) (widgetInstances->instances.data +  8*stride); widget->sensor.index = 29; // GPU Fan
-		widget = (Widget*) (widgetInstances->instances.data +  9*stride); widget->sensor.index =  0; // Fan 1
-		widget = (Widget*) (widgetInstances->instances.data + 10*stride); widget->sensor.index =  1; // Fan 2
-		widget = (Widget*) (widgetInstances->instances.data + 11*stride); widget->sensor.index =  2; // Fan 3
-		widget = (Widget*) (widgetInstances->instances.data + 12*stride); widget->sensor.index =  3; // Fan 4
-		widget = (Widget*) (widgetInstances->instances.data + 13*stride); widget->sensor.index = 25; // RAM %
-		widget = (Widget*) (widgetInstances->instances.data + 14*stride); widget->sensor.index = 40; // GPU RAM %
-		widget = (Widget*) (widgetInstances->instances.data + 15*stride); widget->sensor.index = 42; // HDD 0 %
+		widget = (Widget*) (widgetInstances->instances.data +  4*stride); widget->sensor.index = 33; // GPU %
 		widget = nullptr;
+		#endif
 	}
 
 	return true;

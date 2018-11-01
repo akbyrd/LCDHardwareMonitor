@@ -1,0 +1,51 @@
+Control; "Fan Control #1"; {/lpc/nct6791d/control/0}
+Control; "Fan Control #2"; {/lpc/nct6791d/control/1}
+Control; "Fan Control #3"; {/lpc/nct6791d/control/2}
+Control; "Fan Control #4"; {/lpc/nct6791d/control/3}
+Control; "Fan Control #5"; {/lpc/nct6791d/control/4}
+Control; "Fan Control #6"; {/lpc/nct6791d/control/5}
+Load; "CPU Core #1"; {/intelcpu/0/load/1}
+Load; "CPU Core #2"; {/intelcpu/0/load/2}
+Load; "CPU Core #3"; {/intelcpu/0/load/3}
+Load; "CPU Core #4"; {/intelcpu/0/load/4}
+Load; "CPU Total"; {/intelcpu/0/load/0}
+Temperature; "CPU Core #1"; {/intelcpu/0/temperature/0}
+Temperature; "CPU Core #2"; {/intelcpu/0/temperature/1}
+Temperature; "CPU Core #3"; {/intelcpu/0/temperature/2}
+Temperature; "CPU Core #4"; {/intelcpu/0/temperature/3}
+Temperature; "CPU Package"; {/intelcpu/0/temperature/4}
+Clock; "CPU Core #1"; {/intelcpu/0/clock/1}
+Clock; "CPU Core #2"; {/intelcpu/0/clock/2}
+Clock; "CPU Core #3"; {/intelcpu/0/clock/3}
+Clock; "CPU Core #4"; {/intelcpu/0/clock/4}
+Power; "CPU Package"; {/intelcpu/0/power/0}
+Power; "CPU Cores"; {/intelcpu/0/power/1}
+Power; "CPU Graphics"; {/intelcpu/0/power/2}
+Power; "CPU DRAM"; {/intelcpu/0/power/3}
+Clock; "Bus Speed"; {/intelcpu/0/clock/0}
+Load; "Memory"; {/ram/load/0}
+Data; "Used Memory"; {/ram/data/0}
+Data; "Available Memory"; {/ram/data/1}
+Temperature; "GPU Core"; {/nvidiagpu/0/temperature/0}
+Fan; "GPU"; {/nvidiagpu/0/fan/0}
+Clock; "GPU Core"; {/nvidiagpu/0/clock/0}
+Clock; "GPU Memory"; {/nvidiagpu/0/clock/1}
+Clock; "GPU Shader"; {/nvidiagpu/0/clock/2}
+Load; "GPU Core"; {/nvidiagpu/0/load/0}
+Load; "GPU Memory Controller"; {/nvidiagpu/0/load/1}
+Load; "GPU Video Engine"; {/nvidiagpu/0/load/2}
+Control; "GPU Fan"; {/nvidiagpu/0/control/0}
+SmallData; "GPU Memory Total"; {/nvidiagpu/0/smalldata/3}
+SmallData; "GPU Memory Used"; {/nvidiagpu/0/smalldata/2}
+SmallData; "GPU Memory Free"; {/nvidiagpu/0/smalldata/1}
+Load; "GPU Memory"; {/nvidiagpu/0/load/3}
+Temperature; "Temperature"; {/hdd/0/temperature/0}
+Load; "Used Space"; {/hdd/0/load/0}
+Temperature; "Temperature"; {/hdd/1/temperature/0}
+Load; "Used Space"; {/hdd/1/load/0}
+Temperature; "Temperature"; {/hdd/2/temperature/0}
+Level; "Remaining Life"; {/hdd/2/level/0}
+Data; "Controller Writes to NAND"; {/hdd/2/data/0}
+Data; "Host Writes to Controller"; {/hdd/2/data/1}
+Data; "Host Reads"; {/hdd/2/data/2}
+Load; "Used Space"; {/hdd/2/load/0}
