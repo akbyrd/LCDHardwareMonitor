@@ -33,11 +33,11 @@ struct SensorPlugin
 	PluginInfo            info;
 	SensorPluginFunctions functions;
 
-	List<Sensor>  sensors;
+	List<Sensor>          sensors;
 	//List<SensorRef> activeSensors;
 };
 
-struct WidgetInstances
+struct WidgetType
 {
 	WidgetDefinition definition;
 	Bytes            instances;
@@ -53,6 +53,5 @@ struct WidgetPlugin
 	PluginInfo            info;
 	WidgetPluginFunctions functions;
 
-	// TODO: Rename this (WidgetTypes?)
-	List<WidgetInstances> widgetInstances;
+	List<WidgetType>      widgetTypes;
 };

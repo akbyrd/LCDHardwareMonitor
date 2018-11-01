@@ -34,16 +34,16 @@ GetWidgetPlugin(PluginContext* context)
 }
 
 static Widget*
-CreateWidget(WidgetInstances* widgetInstances)
+CreateWidget(WidgetType* widgetType)
 {
-	u32 widgetOffset = widgetInstances->instances.length;
-	u32 size = sizeof(Widget) + widgetInstances->definition.size;
+	u32 widgetOffset = widgetType->instances.length;
+	u32 size = sizeof(Widget) + widgetType->definition.size;
 
-	b32 success = List_Reserve(widgetInstances->instances, widgetInstances->instances.length + size);
+	b32 success = List_Reserve(widgetType->instances, widgetType->instances.length + size);
 	LOG_IF(!success, "Failed to allocate widget", Severity::Error, return nullptr);
-	widgetInstances->instances.length += size;
+	widgetType->instances.length += size;
 
-	Widget* widget = (Widget*) &widgetInstances->instances[widgetOffset];
+	Widget* widget = (Widget*) &widgetType->instances[widgetOffset];
 	return widget;
 }
 
@@ -77,15 +77,15 @@ AddWidgetDefinition(PluginContext* context, WidgetDefinition widgetDef)
 
 	WidgetPlugin* widgetPlugin = GetWidgetPlugin(context);
 
-	WidgetInstances widgetInstances = {};
-	widgetInstances.definition = widgetDef;
+	WidgetType widgetType = {};
+	widgetType.definition = widgetDef;
 
-	List_Reserve(widgetInstances.instances, 8);
-	LOG_IF(!widgetInstances.instances, "Failed to allocate widget instances list", Severity::Warning, return);
+	List_Reserve(widgetType.instances, 8);
+	LOG_IF(!widgetType.instances, "Failed to allocate widget instances list", Severity::Warning, return);
 
 	// TODO: Use empty slots
-	WidgetInstances* widgetInstances2 = List_Append(widgetPlugin->widgetInstances, widgetInstances);
-	LOG_IF(!widgetInstances2, "Failed to allocate space for widget definition", Severity::Warning, return);
+	WidgetType* widgetType2 = List_Append(widgetPlugin->widgetTypes, widgetType);
+	LOG_IF(!widgetType2, "Failed to allocate space for widget definition", Severity::Warning, return);
 
 	context->success = true;
 }
@@ -94,12 +94,12 @@ static void
 RemoveAllWidgetDefinitions(PluginContext* context)
 {
 	WidgetPlugin* widgetPlugin = GetWidgetPlugin(context);
-	for (u32 i = 0; i < widgetPlugin->widgetInstances.length; i++)
+	for (u32 i = 0; i < widgetPlugin->widgetTypes.length; i++)
 	{
-		WidgetInstances* widgetInstance = &widgetPlugin->widgetInstances[i];
-		List_Clear(widgetInstance->instances);
+		WidgetType* widgetType = &widgetPlugin->widgetTypes[i];
+		List_Clear(widgetType->instances);
 	}
-	List_Clear(widgetPlugin->widgetInstances);
+	List_Clear(widgetPlugin->widgetTypes);
 }
 
 static PixelShader
@@ -346,36 +346,36 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 		if (!filledBarPlugin) return false;
 
 		#if false
-		WidgetInstances* widgetInstances = &filledBarPlugin->widgetInstances[0];
+		WidgetType* widgetType = &filledBarPlugin->widgetTypes[0];
 		for (i32 i = 0; i < 16; i++)
 		{
-			Widget* widget = CreateWidget(widgetInstances);
+			Widget* widget = CreateWidget(widgetType);
 			if (!widget) return false;
 
 			//widget->sensor = List_GetRef(ohmPlugin->sensors, 0);
 			widget->position = { i * 4.0f + 10.0f, i * 15.0f + 2.0f};
 			widget->sensor = SensorRef::Null;
-			widgetInstances->definition.initialize(widget);
+			widgetType->definition.initialize(widget);
 		}
 		#else
-		WidgetInstances* widgetInstances = &filledBarPlugin->widgetInstances[0];
+		WidgetType* widgetType = &filledBarPlugin->widgetTypes[0];
 		for (i32 i = 0; i < 5; i++)
 		{
-			Widget* widget = CreateWidget(widgetInstances);
+			Widget* widget = CreateWidget(widgetType);
 			if (!widget) return false;
 
 			widget->position = ((v2) s->renderSize - v2{ 240, 12 }) / 2.0f;
 			widget->position.y += (i - 2) * 15.0f;
 			widget->sensor = SensorRef::Null;
-			widgetInstances->definition.initialize(widget);
+			widgetType->definition.initialize(widget);
 		}
-		u32 stride = sizeof(Widget) + widgetInstances->definition.size;
+		u32 stride = sizeof(Widget) + widgetType->definition.size;
 		Widget* widget;
-		widget = (Widget*) (widgetInstances->instances.data +  0*stride); widget->sensor.index =  6; // CPU 0 %
-		widget = (Widget*) (widgetInstances->instances.data +  1*stride); widget->sensor.index =  7; // CPU 1 %
-		widget = (Widget*) (widgetInstances->instances.data +  2*stride); widget->sensor.index =  8; // CPU 2 %
-		widget = (Widget*) (widgetInstances->instances.data +  3*stride); widget->sensor.index =  9; // CPU 3 %
-		widget = (Widget*) (widgetInstances->instances.data +  4*stride); widget->sensor.index = 33; // GPU %
+		widget = (Widget*) (widgetType->instances.data +  0*stride); widget->sensor.index =  6; // CPU 0 %
+		widget = (Widget*) (widgetType->instances.data +  1*stride); widget->sensor.index =  7; // CPU 1 %
+		widget = (Widget*) (widgetType->instances.data +  2*stride); widget->sensor.index =  8; // CPU 2 %
+		widget = (Widget*) (widgetType->instances.data +  3*stride); widget->sensor.index =  9; // CPU 3 %
+		widget = (Widget*) (widgetType->instances.data +  4*stride); widget->sensor.index = 33; // GPU %
 		widget = nullptr;
 		#endif
 	}
@@ -427,10 +427,10 @@ Simulation_Update(SimulationState* s)
 			WidgetPlugin* widgetPlugin = &s->widgetPlugins[i];
 			if (!widgetPlugin->functions.update) continue;
 
-			for (u32 j = 0; j < widgetPlugin->widgetInstances.length; j++)
+			for (u32 j = 0; j < widgetPlugin->widgetTypes.length; j++)
 			{
-				WidgetInstances* widgetInstances = &widgetPlugin->widgetInstances[i];
-				if (widgetInstances->instances.length == 0) continue;
+				WidgetType* widgetType = &widgetPlugin->widgetTypes[i];
+				if (widgetType->instances.length == 0) continue;
 
 				// TODO: How sensor values propagate to widgets is an open
 				// question. Does the application spin through the widgets and
@@ -447,7 +447,7 @@ Simulation_Update(SimulationState* s)
 				context.success         = true;
 
 				// TODO: try/catch?
-				api.widgetInstances = widgetInstances->instances;
+				api.widgetInstances = widgetType->instances;
 				widgetPlugin->functions.update(&context, api);
 			}
 		}

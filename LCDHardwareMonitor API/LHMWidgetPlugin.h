@@ -67,10 +67,10 @@ struct WidgetPluginAPI
 
 	struct Teardown
 	{
-		// TODO: Need to do teardown for multiple WidgetInstances because the
-		// plugin might need to release resources on every widget instance. We
-		// don't want to call teardown multiple times though so this needs some
-		// thought.
+		// TODO: Need to do teardown for multiple WidgetTypes because the plugin
+		// might need to release resources on every widget instance. We don't
+		// want to call teardown multiple times though so this needs some
+		//thought.
 		//Bytes widgetInstances;
 	};
 };
