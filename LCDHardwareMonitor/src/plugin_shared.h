@@ -12,22 +12,29 @@ enum struct PluginLanguage
 	Managed,
 };
 
-struct PluginHeader;
-using PluginHeaderRef = List<PluginHeader>::RefT;
-
-// TODO: Maybe union SensorPlugin and WidgetPlugin into here?
-// TODO: Right now I don't think it's possible to get from a PluginHeader to
-// the actual Sensor/WidgetPlugin
 struct PluginHeader
 {
-	PluginHeaderRef ref;
-	b32             isLoaded;
-	b32             isWorking;
-	c8*             fileName;
-	c8*             directory;
-	PluginKind      kind;
-	PluginLanguage  language;
-	void*           userData;
+	b32            isLoaded;
+	b32            isWorking;
+	c8*            fileName;
+	c8*            directory;
+	PluginKind     kind;
+	PluginLanguage language;
+	void*          userData;
+};
+
+struct SensorPlugin;
+using SensorPluginRef = List<SensorPlugin>::RefT;
+
+struct SensorPlugin
+{
+	SensorPluginRef       ref;
+	PluginHeader          header;
+	PluginInfo            info;
+	SensorPluginFunctions functions;
+
+	List<Sensor>  sensors;
+	//List<SensorRef> activeSensors;
 };
 
 struct WidgetInstances
@@ -36,22 +43,16 @@ struct WidgetInstances
 	Bytes            instances;
 };
 
+struct WidgetPlugin;
+using WidgetPluginRef = List<WidgetPlugin>::RefT;
+
 struct WidgetPlugin
 {
-	PluginHeaderRef       pluginHeaderRef;
-	PluginInfo            pluginInfo;
+	WidgetPluginRef       ref;
+	PluginHeader          header;
+	PluginInfo            info;
 	WidgetPluginFunctions functions;
 
 	// TODO: Rename this (WidgetTypes?)
 	List<WidgetInstances> widgetInstances;
-};
-
-struct SensorPlugin
-{
-	PluginHeaderRef       pluginHeaderRef;
-	PluginInfo            pluginInfo;
-	SensorPluginFunctions functions;
-
-	List<Sensor>  sensors;
-	//List<SensorRef> activeSensors;
 };

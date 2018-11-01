@@ -2,7 +2,6 @@ Next
 	Cleanup Pass
 		General
 			Managed side plugin loading still needs to be updated.
-			Inline PluginHeader
 			Move InputLayout into VertexShader probably
 			// TODO: Ensure this is removed from the list in partial initialization conditions
 			// TODO: Widgets will be referencing these sensors.
