@@ -1,7 +1,4 @@
 Next
-	Hook a sensor up to the test widgets. It'll feel good.
-	OHM updates seem slow. Might just be in VS though. Profile.
-
 	Cleanup Pass
 		General
 			Managed side plugin loading still needs to be updated.
@@ -61,6 +58,7 @@ Next
 
 
 Back Burner
+	Sensor values are 0 when running from VS Code
 	Is it cleaner to use the auto-COM-interface of LHMPluginLoader?
 	Handle multiple plugins in the same file (probably just a detailed error)
 	Use #import instead of project references?

@@ -54,12 +54,11 @@ Clamp(T value, U min, V max)
 	return result;
 }
 
-// TODO: Vector versions
 template<typename T, typename U>
 inline T
-Lerp(T a, U b, r32 t)
+Lerp(T lhs, U rhs, r32 t)
 {
-	T result = (1.0f - t)*a + t*b;
+	T result = (1.0f - t)*lhs + t*rhs;
 	return result;
 }
 
@@ -242,6 +241,14 @@ inline v2t<T>
 Clamp(v2t<T> v, v2t<U> min, v2t<V> max)
 {
 	v2t<T> result = { Clamp(v.x, min.x, max.x), Clamp(v.y, min.y, max.y) };
+	return result;
+}
+
+template<typename T, typename U>
+inline v2t<T>
+Lerp(v2t<T> lhs, v2t<U> rhs, r32 t)
+{
+	v2t<T> result = { Lerp(lhs.x, rhs.x, t), Lerp(lhs.y, rhs.y, t) };
 	return result;
 }
 
@@ -436,6 +443,14 @@ Clamp(v3t<T> v, v3t<U> min, v3t<V> max)
 	return result;
 }
 
+template<typename T, typename U>
+inline v3t<T>
+Lerp(v3t<T> lhs, v3t<U> rhs, r32 t)
+{
+	v3t<T> result = { Lerp(lhs.x, rhs.x, t), Lerp(lhs.y, rhs.y, t), Lerp(lhs.z, rhs.z, t) };
+	return result;
+}
+
 
 // === v4 ==========================================================================================
 
@@ -620,6 +635,14 @@ inline v4t<T>
 Clamp(v4t<T> v, v4t<U> min, v4t<V> max)
 {
 	v4t<T> result = { Clamp(v.x, min.x, max.x), Clamp(v.y, min.y, max.y), Clamp(v.z, min.z, max.z), Clamp(v.w, min.w, max.w) };
+	return result;
+}
+
+template<typename T, typename U>
+inline v4t<T>
+Lerp(v4t<T> lhs, v4t<U> rhs, r32 t)
+{
+	v4t<T> result = { Lerp(lhs.x, rhs.x, t), Lerp(lhs.y, rhs.y, t), Lerp(lhs.z, rhs.z, t), Lerp(lhs.w, rhs.w, t) };
 	return result;
 }
 
