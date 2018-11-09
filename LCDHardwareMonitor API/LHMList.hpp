@@ -27,12 +27,12 @@ struct ListRef
 {
 	u32 index;
 	// TODO: These shouldn't be needed
-	bool operator==(const ListRef& other) { return index == other.index; }
-	bool operator!=(const ListRef& other) { return index != other.index; }
+	b32 operator==(const ListRef& other) { return index == other.index; }
+	b32 operator!=(const ListRef& other) { return index != other.index; }
 
 	// TODO: Switch to 0 being a null asset everywhere
 	static const ListRef<T> Null;
-	operator bool() { return *this != Null; }
+	operator b32() { return *this != Null; }
 };
 
 template<typename T>
@@ -210,7 +210,8 @@ template<typename T>
 inline void
 List_RemoveLast(List<T>& list)
 {
-	if (list.length > 0) {
+	if (list.length > 0)
+	{
 		list.length--;
 		memset(&list.data[list.length], 0, sizeof(T));
 	}

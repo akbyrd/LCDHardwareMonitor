@@ -36,14 +36,13 @@ GetWidgetPlugin(PluginContext* context)
 static Widget*
 CreateWidget(WidgetType* widgetType)
 {
-	u32 widgetOffset = widgetType->instances.length;
-	u32 size = sizeof(Widget) + widgetType->definition.size;
+	Widget* widget = List_Append(widgetType->widgets);
+	LOG_IF(!widget, "Failed to allocate widget", Severity::Error, return nullptr);
 
-	b32 success = List_Reserve(widgetType->instances, widgetType->instances.length + size);
-	LOG_IF(!success, "Failed to allocate widget", Severity::Error, return nullptr);
-	widgetType->instances.length += size;
+	b32 success = List_Reserve(widgetType->widgetData, widgetType->definition.size);
+	LOG_IF(!success, "Failed to allocate widget data", Severity::Error, return nullptr);
+	widgetType->widgetData.length += widgetType->definition.size;
 
-	Widget* widget = (Widget*) &widgetType->instances[widgetOffset];
 	return widget;
 }
 
@@ -75,13 +74,18 @@ AddWidgetDefinition(PluginContext* context, WidgetDefinition widgetDef)
 	if (!context->success) return;
 	context->success = false;
 
+	// TODO: Handle invalid widgetDef
+
 	WidgetPlugin* widgetPlugin = GetWidgetPlugin(context);
 
 	WidgetType widgetType = {};
 	widgetType.definition = widgetDef;
 
-	List_Reserve(widgetType.instances, 8);
-	LOG_IF(!widgetType.instances, "Failed to allocate widget instances list", Severity::Warning, return);
+	List_Reserve(widgetType.widgets, 8);
+	LOG_IF(!widgetType.widgets, "Failed to allocate widget instances list", Severity::Warning, return);
+
+	List_Reserve(widgetType.widgetData, 8 * widgetDef.size);
+	LOG_IF(!widgetType.widgetData, "Failed to allocate widget data list", Severity::Warning, return);
 
 	// TODO: Use empty slots
 	WidgetType* widgetType2 = List_Append(widgetPlugin->widgetTypes, widgetType);
@@ -97,9 +101,10 @@ RemoveAllWidgetDefinitions(PluginContext* context)
 	for (u32 i = 0; i < widgetPlugin->widgetTypes.length; i++)
 	{
 		WidgetType* widgetType = &widgetPlugin->widgetTypes[i];
-		List_Clear(widgetType->instances);
+		List_Free(widgetType->widgets);
+		List_Free(widgetType->widgetData);
 	}
-	List_Clear(widgetPlugin->widgetTypes);
+	List_Free(widgetPlugin->widgetTypes);
 }
 
 static PixelShader
@@ -271,7 +276,23 @@ UnloadWidgetPlugin(SimulationState* s, WidgetPlugin* widgetPlugin)
 	PluginContext context = {};
 	context.s               = s;
 	context.widgetPluginRef = widgetPlugin->ref;
-	context.success         = true;
+
+	WidgetInstancesAPI::Teardown instancesAPI = {};
+	for (u32 i = 0; i < widgetPlugin->widgetTypes.length; i++)
+	{
+		WidgetType* widgetType = &widgetPlugin->widgetTypes[i];
+		if (widgetType->widgets.length == 0) continue;
+
+		context.success = true;
+
+		instancesAPI.widgets           = widgetType->widgets;
+		instancesAPI.widgetData        = widgetType->widgetData;
+		instancesAPI.widgetData.stride = widgetType->definition.size;
+
+		// TODO: try/catch?
+		if (widgetType->definition.teardown)
+			widgetType->definition.teardown(&context, instancesAPI);
+	}
 
 	// TODO: try/catch?
 	if (widgetPlugin->functions.teardown)
@@ -355,7 +376,9 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 			//widget->sensor = List_GetRef(ohmPlugin->sensors, 0);
 			widget->position = { i * 4.0f + 10.0f, i * 15.0f + 2.0f};
 			widget->sensor = SensorRef::Null;
-			widgetType->definition.initialize(widget);
+			// TODO: Pretty sure this should be in CreateWidget
+			b32 success = widgetType->definition.initialize(widget);
+			Assert(success);
 		}
 		#else
 		WidgetType* widgetType = &filledBarPlugin->widgetTypes[0];
@@ -364,19 +387,28 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 			Widget* widget = CreateWidget(widgetType);
 			if (!widget) return false;
 
-			widget->position = ((v2) s->renderSize - v2{ 240, 12 }) / 2.0f;
+			widget->position    = ((v2) s->renderSize - v2{ 240, 12 }) / 2.0f;
 			widget->position.y += (i - 2) * 15.0f;
-			widget->sensor = SensorRef::Null;
-			widgetType->definition.initialize(widget);
+			widget->sensor      = SensorRef::Null;
+
+			PluginContext context = {};
+			context.s               = s;
+			context.widgetPluginRef = filledBarPlugin->ref;
+			context.success         = true;
+
+			WidgetInstancesAPI::Initialize api = {};
+			u32 iLast = widgetType->widgets.length - 1;
+			api.widgets    = widgetType->widgets[iLast];
+			api.widgetData = widgetType->widgetData[iLast * widgetType->definition.size];
+
+			widgetType->definition.initialize(&context, api);
 		}
-		u32 stride = sizeof(Widget) + widgetType->definition.size;
-		Widget* widget;
-		widget = (Widget*) (widgetType->instances.data +  0*stride); widget->sensor.index =  6; // CPU 0 %
-		widget = (Widget*) (widgetType->instances.data +  1*stride); widget->sensor.index =  7; // CPU 1 %
-		widget = (Widget*) (widgetType->instances.data +  2*stride); widget->sensor.index =  8; // CPU 2 %
-		widget = (Widget*) (widgetType->instances.data +  3*stride); widget->sensor.index =  9; // CPU 3 %
-		widget = (Widget*) (widgetType->instances.data +  4*stride); widget->sensor.index = 33; // GPU %
-		widget = nullptr;
+
+		widgetType->widgets[0].sensor = {  6 }; // CPU 0 %
+		widgetType->widgets[1].sensor = {  7 }; // CPU 1 %
+		widgetType->widgets[2].sensor = {  8 }; // CPU 2 %
+		widgetType->widgets[3].sensor = {  9 }; // CPU 3 %
+		widgetType->widgets[4].sensor = { 33 }; // GPU %
 		#endif
 	}
 
@@ -412,43 +444,53 @@ Simulation_Update(SimulationState* s)
 
 	// Update Widgets
 	{
-		WidgetPluginAPI::Update api = {};
-		api.t             = Platform_GetElapsedSeconds(s->startTime);
+		// TODO: How sensor values propagate to widgets is an open question. Does
+		// the application spin through the widgets and update the values (Con:
+		// iterating over the list twice. Con: Lots of sensor lookups)? Do we
+		// store a map from sensors to widgets that use them and update widgets
+		// when the sensor value changes (Con: complexity maybe)? Do we store a
+		// pointer in widgets to the sensor value (Con: Have to patch up the
+		// pointer when sensors resize) (could be a relative pointer so update
+		// happens on a single base pointer) (Con: drawing likely needs access to
+		// the full sensor)?
+
 		// HACK TODO: Fuuuuck. Sensors separated by plugin, so refs need to know
 		// which plugin they're referring to. Maaaybe a Slice<Slice<Sensor>> will
 		// work once we add a stride? Can also make it a 2 part ref: plugin +
 		// sensor.
-		api.sensors       = s->sensorPlugins[0].sensors;
-		api.PushDrawCall  = PushDrawCall;
-		api.GetWVPPointer = GetWVPPointer;
+
+		WidgetPluginAPI::Update pluginAPI = {};
+
+		WidgetInstancesAPI::Update instancesAPI = {};
+		instancesAPI.t             = Platform_GetElapsedSeconds(s->startTime);
+		instancesAPI.sensors       = s->sensorPlugins[0].sensors;
+		instancesAPI.PushDrawCall  = PushDrawCall;
+		instancesAPI.GetWVPPointer = GetWVPPointer;
 
 		for (u32 i = 0; i < s->widgetPlugins.length; i++)
 		{
 			WidgetPlugin* widgetPlugin = &s->widgetPlugins[i];
-			if (!widgetPlugin->functions.update) continue;
+
+			context.widgetPluginRef = widgetPlugin->ref;
+			context.success         = true;
+
+			// TODO: try/catch?
+			if (widgetPlugin->functions.update)
+				widgetPlugin->functions.update(&context, pluginAPI);
 
 			for (u32 j = 0; j < widgetPlugin->widgetTypes.length; j++)
 			{
 				WidgetType* widgetType = &widgetPlugin->widgetTypes[i];
-				if (widgetType->instances.length == 0) continue;
+				if (widgetType->widgets.length == 0) continue;
 
-				// TODO: How sensor values propagate to widgets is an open
-				// question. Does the application spin through the widgets and
-				// update the values (Con: iterating over the list twice. Con: Lots
-				// of sensor lookups)? Do we store a map from sensors to widgets
-				// that use them and update widgets when the sensor value changes
-				// (Con: complexity maybe)? Do we store a pointer in widgets to the
-				// sensor value (Con: Have to patch up the pointer when sensors
-				// resize) (could be a relative pointer so update happens on a
-				// single base pointer) (Con: drawing likely needs access to the
-				// full sensor)?
+				context.success = true;
 
-				context.widgetPluginRef = widgetPlugin->ref;
-				context.success         = true;
+				instancesAPI.widgets           = widgetType->widgets;
+				instancesAPI.widgetData        = widgetType->widgetData;
+				instancesAPI.widgetData.stride = widgetType->definition.size;
 
 				// TODO: try/catch?
-				api.widgetInstances = widgetType->instances;
-				widgetPlugin->functions.update(&context, api);
+				widgetType->definition.update(&context, instancesAPI);
 			}
 		}
 	}

@@ -199,7 +199,7 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 		auto assembly = Assembly::Load(fileName);
 		for each (Type^ type in assembly->GetExportedTypes())
 		{
-			bool isPlugin = type->GetInterface(typeName) != nullptr;
+			b32 isPlugin = type->GetInterface(typeName) != nullptr;
 			if (isPlugin)
 			{
 				if (!instance)

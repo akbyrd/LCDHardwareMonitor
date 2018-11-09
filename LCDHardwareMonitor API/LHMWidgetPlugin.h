@@ -11,31 +11,49 @@ struct Widget
 	v2        pivot;
 	r32       depth;
 	SensorRef sensor; // TODO: Rename
+	//u8        data[1];
+};
+
+struct WidgetInstancesAPI
+{
+	struct Initialize
+	{
+		Slice<Widget> widgets;
+		Slice<u8>     widgetData;
+	};
+
+	struct Update
+	{
+		using PushDrawCallFn  = void   (PluginContext*, DrawCall);
+		using GetWVPPointerFn = Matrix*(PluginContext*);
+
+		r32              t;
+		Slice<Widget>    widgets;
+		Slice<u8>        widgetData;
+		Slice<Sensor>    sensors;
+		PushDrawCallFn*  PushDrawCall;
+		GetWVPPointerFn* GetWVPPointer;
+	};
+
+	struct Teardown
+	{
+		Slice<Widget> widgets;
+		Slice<u8>     widgetData;
+	};
 };
 
 struct WidgetDefinition
 {
-	using InitializeFn = void(Widget*);
+	using InitializeFn = b32 (PluginContext*, WidgetInstancesAPI::Initialize);
+	using UpdateFn     = void(PluginContext*, WidgetInstancesAPI::Update);
+	using TeardownFn   = void(PluginContext*, WidgetInstancesAPI::Teardown);
 
 	c8*           name;
 	u32           size;
 	InitializeFn* initialize;
+	UpdateFn*     update;
+	TeardownFn*   teardown;
 };
-
-template <typename T>
-inline static void
-SetWidgetDataType(WidgetDefinition* widgetDef)
-{
-	widgetDef->size = sizeof(T);
-}
-
-template <typename T>
-inline static T*
-GetWidgetData(Widget* widget)
-{
-	T* widgetData = (T*) (widget + 1);
-	return widgetData;
-}
 
 struct WidgetPluginAPI
 {
@@ -48,31 +66,8 @@ struct WidgetPluginAPI
 		LoadPixelShaderFn*     LoadPixelShader;
 	};
 
-	struct Update
-	{
-		using PushDrawCallFn  = void   (PluginContext*, DrawCall);
-		using GetWVPPointerFn = Matrix*(PluginContext*);
-
-		r32 t;
-		// TODO: Bytes is a lame data structure here. Strongly typed Slice with a
-		// stride?! Also, I think we need to pass the definitions along with the
-		// instances or else the plugin won't know what it's updating/drawing.
-		// This likely informs the resolution to the teardown issue mentioned
-		// below.
-		Bytes             widgetInstances;
-		Slice<Sensor>     sensors;
-		PushDrawCallFn*   PushDrawCall;
-		GetWVPPointerFn*  GetWVPPointer;
-	};
-
-	struct Teardown
-	{
-		// TODO: Need to do teardown for multiple WidgetTypes because the plugin
-		// might need to release resources on every widget instance. We don't
-		// want to call teardown multiple times though so this needs some
-		//thought.
-		//Bytes widgetInstances;
-	};
+	struct Update   {};
+	struct Teardown {};
 };
 
 struct WidgetPluginFunctions

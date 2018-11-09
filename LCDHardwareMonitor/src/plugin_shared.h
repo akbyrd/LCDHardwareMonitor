@@ -40,7 +40,8 @@ struct SensorPlugin
 struct WidgetType
 {
 	WidgetDefinition definition;
-	Bytes            instances;
+	List<Widget>     widgets;
+	Bytes            widgetData;
 };
 
 struct WidgetPlugin;
