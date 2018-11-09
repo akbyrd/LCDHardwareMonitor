@@ -8,6 +8,10 @@ Next
 			// TODO: Get this working
 			It's time to figure out what happens when memory allocations fail
 			If we give Slice a stride parameter, magic will occur
+			Natvis for List and Slice
+			Figure out what list[n] doesn't work in the Watch window
+			OHM apparently needs to be run as admin?
+			Take a hard look at ListRef
 		Constant Buffers / Materials
 			Combine VS and PS cbuf updating
 			Extend cbufs to support all shader stages
@@ -37,31 +41,21 @@ Next
 			have no fans, it seems fine to provide no Sensors. Ok, but it still should have the
 			opportunity to look, right?
 
-	Rendering!
-		Runtime shader compilation
-		Shader hot-reloading
-
 	Implement OHM plugin
-		Show on the LCD!
-		Might be worthwhile to shove a userData pointer on Sensor
 		Probably need a replacement SDK since it's unmaintained
 			CPUID System Monitor SDK is one option, but it's paid
 			AIDA64 doesn't have an SDK but it supports WMI and shared memory
 			Rivatuner?
 			HWiNFO (promising!)
 
-	Memory pools
-		Replace array stack allocations with Lists out of a pool.
-		Remove ArrayLength/Size
-
-
 
 Back Burner
-	Sensor values are 0 when running from VS Code
 	Is it cleaner to use the auto-COM-interface of LHMPluginLoader?
 	Handle multiple plugins in the same file (probably just a detailed error)
 	Use #import instead of project references?
 	Add UTF-8 support
+	Runtime shader compilation
+	Shader hot-reloading
 
 
 
@@ -75,7 +69,7 @@ Sensor Plugins
 
 
 Refactoring
-	Rewrite List<T> (and rename to Array<T>)
+	Rewrite List<T>
 	Try out range based for loops
 	Ensure Platform function naming is uniform
 	Decide on 'plugin loader' naming on both sides of the managed boundary
@@ -89,8 +83,6 @@ Refactoring
 
 Plugins
 	- Version the API so it can change without breaking existing plugins.
-	- Once everything is nailed down, sepate plugins into public and private parts
-	  and remove the private parts from public API headers.
 	- Enforce the constraint that you may *ONLY* access application provided
 	  services during scope of the function to which the services were passed.
 	  Basically, don't save a reference and access services from a separate

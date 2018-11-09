@@ -36,27 +36,6 @@ struct ListRef
 };
 
 template<typename T>
-struct Slice
-{
-	u32 length;
-	T*  data;
-
-	// TODO: Wish we didn't have all these constructors just to support implicit
-	// conversions for single elements.
-	Slice() { length = 0; data = nullptr; }
-	Slice(u32 length, T* data) { Slice::length = length; Slice::data = data; }
-	Slice(T& element) { length = 1; data = &element; }
-	template<typename T, u32 Length>
-	Slice(T(&arr)[Length]) { length = Length; data = arr; }
-	inline T& operator [](u32 i) { return data[i]; }
-
-	// TODO: There's no guarantee a ref is even valid on a slice. I'm not sure
-	// this should exist.
-	using RefT = ListRef<T>;
-	inline T& operator [](RefT r) { return data[r.index]; }
-};
-
-template<typename T>
 const ListRef<T> ListRef<T>::Null = { u32Max };
 
 template<typename T>
@@ -72,7 +51,6 @@ struct List
 	inline    operator T*()       { return data; }
 	// TODO: Maybe we want to be checking length, not data?
 	inline    operator b32()      { return data != nullptr; }
-	inline    operator Slice<T>() { return { length, data }; }
 };
 
 template<typename T>
@@ -147,17 +125,7 @@ List_Append(List<T>& list)
 	return slot;
 }
 
-template<typename T>
-inline b32
-List_AppendRange(List<T>& list, Slice<T> items)
-{
-	if (!List_Reserve(list, list.length + items.length))
-		return false;
-
-	memcpy(&list.data[list.length], items.data, items.length);
-
-	return true;
-}
+// List_AppendRange - See LHMSlice.hpp
 
 template<typename T>
 inline b32

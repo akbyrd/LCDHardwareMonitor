@@ -4,7 +4,6 @@
 #include "platform.h"
 #include "pluginloader.h"
 #include "renderer.h"
-
 #include "plugin_shared.h"
 #include "simulation.hpp"
 
@@ -44,6 +43,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmdShow
 	SimulationState    simulationState   = {};
 	PluginLoaderState  pluginLoaderState = {};
 	PreviewWindowState previewState      = {};
+
 
 	// Renderer
 	success = Renderer_Initialize(&rendererState, simulationState.renderSize);
