@@ -5,6 +5,10 @@
       "label": "build",
       "type": "shell",
       "command": "msbuild /nologo /v:q /m LCDHardwareMonitor.sln /p:Configuration=Debug /p:Platform=x86",
+      "presentation": {
+        "showReuseMessage": false,
+        "clear": true,
+      },
       "group": {
         "kind": "build",
         "isDefault": true

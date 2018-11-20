@@ -17,4 +17,14 @@
     "*.sln":         true,
     "**/*.vcxproj*": true,
   },
+
+  "C_Cpp.default.windowsSdkVersion": "8.1",
+  "C_Cpp.default.compilerPath": "C:/Program Files (x86)/Microsoft Visual Studio/2017/BuildTools/VC/Tools/MSVC/14.15.26726/bin/Hostx64/x64/cl.exe /clr",
+  "C_Cpp.default.cppStandard": "c++14",
+  "C_Cpp.default.intelliSenseMode": "msvc-x64",
+  "C_Cpp.default.includePath": [
+      "C:/Program Files (x86)/Windows Kits/10/Include/10.0.10240.0/ucrt",
+      "${workspaceFolder}/LCDHardwareMonitor API",
+      "${workspaceFolder}/LCDHardwareMonitor/src"
+  ],
 }
