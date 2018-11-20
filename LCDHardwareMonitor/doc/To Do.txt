@@ -1,7 +1,6 @@
 Next
 	Cleanup Pass
 		General
-			Move InputLayout into VertexShader probably
 			// TODO: Ensure this is removed from the list in partial initialization conditions
 			// TODO: Widgets will be referencing these sensors.
 			// TODO: Get this working

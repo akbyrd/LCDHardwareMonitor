@@ -265,7 +265,6 @@ using Bytes = List<u8>;
 // over the place and generally garbage.
 // TODO: I bet we can make a pretty simple fixed-size list with the same
 // interface (e.g. transparently change between them).
-// TODO: Array and String slices?
 // TODO: Settle on references or pointers
 // TODO: Handle cases where this may fail
 // TODO: Where should memory be included?

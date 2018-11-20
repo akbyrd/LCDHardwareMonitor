@@ -65,21 +65,13 @@ struct ConstantBufferData
 	ComPtr<ID3D11Buffer> d3dConstantBuffer;
 };
 
-// TODO: Might be worth merging this into VertexShaderData
-struct InputLayout
-{
-	List<VertexAttribute>     attibutes      = {};
-	ComPtr<ID3D11InputLayout> d3dInputLayout = nullptr;
-};
-
 struct VertexShaderData
 {
 	VertexShader               ref;
 	String                     name;
-	// TODO: Needs to be ref counted or folded in
-	InputLayout*               inputLayout;
 	List<ConstantBufferData>   constantBuffers;
 	ComPtr<ID3D11VertexShader> d3dVertexShader;
+	ComPtr<ID3D11InputLayout>  d3dInputLayout;
 	D3D_PRIMITIVE_TOPOLOGY     d3dPrimitveTopology;
 };
 
@@ -109,9 +101,8 @@ struct RendererState
 	ComPtr<IDirect3DTexture9>      d3d9RenderTexture           = nullptr;
 	ComPtr<IDirect3DSurface9>      d3d9RenderSurface0          = nullptr;
 
-	List<InputLayout>      inputLayouts    = {};
-	List<VertexShaderData> vertexShaders   = {};
-	List<PixelShaderData>  pixelShaders    = {};
+	List<VertexShaderData> vertexShaders = {};
+	List<PixelShaderData>  pixelShaders  = {};
 
 	XMFLOAT4X4         proj                = {};
 	XMFLOAT4X4         wvp                 = {};
@@ -502,13 +493,11 @@ Renderer_Teardown(RendererState* s)
 		VertexShaderData* vs = &s->vertexShaders[i];
 
 		vs->d3dVertexShader.Reset();
+		vs->d3dInputLayout.Reset();
 		for (u32 j = 0; j < vs->constantBuffers.length; j++)
 			vs->constantBuffers[j].d3dConstantBuffer.Reset();
 		List_Free(vs->constantBuffers);
 	}
-
-	for (u32 i = 0; i < s->inputLayouts.length; i++)
-		s->inputLayouts[i].d3dInputLayout.Reset();
 
 	s->d3dDevice                  .Reset();
 	s->d3dContext                 .Reset();
@@ -596,6 +585,7 @@ Renderer_LoadVertexShader(RendererState* s, c8* path, Slice<VertexAttribute> att
 	VertexShaderData vs = {};
 	defer {
 		vs.d3dVertexShader.Reset();
+		vs.d3dInputLayout.Reset();
 
 		for (u32 i = 0; i < vs.constantBuffers.length; i++)
 			vs.constantBuffers[i].d3dConstantBuffer.Reset();
@@ -634,12 +624,7 @@ Renderer_LoadVertexShader(RendererState* s, c8* path, Slice<VertexAttribute> att
 
 
 	// Input layout
-	InputLayout il = {};
-	defer { il.d3dInputLayout.Reset(); };
 	{
-		b32 success = List_AppendRange(il.attibutes, attributes);
-		LOG_IF(!success, "Failed to allocate space for input layout attributes", Severity::Warning, return VertexShader::Null);
-
 		List<D3D11_INPUT_ELEMENT_DESC> vsInputDescs = {};
 		List_Reserve(vsInputDescs, attributes.length);
 		LOG_IF(!vsInputDescs, "Input description allocation failed", Severity::Warning, return VertexShader::Null);
@@ -680,9 +665,9 @@ Renderer_LoadVertexShader(RendererState* s, c8* path, Slice<VertexAttribute> att
 			List_Append(vsInputDescs, inputDesc);
 		}
 
-		hr = s->d3dDevice->CreateInputLayout(vsInputDescs.data, vsInputDescs.length, vsBytes.data, vsBytes.length, &il.d3dInputLayout);
+		hr = s->d3dDevice->CreateInputLayout(vsInputDescs.data, vsInputDescs.length, vsBytes.data, vsBytes.length, &vs.d3dInputLayout);
 		LOG_HRESULT_IF_FAILED(hr, "Failed to create input layout", Severity::Error, return VertexShader::Null);
-		SetDebugObjectName(il.d3dInputLayout, "Input Layout");
+		SetDebugObjectName(vs.d3dInputLayout, "Input Layout");
 
 		vs.d3dPrimitveTopology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	}
@@ -691,15 +676,10 @@ Renderer_LoadVertexShader(RendererState* s, c8* path, Slice<VertexAttribute> att
 	// Commit
 	VertexShaderData* vs2 = nullptr;
 	{
-		InputLayout* il2 = List_Append(s->inputLayouts, il);
-		LOG_IF(!il2, "Failed to allocate space for input layout", Severity::Warning, return VertexShader::Null);
-		il = {};
-
 		vs2 = List_Append(s->vertexShaders, vs);
 		LOG_IF(!vs2, "Failed to allocate space for vertex shader", Severity::Warning, return VertexShader::Null);
 		vs = {};
 
-		vs2->inputLayout = il2;
 		// TODO: Eventually lists will reuse slots
 		vs2->ref = List_GetRefLast(s->vertexShaders);
 	}
@@ -839,7 +819,7 @@ Renderer_Render(RendererState* s)
 		// Vertex Shader
 		{
 			s->d3dContext->VSSetShader(vs->d3dVertexShader.Get(), nullptr, 0);
-			s->d3dContext->IASetInputLayout(vs->inputLayout->d3dInputLayout.Get());
+			s->d3dContext->IASetInputLayout(vs->d3dInputLayout.Get());
 			//s->d3dContext->IASetVertexBuffers(0, 1, vBuffer.GetAddressOf(), &mesh->vStride, &mesh->vOffset);
 			s->d3dContext->IASetPrimitiveTopology(vs->d3dPrimitveTopology);
 
