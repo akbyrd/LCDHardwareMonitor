@@ -11,4 +11,6 @@ struct PluginInfo
 	//u32 lhmVersion;
 };
 
+struct PluginContext;
+
 #endif

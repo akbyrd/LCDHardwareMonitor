@@ -1,8 +1,6 @@
 #ifndef LHM_WIDGETPLUGIN
 #define LHM_WIDGETPLUGIN
 
-struct PluginContext;
-
 struct Widget
 {
 	// TODO: Should plugins or the renderer be responsible for creating a matrix from this information?
@@ -14,7 +12,7 @@ struct Widget
 	//u8        data[1];
 };
 
-struct WidgetInstancesAPI
+struct WidgetInstanceAPI
 {
 	struct Initialize
 	{
@@ -44,9 +42,9 @@ struct WidgetInstancesAPI
 
 struct WidgetDefinition
 {
-	using InitializeFn = b32 (PluginContext*, WidgetInstancesAPI::Initialize);
-	using UpdateFn     = void(PluginContext*, WidgetInstancesAPI::Update);
-	using TeardownFn   = void(PluginContext*, WidgetInstancesAPI::Teardown);
+	using InitializeFn = b32 (PluginContext*, WidgetInstanceAPI::Initialize);
+	using UpdateFn     = void(PluginContext*, WidgetInstanceAPI::Update);
+	using TeardownFn   = void(PluginContext*, WidgetInstanceAPI::Teardown);
 
 	c8*           name;
 	u32           size;

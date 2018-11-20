@@ -12,7 +12,7 @@ struct BarWidget
 static PixelShader filledBarPS = {};
 
 static b32
-InitializeBarWidgets(PluginContext* context, WidgetInstancesAPI::Initialize api)
+InitializeBarWidgets(PluginContext* context, WidgetInstanceAPI::Initialize api)
 {
 	UNUSED(context);
 
@@ -36,7 +36,7 @@ InitializeBarWidgets(PluginContext* context, WidgetInstancesAPI::Initialize api)
 }
 
 static void
-UpdateBarWidgets(PluginContext* context, WidgetInstancesAPI::Update api)
+UpdateBarWidgets(PluginContext* context, WidgetInstanceAPI::Update api)
 {
 	for (u32 i = 0; i < api.widgets.length; i++)
 	{

@@ -277,7 +277,7 @@ UnloadWidgetPlugin(SimulationState* s, WidgetPlugin* widgetPlugin)
 	context.s               = s;
 	context.widgetPluginRef = widgetPlugin->ref;
 
-	WidgetInstancesAPI::Teardown instancesAPI = {};
+	WidgetInstanceAPI::Teardown instancesAPI = {};
 	for (u32 i = 0; i < widgetPlugin->widgetTypes.length; i++)
 	{
 		WidgetType* widgetType = &widgetPlugin->widgetTypes[i];
@@ -396,7 +396,7 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 			context.widgetPluginRef = filledBarPlugin->ref;
 			context.success         = true;
 
-			WidgetInstancesAPI::Initialize api = {};
+			WidgetInstanceAPI::Initialize api = {};
 			u32 iLast = widgetType->widgets.length - 1;
 			api.widgets    = widgetType->widgets[iLast];
 			api.widgetData = widgetType->widgetData[iLast * widgetType->definition.size];
@@ -461,7 +461,7 @@ Simulation_Update(SimulationState* s)
 
 		WidgetPluginAPI::Update pluginAPI = {};
 
-		WidgetInstancesAPI::Update instancesAPI = {};
+		WidgetInstanceAPI::Update instancesAPI = {};
 		instancesAPI.t             = Platform_GetElapsedSeconds(s->startTime);
 		instancesAPI.sensors       = s->sensorPlugins[0].sensors;
 		instancesAPI.PushDrawCall  = PushDrawCall;
