@@ -8,7 +8,6 @@
 #pragma make_public(SensorPlugin)
 #pragma make_public(WidgetPlugin)
 
-#pragma managed
 using namespace System;
 using namespace System::Reflection;
 using namespace System::Runtime::InteropServices;
@@ -37,9 +36,9 @@ public value struct
 SensorPlugin_CLR
 {
 	#define Attributes UnmanagedFunctionPointer(CallingConvention::Cdecl)
-	[Attributes] delegate b32  InitializeDelegate(PluginContext* context, SensorPluginAPI::Initialize api);
-	[Attributes] delegate void UpdateDelegate    (PluginContext* context, SensorPluginAPI::Update     api);
-	[Attributes] delegate void TeardownDelegate  (PluginContext* context, SensorPluginAPI::Teardown   api);
+	[Attributes] delegate b32  InitializeDelegate (PluginContext* context, SensorPluginAPI::Initialize api);
+	[Attributes] delegate void UpdateDelegate     (PluginContext* context, SensorPluginAPI::Update     api);
+	[Attributes] delegate void TeardownDelegate   (PluginContext* context, SensorPluginAPI::Teardown   api);
 	#undef Attributes
 
 	ISensorPlugin^      pluginInstance;
@@ -53,9 +52,9 @@ public value struct
 WidgetPlugin_CLR
 {
 	#define Attributes UnmanagedFunctionPointer(CallingConvention::Cdecl)
-	[Attributes] delegate b32 InitializeDelegate(PluginContext* context, WidgetPluginAPI::Initialize api);
-	[Attributes] delegate void UpdateDelegate   (PluginContext* context, WidgetPluginAPI::Update     api);
-	[Attributes] delegate void TeardownDelegate (PluginContext* context, WidgetPluginAPI::Teardown   api);
+	[Attributes] delegate b32  InitializeDelegate (PluginContext* context, WidgetPluginAPI::Initialize api);
+	[Attributes] delegate void UpdateDelegate     (PluginContext* context, WidgetPluginAPI::Update     api);
+	[Attributes] delegate void TeardownDelegate   (PluginContext* context, WidgetPluginAPI::Teardown   api);
 	#undef Attributes
 
 	IWidgetPlugin^      pluginInstance;
@@ -224,6 +223,8 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 		b32 success = LoadAssemblyAndInstantiateType(sensorPlugin->header.fileName, sensorPluginCLR.pluginInstance);
 		if (!success) return false;
 
+		sensorPluginCLR.pluginInstance->GetPluginInfo(&sensorPlugin->info);
+
 		auto iInitialize = dynamic_cast<ISensorInitialize^>(sensorPluginCLR.pluginInstance);
 		if (iInitialize)
 		{
@@ -251,10 +252,7 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	b32
 	TeardownSensorPlugin(SensorPlugin* sensorPlugin)
 	{
-		sensorPlugin->functions.getPluginInfo = 0;
-		sensorPlugin->functions.initialize    = 0;
-		sensorPlugin->functions.update        = 0;
-		sensorPlugin->functions.teardown      = 0;
+		sensorPlugin->functions = {};
 		sensorPluginCLR = SensorPlugin_CLR();
 
 		return true;
@@ -265,6 +263,8 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	{
 		b32 success = LoadAssemblyAndInstantiateType(widgetPlugin->header.fileName, widgetPluginCLR.pluginInstance);
 		if (!success) return false;
+
+		widgetPluginCLR.pluginInstance->GetPluginInfo(&widgetPlugin->info);
 
 		auto iInitialize = dynamic_cast<IWidgetInitialize^>(widgetPluginCLR.pluginInstance);
 		if (iInitialize)
@@ -293,10 +293,7 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	b32
 	TeardownWidgetPlugin(WidgetPlugin* widgetPlugin)
 	{
-		widgetPlugin->functions.getPluginInfo = 0;
-		widgetPlugin->functions.initialize    = 0;
-		widgetPlugin->functions.update        = 0;
-		widgetPlugin->functions.teardown      = 0;
+		widgetPlugin->functions = {};
 		widgetPluginCLR = WidgetPlugin_CLR();
 
 		return true;

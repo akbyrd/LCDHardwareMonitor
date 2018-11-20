@@ -28,6 +28,15 @@ public ref struct State : ISensorPlugin, ISensorInitialize, ISensorUpdate, ISens
 		array<IHardware^>^ hardware;
 	};
 
+	virtual void
+	GetPluginInfo (PluginInfo* info)
+	{
+		// TODO: Do we need a Teardown function in case these strings are allocated?
+		info->name    = "OHM Sensors";
+		info->author  = "akbyrd";
+		info->version = 1;
+	}
+
 	virtual b32
 	Initialize(PluginContext* context, SensorPluginAPI::Initialize api)
 	{
