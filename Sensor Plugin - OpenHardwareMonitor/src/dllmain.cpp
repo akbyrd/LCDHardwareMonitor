@@ -97,7 +97,7 @@ public ref struct State : ISensorPlugin, ISensorInitialize, ISensorUpdate, ISens
 				sensor.name       = (c8*) Marshal::StringToHGlobalAnsi(ohmSensor->Name).ToPointer();
 				sensor.identifier = (c8*) Marshal::StringToHGlobalAnsi(ohmSensor->Identifier->ToString()).ToPointer();
 				sensor.string     = (c8*) Marshal::StringToHGlobalAnsi(value).ToPointer();
-				api.AddSensor(context, sensor);
+				api.AddSensors(context, sensor);
 			}
 
 			// Sub-Hardware

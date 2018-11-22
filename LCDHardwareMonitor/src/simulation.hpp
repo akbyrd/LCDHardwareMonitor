@@ -46,30 +46,86 @@ CreateWidget(WidgetType* widgetType)
 	return widget;
 }
 
+static void
+RemoveSensorRefs(SimulationState* s, Slice<SensorRef> sensorRefs)
+{
+	for (u32 i = 0; i < sensorRefs.length; i++)
+	{
+		SensorRef sensorRef = sensorRefs[i];
+		// TODO: Widget iterator!
+		for (u32 j = 0; j < s->widgetPlugins.length; j++)
+		{
+			WidgetPlugin* widgetPlugin = &s->widgetPlugins[j];
+			for (u32 k = 0; k < widgetPlugin->widgetTypes.length; k++)
+			{
+				WidgetType* widgetType = &widgetPlugin->widgetTypes[k];
+				for (u32 l = 0; l < widgetType->widgets.length; l++)
+				{
+					Widget* widget = &widgetType->widgets[l];
+					if (widget->sensorRef.plugin == sensorRef.plugin
+					 && widget->sensorRef.sensor == sensorRef.sensor)
+						widget->sensorRef = SensorRef::Null;
+				}
+			}
+		}
+	}
+}
+
 // === Sensor API ==================================================================================
 
-// TODO: Refactor this to take a Slice<Sensor>
-// TODO: Implement RemoveSensors
-// TODO: Re-use empty slots in the list (from removes)
 static void
-AddSensor(PluginContext* context, Sensor sensor)
+AddSensors(PluginContext* context, Slice<Sensor> sensors)
 {
 	if (!context->success) return;
 	context->success = false;
 
 	SensorPlugin* sensorPlugin = GetSensorPlugin(context);
 
-	Sensor* sensor2 = List_Append(sensorPlugin->sensors, sensor);
-	LOG_IF(!sensor2, "Failed to allocate space for sensor", Severity::Warning, return);
+	b32 success = List_AppendRange(sensorPlugin->sensors, sensors);
+	LOG_IF(!success, "Failed to allocate sensors", Severity::Error, return);
+
+	// TODO: Re-use empty slots in the list (from removes)
+
+	context->success = true;
+}
+
+static void
+RemoveSensors(PluginContext* context, Slice<SensorRef> sensorRefs)
+{
+	if (!context->success) return;
+	context->success = false;
+
+	SensorPlugin* sensorPlugin = GetSensorPlugin(context);
+
+	for (u32 i = 0; i < sensorRefs.length; i++)
+	{
+		SensorRef sensorRef = sensorRefs[i];
+
+		b32 valid = sensorRef.plugin != sensorPlugin->ref;
+		LOG_IF(!valid, "Sensor plugin gave a bad SensorRef", Severity::Warning, return);
+
+		valid = List_IsRefValid(sensorPlugin->sensors, sensorRef.sensor);
+		LOG_IF(!valid, "Sensor plugin gave a bad SensorRef", Severity::Warning, return);
+
+		valid = sensorPlugin->sensors[sensorRef.sensor].name != nullptr;
+		LOG_IF(!valid, "Sensor plugin gave a bad SensorRef", Severity::Warning, return);
+	}
+
+	RemoveSensorRefs(context->s, sensorRefs);
+
+	for (u32 i = 0; i < sensorRefs.length; i++)
+	{
+		SensorRef sensorRef = sensorRefs[i];
+		sensorPlugin->sensors[sensorRef.sensor] = {};
+	}
 
 	context->success = true;
 }
 
 // === Widget API ==================================================================================
 
-// TODO: Refactor this to take a Slice<WidgetDefinition>
 static void
-AddWidgetDefinition(PluginContext* context, WidgetDefinition widgetDef)
+AddWidgetDefinitions(PluginContext* context, Slice<WidgetDefinition> widgetDefs)
 {
 	if (!context->success) return;
 	context->success = false;
@@ -78,18 +134,22 @@ AddWidgetDefinition(PluginContext* context, WidgetDefinition widgetDef)
 
 	WidgetPlugin* widgetPlugin = GetWidgetPlugin(context);
 
-	WidgetType widgetType = {};
-	widgetType.definition = widgetDef;
+	for (u32 i = 0; i < widgetDefs.length; i++)
+	{
+		WidgetDefinition* widgetDef = &widgetDefs[i];
 
-	List_Reserve(widgetType.widgets, 8);
-	LOG_IF(!widgetType.widgets, "Failed to allocate widget instances list", Severity::Warning, return);
+		WidgetType widgetType = {};
+		widgetType.definition = *widgetDef;
 
-	List_Reserve(widgetType.widgetData, 8 * widgetDef.size);
-	LOG_IF(!widgetType.widgetData, "Failed to allocate widget data list", Severity::Warning, return);
+		List_Reserve(widgetType.widgets, 8);
+		LOG_IF(!widgetType.widgets, "Failed to allocate widget instances list", Severity::Warning, return);
 
-	// TODO: Use empty slots
-	WidgetType* widgetType2 = List_Append(widgetPlugin->widgetTypes, widgetType);
-	LOG_IF(!widgetType2, "Failed to allocate space for widget definition", Severity::Warning, return);
+		List_Reserve(widgetType.widgetData, 8 * widgetDef->size);
+		LOG_IF(!widgetType.widgetData, "Failed to allocate widget data list", Severity::Warning, return);
+
+		WidgetType* widgetType2 = List_Append(widgetPlugin->widgetTypes, widgetType);
+		LOG_IF(!widgetType2, "Failed to allocate space for widget definition", Severity::Warning, return);
+	}
 
 	context->success = true;
 }
@@ -153,9 +213,9 @@ LoadSensorPlugin(SimulationState* s, c8* directory, c8* name)
 {
 	// TODO: Plugin name in errors
 
-	// TODO: Ensure this is removed from the list in partial initialization conditions
-	// TODO: Can fail?
 	SensorPlugin* sensorPlugin = List_Append(s->sensorPlugins);
+	LOG_IF(!sensorPlugin, "Failed to allocate SensorPlugin", Severity::Error, return nullptr);
+
 	sensorPlugin->ref              = List_GetRefLast(s->sensorPlugins);
 	sensorPlugin->header.fileName  = name;
 	sensorPlugin->header.directory = directory;
@@ -165,7 +225,7 @@ LoadSensorPlugin(SimulationState* s, c8* directory, c8* name)
 	LOG_IF(!success, "Failed to load sensor plugin", Severity::Warning, return nullptr);
 
 	List_Reserve(sensorPlugin->sensors, 32);
-	LOG_IF(!sensorPlugin->sensors, "Sensor allocation failed", Severity::Error, return nullptr);
+	LOG_IF(!sensorPlugin->sensors, "Failed to allocate Sensors", Severity::Error, return nullptr);
 
 	// TODO: try/catch?
 	if (sensorPlugin->functions.initialize)
@@ -176,7 +236,7 @@ LoadSensorPlugin(SimulationState* s, c8* directory, c8* name)
 		context.success         = true;
 
 		SensorPluginAPI::Initialize api = {};
-		api.AddSensor = AddSensor;
+		api.AddSensors = AddSensors;
 
 		success = sensorPlugin->functions.initialize(&context, api);
 		success &= context.success;
@@ -208,9 +268,16 @@ UnloadSensorPlugin(SimulationState* s, SensorPlugin* sensorPlugin)
 		sensorPlugin->functions.teardown(&context, api);
 	}
 
+	SensorRef sensorRef = {};
+	sensorRef.plugin = sensorPlugin->ref;
+	for (u32 i = 0; i < sensorPlugin->sensors.length; i++)
+	{
+		sensorRef.sensor = { i };
+		RemoveSensorRefs(s, sensorRef);
+	}
+
 	b32 success;
 	success = PluginLoader_UnloadSensorPlugin(s->pluginLoader, sensorPlugin);
-	// TODO: Widgets will be referencing these sensors.
 	List_Free(sensorPlugin->sensors);
 	LOG_IF(!success, "Failed to unload sensor plugin.", Severity::Warning, return false);
 
@@ -225,8 +292,9 @@ UnloadSensorPlugin(SimulationState* s, SensorPlugin* sensorPlugin)
 static WidgetPlugin*
 LoadWidgetPlugin(SimulationState* s, c8* directory, c8* name)
 {
-	// TODO: Can fail?
 	WidgetPlugin* widgetPlugin = List_Append(s->widgetPlugins);
+	LOG_IF(!widgetPlugin, "Failed to allocate WidgetPlugin", Severity::Error, return nullptr);
+
 	widgetPlugin->ref              = List_GetRefLast(s->widgetPlugins);
 	widgetPlugin->header.fileName  = name;
 	widgetPlugin->header.directory = directory;
@@ -246,8 +314,8 @@ LoadWidgetPlugin(SimulationState* s, c8* directory, c8* name)
 		context.success         = true;
 
 		WidgetPluginAPI::Initialize api = {};
-		api.AddWidgetDefinition = AddWidgetDefinition;
-		api.LoadPixelShader     = LoadPixelShader;
+		api.AddWidgetDefinitions = AddWidgetDefinitions;
+		api.LoadPixelShader      = LoadPixelShader;
 
 		success = widgetPlugin->functions.initialize(&context, api);
 		success &= context.success;
@@ -381,15 +449,18 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 			Assert(success);
 		}
 		#else
+		//u32 debugSensorIndices[] = { 6, 7, 8, 9, 33 };
+		u32 debugSensorIndices[] = { 0, 1, 2, 3, 12 };
 		WidgetType* widgetType = &filledBarPlugin->widgetTypes[0];
-		for (i32 i = 0; i < 5; i++)
+		for (u32 i = 0; i < ArrayLength(debugSensorIndices); i++)
 		{
 			Widget* widget = CreateWidget(widgetType);
 			if (!widget) return false;
 
-			widget->position    = ((v2) s->renderSize - v2{ 240, 12 }) / 2.0f;
-			widget->position.y += (i - 2) * 15.0f;
-			widget->sensor      = SensorRef::Null;
+			widget->position         = ((v2) s->renderSize - v2{ 240, 12 }) / 2.0f;
+			widget->position.y      += ((i32) i - 2) * 15.0f;
+			widget->sensorRef.plugin = { 0 };
+			widget->sensorRef.sensor = { debugSensorIndices[i] };
 
 			PluginContext context = {};
 			context.s               = s;
@@ -403,12 +474,6 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 
 			widgetType->definition.initialize(&context, api);
 		}
-
-		widgetType->widgets[0].sensor = {  6 }; // CPU 0 %
-		widgetType->widgets[1].sensor = {  7 }; // CPU 1 %
-		widgetType->widgets[2].sensor = {  8 }; // CPU 2 %
-		widgetType->widgets[3].sensor = {  9 }; // CPU 3 %
-		widgetType->widgets[4].sensor = { 33 }; // GPU %
 		#endif
 	}
 
@@ -426,6 +491,9 @@ Simulation_Update(SimulationState* s)
 	// Update Sensors
 	{
 		SensorPluginAPI::Update api = {};
+		api.AddSensors    = AddSensors;
+		api.RemoveSensors = RemoveSensors;
+
 		for (u32 i = 0; i < s->sensorPlugins.length; i++)
 		{
 			SensorPlugin* sensorPlugin = &s->sensorPlugins[i];

@@ -8,7 +8,7 @@ struct Widget
 	//v2        scale;
 	v2        pivot;
 	r32       depth;
-	SensorRef sensor; // TODO: Rename
+	SensorRef sensorRef;
 	//u8        data[1];
 };
 
@@ -57,11 +57,11 @@ struct WidgetPluginAPI
 {
 	struct Initialize
 	{
-		using AddWidgetDefinitionFn = void       (PluginContext*, WidgetDefinition);
-		using LoadPixelShaderFn     = PixelShader(PluginContext*, c8* path, Slice<ConstantBufferDesc>);
+		using AddWidgetDefinitionsFn = void       (PluginContext*, Slice<WidgetDefinition>);
+		using LoadPixelShaderFn      = PixelShader(PluginContext*, c8* path, Slice<ConstantBufferDesc>);
 
-		AddWidgetDefinitionFn* AddWidgetDefinition;
-		LoadPixelShaderFn*     LoadPixelShader;
+		AddWidgetDefinitionsFn* AddWidgetDefinitions;
+		LoadPixelShaderFn*      LoadPixelShader;
 	};
 
 	struct Update   {};

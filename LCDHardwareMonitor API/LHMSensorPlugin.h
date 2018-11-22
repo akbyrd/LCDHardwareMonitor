@@ -2,7 +2,21 @@
 #define LHM_SENSORPLUGIN
 
 struct Sensor;
-using SensorRef = List<Sensor>::RefT;
+using SensorRefT = List<Sensor>::RefT;
+
+struct SensorPlugin;
+using SensorPluginRefT = List<SensorPlugin>::RefT;
+
+struct SensorRef
+{
+	SensorPluginRefT plugin;
+	SensorRefT       sensor;
+
+	static const SensorRef Null;
+	//operator b32() { return plugin && sensor; }
+};
+
+const SensorRef SensorRef::Null = { SensorPluginRefT::Null, SensorRefT::Null };
 
 struct Sensor
 {
@@ -22,13 +36,21 @@ struct SensorPluginAPI
 {
 	struct Initialize
 	{
-		using AddSensorFn = void(PluginContext*, Sensor);
+		using AddSensorsFn = void(PluginContext*, Slice<Sensor>);
 
-		AddSensorFn* AddSensor;
+		AddSensorsFn* AddSensors;
 	};
 
 	struct Update
 	{
+		// NOTE: Plugins should not free Sensor members until *after* calling RemoveSensors!
+
+		using AddSensorsFn    = void(PluginContext*, Slice<Sensor>);
+		using RemoveSensorsFn = void(PluginContext*, Slice<SensorRef>);
+
+		AddSensorsFn*    AddSensors;
+		RemoveSensorsFn* RemoveSensors;
+
 		Slice<Sensor> sensors;
 	};
 

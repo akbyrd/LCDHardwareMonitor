@@ -44,9 +44,10 @@ UpdateBarWidgets(PluginContext* context, WidgetInstanceAPI::Update api)
 		BarWidget* barWidget = (BarWidget*) &api.widgetData[i];
 
 		// Update
-		if (widget->sensor)
+		// TODO: SensorRef might want equality operators.
+		if (widget->sensorRef.plugin && widget->sensorRef.sensor)
 		{
-			Sensor* sensor = &api.sensors[widget->sensor];
+			Sensor* sensor = &api.sensors[widget->sensorRef.sensor];
 			float value = sensor->value / 100.0f;
 			barWidget->constants.fillAmount = Lerp(barWidget->constants.fillAmount, value, 0.10f);
 		}
@@ -89,7 +90,7 @@ Initialize(PluginContext* context, WidgetPluginAPI::Initialize api)
 	widgetDef.size       = sizeof(BarWidget);
 	widgetDef.initialize = &InitializeBarWidgets;
 	widgetDef.update     = &UpdateBarWidgets;
-	api.AddWidgetDefinition(context, widgetDef);
+	api.AddWidgetDefinitions(context, widgetDef);
 
 	// TODO: This feels janky. Would like to unify the handling of cbufs in some way
 	ConstantBufferDesc cBufDesc = {};

@@ -34,7 +34,7 @@ struct SensorPlugin
 	SensorPluginFunctions functions;
 
 	List<Sensor>          sensors;
-	//List<SensorRef> activeSensors;
+	//List<SensorRefT> activeSensors;
 };
 
 struct WidgetType

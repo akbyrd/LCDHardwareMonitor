@@ -9,7 +9,7 @@ struct Slice
 	u8* data;
 
 	// TODO: I wish we could use actual operators for these conversions, rather
-	// then constructors.
+	// than constructors.
 	Slice()                      { length = 0;           stride = sizeof(T); data = (u8*) nullptr; }
 	Slice(u32 _length, T* _data) { length = _length;     stride = sizeof(T); data = (u8*) _data; }
 	Slice(T& element)            { length = 1;           stride = sizeof(T); data = (u8*) &element; }
@@ -20,7 +20,7 @@ struct Slice
 	using RefT = ListRef<T>;
 	inline T& operator [](RefT r) { return *((T*) &data[r.index*stride]); }
 	inline T& operator [](u32 i)  { return *((T*) &data[i*stride]); }
-	inline    operator T*()       { return data; }
+	//inline    operator T*()       { return (T*) data; }
 	inline    operator b32()      { return length > 0; }
 };
 

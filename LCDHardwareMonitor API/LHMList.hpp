@@ -48,6 +48,7 @@ struct List
 	using RefT = ListRef<T>;
 	inline T& operator [](RefT r) { return data[r.index]; }
 	//inline T& operator [](u32 i)  { return data[i]; }
+	// TODO: I think this is the source of the operator ambiguity
 	inline    operator T*()       { return data; }
 	// TODO: Maybe we want to be checking length, not data?
 	inline    operator b32()      { return data != nullptr; }
@@ -196,6 +197,13 @@ List_GetLastPtr(List<T>& list)
 		return nullptr;
 
 	return &list[list.length - 1];
+}
+
+template<typename T>
+inline b32
+List_IsRefValid(List<T>& list, ListRef<T> ref)
+{
+	return ref.index < list.length;
 }
 
 template<typename T>

@@ -1,15 +1,13 @@
 Next
 	Cleanup Pass
 		General
-			// TODO: Ensure this is removed from the list in partial initialization conditions
-			// TODO: Widgets will be referencing these sensors.
 			// TODO: Get this working
 			It's time to figure out what happens when memory allocations fail
-			If we give Slice a stride parameter, magic will occur
 			Natvis for List and Slice
 			Figure out what list[n] doesn't work in the Watch window
 			OHM apparently needs to be run as admin?
 			Take a hard look at ListRef
+			// TODO: Function to get a slice from an item member in a list
 		Constant Buffers / Materials
 			Combine VS and PS cbuf updating
 			Extend cbufs to support all shader stages
@@ -26,7 +24,8 @@ Next
 		Can plugins share shaders? (maybe not)
 		Should plugins get a raw pointer to D3D instead of having an abstracted API?
 		Implement 'services' (mainly logging)
-		How will managed code use native services and api? (~~probably dllimport~~) (er, function ptr like everything else?)
+		How will managed code use native services and api? (~~probably dllimport~~) (er, function ptr
+			like everything else?)
 		Would it be better to hide Context inside SimulationState so plugins
 		don't have to worry about it?
 		Do we need to support people using objects in plugins (e.g do we need to
