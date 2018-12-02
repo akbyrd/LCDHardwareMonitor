@@ -67,7 +67,7 @@ WidgetPlugin_CLR
 public ref struct
 LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 {
-	// NOTE: These functions run in the default AppDomain
+	// === Executed in Default AppDomain ============================================================
 
 	void
 	InitializeNewDomain(AppDomainSetup^ appDomainInfo) override
@@ -180,16 +180,14 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 		return true;
 	}
 
-
-
-	// NOTE: These functions run in the plugin AppDomain
+	// === Executed in Plugin AppDomain =============================================================
 
 	SensorPlugin_CLR sensorPluginCLR;
 	WidgetPlugin_CLR widgetPluginCLR;
 
 	generic <typename T>
 	static b32
-	LoadAssemblyAndInstantiateType (c8* _fileName, T% instance)
+	LoadAssemblyAndInstantiateType(c8* _fileName, T% instance)
 	{
 		// NOTE: T^ and T^% map back to plain T
 		String^ typeName = T::typeid->FullName;
@@ -207,12 +205,15 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 				}
 				else
 				{
-					// TODO: Warning: multiple plugins in same file
+					// TODO: Logging
+					//LOG_IF(!instance, return false,
+					//	Severity::Error, "Found multiple managed plugin types '%s', _fileName");
 				}
 			}
 		}
 		// TODO: Logging
-		//LOG_IF(!instance, "Failed to find a managed sensor plugin class", Severity::Warning, return false);
+		//LOG_IF(!instance, return false,
+		//	Severity::Error, "Failed to find a managed plugin type '%s', _fileName");
 
 		return true;
 	}

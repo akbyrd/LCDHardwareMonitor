@@ -37,14 +37,16 @@ PreviewWindow_Initialize(PreviewWindowState* s, RendererState* rendererState, HI
 		windowClass.lpszClassName = previewWindowClass;
 
 		ATOM classAtom = RegisterClassA(&windowClass);
-		LOG_LAST_ERROR_IF(classAtom == INVALID_ATOM, "RegisterClass failed", Severity::Error, return false);
+		LOG_LAST_ERROR_IF(classAtom == INVALID_ATOM, return false,
+			Severity::Error, "Failed to register preview window class");
 
 		auto windowStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE;
 
 		b32 success;
 		RECT windowRect = { 0, 0, (i32) rendererState->renderSize.x, (i32) rendererState->renderSize.y };
 		success = AdjustWindowRect(&windowRect, (u32) windowStyle, false);
-		LOG_LAST_ERROR_IF(!success, "AdjustWindowRect failed", Severity::Warning);
+		LOG_LAST_ERROR_IF(!success, IGNORE,
+			Severity::Error, "Failed to set preview window size or style");
 
 		s->renderSize = rendererState->renderSize;
 
@@ -65,13 +67,14 @@ PreviewWindow_Initialize(PreviewWindowState* s, RendererState* rendererState, HI
 		);
 		if (s->hwnd == INVALID_HANDLE_VALUE)
 		{
-			LOG_LAST_ERROR("CreateWindowEx failed", Severity::Error);
+			LOG_LAST_ERROR(Severity::Error, "Failed to create preview window");
 			s->hwnd = nullptr;
 			return false;
 		}
 
 		success = SetForegroundWindow(s->hwnd);
-		LOG_LAST_ERROR_IF(!success, "SetForegroundWindow failed", Severity::Warning);
+		LOG_LAST_ERROR_IF(!success, IGNORE,
+			Severity::Warning, "Failed to bring preview window to the foreground");
 	}
 
 
@@ -123,23 +126,27 @@ PreviewWindow_Initialize(PreviewWindowState* s, RendererState* rendererState, HI
 		// Create the swap chain
 		HRESULT hr;
 		hr = rendererState->dxgiFactory->CreateSwapChain(rendererState->d3dDevice.Get(), &swapChainDesc, &s->swapChain);
-		LOG_HRESULT_IF_FAILED(hr, "", Severity::Error, return false);
-		SetDebugObjectName(s->swapChain, "Swap Chain");
+		LOG_HRESULT_IF_FAILED(hr, return false,
+			Severity::Error, "Failed to create preview window swap chain");
+		SetDebugObjectName(s->swapChain, "Preview Swap Chain");
 
 		// Get the back buffer
 		hr = s->swapChain->GetBuffer(0, IID_PPV_ARGS(&s->backBuffer));
-		LOG_HRESULT_IF_FAILED(hr, "", Severity::Error, return false);
-		SetDebugObjectName(s->backBuffer, "Back Buffer");
+		LOG_HRESULT_IF_FAILED(hr, return false,
+			Severity::Error, "Failed to preview window create back buffer");
+		SetDebugObjectName(s->backBuffer, "Preview Back Buffer");
 
 		// Create a render target view to the back buffer
 		//ComPtr<ID3D11RenderTargetView> renderTargetView;
 		//hr = rendererState->d3dDevice->CreateRenderTargetView(s->backBuffer.Get(), nullptr, &renderTargetView);
-		//LOG_HRESULT_IF_FAILED(hr, "", Severity::Error, return false);
-		//SetDebugObjectName(renderTargetView, "Render Target View");
+		//LOG_HRESULT_IF_FAILED(hr, return false,
+		//	Severity::Error, "Failed to create preview window render target view");
+		//SetDebugObjectName(renderTargetView, "Preview Render Target View");
 
 		// Associate the window
 		hr = rendererState->dxgiFactory->MakeWindowAssociation(s->hwnd, DXGI_MWA_NO_ALT_ENTER);
-		LOG_HRESULT_IF_FAILED(hr, "", Severity::Error, return false);
+		LOG_HRESULT_IF_FAILED(hr, return false,
+			Severity::Error, "Failed to associate DXGI and preview window");
 	}
 
 	return true;
@@ -162,10 +169,12 @@ PreviewWindow_Teardown(PreviewWindowState* s, RendererState* rendererState, HINS
 		b32 success;
 
 		success = DestroyWindow(s->hwnd);
-		LOG_LAST_ERROR_IF(!success, "DestroyWindow failed", Severity::Error, return false);
+		LOG_LAST_ERROR_IF(!success, return false,
+			Severity::Error, "Failed to destroy preview window");
 
 		success = UnregisterClassA(previewWindowClass, hInstance);
-		LOG_LAST_ERROR_IF(!success, "UnregisterClass failed", Severity::Warning);
+		LOG_LAST_ERROR_IF(!success, IGNORE,
+			Severity::Error, "Failed to unregister preview window class");
 
 		*s = {};
 	}
@@ -184,7 +193,8 @@ PreviewWindow_Render(PreviewWindowState* s, RendererState* rendererState)
 		// running Direct3D apps to get a DXGI_ERROR_DEVICE_REMOVED event.
 		rendererState->d3dContext->CopyResource(s->backBuffer.Get(), rendererState->d3dRenderTexture.Get());
 		HRESULT hr = s->swapChain->Present(0, 0);
-		LOG_HRESULT_IF_FAILED(hr, "", Severity::Error, return false);
+		LOG_HRESULT_IF_FAILED(hr, return false,
+			Severity::Error, "Failed to present preview window");
 	}
 
 	return true;
@@ -210,7 +220,7 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 			i64 iResult = SetWindowLongPtrA(hwnd, GWLP_USERDATA, (LPARAM) s);
 			if (iResult == 0 && GetLastError() != 0)
 			{
-				LOG_LAST_ERROR("SetWindowLongPtr failed", Severity::Error);
+				LOG_LAST_ERROR(Severity::Error, "Failed to stash preview window state pointer");
 				return false;
 			}
 			break;
@@ -239,7 +249,8 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 
 				RECT windowRect;
 				success = GetWindowRect(s->hwnd, &windowRect);
-				LOG_LAST_ERROR_IF(!success, "GetWindowRect failed", Severity::Warning, return 0);
+				LOG_LAST_ERROR_IF(!success, return 0,
+					Severity::Warning, "Failed to get preview window rect");
 
 				v2i windowCenter;
 				windowCenter.x = (windowRect.right + windowRect.left) / 2;
@@ -249,7 +260,8 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 
 				RECT usableDesktopRect;
 				success = SystemParametersInfoA(SPI_GETWORKAREA, 0, &usableDesktopRect, 0);
-				LOG_LAST_ERROR_IF(!success, "SystemParametersInfo failed", Severity::Warning, return 0);
+				LOG_LAST_ERROR_IF(!success, return 0,
+					Severity::Warning, "Failed to get usable desktop area");
 
 				v2u usableDesktopSize;
 				usableDesktopSize.x = (u32) (usableDesktopRect.right - usableDesktopRect.left);
@@ -281,12 +293,14 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 					(i32) newWindowSize.y,
 					0
 				);
-				LOG_LAST_ERROR_IF(!success, "SetWindowPos failed", Severity::Warning, return 0);
+				LOG_LAST_ERROR_IF(!success, return 0,
+					Severity::Warning, "Failed to change preview window position during zoom");
 
 				s->zoomFactor = newZoomFactor;
 
 				success = SetForegroundWindow(s->hwnd);
-				LOG_LAST_ERROR_IF(!success, "SetForegroundWindow failed", Severity::Warning);
+				LOG_LAST_ERROR_IF(!success, IGNORE,
+					Severity::Warning, "Failed to bring preview window to the foreground during zoom");
 			}
 
 			return 0;
@@ -306,7 +320,8 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 		{
 			// TODO: If we hold onto the necessary pointers, we could just teardown directly
 			b32 success = PostMessageA(nullptr, WM_PREVIEWWINDOWCLOSED, 0, 0);
-			LOG_LAST_ERROR_IF(!success, "PostMessage failed", Severity::Warning);
+			LOG_LAST_ERROR_IF(!success, IGNORE,
+				Severity::Error, "Failed to post preview window close message");
 			return 0;
 		}
 	}

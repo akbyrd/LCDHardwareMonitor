@@ -34,6 +34,7 @@ const u64 Gigabyte = 1024LL * Megabyte;
 #endif
 
 #define nameof(x) #x
+#define IGNORE
 #define UNUSED(x) (x);
 #define HAS_FLAG(x, f) ((x & f) == f)
 #define IF(expression, ...) if (expression) { __VA_ARGS__; }

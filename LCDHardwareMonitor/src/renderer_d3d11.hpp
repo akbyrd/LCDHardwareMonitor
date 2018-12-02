@@ -123,14 +123,48 @@ struct RendererState
 // initialized. Reference counting might be a robust solution?
 // TODO: Handle unloading assets (will require reference counting, I think)
 // TODO: Start passing Strings instead of c8*?
+// TODO: StringSlice
 
-template<typename T, u32 TNameLength>
+template<typename T>
 static inline void
-SetDebugObjectName(const ComPtr<T>& resource, const c8 (&name)[TNameLength])
+SetDebugObjectName(const ComPtr<T>& resource, Slice<const c8> name)
 {
 	#if defined(DEBUG)
-	resource->SetPrivateData(WKPDID_D3DDebugObjectName, TNameLength - 1, name);
+	resource->SetPrivateData(WKPDID_D3DDebugObjectName, name.length - 1, name.data);
 	#endif
+}
+
+template<typename T, typename... Args>
+static inline void
+SetDebugObjectName(const ComPtr<T>& resource, Slice<const c8> format, Args... args)
+{
+	#if defined(DEBUG)
+	String name = {};
+	defer { List_Free(name); };
+
+	b32 success = String_Format(name, (c8*) format.data, args...);
+	if (!success)
+	{
+		LOG(Severity::Warning, "Failed to format D3D object name");
+		SetDebugObjectName(resource, format);
+		return;
+	}
+
+	// HACK
+	SetDebugObjectName(resource, { name.length, name.data });
+	#endif
+}
+
+static inline c8*
+ToString(ConstantBufferFrequency frequency)
+{
+	switch (frequency)
+	{
+		case ConstantBufferFrequency::Null:      return "Null";
+		case ConstantBufferFrequency::PerFrame:  return "PerFrame";
+		case ConstantBufferFrequency::PerObject: return "PerObject";
+		default: return "<Invalid>";
+	}
 }
 
 static void UpdateRasterizerState(RendererState* s);
@@ -173,46 +207,51 @@ Renderer_Initialize(RendererState* s, v2u renderSize)
 			&featureLevel,
 			&s->d3dContext
 		);
-		LOG_HRESULT_IF_FAILED(hr, "D3D11CreateDevice failed", Severity::Error, return false);
+		LOG_HRESULT_IF_FAILED(hr, return false,
+			Severity::Fatal, "Failed to create D3D device");
 		SetDebugObjectName(s->d3dDevice,  "Device");
 		SetDebugObjectName(s->d3dContext, "Device Context");
 
 		// Check feature level
 		if (!HAS_FLAG(featureLevel, D3D_FEATURE_LEVEL_11_0))
 		{
-			LOG("Created device does not support D3D 11", Severity::Error);
+			LOG(Severity::Fatal, "Created Device does not support D3D 11");
 			return false;
 		}
 
 		// Obtain the DXGI factory used to create the current device.
 		ComPtr<IDXGIDevice1> dxgiDevice;
 		hr = s->d3dDevice.As(&dxgiDevice);
-		LOG_HRESULT_IF_FAILED(hr, "Failed to get DXGI device", Severity::Error, return false);
+		LOG_HRESULT_IF_FAILED(hr, return false,
+			Severity::Fatal, "Failed to get DXGI device");
 		// NOTE: It looks like the IDXGIDevice is actually the same object as
 		// the ID3D11Device. Using SetPrivateData to set its name clobbers the
 		// D3D device name and outputs a warning.
 
 		ComPtr<IDXGIAdapter> dxgiAdapter;
 		hr = dxgiDevice->GetAdapter(&dxgiAdapter);
-		LOG_HRESULT_IF_FAILED(hr, "Failed to get DXGI adapter", Severity::Error, return false);
+		LOG_HRESULT_IF_FAILED(hr, return false,
+			Severity::Fatal, "Failed to get DXGI adapter");
 		SetDebugObjectName(dxgiAdapter, "DXGI Adapter");
 
 		// TODO: Only needed for the swap chain
 		hr = dxgiAdapter->GetParent(IID_PPV_ARGS(&s->dxgiFactory));
-		LOG_HRESULT_IF_FAILED(hr, "Failed to get DXGI factory", Severity::Error, return false);
+		LOG_HRESULT_IF_FAILED(hr, return false,
+			Severity::Fatal, "Failed to get DXGI factory");
 		SetDebugObjectName(s->dxgiFactory, "DXGI Factory");
 
 		// Check for the WARP driver
 		DXGI_ADAPTER_DESC desc = {};
 		hr = dxgiAdapter->GetDesc(&desc);
-		LOG_HRESULT_IF_FAILED(hr, "Failed to get DXGI adapter description", Severity::Error, return false);
+		LOG_HRESULT_IF_FAILED(hr, return false,
+			Severity::Fatal, "Failed to get DXGI adapter description");
 
 		if ((desc.VendorId == 0x1414) && (desc.DeviceId == 0x8c))
 		{
 			// WARNING: Microsoft Basic Render Driver is active. Performance of this
 			// application may be unsatisfactory. Please ensure that your video card is
 			// Direct3D10/11 capable and has the appropriate driver installed.
-			LOG("WARP driver in use.", Severity::Warning);
+			LOG(Severity::Warning, "WARP driver in use.");
 		}
 	}
 
@@ -223,18 +262,22 @@ Renderer_Initialize(RendererState* s, v2u renderSize)
 		#ifdef DEBUG
 		ComPtr<IDXGIDebug1> dxgiDebug;
 		hr = DXGIGetDebugInterface1(0, IID_PPV_ARGS(&dxgiDebug));
-		LOG_HRESULT_IF_FAILED(hr, "Failed to get DXGI debug", Severity::Error, return false);
+		LOG_HRESULT_IF_FAILED(hr, return false,
+			Severity::Warning, "Failed to get DXGI debug interface");
 
 		dxgiDebug->EnableLeakTrackingForThread();
 
 		ComPtr<IDXGIInfoQueue> dxgiInfoQueue;
 		hr = DXGIGetDebugInterface1(0, IID_PPV_ARGS(&dxgiInfoQueue));
-		LOG_HRESULT_IF_FAILED(hr, "Failed to get DXGI info queue", Severity::Error, return false);
+		LOG_HRESULT_IF_FAILED(hr, return false,
+			Severity::Warning, "Failed to get DXGI info queue");
 
-		hr = dxgiInfoQueue->SetBreakOnSeverity(DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE_SEVERITY_ERROR,      true);
-		LOG_HRESULT_IF_FAILED(hr, "Failed to set DXGI break on error", Severity::Warning);
+		hr = dxgiInfoQueue->SetBreakOnSeverity(DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE_SEVERITY_ERROR, true);
+		LOG_HRESULT_IF_FAILED(hr, IGNORE,
+			Severity::Warning, "Failed to set DXGI break on error");
 		hr = dxgiInfoQueue->SetBreakOnSeverity(DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE_SEVERITY_CORRUPTION, true);
-		LOG_HRESULT_IF_FAILED(hr, "Failed to set DXGI break on corruption", Severity::Warning);
+		LOG_HRESULT_IF_FAILED(hr, IGNORE,
+			Severity::Warning, "Failed to set DXGI break on corruption");
 		#endif
 	}
 
@@ -250,7 +293,8 @@ Renderer_Initialize(RendererState* s, v2u renderSize)
 				s->multisampleCount,
 				&s->qualityLevelCount
 			);
-			LOG_HRESULT_IF_FAILED(hr, "CheckMultisampleQualityLevels failed", Severity::Error, return false);
+			LOG_HRESULT_IF_FAILED(hr, return false,
+				Severity::Fatal, "Failed to query supported multisample levels");
 
 			renderTextureDesc.Width              = renderSize.x;
 			renderTextureDesc.Height             = renderSize.y;
@@ -272,11 +316,13 @@ Renderer_Initialize(RendererState* s, v2u renderSize)
 			renderTextureDesc.MiscFlags          = D3D11_RESOURCE_MISC_SHARED;
 
 			hr = s->d3dDevice->CreateTexture2D(&renderTextureDesc, nullptr, &s->d3dRenderTexture);
-			LOG_HRESULT_IF_FAILED(hr, "Failed to create render texture", Severity::Error, return false);
+			LOG_HRESULT_IF_FAILED(hr, return false,
+				Severity::Fatal, "Failed to create render texture");
 			SetDebugObjectName(s->d3dRenderTexture, "Render Texture");
 
 			hr = s->d3dDevice->CreateRenderTargetView(s->d3dRenderTexture.Get(), nullptr, &s->d3dRenderTargetView);
-			LOG_HRESULT_IF_FAILED(hr, "Failed to create render target view", Severity::Error, return false);
+			LOG_HRESULT_IF_FAILED(hr, return false,
+				Severity::Fatal, "Failed to create render target view");
 			SetDebugObjectName(s->d3dRenderTargetView, "Render Target View");
 
 			s->renderSize   = renderSize;
@@ -301,11 +347,13 @@ Renderer_Initialize(RendererState* s, v2u renderSize)
 
 			ComPtr<ID3D11Texture2D> d3dDepthBuffer;
 			hr = s->d3dDevice->CreateTexture2D(&depthDesc, nullptr, &d3dDepthBuffer);
-			LOG_HRESULT_IF_FAILED(hr, "Failed to create depth buffer", Severity::Error, return false);
+			LOG_HRESULT_IF_FAILED(hr, return false,
+				Severity::Fatal, "Failed to create depth buffer");
 			SetDebugObjectName(d3dDepthBuffer, "Depth Buffer");
 
 			hr = s->d3dDevice->CreateDepthStencilView(d3dDepthBuffer.Get(), nullptr, &s->d3dDepthBufferView);
-			LOG_HRESULT_IF_FAILED(hr, "Failed to create depth buffer view", Severity::Error, return false);
+			LOG_HRESULT_IF_FAILED(hr, return false,
+				Severity::Fatal, "Failed to create depth buffer view");
 			SetDebugObjectName(s->d3dDepthBufferView, "Depth Buffer View");
 		}
 
@@ -360,14 +408,16 @@ Renderer_Initialize(RendererState* s, v2u renderSize)
 		rasterizerDesc.AntialiasedLineEnable = s->multisampleCount > 1;
 
 		hr = s->d3dDevice->CreateRasterizerState(&rasterizerDesc, &s->d3dRasterizerStateSolid);
-		LOG_HRESULT_IF_FAILED(hr, "Failed to create solid rasterizer state", Severity::Error, return false);
+		LOG_HRESULT_IF_FAILED(hr, return false,
+			Severity::Fatal, "Failed to create solid rasterizer state");
 		SetDebugObjectName(s->d3dRasterizerStateSolid, "Rasterizer State (Solid)");
 
 		// Wireframe
 		rasterizerDesc.FillMode = D3D11_FILL_WIREFRAME;
 
 		hr = s->d3dDevice->CreateRasterizerState(&rasterizerDesc, &s->d3dRasterizerStateWireframe);
-		LOG_HRESULT_IF_FAILED(hr, "Failed to create wireframe rasterizer state", Severity::Error, return false);
+		LOG_HRESULT_IF_FAILED(hr, return false,
+			Severity::Fatal, "Failed to create wireframe rasterizer state");
 		SetDebugObjectName(s->d3dRasterizerStateWireframe, "Rasterizer State (Wireframe)");
 
 		// Start off in correct state
@@ -415,7 +465,8 @@ Renderer_Initialize(RendererState* s, v2u renderSize)
 
 		ComPtr<ID3D11Buffer> vBuffer;
 		hr = s->d3dDevice->CreateBuffer(&vertBuffDesc, &vertBuffInitData, &vBuffer);
-		LOG_HRESULT_IF_FAILED(hr, "Failed to create quad vertex buffer", Severity::Error, return false);
+		LOG_HRESULT_IF_FAILED(hr, return false,
+			Severity::Fatal, "Failed to create quad vertex buffer");
 		SetDebugObjectName(vBuffer, "Quad Vertices");
 
 		// TODO: Move
@@ -448,7 +499,8 @@ Renderer_Initialize(RendererState* s, v2u renderSize)
 
 		ComPtr<ID3D11Buffer> iBuffer;
 		hr = s->d3dDevice->CreateBuffer(&indexBuffDesc, &indexBuffInitData, &iBuffer);
-		LOG_HRESULT_IF_FAILED(hr, "Failed to create quad index buffer", Severity::Error, return false);
+		LOG_HRESULT_IF_FAILED(hr, return false,
+			Severity::Fatal, "Failed to create quad index buffer");
 		SetDebugObjectName(iBuffer, "Quad Indices");
 
 		s->d3dContext->IASetIndexBuffer(iBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
@@ -516,7 +568,8 @@ Renderer_Teardown(RendererState* s)
 
 		ComPtr<IDXGIDebug1> dxgiDebug;
 		hr = DXGIGetDebugInterface1(0, IID_PPV_ARGS(&dxgiDebug));
-		LOG_HRESULT_IF_FAILED(hr, "Failed to get DXGI debug interface", Severity::Warning, return);
+		LOG_HRESULT_IF_FAILED(hr, return,
+			Severity::Warning, "Failed to get DXGI debug interface");
 
 		// TODO: Test the differences in the output
 		// DXGI_DEBUG_RLO_ALL
@@ -527,33 +580,40 @@ Renderer_Teardown(RendererState* s)
 		// Microsoft.
 		// TODO: Re-enable this
 		//hr = dxgiDebug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_IGNORE_INTERNAL);
-		//LOG_HRESULT_IF_FAILED(hr, "ReportLiveObjects failed", Severity::Warning, return);
+		//LOG_HRESULT_IF_FAILED(hr, return,
+		//	Severity::Warning, "Failed to report live D3D objects");
 
-		OutputDebugStringA("\n");
+		Platform_Print("\n");
 		#endif
 	}
 }
 
-// TODO: Make private functions static
 static b32
 Renderer_CreateConstantBuffer(RendererState* s, ConstantBufferData* constantBuffer)
 {
+	// TODO: Add more cbuf info to logging
 	// TODO: if (ps->constantBuffer.desc != ConstantBufferDesc::Null)
 
 	// TODO: Actually, it seems like it makes more sense to have the buffer on
 	// the widget, not the draw call. However, that means getting a pointer to
 	// the plugin when drawing. Which is equally lame.
 
+	LOG_IF(constantBuffer->desc.frequency == ConstantBufferFrequency::Null, return false,
+		Severity::Error, "Constant buffer frequency not set");
+
 	if (constantBuffer->desc.frequency == ConstantBufferFrequency::PerObject)
 	{
-		LOG_IF(constantBuffer->desc.data, "Per-object constant buffer has non-per-object data pointer set", Severity::Error, return false);
+		LOG_IF(constantBuffer->desc.data, return false,
+			Severity::Error, "Per-object constant buffer has non-per-object data pointer set");
 	}
 	else
 	{
-		LOG_IF(!constantBuffer->desc.data, "Constant buffer does not have data pointer set", Severity::Error, return false);
+		LOG_IF(!constantBuffer->desc.data, return false,
+			Severity::Error, "Constant buffer does not have data pointer set");
 	}
 
-	LOG_IF(!IsMultipleOf(constantBuffer->desc.size, 16), "Constant buffer size is not a multiple of 16", Severity::Error, return false);
+	LOG_IF(!IsMultipleOf(constantBuffer->desc.size, 16), return false,
+		Severity::Error, "Constant buffer size '%u' is not a multiple of 16", constantBuffer->desc.size);
 
 	D3D11_BUFFER_DESC d3dDesc = {};
 	d3dDesc.ByteWidth           = constantBuffer->desc.size;
@@ -564,9 +624,11 @@ Renderer_CreateConstantBuffer(RendererState* s, ConstantBufferData* constantBuff
 	d3dDesc.StructureByteStride = 0;
 
 	HRESULT hr = s->d3dDevice->CreateBuffer(&d3dDesc, nullptr, &constantBuffer->d3dConstantBuffer);
-	LOG_HRESULT_IF_FAILED(hr, "Failed to create constant buffer", Severity::Error, return false);
-	// TODO: Include update frequency, shader type, and shader name in buffer name
-	SetDebugObjectName(constantBuffer->d3dConstantBuffer, "Constant Buffer");
+	LOG_HRESULT_IF_FAILED(hr, return false,
+		Severity::Error, "Failed to create constant buffer");
+	// TODO: Pass in shader type and buffer name for better naming?
+	SetDebugObjectName(constantBuffer->d3dConstantBuffer, "Constant Buffer %s",
+		ToString(constantBuffer->desc.frequency));
 
 	return true;
 }
@@ -592,42 +654,46 @@ Renderer_LoadVertexShader(RendererState* s, c8* path, Slice<VertexAttribute> att
 		List_Free(vs.constantBuffers);
 	};
 
+	// Load
 	Bytes vsBytes = {};
 	defer { List_Free(vsBytes); };
 	{
-		// Load
 		vsBytes = Platform_LoadFileBytes(path);
-		LOG_IF(!vsBytes, "Failed to load vertex shader file", Severity::Warning, return VertexShader::Null);
-
-		// Create
-		hr = s->d3dDevice->CreateVertexShader(vsBytes.data, vsBytes.length, nullptr, &vs.d3dVertexShader);
-		LOG_HRESULT_IF_FAILED(hr, "Failed to create vertex shader", Severity::Error, return VertexShader::Null);
-		SetDebugObjectName(vs.d3dVertexShader, "Vertex Shader");
-
-		// Constant Buffers
-		if (cBufDescs.length)
-		{
-			List_Reserve(vs.constantBuffers, cBufDescs.length);
-			LOG_IF(!vs.constantBuffers, "Failed to allocate space for vertex shader constant buffers", Severity::Error, return VertexShader::Null);
-
-			for (u32 i = 0; i < cBufDescs.length; i++)
-			{
-				ConstantBufferData* cBuf = List_Append(vs.constantBuffers);
-				LOG_IF(cBufDescs[i].frequency == ConstantBufferFrequency::Null, "Constant buffer frequency not set.", Severity::Warning, continue);
-
-				cBuf->desc = cBufDescs[i];
-				b32 success = Renderer_CreateConstantBuffer(s, cBuf);
-				if (!success) return VertexShader::Null;
-			}
-		}
+		if (!vsBytes) return VertexShader::Null;
 	}
 
+	// Create
+	{
+		hr = s->d3dDevice->CreateVertexShader(vsBytes.data, vsBytes.length, nullptr, &vs.d3dVertexShader);
+		LOG_HRESULT_IF_FAILED(hr, return VertexShader::Null,
+			Severity::Error, "Failed to create vertex shader '%s'", path);
+		SetDebugObjectName(vs.d3dVertexShader, "Vertex Shader");
+	}
+
+	// Constant Buffers
+	if (cBufDescs.length)
+	{
+		List_Reserve(vs.constantBuffers, cBufDescs.length);
+		LOG_IF(!vs.constantBuffers, return VertexShader::Null,
+			Severity::Error, "Failed to allocate space for VS constant buffers '%s'", path);
+
+		for (u32 i = 0; i < cBufDescs.length; i++)
+		{
+			ConstantBufferData* cBuf = List_Append(vs.constantBuffers);
+			cBuf->desc = cBufDescs[i];
+
+			b32 success = Renderer_CreateConstantBuffer(s, cBuf);
+			LOG_IF(!success, return VertexShader::Null,
+				Severity::Error, "Failed to create VS constant buffer %u for '%s'", i, path);
+		}
+	}
 
 	// Input layout
 	{
 		List<D3D11_INPUT_ELEMENT_DESC> vsInputDescs = {};
 		List_Reserve(vsInputDescs, attributes.length);
-		LOG_IF(!vsInputDescs, "Input description allocation failed", Severity::Warning, return VertexShader::Null);
+		LOG_IF(!vsInputDescs, return VertexShader::Null,
+			Severity::Error, "Failed to allocate VS input descriptions '%s'", path);
 		for (u32 i = 0; i < attributes.length; i++)
 		{
 			const c8* semantic;
@@ -638,8 +704,8 @@ Renderer_LoadVertexShader(RendererState* s, c8* path, Slice<VertexAttribute> att
 				case VertexAttributeSemantic::TexCoord: semantic = HLSLSemantic::TexCoord; break;
 
 				default:
-					// TODO: Include semantic value
-					LOG_IF(true, "Unrecognized VS attribute semantic", Severity::Warning, return VertexShader::Null);
+					LOG(Severity::Error, "Unrecognized VS attribute semantic %i '%s'", attributes[i].semantic, path);
+					return VertexShader::Null;
 			}
 
 			DXGI_FORMAT format;
@@ -650,8 +716,8 @@ Renderer_LoadVertexShader(RendererState* s, c8* path, Slice<VertexAttribute> att
 				case VertexAttributeFormat::Float4: format = DXGI_FORMAT_R32G32B32A32_FLOAT; break;
 
 				default:
-					// TODO: Include format value
-					LOG_IF(true, "Unrecognized VS attribute format", Severity::Warning, return VertexShader::Null);
+					LOG(Severity::Error, "Unrecognized VS attribute format %i '%s'", attributes[i].format, path);
+					return VertexShader::Null;
 			}
 
 			D3D11_INPUT_ELEMENT_DESC inputDesc = {};
@@ -666,18 +732,20 @@ Renderer_LoadVertexShader(RendererState* s, c8* path, Slice<VertexAttribute> att
 		}
 
 		hr = s->d3dDevice->CreateInputLayout(vsInputDescs.data, vsInputDescs.length, vsBytes.data, vsBytes.length, &vs.d3dInputLayout);
-		LOG_HRESULT_IF_FAILED(hr, "Failed to create input layout", Severity::Error, return VertexShader::Null);
+		LOG_HRESULT_IF_FAILED(hr, return VertexShader::Null,
+			Severity::Error, "Failed to create VS input layout '%s'", path);
 		SetDebugObjectName(vs.d3dInputLayout, "Input Layout");
 
 		vs.d3dPrimitveTopology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	}
 
-
 	// Commit
+	// TODO: Maybe it'd be better to add and defer remove instead?
 	VertexShaderData* vs2 = nullptr;
 	{
 		vs2 = List_Append(s->vertexShaders, vs);
-		LOG_IF(!vs2, "Failed to allocate space for vertex shader", Severity::Warning, return VertexShader::Null);
+		LOG_IF(!vs2, return VertexShader::Null,
+			Severity::Error, "Failed to allocate space for vertex shader '%s'", path);
 		vs = {};
 
 		// TODO: Eventually lists will reuse slots
@@ -692,6 +760,7 @@ PixelShader
 Renderer_LoadPixelShader(RendererState* s, c8* path, Slice<ConstantBufferDesc> cBufDescs)
 {
 	HRESULT hr;
+
 	PixelShaderData ps = {};
 	defer {
 		ps.d3dPixelShader.Reset();
@@ -706,13 +775,14 @@ Renderer_LoadPixelShader(RendererState* s, c8* path, Slice<ConstantBufferDesc> c
 	defer { List_Free(psBytes); };
 	{
 		psBytes = Platform_LoadFileBytes(path);
-		LOG_IF(!psBytes, "Failed to load pixel shader file", Severity::Warning, return PixelShader::Null);
+		if (!psBytes) return PixelShader::Null;
 	}
 
 	// Create
 	{
 		hr = s->d3dDevice->CreatePixelShader(psBytes.data, (u64) psBytes.length, nullptr, &ps.d3dPixelShader);
-		LOG_HRESULT_IF_FAILED(hr, "Failed to create pixel shader", Severity::Error, return PixelShader::Null);
+		LOG_HRESULT_IF_FAILED(hr, return PixelShader::Null,
+			Severity::Error, "Failed to create pixel shader '%s'", path);
 		SetDebugObjectName(ps.d3dPixelShader, "Pixel Shader");
 	}
 
@@ -720,16 +790,17 @@ Renderer_LoadPixelShader(RendererState* s, c8* path, Slice<ConstantBufferDesc> c
 	if (cBufDescs.length)
 	{
 		List_Reserve(ps.constantBuffers, cBufDescs.length);
-		LOG_IF(!ps.constantBuffers, "Failed to allocate space for pixel shader constant buffers", Severity::Error, return PixelShader::Null);
+		LOG_IF(!ps.constantBuffers, return PixelShader::Null,
+			Severity::Error, "Failed to allocate space for PS constant buffers '%s'", path);
 
 		for (u32 i = 0; i < cBufDescs.length; i++)
 		{
 			ConstantBufferData* cBuf = List_Append(ps.constantBuffers);
-			LOG_IF(cBufDescs[i].frequency == ConstantBufferFrequency::Null, "Constant buffer frequency not set.", Severity::Warning, continue);
-
 			cBuf->desc = cBufDescs[i];
+
 			b32 success = Renderer_CreateConstantBuffer(s, cBuf);
-			if (!success) return PixelShader::Null;
+			LOG_IF(!success, return PixelShader::Null,
+				Severity::Error, "Failed to create PS constant buffer %u for '%s'", i, path);
 		}
 	}
 
@@ -737,7 +808,8 @@ Renderer_LoadPixelShader(RendererState* s, c8* path, Slice<ConstantBufferDesc> c
 	PixelShaderData* ps2 = nullptr;
 	{
 		ps2 = List_Append(s->pixelShaders, ps);
-		LOG_IF(!ps2, "Failed to allocate space for pixel shader", Severity::Warning, return PixelShader::Null);
+		LOG_IF(!ps2, return PixelShader::Null,
+			Severity::Error, "Failed to allocate space for pixel shader '%s'", path);
 		ps = {};
 
 		// TODO: Eventually lists will reuse slots
@@ -769,7 +841,8 @@ Renderer_UpdateConstantBuffer(RendererState* s, ConstantBufferData constantBuffe
 	{
 		D3D11_MAPPED_SUBRESOURCE map = {};
 		HRESULT hr = s->d3dContext->Map(constantBuffer.d3dConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
-		LOG_HRESULT_IF_FAILED(hr, "Failed to map constant buffer", Severity::Error, return false);
+		LOG_HRESULT_IF_FAILED(hr, return false,
+			Severity::Error, "Failed to map constant buffer");
 
 		memcpy(map.pData, constantBuffer.desc.data, constantBuffer.desc.size);
 		s->d3dContext->Unmap(constantBuffer.d3dConstantBuffer.Get(), 0);
@@ -915,7 +988,8 @@ Renderer_CreateSharedD3D9RenderTexture(RendererState* s)
 
 	// Device
 	hr = Direct3DCreate9Ex(D3D_SDK_VERSION, &s->d3d9);
-	LOG_HRESULT_IF_FAILED(hr, "Failed to initialize D3D9", Severity::Error, return false);
+	LOG_HRESULT_IF_FAILED(hr, return false,
+		Severity::Error, "Failed to initialize D3D9");
 
 	D3DPRESENT_PARAMETERS presentParams = {};
 	presentParams.Windowed             = true;
@@ -932,17 +1006,20 @@ Renderer_CreateSharedD3D9RenderTexture(RendererState* s)
 		nullptr,
 		&s->d3d9Device
 	);
-	LOG_HRESULT_IF_FAILED(hr, "Failed to create D3D9 device", Severity::Error, return false);
+	LOG_HRESULT_IF_FAILED(hr, return false,
+		Severity::Error, "Failed to create D3D9 device");
 
 
 	// Shared surface
 	ComPtr<IDXGIResource> dxgiRenderTexture;
 	hr = s->d3dRenderTexture.As(&dxgiRenderTexture);
-	LOG_HRESULT_IF_FAILED(hr, "Failed to get DXGI render texture", Severity::Error, return false);
+	LOG_HRESULT_IF_FAILED(hr, return false,
+		Severity::Error, "Failed to get DXGI render texture");
 
 	HANDLE renderTextureSharedHandle;
 	hr = dxgiRenderTexture->GetSharedHandle(&renderTextureSharedHandle);
-	LOG_HRESULT_IF_FAILED(hr, "Failed to get DXGI render texture handle", Severity::Error, return false);
+	LOG_HRESULT_IF_FAILED(hr, return false,
+		Severity::Error, "Failed to get DXGI render texture handle");
 
 	Assert(s->renderFormat == DXGI_FORMAT_B8G8R8A8_UNORM);
 	hr = s->d3d9Device->CreateTexture(
@@ -955,10 +1032,12 @@ Renderer_CreateSharedD3D9RenderTexture(RendererState* s)
 		&s->d3d9RenderTexture,
 		&renderTextureSharedHandle
 	);
-	LOG_HRESULT_IF_FAILED(hr, "Failed to create D3D9 render texture", Severity::Error, return false);
+	LOG_HRESULT_IF_FAILED(hr, return false,
+		Severity::Error, "Failed to create D3D9 render texture");
 
 	hr = s->d3d9RenderTexture->GetSurfaceLevel(0, &s->d3d9RenderSurface0);
-	LOG_HRESULT_IF_FAILED(hr, "Failed to get D3D9 render surface", Severity::Error, return false);
+	LOG_HRESULT_IF_FAILED(hr, return false,
+		Severity::Error, "Failed to get D3D9 render surface");
 
 	//SetBackBuffer(D3DResourceType::IDirect3DSurface9, IntPtr(pSurface));
 

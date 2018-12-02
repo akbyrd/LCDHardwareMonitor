@@ -2,7 +2,7 @@
 #include "LHMAPICLR.h"
 
 #pragma managed
-#include <string.h>
+#include <cstring>
 
 // NOTE: It looks like it's not possible to update individual sensors. Updates
 // happen at the hardware level. */

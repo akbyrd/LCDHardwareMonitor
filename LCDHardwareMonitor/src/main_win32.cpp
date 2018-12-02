@@ -7,9 +7,13 @@
 #include "plugin_shared.h"
 #include "simulation.hpp"
 
+// Fuck you, Microsoft
+#pragma push_macro("IGNORE")
+#undef IGNORE
 #define VC_EXTRALEAN
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
+#pragma pop_macro("IGNORE")
 
 #include "platform_win32.hpp"
 #include "pluginloader_win32.hpp"
@@ -47,30 +51,30 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmdShow
 
 	// Renderer
 	success = Renderer_Initialize(&rendererState, simulationState.renderSize);
-	LOG_IF(!success, "Failed to initialize the renderer", Severity::Error, return -1);
+	LOG_IF(!success, return -1, Severity::Fatal, "Failed to initialize the renderer");
 	DEFER_TEARDOWN { Renderer_Teardown(&rendererState); };
 
 	success = Renderer_CreateSharedD3D9RenderTexture(&rendererState);
-	LOG_IF(!success, "Failed to create a shared render texture", Severity::Error, return -1);
+	LOG_IF(!success, return -1, Severity::Fatal, "Failed to create a shared render texture");
 	DEFER_TEARDOWN { Renderer_DestroySharedD3D9RenderTarget(&rendererState); };
 
 
 	// Simulation
 	success = Simulation_Initialize(&simulationState, &pluginLoaderState, &rendererState);
-	LOG_IF(!success, "Failed to initialize the simulation", Severity::Error, return -1);
+	LOG_IF(!success, return -1, Severity::Fatal, "Failed to initialize the simulation");
 	DEFER_TEARDOWN { Simulation_Teardown(&simulationState); };
 
 
 	// Misc
 	success = SetPriorityClass(GetCurrentProcess(), BELOW_NORMAL_PRIORITY_CLASS);
-	LOG_LAST_ERROR_IF(!success, "SetPriorityClass failed", Severity::Warning);
+	LOG_LAST_ERROR_IF(!success, IGNORE, Severity::Warning, "Failed to set process priority");
 
 
 	// Debug
 	PreviewWindow_Initialize(&previewState, &rendererState, hInstance);
 	auto previewGuard = guard { PreviewWindow_Teardown(&previewState, &rendererState, hInstance); };
 	success = RegisterHotKey(nullptr, togglePreviewWindowID, MOD_NOREPEAT, VK_F1);
-	LOG_LAST_ERROR_IF(!success, "RegisterHotKey failed", Severity::Warning);
+	LOG_LAST_ERROR_IF(!success, IGNORE, Severity::Warning, "Failed to register hotkeys");
 
 
 	// Main loop
@@ -113,13 +117,9 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmdShow
 		}
 
 
-		// Simulate
+		// Tick
 		Simulation_Update(&simulationState);
-
-		// Render
-		success = Renderer_Render(&rendererState);
-		LOG_IF(!success, "Render failed", Severity::Error);
-
+		Renderer_Render(&rendererState);
 		PreviewWindow_Render(&previewState, &rendererState);
 
 		Sleep(10);

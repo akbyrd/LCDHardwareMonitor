@@ -37,6 +37,7 @@ struct SensorPlugin
 	//List<SensorRefT> activeSensors;
 };
 
+// TODO: I hate this name
 struct WidgetType
 {
 	WidgetDefinition definition;

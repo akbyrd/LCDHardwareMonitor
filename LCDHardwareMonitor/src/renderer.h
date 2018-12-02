@@ -2,7 +2,7 @@ struct RendererState;
 
 enum struct VertexAttributeSemantic
 {
-	None,
+	Null,
 	Position,
 	Color,
 	TexCoord,
@@ -11,7 +11,7 @@ enum struct VertexAttributeSemantic
 
 enum struct VertexAttributeFormat
 {
-	None,
+	Null,
 	Float2,
 	Float3,
 	Float4,

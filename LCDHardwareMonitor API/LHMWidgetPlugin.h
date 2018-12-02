@@ -40,6 +40,7 @@ struct WidgetInstanceAPI
 	};
 };
 
+// TODO: Consider renaming this to WidgetDescription
 struct WidgetDefinition
 {
 	using InitializeFn = b32 (PluginContext*, WidgetInstanceAPI::Initialize);
@@ -58,7 +59,7 @@ struct WidgetPluginAPI
 	struct Initialize
 	{
 		using AddWidgetDefinitionsFn = void       (PluginContext*, Slice<WidgetDefinition>);
-		using LoadPixelShaderFn      = PixelShader(PluginContext*, c8* path, Slice<ConstantBufferDesc>);
+		using LoadPixelShaderFn      = PixelShader(PluginContext*, c8* relPath, Slice<ConstantBufferDesc>);
 
 		AddWidgetDefinitionsFn* AddWidgetDefinitions;
 		LoadPixelShaderFn*      LoadPixelShader;

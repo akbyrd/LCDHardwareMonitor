@@ -1,49 +1,64 @@
-Next
-	Cleanup Pass
-		General
-			// TODO: Get this working
-			It's time to figure out what happens when memory allocations fail
-			Natvis for List and Slice
-			Figure out what list[n] doesn't work in the Watch window
-			OHM apparently needs to be run as admin?
-			Take a hard look at ListRef
-			// TODO: Function to get a slice from an item member in a list
-		Constant Buffers / Materials
-			Combine VS and PS cbuf updating
-			Extend cbufs to support all shader stages
-			Simplify cbuf implementation
-			Implement materials
-			Allocate constant buffers from a simulation owned arena
-		Logging
-			// TODO: Plugin name in errors
-			Decide on error vs warning policy and update all logging
-			Look over logging carefully
-			Add formatted logging
+Cleanup Pass
+	General
+		Deal with operator nonsense in List and Slice
+		Figure out why list[n] doesn't work in the Watch window
+		Natvis for List and Slice
+		It's time to figure out what happens when memory allocations fail
+		Take a hard look at ListRef
+		Improve SensorRef
+		OHM apparently needs to be run as admin?
+		Might want to hoist GetPluginInfo calls up to simulation
+		Put plugins in an error state when API calls fail
+	Constant Buffers / Materials
+		Combine VS and PS cbuf updating
+		Extend cbufs to support all shader stages
+		Simplify cbuf implementation
+		Implement materials
+		Allocate constant buffers from a simulation owned arena
+		// TODO: Why isn't this working?
+	Renderer
+		Pass name to resource creation functions
+	Rewrite String
+		Want a constructor that takes a format and args
+		Want a scope-based RAII wrapper to auto-free
+		e.g. for passing a formatted string to SetDebugObjectName
+		Take String or StringSlice in all API functions
+		Re-use memory when formatting
+	Logging
+		We *do* want context for allocation failures because a plugin could be asking for stupid
+			sizes, caught in a loop, etc
+		Allow logging from plugins
+		Use an arena
 
-	Design Pass
-		Can plugins share shaders? (maybe not)
-		Should plugins get a raw pointer to D3D instead of having an abstracted API?
-		Implement 'services' (mainly logging)
-		How will managed code use native services and api? (~~probably dllimport~~) (er, function ptr
-			like everything else?)
-		Would it be better to hide Context inside SimulationState so plugins
-		don't have to worry about it?
-		Do we need to support people using objects in plugins (e.g do we need to
-		give dtors an opportunity to run?)
-		Consider *requiring* Update (and potentially other functions) for plugins. Does it make sense
-			to have a Widget plugin that never draws anything (drawing happens in Update)? Or a Sensor
-			that never updates sensors values (I don't think we want to encourage out-of-band updaing
-			from a plugin). For Initialize, what's a WidgetPlugin that doesn't add WidgetDefinitions?
-			SensorPlugins don't need Initialize though. If you have a plugin to monitor fan speeds but
-			have no fans, it seems fine to provide no Sensors. Ok, but it still should have the
-			opportunity to look, right?
 
-	Implement OHM plugin
-		Probably need a replacement SDK since it's unmaintained
-			CPUID System Monitor SDK is one option, but it's paid
-			AIDA64 doesn't have an SDK but it supports WMI and shared memory
-			Rivatuner?
-			HWiNFO (promising!)
+
+Design Pass
+	Can plugins share shaders? (maybe not)
+	Should plugins get a raw pointer to D3D instead of having an abstracted API?
+	Implement 'services' (mainly logging)
+	How will managed code use native services and api? (~~probably dllimport~~) (er, function ptr
+		like everything else?)
+	Would it be better to hide Context inside SimulationState so plugins
+	don't have to worry about it?
+	Do we need to support people using objects in plugins (e.g do we need to
+	give dtors an opportunity to run?)
+	Consider *requiring* Update (and potentially other functions) for plugins. Does it make sense
+		to have a Widget plugin that never draws anything (drawing happens in Update)? Or a Sensor
+		that never updates sensors values (I don't think we want to encourage out-of-band updaing
+		from a plugin). For Initialize, what's a WidgetPlugin that doesn't add WidgetDefinitions?
+		SensorPlugins don't need Initialize though. If you have a plugin to monitor fan speeds but
+		have no fans, it seems fine to provide no Sensors. Ok, but it still should have the
+		opportunity to look, right?
+
+
+
+OHM Plugin
+	Probably need a replacement SDK since it's unmaintained
+		CPUID System Monitor SDK is one option, but it's paid
+		AIDA64 doesn't have an SDK but it supports WMI and shared memory
+		Rivatuner?
+		HWiNFO (promising!)
+
 
 
 Back Burner
@@ -75,6 +90,19 @@ Refactoring
 	Should const be used on parameters and locals?
 	Include 'out' in out parameter names?
 	Decide on in-struct initializers or not. Unify things.
+	Make private functions static
+
+
+
+Error Handling
+	Don't log immediately, but push contextual string into a list
+	Each function up the stack adds its own information
+	Last function to handle the error does the printing
+	Might have to allocate for the formatting, so check if strings are dynamic and free them
+	Maybe change functions to return a Result<T> with operator bool(), context string, etc
+	Goal: only a single print occurs during an error, but it may be multiple lines
+	The top level handler is the one who knowis if something is a warning or an error, not the inner
+		most handler. LoadFile can't know if it's loading a cache file or a critical resource.
 
 
 

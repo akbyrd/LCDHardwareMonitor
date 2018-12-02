@@ -37,10 +37,12 @@ static Widget*
 CreateWidget(WidgetType* widgetType)
 {
 	Widget* widget = List_Append(widgetType->widgets);
-	LOG_IF(!widget, "Failed to allocate widget", Severity::Error, return nullptr);
+	LOG_IF(!widget, return nullptr,
+		Severity::Error, "Failed to allocate Widget");
 
 	b32 success = List_Reserve(widgetType->widgetData, widgetType->definition.size);
-	LOG_IF(!success, "Failed to allocate widget data", Severity::Error, return nullptr);
+	LOG_IF(!success, return nullptr,
+		Severity::Error, "Failed to allocate Widget data list");
 	widgetType->widgetData.length += widgetType->definition.size;
 
 	return widget;
@@ -82,7 +84,8 @@ AddSensors(PluginContext* context, Slice<Sensor> sensors)
 	SensorPlugin* sensorPlugin = GetSensorPlugin(context);
 
 	b32 success = List_AppendRange(sensorPlugin->sensors, sensors);
-	LOG_IF(!success, "Failed to allocate sensors", Severity::Error, return);
+	LOG_IF(!success, return,
+		Severity::Error, "Failed to allocate Sensors");
 
 	// TODO: Re-use empty slots in the list (from removes)
 
@@ -101,14 +104,12 @@ RemoveSensors(PluginContext* context, Slice<SensorRef> sensorRefs)
 	{
 		SensorRef sensorRef = sensorRefs[i];
 
-		b32 valid = sensorRef.plugin != sensorPlugin->ref;
-		LOG_IF(!valid, "Sensor plugin gave a bad SensorRef", Severity::Warning, return);
-
-		valid = List_IsRefValid(sensorPlugin->sensors, sensorRef.sensor);
-		LOG_IF(!valid, "Sensor plugin gave a bad SensorRef", Severity::Warning, return);
-
-		valid = sensorPlugin->sensors[sensorRef.sensor].name != nullptr;
-		LOG_IF(!valid, "Sensor plugin gave a bad SensorRef", Severity::Warning, return);
+		b32 valid = true;
+		valid = valid && sensorRef.plugin != sensorPlugin->ref;
+		valid = valid && List_IsRefValid(sensorPlugin->sensors, sensorRef.sensor);
+		valid = valid && sensorPlugin->sensors[sensorRef.sensor].name != nullptr;
+		LOG_IF(!valid, return,
+			Severity::Error, "Sensor plugin gave a bad SensorRef '%s'", sensorPlugin->info.name);
 	}
 
 	RemoveSensorRefs(context->s, sensorRefs);
@@ -142,13 +143,16 @@ AddWidgetDefinitions(PluginContext* context, Slice<WidgetDefinition> widgetDefs)
 		widgetType.definition = *widgetDef;
 
 		List_Reserve(widgetType.widgets, 8);
-		LOG_IF(!widgetType.widgets, "Failed to allocate widget instances list", Severity::Warning, return);
+		LOG_IF(!widgetType.widgets, return,
+			Severity::Error, "Failed to allocate Widget instances list");
 
 		List_Reserve(widgetType.widgetData, 8 * widgetDef->size);
-		LOG_IF(!widgetType.widgetData, "Failed to allocate widget data list", Severity::Warning, return);
+		LOG_IF(!widgetType.widgetData, return,
+			Severity::Error, "Failed to allocate Widget data list");
 
 		WidgetType* widgetType2 = List_Append(widgetPlugin->widgetTypes, widgetType);
-		LOG_IF(!widgetType2, "Failed to allocate space for widget definition", Severity::Warning, return);
+		LOG_IF(!widgetType2, return,
+			Severity::Error, "Failed to allocate WidgetType");
 	}
 
 	context->success = true;
@@ -168,7 +172,7 @@ RemoveAllWidgetDefinitions(PluginContext* context)
 }
 
 static PixelShader
-LoadPixelShader(PluginContext* context, c8* _path, Slice<ConstantBufferDesc> cBufDescs)
+LoadPixelShader(PluginContext* context, c8* relPath, Slice<ConstantBufferDesc> cBufDescs)
 {
 	if (!context->success) return PixelShader::Null;
 	context->success = false;
@@ -176,12 +180,15 @@ LoadPixelShader(PluginContext* context, c8* _path, Slice<ConstantBufferDesc> cBu
 	WidgetPlugin* widgetPlugin = GetWidgetPlugin(context);
 
 	String path = {};
-	// TODO: Why doesn't this return the string?
-	context->success = String_Format(path, "%s/%s", widgetPlugin->header.directory, _path);
-	LOG_IF(!context->success, "Failed to format pixel shader path", Severity::Warning, return PixelShader::Null);
+	defer { List_Free(path); };
+
+	context->success = String_Format(path, "%s/%s", widgetPlugin->header.directory, relPath);
+	LOG_IF(!context->success, return PixelShader::Null,
+		Severity::Error, "Failed to format pixel shader path '%s'", relPath);
 
 	PixelShader ps = Renderer_LoadPixelShader(context->s->renderer, path, cBufDescs);
-	LOG_IF(!ps, "Failed to load pixel shader", Severity::Warning, return PixelShader::Null);
+	LOG_IF(!ps, return PixelShader::Null,
+		Severity::Error, "Failed to load pixel shader '%s'", path);
 
 	context->success = true;
 	return ps;
@@ -194,7 +201,8 @@ PushDrawCall(PluginContext* context, DrawCall dc)
 	context->success = false;
 
 	DrawCall* drawCall = Renderer_PushDrawCall(context->s->renderer);
-	LOG_IF(!drawCall, "Failed to allocate space for draw call", Severity::Warning, return);
+	LOG_IF(!drawCall, return,
+		Severity::Error, "Failed to allocate space for draw call");
 	*drawCall = dc;
 
 	context->success = true;
@@ -209,23 +217,24 @@ GetWVPPointer(PluginContext* context)
 // =================================================================================================
 
 static SensorPlugin*
-LoadSensorPlugin(SimulationState* s, c8* directory, c8* name)
+LoadSensorPlugin(SimulationState* s, c8* directory, c8* fileName)
 {
-	// TODO: Plugin name in errors
-
 	SensorPlugin* sensorPlugin = List_Append(s->sensorPlugins);
-	LOG_IF(!sensorPlugin, "Failed to allocate SensorPlugin", Severity::Error, return nullptr);
+	LOG_IF(!sensorPlugin, return nullptr,
+		Severity::Error, "Failed to allocate Sensor plugin");
 
 	sensorPlugin->ref              = List_GetRefLast(s->sensorPlugins);
-	sensorPlugin->header.fileName  = name;
+	sensorPlugin->header.fileName  = fileName;
 	sensorPlugin->header.directory = directory;
 	sensorPlugin->header.kind      = PluginKind::Sensor;
 
 	b32 success = PluginLoader_LoadSensorPlugin(s->pluginLoader, sensorPlugin);
-	LOG_IF(!success, "Failed to load sensor plugin", Severity::Warning, return nullptr);
+	LOG_IF(!success, return nullptr,
+		Severity::Error, "Failed to load Sensor plugin '%s'", fileName);
 
 	List_Reserve(sensorPlugin->sensors, 32);
-	LOG_IF(!sensorPlugin->sensors, "Failed to allocate Sensors", Severity::Error, return nullptr);
+	LOG_IF(!sensorPlugin->sensors, return nullptr,
+		Severity::Error, "Failed to allocate Sensor list for Sensor plugin");
 
 	// TODO: try/catch?
 	if (sensorPlugin->functions.initialize)
@@ -240,7 +249,8 @@ LoadSensorPlugin(SimulationState* s, c8* directory, c8* name)
 
 		success = sensorPlugin->functions.initialize(&context, api);
 		success &= context.success;
-		LOG_IF(!success, "Failed to initialize sensor plugin", Severity::Warning, return nullptr);
+		LOG_IF(!success, return nullptr,
+			Severity::Error, "Failed to initialize Sensor plugin '%s'", sensorPlugin->info.name);
 	}
 
 	sensorPlugin->header.isWorking = true;
@@ -250,8 +260,6 @@ LoadSensorPlugin(SimulationState* s, c8* directory, c8* name)
 static b32
 UnloadSensorPlugin(SimulationState* s, SensorPlugin* sensorPlugin)
 {
-	// TODO: Plugin name in errors
-
 	auto pluginGuard = guard { sensorPlugin->header.isWorking = false; };
 
 	// TODO: try/catch?
@@ -279,7 +287,8 @@ UnloadSensorPlugin(SimulationState* s, SensorPlugin* sensorPlugin)
 	b32 success;
 	success = PluginLoader_UnloadSensorPlugin(s->pluginLoader, sensorPlugin);
 	List_Free(sensorPlugin->sensors);
-	LOG_IF(!success, "Failed to unload sensor plugin.", Severity::Warning, return false);
+	LOG_IF(!success, return false,
+		Severity::Error, "Failed to unload Sensor plugin '%s'", sensorPlugin->info.name);
 
 	// TODO: Add and remove plugin infos based on directory contents instead of
 	// loaded state.
@@ -290,19 +299,21 @@ UnloadSensorPlugin(SimulationState* s, SensorPlugin* sensorPlugin)
 }
 
 static WidgetPlugin*
-LoadWidgetPlugin(SimulationState* s, c8* directory, c8* name)
+LoadWidgetPlugin(SimulationState* s, c8* directory, c8* fileName)
 {
 	WidgetPlugin* widgetPlugin = List_Append(s->widgetPlugins);
-	LOG_IF(!widgetPlugin, "Failed to allocate WidgetPlugin", Severity::Error, return nullptr);
+	LOG_IF(!widgetPlugin, return nullptr,
+		Severity::Error, "Failed to allocate WidgetPlugin");
 
 	widgetPlugin->ref              = List_GetRefLast(s->widgetPlugins);
-	widgetPlugin->header.fileName  = name;
+	widgetPlugin->header.fileName  = fileName;
 	widgetPlugin->header.directory = directory;
 	widgetPlugin->header.kind      = PluginKind::Widget;
 
 	b32 success;
 	success = PluginLoader_LoadWidgetPlugin(s->pluginLoader, widgetPlugin);
-	LOG_IF(!success, "Failed to load widget plugin", Severity::Warning, return nullptr);
+	LOG_IF(!success, return nullptr,
+		Severity::Error, "Failed to load Widget plugin '%s'", fileName);
 
 	// TODO: try/catch?
 	if (widgetPlugin->functions.initialize)
@@ -321,7 +332,7 @@ LoadWidgetPlugin(SimulationState* s, c8* directory, c8* name)
 		success &= context.success;
 		if (!success)
 		{
-			LOG("Failed to initialize widget plugin", Severity::Warning);
+			LOG(Severity::Error, "Failed to initialize Widget plugin");
 
 			// TODO: There's a decent chance we'll want to keep widget definitions
 			// around for unloaded plugins
@@ -337,8 +348,6 @@ LoadWidgetPlugin(SimulationState* s, c8* directory, c8* name)
 static b32
 UnloadWidgetPlugin(SimulationState* s, WidgetPlugin* widgetPlugin)
 {
-	// TODO: Plugin name in errors
-
 	auto pluginGuard = guard { widgetPlugin->header.isWorking = false; };
 
 	PluginContext context = {};
@@ -373,7 +382,8 @@ UnloadWidgetPlugin(SimulationState* s, WidgetPlugin* widgetPlugin)
 
 	b32 success;
 	success = PluginLoader_UnloadWidgetPlugin(s->pluginLoader, widgetPlugin);
-	LOG_IF(!success, "Failed to unload widget plugin.", Severity::Warning, return false);
+	LOG_IF(!success, return false,
+		Severity::Error, "Failed to unload Widget plugin '%s'", widgetPlugin->info.name);
 
 	// TODO: Add and remove plugin infos based on directory contents instead
 	// of loaded state.
@@ -394,10 +404,12 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 	if (!success) return false;
 
 	List_Reserve(s->sensorPlugins, 8);
-	LOG_IF(!s->sensorPlugins, "Failed to allocate sensor plugins list", Severity::Error, return false);
+	LOG_IF(!s->sensorPlugins, return false,
+		Severity::Error, "Failed to allocate Sensor plugins list");
 
 	List_Reserve(s->widgetPlugins, 8);
-	LOG_IF(!s->widgetPlugins, "Failed to allocate widget plugins list", Severity::Error, return false);
+	LOG_IF(!s->widgetPlugins, return false,
+		Severity::Error, "Failed to allocate Widget plugins list");
 
 	// Load Default Assets
 	{
@@ -414,14 +426,16 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 			cBufDesc.frequency = ConstantBufferFrequency::PerObject;
 
 			VertexShader vs = Renderer_LoadVertexShader(s->renderer, "Shaders/Basic Vertex Shader.cso", vsAttributes, cBufDesc);
-			LOG_IF(!vs, "Failed to load default vertex shader", Severity::Error, return false);
+			LOG_IF(!vs, return false,
+				Severity::Error, "Failed to load default vertex shader");
 			Assert(vs == StandardVertexShader::Debug);
 		}
 
 		// Pixel shader
 		{
 			PixelShader ps = Renderer_LoadPixelShader(s->renderer, "Shaders/Basic Pixel Shader.cso", {});
-			LOG_IF(!ps, "Failed to load default pixel shader", Severity::Error, return false);
+			LOG_IF(!ps, return false,
+				Severity::Error, "Failed to load default pixel shader");
 			Assert(ps == StandardPixelShader::Debug);
 		}
 	}
@@ -449,8 +463,9 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 			Assert(success);
 		}
 		#else
-		//u32 debugSensorIndices[] = { 6, 7, 8, 9, 33 };
-		u32 debugSensorIndices[] = { 0, 1, 2, 3, 12 };
+		//u32 debugSensorIndices[] = { 6, 7, 8, 9, 33 }; // Desktop 780 Tis
+		u32 debugSensorIndices[] = { 6, 7, 8, 9, 32 }; // Desktop 2080 Ti
+		//u32 debugSensorIndices[] = { 0, 1, 2, 3, 12 }; // Laptop
 		WidgetType* widgetType = &filledBarPlugin->widgetTypes[0];
 		for (u32 i = 0; i < ArrayLength(debugSensorIndices); i++)
 		{
