@@ -589,46 +589,46 @@ Renderer_Teardown(RendererState* s)
 }
 
 static b32
-Renderer_CreateConstantBuffer(RendererState* s, ConstantBufferData* constantBuffer)
+Renderer_CreateConstantBuffer(RendererState* s, ConstantBufferData* cBuf)
 {
 	// TODO: Add more cbuf info to logging
-	// TODO: if (ps->constantBuffer.desc != ConstantBufferDesc::Null)
+	// TODO: if (ps->cBuf.desc != ConstantBufferDesc::Null)
 
 	// TODO: Actually, it seems like it makes more sense to have the buffer on
 	// the widget, not the draw call. However, that means getting a pointer to
 	// the plugin when drawing. Which is equally lame.
 
-	LOG_IF(constantBuffer->desc.frequency == ConstantBufferFrequency::Null, return false,
+	LOG_IF(cBuf->desc.frequency == ConstantBufferFrequency::Null, return false,
 		Severity::Error, "Constant buffer frequency not set");
 
-	if (constantBuffer->desc.frequency == ConstantBufferFrequency::PerObject)
+	if (cBuf->desc.frequency == ConstantBufferFrequency::PerObject)
 	{
-		LOG_IF(constantBuffer->desc.data, return false,
+		LOG_IF(cBuf->desc.data, return false,
 			Severity::Error, "Per-object constant buffer has non-per-object data pointer set");
 	}
 	else
 	{
-		LOG_IF(!constantBuffer->desc.data, return false,
+		LOG_IF(!cBuf->desc.data, return false,
 			Severity::Error, "Constant buffer does not have data pointer set");
 	}
 
-	LOG_IF(!IsMultipleOf(constantBuffer->desc.size, 16), return false,
-		Severity::Error, "Constant buffer size '%u' is not a multiple of 16", constantBuffer->desc.size);
+	LOG_IF(!IsMultipleOf(cBuf->desc.size, 16), return false,
+		Severity::Error, "Constant buffer size '%u' is not a multiple of 16", cBuf->desc.size);
 
 	D3D11_BUFFER_DESC d3dDesc = {};
-	d3dDesc.ByteWidth           = constantBuffer->desc.size;
+	d3dDesc.ByteWidth           = cBuf->desc.size;
 	d3dDesc.Usage               = D3D11_USAGE_DYNAMIC;
 	d3dDesc.BindFlags           = D3D11_BIND_CONSTANT_BUFFER;
 	d3dDesc.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
 	d3dDesc.MiscFlags           = 0;
 	d3dDesc.StructureByteStride = 0;
 
-	HRESULT hr = s->d3dDevice->CreateBuffer(&d3dDesc, nullptr, &constantBuffer->d3dConstantBuffer);
+	HRESULT hr = s->d3dDevice->CreateBuffer(&d3dDesc, nullptr, &cBuf->d3dConstantBuffer);
 	LOG_HRESULT_IF_FAILED(hr, return false,
 		Severity::Error, "Failed to create constant buffer");
 	// TODO: Pass in shader type and buffer name for better naming?
-	SetDebugObjectName(constantBuffer->d3dConstantBuffer, "Constant Buffer %s",
-		ToString(constantBuffer->desc.frequency));
+	SetDebugObjectName(cBuf->d3dConstantBuffer, "Constant Buffer %s",
+		ToString(cBuf->desc.frequency));
 
 	return true;
 }
@@ -639,6 +639,7 @@ Renderer_CreateConstantBuffer(RendererState* s, ConstantBufferData* constantBuff
 VertexShader
 Renderer_LoadVertexShader(RendererState* s, c8* path, Slice<VertexAttribute> attributes, Slice<ConstantBufferDesc> cBufDescs)
 {
+	b32 success;
 	HRESULT hr;
 
 	// TODO: Copy name
@@ -659,7 +660,7 @@ Renderer_LoadVertexShader(RendererState* s, c8* path, Slice<VertexAttribute> att
 	defer { List_Free(vsBytes); };
 	{
 		vsBytes = Platform_LoadFileBytes(path);
-		if (!vsBytes) return VertexShader::Null;
+		if (!vsBytes.data) return VertexShader::Null;
 	}
 
 	// Create
@@ -673,8 +674,8 @@ Renderer_LoadVertexShader(RendererState* s, c8* path, Slice<VertexAttribute> att
 	// Constant Buffers
 	if (cBufDescs.length)
 	{
-		List_Reserve(vs.constantBuffers, cBufDescs.length);
-		LOG_IF(!vs.constantBuffers, return VertexShader::Null,
+		success = List_Reserve(vs.constantBuffers, cBufDescs.length);
+		LOG_IF(!success, return VertexShader::Null,
 			Severity::Error, "Failed to allocate space for VS constant buffers '%s'", path);
 
 		for (u32 i = 0; i < cBufDescs.length; i++)
@@ -682,7 +683,7 @@ Renderer_LoadVertexShader(RendererState* s, c8* path, Slice<VertexAttribute> att
 			ConstantBufferData* cBuf = List_Append(vs.constantBuffers);
 			cBuf->desc = cBufDescs[i];
 
-			b32 success = Renderer_CreateConstantBuffer(s, cBuf);
+			success = Renderer_CreateConstantBuffer(s, cBuf);
 			LOG_IF(!success, return VertexShader::Null,
 				Severity::Error, "Failed to create VS constant buffer %u for '%s'", i, path);
 		}
@@ -691,8 +692,8 @@ Renderer_LoadVertexShader(RendererState* s, c8* path, Slice<VertexAttribute> att
 	// Input layout
 	{
 		List<D3D11_INPUT_ELEMENT_DESC> vsInputDescs = {};
-		List_Reserve(vsInputDescs, attributes.length);
-		LOG_IF(!vsInputDescs, return VertexShader::Null,
+		success = List_Reserve(vsInputDescs, attributes.length);
+		LOG_IF(!success, return VertexShader::Null,
 			Severity::Error, "Failed to allocate VS input descriptions '%s'", path);
 		for (u32 i = 0; i < attributes.length; i++)
 		{
@@ -775,7 +776,7 @@ Renderer_LoadPixelShader(RendererState* s, c8* path, Slice<ConstantBufferDesc> c
 	defer { List_Free(psBytes); };
 	{
 		psBytes = Platform_LoadFileBytes(path);
-		if (!psBytes) return PixelShader::Null;
+		if (!psBytes.data) return PixelShader::Null;
 	}
 
 	// Create
@@ -789,8 +790,10 @@ Renderer_LoadPixelShader(RendererState* s, c8* path, Slice<ConstantBufferDesc> c
 	// Constant Buffers
 	if (cBufDescs.length)
 	{
-		List_Reserve(ps.constantBuffers, cBufDescs.length);
-		LOG_IF(!ps.constantBuffers, return PixelShader::Null,
+		b32 success;
+
+		success = List_Reserve(ps.constantBuffers, cBufDescs.length);
+		LOG_IF(!success, return PixelShader::Null,
 			Severity::Error, "Failed to allocate space for PS constant buffers '%s'", path);
 
 		for (u32 i = 0; i < cBufDescs.length; i++)
@@ -798,7 +801,7 @@ Renderer_LoadPixelShader(RendererState* s, c8* path, Slice<ConstantBufferDesc> c
 			ConstantBufferData* cBuf = List_Append(ps.constantBuffers);
 			cBuf->desc = cBufDescs[i];
 
-			b32 success = Renderer_CreateConstantBuffer(s, cBuf);
+			success = Renderer_CreateConstantBuffer(s, cBuf);
 			LOG_IF(!success, return PixelShader::Null,
 				Severity::Error, "Failed to create PS constant buffer %u for '%s'", i, path);
 		}
@@ -833,19 +836,19 @@ Renderer_PushDrawCall(RendererState* s)
 }
 
 static b32
-Renderer_UpdateConstantBuffer(RendererState* s, ConstantBufferData constantBuffer)
+Renderer_UpdateConstantBuffer(RendererState* s, ConstantBufferData cBuf)
 {
 	// TODO: Why isn't this working?
-	//if (constantBuffer.desc != ConstantBufferDesc::Null)
-	if (constantBuffer.desc.data)
+	//if (cBuf.desc != ConstantBufferDesc::Null)
+	if (cBuf.desc.data)
 	{
 		D3D11_MAPPED_SUBRESOURCE map = {};
-		HRESULT hr = s->d3dContext->Map(constantBuffer.d3dConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
+		HRESULT hr = s->d3dContext->Map(cBuf.d3dConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
 		LOG_HRESULT_IF_FAILED(hr, return false,
 			Severity::Error, "Failed to map constant buffer");
 
-		memcpy(map.pData, constantBuffer.desc.data, constantBuffer.desc.size);
-		s->d3dContext->Unmap(constantBuffer.d3dConstantBuffer.Get(), 0);
+		memcpy(map.pData, cBuf.desc.data, cBuf.desc.size);
+		s->d3dContext->Unmap(cBuf.d3dConstantBuffer.Get(), 0);
 	}
 
 	return true;

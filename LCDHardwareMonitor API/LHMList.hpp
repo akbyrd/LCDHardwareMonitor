@@ -26,9 +26,8 @@ template<typename T>
 struct ListRef
 {
 	u32 index;
-	// TODO: These shouldn't be needed
-	b32 operator==(const ListRef& other) { return index == other.index; }
-	b32 operator!=(const ListRef& other) { return index != other.index; }
+	b32 operator ==(const ListRef& other) { return index == other.index; }
+	b32 operator !=(const ListRef& other) { return index != other.index; }
 
 	// TODO: Switch to 0 being a null asset everywhere
 	static const ListRef<T> Null;
@@ -47,11 +46,7 @@ struct List
 
 	using RefT = ListRef<T>;
 	inline T& operator [](RefT r) { return data[r.index]; }
-	//inline T& operator [](u32 i)  { return data[i]; }
-	// TODO: I think this is the source of the operator ambiguity
-	inline    operator T*()       { return data; }
-	// TODO: Maybe we want to be checking length, not data?
-	inline    operator b32()      { return data != nullptr; }
+	inline T& operator [](u32 i)  { return data[i]; }
 };
 
 template<typename T>

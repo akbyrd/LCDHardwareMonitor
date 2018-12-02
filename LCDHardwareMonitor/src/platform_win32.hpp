@@ -44,7 +44,7 @@ Platform_Log(Severity severity, Location location, c8* message)
 		Platform_Print("\n");
 	}
 
-	Platform_Print(fullMessage);
+	Platform_Print(fullMessage.data);
 	if (severity > Severity::Info)
 		__debugbreak();
 }
@@ -64,7 +64,7 @@ Platform_Log(Severity severity, Location location, c8* format, Args... args)
 		return;
 	}
 
-	Platform_Log(severity, location, message);
+	Platform_Log(severity, location, message.data);
 }
 
 void
@@ -133,7 +133,7 @@ LogHRESULT(HRESULT hr, Severity severity, Location location, c8* format, Args...
 		return;
 	}
 
-	LogHRESULT(hr, severity, location, message);
+	LogHRESULT(hr, severity, location, message.data);
 }
 #define LOG_HRESULT(hr, severity, format, ...) LogHRESULT(hr, severity, LOCATION, format, __VA_ARGS__)
 #define LOG_HRESULT_IF_FAILED(hr, action, severity, format, ...) IF(FAILED(hr), LOG_HRESULT(hr, severity, format, __VA_ARGS__); action)
@@ -159,7 +159,7 @@ LogLastError(Severity severity, Location location, c8* format, Args... args)
 		return;
 	}
 
-	LogLastError(severity, location, message);
+	LogLastError(severity, location, message.data);
 }
 #define LOG_LAST_ERROR(severity, format, ...) LogLastError(severity, LOCATION, format, __VA_ARGS__)
 #define LOG_LAST_ERROR_IF(expression, action, severity, format, ...) IF(expression, LOG_LAST_ERROR(severity, format, __VA_ARGS__); action)
@@ -174,8 +174,8 @@ GetWorkingDirectory()
 	LOG_LAST_ERROR_IF(!length, return result,
 		Severity::Warning, "Failed to get working directory length");
 
-	List_Reserve(result, length);
-	LOG_IF(!result, return result,
+	b32 success = List_Reserve(result, length);
+	LOG_IF(!success, return result,
 		Severity::Warning, "Failed to allocate working directory");
 
 	u32 written = GetCurrentDirectoryA(length + 1, result.data);
@@ -210,7 +210,7 @@ LoadFile(c8* path, u32 padding = 0)
 		{
 			String cwd = GetWorkingDirectory();
 			defer { List_Free(cwd); };
-			LOG_LAST_ERROR(Severity::Warning, "Failed to create file handle '%s'; CWD: '%s'", path, cwd.data);
+			LOG_LAST_ERROR(Severity::Warning, "Failed to create file handle '%s'; CWD: '%s'", path, cwd);
 			return result;
 		}
 
@@ -222,11 +222,11 @@ LoadFile(c8* path, u32 padding = 0)
 			Severity::Warning, "File is too large to load '%s'", path);
 
 		u32 size = (u32) size_win32.QuadPart;
-		List_Reserve(result, size + padding);
-		LOG_IF(!result, return result,
+		success = List_Reserve(result, size + padding);
+		LOG_IF(!success, return result,
 			Severity::Warning, "Failed to allocate file memory '%s'", path);
 
-		success = ReadFile(file, result, size, (DWORD*) &result.length, nullptr);
+		success = ReadFile(file, result.data, size, (DWORD*) &result.length, nullptr);
 		LOG_LAST_ERROR_IF(!success, return result,
 			Severity::Warning, "Failed to read file '%s'", path);
 
@@ -247,13 +247,13 @@ Platform_LoadFileString(c8* path)
 	String result = {};
 
 	Bytes bytes = LoadFile(path, 1);
-	if (!bytes) return result;
+	if (!bytes.data) return result;
 
 	result.length   = bytes.length;
 	result.capacity = bytes.capacity;
 	result.data     = (c8*) bytes.data;
 
-	result.data[result.length++] = '\0';
+	result[result.length++] = '\0';
 
 	return result;
 }

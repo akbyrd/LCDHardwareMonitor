@@ -129,7 +129,7 @@ DetectPluginLanguage(PluginHeader* pluginHeader)
 	if (!success) return false;
 
 	HANDLE pluginFile = CreateFileA(
-		pluginPath,
+		pluginPath.data,
 		GENERIC_READ,
 		FILE_SHARE_READ,
 		nullptr,
@@ -142,7 +142,7 @@ DetectPluginLanguage(PluginHeader* pluginHeader)
 	{
 		String cwd = GetWorkingDirectory();
 		defer { List_Free(cwd); };
-		LOG_LAST_ERROR(Severity::Error, "Failed to open plugin file '%s'; CWD: '%s'", pluginPath, cwd.data);
+		LOG_LAST_ERROR(Severity::Error, "Failed to open plugin file '%s'; CWD: '%s'", pluginPath, cwd);
 		return false;
 	}
 

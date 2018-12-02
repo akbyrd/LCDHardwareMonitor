@@ -14,7 +14,7 @@ template<typename... Args>
 inline b32
 String_Format(String& string, c8* format, Args... args)
 {
-	Assert(string.data == nullptr);
+	Assert(!string.data);
 
 	String result = {};
 	defer { List_Free(result); };

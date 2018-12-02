@@ -20,8 +20,6 @@ struct Slice
 	using RefT = ListRef<T>;
 	inline T& operator [](RefT r) { return *((T*) &data[r.index*stride]); }
 	inline T& operator [](u32 i)  { return *((T*) &data[i*stride]); }
-	//inline    operator T*()       { return (T*) data; }
-	inline    operator b32()      { return length > 0; }
 };
 
 template<typename T>
