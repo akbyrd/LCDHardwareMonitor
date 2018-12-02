@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?> 
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+  <Type Name="List&lt;*&gt;">
+    <DisplayString>length = {length}, capacity = {capacity}</DisplayString>
+    <Expand>
+      <ArrayItems>
+        <Size>length</Size>
+        <ValuePointer>data</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <Type Name="Slice&lt;*&gt;">
+    <DisplayString>length = {length}, stride = {stride}</DisplayString>
+    <Expand>
+      <IndexListItems>
+        <Size>length</Size>
+        <ValueNode>data[$i * stride]</ValueNode>
+      </IndexListItems>
+    </Expand>
+  </Type>
+
+  <Type Name="Matrix">
+    <DisplayString>...</DisplayString>
+    <Expand>
+      <Item Name="Row 0">row[0]</Item>
+      <Item Name="Row 1">row[1]</Item>
+      <Item Name="Row 2">row[2]</Item>
+      <Item Name="Row 3">row[3]</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="v2t&lt;*&gt;">
+    <DisplayString>{{ {x,g}, {y,g} }}</DisplayString>
+  </Type>
+
+  <Type Name="v3t&lt;*&gt;">
+    <DisplayString>{{ {x,g}, {y,g}, {z,g} }}</DisplayString>
+  </Type>
+
+  <Type Name="v4t&lt;*&gt;">
+    <DisplayString>{{ {x,g}, {y,g}, {z,g}, {w,g} }}</DisplayString>
+  </Type>
+
+  <Type Name="ListRef&lt;*&gt;">
+    <DisplayString>{index}</DisplayString>
+  </Type>
+
+  <Type Name="SensorPlugin">
+    <DisplayString>{info.name,sb}</DisplayString>
+  </Type>
+
+  <Type Name="SensorPluginFunctions">
+    <DisplayString>{(size_t) getPluginInfo,x}    {(size_t) initialize,x}    {(size_t) update,x}    {(size_t) teardown,x}</DisplayString>
+  </Type>
+
+  <Type Name="Sensor">
+    <DisplayString>{name,s} = {value,g}</DisplayString>
+  </Type>
+
+  <Type Name="WidgetPlugin">
+    <DisplayString>{info.name,sb}</DisplayString>
+  </Type>
+
+  <Type Name="WidgetPluginFunctions">
+    <DisplayString>{(size_t) getPluginInfo,x}    {(size_t) initialize,x}    {(size_t) update,x}    {(size_t) teardown,x}</DisplayString>
+  </Type>
+
+  <Type Name="PluginHeader">
+    <DisplayString>{fileName,sb}</DisplayString>
+  </Type>
+
+  <Type Name="PluginInfo">
+    <DisplayString>{name,s} {author,s} v{version}</DisplayString>
+  </Type>
+</AutoVisualizer>

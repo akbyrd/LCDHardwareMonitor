@@ -12,6 +12,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LCDHardwareMonitor", "LCDHa
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "LCDHardwareMonitor API", "LCDHardwareMonitor API", "{CC1638D1-8331-4AC6-AF7B-1E0D9B07EDC0}"
 	ProjectSection(SolutionItems) = preProject
+		LCDHardwareMonitor API\LHM.natvis = LCDHardwareMonitor API\LHM.natvis
 		LCDHardwareMonitor API\LHMAPI.h = LCDHardwareMonitor API\LHMAPI.h
 		LCDHardwareMonitor API\LHMAPICLR.h = LCDHardwareMonitor API\LHMAPICLR.h
 		LCDHardwareMonitor API\LHMCommon.h = LCDHardwareMonitor API\LHMCommon.h

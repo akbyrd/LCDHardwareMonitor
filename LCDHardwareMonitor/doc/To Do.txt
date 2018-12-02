@@ -1,7 +1,5 @@
 Cleanup Pass
 	General
-		Figure out why list[n] doesn't work in the Watch window
-		Natvis for List and Slice
 		It's time to figure out what happens when memory allocations fail
 		Take a hard look at ListRef
 		Improve SensorRef
