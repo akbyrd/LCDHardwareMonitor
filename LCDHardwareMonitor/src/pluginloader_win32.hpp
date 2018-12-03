@@ -204,6 +204,16 @@ DetectPluginLanguage(PluginHeader* pluginHeader)
 	return true;
 }
 
+static b32
+ValidatePluginInfo(PluginInfo* pluginInfo)
+{
+	b32 valid = true;
+	valid = valid && pluginInfo->name;
+	valid = valid && pluginInfo->author;
+	valid = valid && pluginInfo->version;
+	return valid;
+}
+
 b32
 PluginLoader_LoadSensorPlugin(PluginLoaderState* s, SensorPlugin* sensorPlugin)
 {
@@ -242,7 +252,6 @@ PluginLoader_LoadSensorPlugin(PluginLoaderState* s, SensorPlugin* sensorPlugin)
 				Severity::Error, "Failed to find unmanaged GetSensorPluginInfo '%s'", pluginHeader->fileName);
 
 			sensorPlugin->functions.getPluginInfo(&sensorPlugin->info, &sensorPlugin->functions);
-			// TODO: Check name and version and such
 
 			success = true;
 			break;
@@ -259,6 +268,10 @@ PluginLoader_LoadSensorPlugin(PluginLoaderState* s, SensorPlugin* sensorPlugin)
 		}
 	}
 	if (!success) return false;
+
+	success = ValidatePluginInfo(&sensorPlugin->info);
+	LOG_IF(!success, return false,
+		Severity::Error, "Sensor plugin provided invalid info '%s'", pluginHeader->fileName);
 
 	pluginHeader->isLoaded = true;
 	return true;
@@ -333,7 +346,6 @@ PluginLoader_LoadWidgetPlugin(PluginLoaderState* s, WidgetPlugin* widgetPlugin)
 				Severity::Error, "Failed to find unmanaged GetWidgetPluginInfo '%s'", pluginHeader->fileName);
 
 			widgetPlugin->functions.getPluginInfo(&widgetPlugin->info, &widgetPlugin->functions);
-			// TODO: Check name and version and such
 
 			success = true;
 			break;
@@ -350,6 +362,10 @@ PluginLoader_LoadWidgetPlugin(PluginLoaderState* s, WidgetPlugin* widgetPlugin)
 		}
 	}
 	if (!success) return false;
+
+	success = ValidatePluginInfo(&widgetPlugin->info);
+	LOG_IF(!success, return false,
+		Severity::Error, "Widget plugin provided invalid info '%s'", pluginHeader->fileName);
 
 	pluginHeader->isLoaded = true;
 	return true;

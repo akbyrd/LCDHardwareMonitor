@@ -1,20 +1,18 @@
 Cleanup Pass
 	General
-		It's time to figure out what happens when memory allocations fail
 		Take a hard look at ListRef
 		Improve SensorRef
-		OHM apparently needs to be run as admin?
-		Might want to hoist GetPluginInfo calls up to simulation
+		It's time to figure out what happens when memory allocations fail
 		Put plugins in an error state when API calls fail
+		Specialize natvis for String
 	Constant Buffers / Materials
 		Combine VS and PS cbuf updating
 		Extend cbufs to support all shader stages
 		Simplify cbuf implementation
 		Implement materials
 		Allocate constant buffers from a simulation owned arena
-		// TODO: Why isn't this working?
 	Renderer
-		Pass name to resource creation functions
+		Hoist debug resources out of renderer
 	Rewrite String
 		Want a constructor that takes a format and args
 		Want a scope-based RAII wrapper to auto-free
@@ -96,7 +94,7 @@ Error Handling
 	Each function up the stack adds its own information
 	Last function to handle the error does the printing
 	Might have to allocate for the formatting, so check if strings are dynamic and free them
-	Maybe change functions to return a Result<T> with operator bool(), context string, etc
+	Maybe change functions to return a Result<T> with operator b32(), context string, etc
 	Goal: only a single print occurs during an error, but it may be multiple lines
 	The top level handler is the one who knowis if something is a warning or an error, not the inner
 		most handler. LoadFile can't know if it's loading a cache file or a critical resource.
@@ -104,23 +102,30 @@ Error Handling
 
 
 Plugins
-	- Version the API so it can change without breaking existing plugins.
-	- Enforce the constraint that you may *ONLY* access application provided
-	  services during scope of the function to which the services were passed.
-	  Basically, don't save a reference and access services from a separate
-	  thread. This could be detected with a 'shim' of some sort (accessor
-	  function?)
-	- Write a tutorial for creating plugins. Warn about loader lock. Warn about
-	  using version/strong name for dependencies so you don't end up with the
-	  wrong one because the name matched.
-	- Create a template C++/CLI project and a tutorial for writing .NET plugins.
-	- Ensure debugging for both native and managed plugins is reasonable.
-	- Catch managed exceptions from the native side. Can't have them crash the
-	  application.
+	Version the API so it can change without breaking existing plugins.
+	Enforce the constraint that you may *ONLY* access application provided
+		services during scope of the function to which the services were passed.
+		Basically, don't save a reference and access services from a separate
+		thread. This could be detected with a 'shim' of some sort (accessor
+		function?)
+	Write a tutorial for creating plugins. Warn about loader lock. Warn about
+		using version/strong name for dependencies so you don't end up with the
+		wrong one because the name matched.
+	Create a template C++/CLI project and a tutorial for writing .NET plugins.
+	Ensure debugging for both native and managed plugins is reasonable.
+	Catch managed exceptions from the native side. Can't have them crash the
+		application.
+	Decide whether plugins needing elevation should be expressed in the plugin
+		API. OHM requires elevation to work, and presumably other hardware senors
+		plugins might as well. If plugins can say "i require elevation" then we
+		can warn the user at startup that an enabled plugin requries elevation
+		but the program is not elevated. This in turn means we are less likely
+		to crash from loading that assumes elevation and break, and we don't have
+		to ship with elevation enabled by default.
 
 
 
 Architecture
-	- Decide on static or dynamic linking to e.g. the CRT. Bundle redistributables
-	  if dynamically linking.
-	- Load default/fallback resources
+	Decide on static or dynamic linking to e.g. the CRT. Bundle redistributables
+		if dynamically linking.
+	Load default/fallback resources

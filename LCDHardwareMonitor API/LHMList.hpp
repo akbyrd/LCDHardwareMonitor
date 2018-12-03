@@ -26,8 +26,8 @@ template<typename T>
 struct ListRef
 {
 	u32 index;
-	b32 operator ==(const ListRef& other) { return index == other.index; }
-	b32 operator !=(const ListRef& other) { return index != other.index; }
+	b32 operator== (const ListRef& other) { return index == other.index; }
+	b32 operator!= (const ListRef& other) { return index != other.index; }
 
 	// TODO: Switch to 0 being a null asset everywhere
 	static const ListRef<T> Null;
@@ -45,8 +45,8 @@ struct List
 	T*  data;
 
 	using RefT = ListRef<T>;
-	inline T& operator [](RefT r) { return data[r.index]; }
-	inline T& operator [](u32 i)  { return data[i]; }
+	inline T& operator[] (RefT r) { return data[r.index]; }
+	inline T& operator[] (u32 i)  { return data[i]; }
 };
 
 template<typename T>
@@ -100,7 +100,7 @@ List_Grow(List<T>& list)
 
 template<typename T>
 inline T*
-List_Append(List<T>& list, T& item)
+List_Append(List<T>& list, T item)
 {
 	if (!List_Grow(list))
 		return nullptr;
@@ -130,31 +130,27 @@ List_Contains(List<T>& list, T* item)
 	if (list.length == 0)
 		return false;
 
-	return item >= &list[0] && item < &list[list.length];
+	// TODO: This returns false positives if the address in the range, but not an actual item
+	return item >= &list.data[0] && item < &list.data[list.length];
 }
 
 template<typename T>
 inline b32
 List_Contains(List<T>& list, T& item)
 {
-	if (list.length == 0)
-		return false;
-
-	// TODO: This returns false positives if the address in the range, but not an actual item
-	return &item >= &list[0] && &item < &list[list.length];
+	return List_Contains(list, &item);
 }
 
-// NOTE: I guess this only works if T has a custom equality operator?
 template<typename T>
 inline b32
-List_ContainsValue(List<T>& list, T& item)
+List_ContainsValue(List<T>& list, T item)
 {
 	if (list.length == 0)
 		return false;
 
 	for (u32 i = 0; i < list.length; i++)
 	{
-		if (list[i] == item)
+		if (list.data[i] == item)
 			return true;
 	}
 	return false;
@@ -162,7 +158,29 @@ List_ContainsValue(List<T>& list, T& item)
 
 template<typename T>
 inline ListRef<T>
-List_GetRef(List<T>& list, u32 index)
+List_FindFirst(List<T>& list, T item)
+{
+	for (u32 i = 0; i < list.length; i++)
+		if (list.data[i] == item)
+			return List_Get(list, i);
+
+	return ListRef<T>::Null;
+}
+
+template<typename T>
+inline ListRef<T>
+List_FindLast(List<T>& list, T item)
+{
+	for (u32 i = list.length - 1; i >= 0; i--)
+		if (list.data[i] == item)
+			return List_Get(list, i);
+
+	return ListRef<T>::Null;
+}
+
+template<typename T>
+inline ListRef<T>
+List_Get(List<T>& list, u32 index)
 {
 	UNUSED(list);
 	ListRef<T> ref = {};
@@ -172,16 +190,26 @@ List_GetRef(List<T>& list, u32 index)
 
 template<typename T>
 inline ListRef<T>
-List_GetRefFirst(List<T>& list)
+List_GetFirst(List<T>& list)
 {
-	return List_GetRef(list, 0);
+	return List_Get(list, 0);
 }
 
 template<typename T>
 inline ListRef<T>
-List_GetRefLast(List<T>& list)
+List_GetLast(List<T>& list)
 {
-	return List_GetRef(list, list.length - 1);
+	return List_Get(list, list.length - 1);
+}
+
+template<typename T>
+inline T*
+List_GetFirstPtr(List<T>& list)
+{
+	if (list.length == 0)
+		return nullptr;
+
+	return &list.data[0];
 }
 
 template<typename T>
@@ -191,7 +219,7 @@ List_GetLastPtr(List<T>& list)
 	if (list.length == 0)
 		return nullptr;
 
-	return &list[list.length - 1];
+	return &list.data[list.length - 1];
 }
 
 template<typename T>
@@ -205,7 +233,8 @@ template<typename T>
 inline void
 List_RemoveFast(List<T>& list, T& item)
 {
-	item = list[list.length - 1];
+	Assert(List_Contains(list, &item));
+	item = list.data[list.length - 1];
 	list.length--;
 }
 
@@ -229,13 +258,12 @@ List_Clear(List<T>& list)
 }
 
 template<typename T>
-inline List<T>
-List_Duplicate(List<T>& list)
+inline b32
+List_Duplicate(List<T>& list, List<T>& duplicate)
 {
-	List<T> duplicate = {};
 	List_Reserve(duplicate, list.capacity);
-	// TODO: Fix this
-	//if (!duplicate) return nullptr;
+	if (!duplicate.data)
+		return false;
 
 	duplicate.length   = list.length;
 	duplicate.capacity = list.capacity;
@@ -243,19 +271,19 @@ List_Duplicate(List<T>& list)
 	if (duplicate.data && list.data)
 		memcpy(duplicate.data, list.data, list.capacity);
 
-	return duplicate;
+	return true;
 }
 
 template<typename T>
 inline b32
-List_Equal(List<T>& listA, List<T>& listB)
+List_Equal(List<T>& lhs, List<T>& rhs)
 {
-	if (listA.length != listB.length)
+	if (lhs.length != rhs.length)
 		return false;
 
-	for (u32 i = 0; i < listA.length; i++)
+	for (u32 i = 0; i < lhs.length; i++)
 	{
-		if (listA[i] != listB[i])
+		if (lhs[i] != rhs[i])
 			return false;
 	}
 

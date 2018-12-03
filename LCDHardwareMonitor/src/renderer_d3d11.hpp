@@ -59,6 +59,21 @@ struct Vertex
 
 ConstantBufferDesc ConstantBufferDesc::Null = {};
 
+static inline b32
+operator== (const ConstantBufferDesc& lhs, const ConstantBufferDesc& rhs)
+{
+	// Because C++ is shit.
+	return lhs.size      == rhs.size
+		&& lhs.data      == rhs.data
+		&& lhs.frequency == rhs.frequency;
+}
+
+static inline b32
+operator!= (const ConstantBufferDesc& lhs, const ConstantBufferDesc& rhs)
+{
+	return !(lhs == rhs);
+}
+
 struct ConstantBufferData
 {
 	ConstantBufferDesc   desc;
@@ -127,7 +142,7 @@ struct RendererState
 
 template<typename T>
 static inline void
-SetDebugObjectName(const ComPtr<T>& resource, Slice<const c8> name)
+SetDebugObjectName(const ComPtr<T>& resource, Slice<c8> name)
 {
 	#if defined(DEBUG)
 	resource->SetPrivateData(WKPDID_D3DDebugObjectName, name.length - 1, name.data);
@@ -136,7 +151,7 @@ SetDebugObjectName(const ComPtr<T>& resource, Slice<const c8> name)
 
 template<typename T, typename... Args>
 static inline void
-SetDebugObjectName(const ComPtr<T>& resource, Slice<const c8> format, Args... args)
+SetDebugObjectName(const ComPtr<T>& resource, Slice<c8> format, Args... args)
 {
 	#if defined(DEBUG)
 	String name = {};
@@ -637,7 +652,7 @@ Renderer_CreateConstantBuffer(RendererState* s, ConstantBufferData* cBuf)
 // TODO: Perhaps a read-only List would be a good idea.
 // TODO: Unify the error handling / commit semantics of LoadVertexShader and LoadPixelShader
 VertexShader
-Renderer_LoadVertexShader(RendererState* s, c8* path, Slice<VertexAttribute> attributes, Slice<ConstantBufferDesc> cBufDescs)
+Renderer_LoadVertexShader(RendererState* s, Slice<c8> name, c8* path, Slice<VertexAttribute> attributes, Slice<ConstantBufferDesc> cBufDescs)
 {
 	b32 success;
 	HRESULT hr;
@@ -668,7 +683,7 @@ Renderer_LoadVertexShader(RendererState* s, c8* path, Slice<VertexAttribute> att
 		hr = s->d3dDevice->CreateVertexShader(vsBytes.data, vsBytes.length, nullptr, &vs.d3dVertexShader);
 		LOG_HRESULT_IF_FAILED(hr, return VertexShader::Null,
 			Severity::Error, "Failed to create vertex shader '%s'", path);
-		SetDebugObjectName(vs.d3dVertexShader, "Vertex Shader");
+		SetDebugObjectName(vs.d3dVertexShader, "Vertex Shader: %s", name.data);
 	}
 
 	// Constant Buffers
@@ -735,7 +750,7 @@ Renderer_LoadVertexShader(RendererState* s, c8* path, Slice<VertexAttribute> att
 		hr = s->d3dDevice->CreateInputLayout(vsInputDescs.data, vsInputDescs.length, vsBytes.data, vsBytes.length, &vs.d3dInputLayout);
 		LOG_HRESULT_IF_FAILED(hr, return VertexShader::Null,
 			Severity::Error, "Failed to create VS input layout '%s'", path);
-		SetDebugObjectName(vs.d3dInputLayout, "Input Layout");
+		SetDebugObjectName(vs.d3dInputLayout, "Input Layout: %s", name.data);
 
 		vs.d3dPrimitveTopology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	}
@@ -750,7 +765,7 @@ Renderer_LoadVertexShader(RendererState* s, c8* path, Slice<VertexAttribute> att
 		vs = {};
 
 		// TODO: Eventually lists will reuse slots
-		vs2->ref = List_GetRefLast(s->vertexShaders);
+		vs2->ref = List_GetLast(s->vertexShaders);
 	}
 
 	return vs2->ref;
@@ -758,7 +773,7 @@ Renderer_LoadVertexShader(RendererState* s, c8* path, Slice<VertexAttribute> att
 
 // TODO: Unload functions
 PixelShader
-Renderer_LoadPixelShader(RendererState* s, c8* path, Slice<ConstantBufferDesc> cBufDescs)
+Renderer_LoadPixelShader(RendererState* s, Slice<c8> name, c8* path, Slice<ConstantBufferDesc> cBufDescs)
 {
 	HRESULT hr;
 
@@ -784,7 +799,7 @@ Renderer_LoadPixelShader(RendererState* s, c8* path, Slice<ConstantBufferDesc> c
 		hr = s->d3dDevice->CreatePixelShader(psBytes.data, (u64) psBytes.length, nullptr, &ps.d3dPixelShader);
 		LOG_HRESULT_IF_FAILED(hr, return PixelShader::Null,
 			Severity::Error, "Failed to create pixel shader '%s'", path);
-		SetDebugObjectName(ps.d3dPixelShader, "Pixel Shader");
+		SetDebugObjectName(ps.d3dPixelShader, "Pixel Shader: %s", name.data);
 	}
 
 	// Constant Buffers
@@ -816,7 +831,7 @@ Renderer_LoadPixelShader(RendererState* s, c8* path, Slice<ConstantBufferDesc> c
 		ps = {};
 
 		// TODO: Eventually lists will reuse slots
-		ps2->ref = List_GetRefLast(s->pixelShaders);
+		ps2->ref = List_GetLast(s->pixelShaders);
 	}
 
 	return ps2->ref;
@@ -838,18 +853,15 @@ Renderer_PushDrawCall(RendererState* s)
 static b32
 Renderer_UpdateConstantBuffer(RendererState* s, ConstantBufferData cBuf)
 {
-	// TODO: Why isn't this working?
-	//if (cBuf.desc != ConstantBufferDesc::Null)
-	if (cBuf.desc.data)
-	{
-		D3D11_MAPPED_SUBRESOURCE map = {};
-		HRESULT hr = s->d3dContext->Map(cBuf.d3dConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
-		LOG_HRESULT_IF_FAILED(hr, return false,
-			Severity::Error, "Failed to map constant buffer");
+	if (cBuf.desc == ConstantBufferDesc::Null) return true;
 
-		memcpy(map.pData, cBuf.desc.data, cBuf.desc.size);
-		s->d3dContext->Unmap(cBuf.d3dConstantBuffer.Get(), 0);
-	}
+	D3D11_MAPPED_SUBRESOURCE map = {};
+	HRESULT hr = s->d3dContext->Map(cBuf.d3dConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
+	LOG_HRESULT_IF_FAILED(hr, return false,
+		Severity::Error, "Failed to map constant buffer");
+
+	memcpy(map.pData, cBuf.desc.data, cBuf.desc.size);
+	s->d3dContext->Unmap(cBuf.d3dConstantBuffer.Get(), 0);
 
 	return true;
 }

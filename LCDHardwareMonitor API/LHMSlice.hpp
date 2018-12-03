@@ -15,11 +15,11 @@ struct Slice
 	Slice(T& element)            { length = 1;           stride = sizeof(T); data = (u8*) &element; }
 	Slice(List<T>& list)         { length = list.length; stride = sizeof(T); data = (u8*) list.data; }
 	template<u32 Length>
-	Slice(T(&arr)[Length])       { length = Length;      stride = sizeof(T); data = (u8*) arr; }
+	Slice(const T(&arr)[Length])       { length = Length;      stride = sizeof(T); data = (u8*) arr; }
 
 	using RefT = ListRef<T>;
-	inline T& operator [](RefT r) { return *((T*) &data[r.index*stride]); }
-	inline T& operator [](u32 i)  { return *((T*) &data[i*stride]); }
+	inline T& operator[] (RefT r) { return *((T*) &data[r.index*stride]); }
+	inline T& operator[] (u32 i)  { return *((T*) &data[i*stride]); }
 };
 
 template<typename T>

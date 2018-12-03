@@ -73,6 +73,28 @@ RemoveSensorRefs(SimulationState* s, Slice<SensorRef> sensorRefs)
 	}
 }
 
+static Slice<c8>
+GetNameFromPath(String& path)
+{
+	if (path.length == 0) return {};
+
+	String::RefT first = List_FindLast(path, '/');
+	if (first == String::RefT::Null)
+		first = List_GetFirst(path);
+
+	String::RefT last = List_FindLast(path, '.');
+	if (last == String::RefT::Null)
+		last = List_GetLast(path);
+
+	if (first == last) return {};
+
+	Slice<c8> result = {};
+	result.length = last.index - first.index + 1;
+	result.stride = sizeof(c8);
+	result.data   = (u8*) &path[first];
+	return result;
+}
+
 // === Sensor API ==================================================================================
 
 static void
@@ -187,7 +209,11 @@ LoadPixelShader(PluginContext* context, c8* relPath, Slice<ConstantBufferDesc> c
 	LOG_IF(!success, return PixelShader::Null,
 		Severity::Error, "Failed to format pixel shader path '%s'", relPath);
 
-	PixelShader ps = Renderer_LoadPixelShader(context->s->renderer, path.data, cBufDescs);
+	Slice<c8> psName = GetNameFromPath(path);
+	LOG_IF(!psName.data, psName = path,
+		Severity::Warning, "Failed to get pixel shader name from path '%s'", relPath);
+
+	PixelShader ps = Renderer_LoadPixelShader(context->s->renderer, psName, path.data, cBufDescs);
 	LOG_IF(!ps, return PixelShader::Null,
 		Severity::Error, "Failed to load pixel shader '%s'", path);
 
@@ -226,7 +252,7 @@ LoadSensorPlugin(SimulationState* s, c8* directory, c8* fileName)
 	LOG_IF(!sensorPlugin, return nullptr,
 		Severity::Error, "Failed to allocate Sensor plugin");
 
-	sensorPlugin->ref              = List_GetRefLast(s->sensorPlugins);
+	sensorPlugin->ref              = List_GetLast(s->sensorPlugins);
 	sensorPlugin->header.fileName  = fileName;
 	sensorPlugin->header.directory = directory;
 	sensorPlugin->header.kind      = PluginKind::Sensor;
@@ -308,7 +334,7 @@ LoadWidgetPlugin(SimulationState* s, c8* directory, c8* fileName)
 	LOG_IF(!widgetPlugin, return nullptr,
 		Severity::Error, "Failed to allocate WidgetPlugin");
 
-	widgetPlugin->ref              = List_GetRefLast(s->widgetPlugins);
+	widgetPlugin->ref              = List_GetLast(s->widgetPlugins);
 	widgetPlugin->header.fileName  = fileName;
 	widgetPlugin->header.directory = directory;
 	widgetPlugin->header.kind      = PluginKind::Widget;
@@ -430,7 +456,7 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 			cBufDesc.size      = sizeof(Matrix);
 			cBufDesc.frequency = ConstantBufferFrequency::PerObject;
 
-			VertexShader vs = Renderer_LoadVertexShader(s->renderer, "Shaders/Basic Vertex Shader.cso", vsAttributes, cBufDesc);
+			VertexShader vs = Renderer_LoadVertexShader(s->renderer, "Default", "Shaders/Basic Vertex Shader.cso", vsAttributes, cBufDesc);
 			LOG_IF(!vs, return false,
 				Severity::Error, "Failed to load default vertex shader");
 			Assert(vs == StandardVertexShader::Debug);
@@ -438,7 +464,7 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 
 		// Pixel shader
 		{
-			PixelShader ps = Renderer_LoadPixelShader(s->renderer, "Shaders/Basic Pixel Shader.cso", {});
+			PixelShader ps = Renderer_LoadPixelShader(s->renderer, "Default", "Shaders/Basic Pixel Shader.cso", {});
 			LOG_IF(!ps, return false,
 				Severity::Error, "Failed to load default pixel shader");
 			Assert(ps == StandardPixelShader::Debug);

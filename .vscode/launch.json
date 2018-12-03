@@ -5,6 +5,7 @@
 			"name": "(Windows) Launch",
 			"type": "cppvsdbg",
 			"request": "launch",
+			// NOTE: Must be run as admin for OHM to work properly
 			"program": "${workspaceFolder}/run/LCDHardwareMonitor.exe",
 			"cwd": "${workspaceFolder}/run",
 			"logging": {
