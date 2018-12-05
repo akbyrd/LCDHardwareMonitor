@@ -541,6 +541,7 @@ Renderer_Teardown(RendererState* s)
 		for (u32 j = 0; j < ps->constantBuffers.length; j++)
 			ps->constantBuffers[j].d3dConstantBuffer.Reset();
 		List_Free(ps->constantBuffers);
+		List_Free(ps->name);
 	}
 	List_Free(s->pixelShaders);
 
@@ -553,6 +554,7 @@ Renderer_Teardown(RendererState* s)
 		for (u32 j = 0; j < vs->constantBuffers.length; j++)
 			vs->constantBuffers[j].d3dConstantBuffer.Reset();
 		List_Free(vs->constantBuffers);
+		List_Free(vs->name);
 	}
 	List_Free(s->vertexShaders);
 
@@ -654,7 +656,15 @@ Renderer_LoadVertexShader(RendererState* s, Slice<c8> name, c8* path, Slice<Vert
 		for (u32 i = 0; i < vs.constantBuffers.length; i++)
 			vs.constantBuffers[i].d3dConstantBuffer.Reset();
 		List_Free(vs.constantBuffers);
+		List_Free(vs.name);
 	};
+
+	// Copy Name
+	{
+		success = List_Duplicate(name, vs.name);
+		LOG_IF(!success, IGNORE,
+			Severity::Warning, "Failed to copy vertex shader name '%s'", path);
+	}
 
 	// Load
 	Bytes vsBytes = {};
@@ -762,6 +772,7 @@ PixelShader
 Renderer_LoadPixelShader(RendererState* s, Slice<c8> name, c8* path, Slice<ConstantBufferDesc> cBufDescs)
 {
 	HRESULT hr;
+	b32 success;
 
 	PixelShaderData ps = {};
 	defer {
@@ -770,7 +781,15 @@ Renderer_LoadPixelShader(RendererState* s, Slice<c8> name, c8* path, Slice<Const
 		for (u32 i = 0; i < ps.constantBuffers.length; i++)
 			ps.constantBuffers[i].d3dConstantBuffer.Reset();
 		List_Free(ps.constantBuffers);
+		List_Free(ps.name);
 	};
+
+	// Copy Name
+	{
+		success = List_Duplicate(name, ps.name);
+		LOG_IF(!success, IGNORE,
+			Severity::Warning, "Failed to copy pixel shader name '%s'", path);
+	}
 
 	// Load
 	Bytes psBytes = {};
@@ -791,8 +810,6 @@ Renderer_LoadPixelShader(RendererState* s, Slice<c8> name, c8* path, Slice<Const
 	// Constant Buffers
 	if (cBufDescs.length)
 	{
-		b32 success;
-
 		success = List_Reserve(ps.constantBuffers, cBufDescs.length);
 		LOG_IF(!success, return PixelShader::Null,
 			Severity::Error, "Failed to allocate space for PS constant buffers '%s'", path);

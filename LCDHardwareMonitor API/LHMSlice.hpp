@@ -43,4 +43,21 @@ List_AppendRange(List<T>& list, Slice<T> items)
 	return true;
 }
 
+template<typename T>
+inline b32
+List_Duplicate(Slice<T>& slice, List<T>& duplicate)
+{
+	List_Reserve(duplicate, slice.length);
+	if (!duplicate.data)
+		return false;
+
+	duplicate.length   = slice.length;
+	duplicate.capacity = slice.length;
+
+	for (u32 i = 0; i < slice.length; i++)
+		duplicate[i] = slice[i];
+
+	return true;
+}
+
 #endif
