@@ -17,6 +17,15 @@ struct DrawCall
 	void*        cBufPerObjDataPS;
 };
 
+struct Vertex
+{
+	v3 position;
+	v4 color;
+	v2 uv;
+};
+
+using Index = u32;
+
 namespace StandardMesh
 {
 	static const Mesh Null     = { 0 };

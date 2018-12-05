@@ -469,6 +469,40 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 				Severity::Error, "Failed to load default pixel shader");
 			Assert(ps == StandardPixelShader::Debug);
 		}
+
+		// Triangle mesh
+		{
+			Vertex vertices[] = {
+				{ { -0.5f, -0.433f, 0 }, { 1.0f, 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f } },
+				{ {  0.0f,  0.433f, 0 }, { 0.0f, 0.0f, 1.0f, 1.0f }, { 0.5f, 1.0f } },
+				{ {  0.5f, -0.433f, 0 }, { 0.0f, 1.0f, 0.0f, 1.0f }, { 1.0f, 0.0f } },
+			};
+
+			Index indices[] = {
+				0, 1, 2,
+			};
+
+			Mesh triangle = Renderer_CreateMesh(s->renderer, "Triangle Mesh", vertices, indices);
+			Assert(triangle == StandardMesh::Triangle);
+		}
+
+		// Quad mesh
+		{
+			Vertex vertices[] = {
+				{ { -0.5f, -0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f } },
+				{ { -0.5f,  0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f, 1.0f }, { 0.0f, 1.0f } },
+				{ {  0.5f,  0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f, 1.0f }, { 1.0f, 1.0f } },
+				{ {  0.5f, -0.5f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }, { 1.0f, 0.0f } },
+			};
+
+			Index indices[] = {
+				0, 1, 2,
+				2, 3, 0,
+			};
+
+			Mesh quad = Renderer_CreateMesh(s->renderer, "Quad Mesh", vertices, indices);
+			Assert(quad == StandardMesh::Quad);
+		}
 	}
 
 	// DEBUG: Testing
@@ -522,6 +556,9 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 		}
 		#endif
 	}
+
+	success = Renderer_RebuildSharedGeometryBuffers(s->renderer);
+	if (!success) return false;
 
 	return true;
 }

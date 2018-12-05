@@ -252,6 +252,14 @@ List_RemoveLast(List<T>& list)
 }
 
 template<typename T>
+inline size
+List_SizeOf(List<T>& list)
+{
+	size result = list.length * sizeof(T);
+	return result;
+}
+
+template<typename T>
 inline void
 List_Clear(List<T>& list)
 {

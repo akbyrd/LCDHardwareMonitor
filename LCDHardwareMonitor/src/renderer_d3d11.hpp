@@ -21,7 +21,8 @@
 #include <d3d9.h>
 #include <d3d11.h>
 #include <d3dcompiler.h>
-#include <DirectXColors.h>
+#include "DirectXMath.h"
+#include "DirectXColors.h"
 using namespace DirectX;
 
 #include <wrl\client.h>
@@ -36,25 +37,14 @@ namespace HLSLSemantic
 	const c8* TexCoord = "TEXCOORD";
 }
 
-// NOTE:
-// - Assume there's only one set of shaders and buffers so we don't need to
-//   know which ones to use.
-// - Shaders and buffers can be shoved in a list in RendererState, referenced
-//   here as raw pointers.
 struct MeshData
 {
-	UINT        vStride = 0;
-	UINT        vOffset = 0;
-	UINT        iBase   = 0;
-	UINT        iCount  = 0;
+	Mesh        ref     = {};
+	String      name    = {};
+	u32         vOffset = 0;
+	u32         iOffset = 0;
+	u32         iCount  = 0;
 	DXGI_FORMAT iFormat = DXGI_FORMAT_UNKNOWN;
-};
-
-struct Vertex
-{
-	XMFLOAT3 position;
-	XMFLOAT4 color;
-	XMFLOAT2 uv;
 };
 
 ConstantBufferDesc ConstantBufferDesc::Null = {};
@@ -111,13 +101,13 @@ struct RendererState
 	ComPtr<ID3D11RasterizerState>  d3dRasterizerStateSolid     = nullptr;
 	ComPtr<ID3D11RasterizerState>  d3dRasterizerStateWireframe = nullptr;
 
+	ComPtr<ID3D11Buffer>           d3dVertexBuffer             = nullptr;
+	ComPtr<ID3D11Buffer>           d3dIndexBuffer              = nullptr;
+
 	ComPtr<IDirect3D9Ex>           d3d9                        = nullptr;
 	ComPtr<IDirect3DDevice9Ex>     d3d9Device                  = nullptr;
 	ComPtr<IDirect3DTexture9>      d3d9RenderTexture           = nullptr;
 	ComPtr<IDirect3DSurface9>      d3d9RenderSurface0          = nullptr;
-
-	List<VertexShaderData> vertexShaders = {};
-	List<PixelShaderData>  pixelShaders  = {};
 
 	XMFLOAT4X4         proj                = {};
 	XMFLOAT4X4         wvp                 = {};
@@ -125,11 +115,14 @@ struct RendererState
 	DXGI_FORMAT        renderFormat        = DXGI_FORMAT_UNKNOWN;
 	u32                multisampleCount    = 1;
 	u32                qualityLevelCount   = 0;
-
-	List<MeshData>     meshes              = {};
 	b32                isWireframeEnabled  = false;
 
-	List<DrawCall>     drawCalls           = {};
+	List<VertexShaderData> vertexShaders = {};
+	List<PixelShaderData>  pixelShaders  = {};
+	List<MeshData>         meshes        = {};
+	List<Vertex>           vertexBuffer  = {};
+	List<u32>              indexBuffer   = {};
+	List<DrawCall>         drawCalls     = {};
 };
 
 // TODO: Asset loading system (background?)
@@ -429,30 +422,19 @@ Renderer_Initialize(RendererState* s, v2u renderSize)
 		UpdateRasterizerState(s);
 	}
 
+	return true;
+}
 
-	// TODO: Debug assets should be done in the application, not the renderer
+// TODO: Support rebuilding buffers
+b32
+Renderer_RebuildSharedGeometryBuffers(RendererState*s)
+{
+	HRESULT hr;
+
+	// Finalize vertex buffer
 	{
-		// Create vertices
-		Vertex vertices[4];
-
-		vertices[0].position = XMFLOAT3(-0.5f, -0.5f, 0.0f);
-		vertices[1].position = XMFLOAT3(-0.5f,  0.5f, 0.0f);
-		vertices[2].position = XMFLOAT3( 0.5f,  0.5f, 0.0f);
-		vertices[3].position = XMFLOAT3( 0.5f, -0.5f, 0.0f);
-
-		XMStoreFloat4(&vertices[0].color, Colors::Red);
-		XMStoreFloat4(&vertices[1].color, Colors::Green);
-		XMStoreFloat4(&vertices[2].color, Colors::Blue);
-		XMStoreFloat4(&vertices[3].color, Colors::White);
-
-		vertices[0].uv = XMFLOAT2(0, 0);
-		vertices[1].uv = XMFLOAT2(0, 1);
-		vertices[2].uv = XMFLOAT2(1, 1);
-		vertices[3].uv = XMFLOAT2(1, 0);
-
-		// Create vertex buffer
 		D3D11_BUFFER_DESC vertBuffDesc = {};
-		vertBuffDesc.ByteWidth           = (u32) ArraySize(vertices);
+		vertBuffDesc.ByteWidth           = List_SizeOf(s->vertexBuffer);
 		vertBuffDesc.Usage               = D3D11_USAGE_DYNAMIC;
 		vertBuffDesc.BindFlags           = D3D11_BIND_VERTEX_BUFFER;
 		vertBuffDesc.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
@@ -460,37 +442,21 @@ Renderer_Initialize(RendererState* s, v2u renderSize)
 		vertBuffDesc.StructureByteStride = 0;
 
 		D3D11_SUBRESOURCE_DATA vertBuffInitData = {};
-		vertBuffInitData.pSysMem          = vertices;
+		vertBuffInitData.pSysMem          = s->vertexBuffer.data;
 		vertBuffInitData.SysMemPitch      = 0;
 		vertBuffInitData.SysMemSlicePitch = 0;
 
-		MeshData* mesh = List_Append(s->meshes);
-		mesh->vStride = sizeof(vertices[0]);
-		mesh->vOffset = 0;
-
-		ComPtr<ID3D11Buffer> vBuffer;
-		hr = s->d3dDevice->CreateBuffer(&vertBuffDesc, &vertBuffInitData, &vBuffer);
+		s->d3dVertexBuffer.Reset();
+		hr = s->d3dDevice->CreateBuffer(&vertBuffDesc, &vertBuffInitData, &s->d3dVertexBuffer);
 		LOG_HRESULT_IF_FAILED(hr, return false,
-			Severity::Fatal, "Failed to create quad vertex buffer");
-		SetDebugObjectName(vBuffer, "Quad Vertices");
+			Severity::Fatal, "Failed to create shared vertex buffer");
+		SetDebugObjectName(s->d3dVertexBuffer, "Shared Vertex Buffer");
+	}
 
-		// TODO: Move
-		// Set
-		s->d3dContext->IASetVertexBuffers(0, 1, vBuffer.GetAddressOf(), &mesh->vStride, &mesh->vOffset);
-
-		// Create indices
-		UINT indices[] = {
-			0, 1, 2,
-			2, 3, 0
-		};
-
-		// Create index buffer
-		mesh->iBase   = 0;
-		mesh->iCount  = ArrayLength(indices);
-		mesh->iFormat = DXGI_FORMAT_R32_UINT;
-
+	// Finalize index buffer
+	{
 		D3D11_BUFFER_DESC indexBuffDesc = {};
-		indexBuffDesc.ByteWidth           = ArraySize(indices);
+		indexBuffDesc.ByteWidth           = List_SizeOf(s->indexBuffer);
 		indexBuffDesc.Usage               = D3D11_USAGE_IMMUTABLE;
 		indexBuffDesc.BindFlags           = D3D11_BIND_INDEX_BUFFER;
 		indexBuffDesc.CPUAccessFlags      = 0;
@@ -498,17 +464,15 @@ Renderer_Initialize(RendererState* s, v2u renderSize)
 		indexBuffDesc.StructureByteStride = 0;
 
 		D3D11_SUBRESOURCE_DATA indexBuffInitData = {};
-		indexBuffInitData.pSysMem          = indices;
+		indexBuffInitData.pSysMem          = s->indexBuffer.data;
 		indexBuffInitData.SysMemPitch      = 0;
 		indexBuffInitData.SysMemSlicePitch = 0;
 
-		ComPtr<ID3D11Buffer> iBuffer;
-		hr = s->d3dDevice->CreateBuffer(&indexBuffDesc, &indexBuffInitData, &iBuffer);
+		s->d3dIndexBuffer.Reset();
+		hr = s->d3dDevice->CreateBuffer(&indexBuffDesc, &indexBuffInitData, &s->d3dIndexBuffer);
 		LOG_HRESULT_IF_FAILED(hr, return false,
-			Severity::Fatal, "Failed to create quad index buffer");
-		SetDebugObjectName(iBuffer, "Quad Indices");
-
-		s->d3dContext->IASetIndexBuffer(iBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+			Severity::Fatal, "Failed to create shared index buffer");
+		SetDebugObjectName(s->d3dIndexBuffer, "Shared Index Buffer");
 	}
 
 	return true;
@@ -531,6 +495,14 @@ void
 Renderer_Teardown(RendererState* s)
 {
 	List_Free(s->drawCalls);
+	List_Free(s->indexBuffer);
+	List_Free(s->vertexBuffer);
+
+	for (u32 i = 0; i < s->meshes.length; i++)
+	{
+		MeshData* mesh = &s->meshes[i];
+		List_Free(mesh->name);
+	}
 	List_Free(s->meshes);
 
 	for (u32 i = 0; i < s->pixelShaders.length; i++)
@@ -558,6 +530,8 @@ Renderer_Teardown(RendererState* s)
 	}
 	List_Free(s->vertexShaders);
 
+	s->d3dIndexBuffer             .Reset();
+	s->d3dVertexBuffer            .Reset();
 	s->d3dRasterizerStateWireframe.Reset();
 	s->d3dRasterizerStateSolid    .Reset();
 	s->d3dDepthBufferView         .Reset();
@@ -646,7 +620,6 @@ Renderer_LoadVertexShader(RendererState* s, Slice<c8> name, c8* path, Slice<Vert
 	b32 success;
 	HRESULT hr;
 
-	// TODO: Copy name
 	// Vertex Shader
 	VertexShaderData vs = {};
 	defer {
@@ -840,6 +813,53 @@ Renderer_LoadPixelShader(RendererState* s, Slice<c8> name, c8* path, Slice<Const
 	return ps2->ref;
 }
 
+// TODO: Standardize asset function naming convention
+Mesh
+Renderer_CreateMesh(RendererState* s, Slice<c8> name, Slice<Vertex> vertices, Slice<Index> indices)
+{
+	b32 success;
+
+	MeshData mesh = {};
+	defer {
+		// TODO: Can end up with orphaned vertices/indices allocated
+		List_Free(mesh.name);
+	};
+
+	// Copy Name
+	{
+		success = List_Duplicate(name, mesh.name);
+		LOG_IF(!success, IGNORE,
+			Severity::Warning, "Failed to copy mesh name '%s'", name.data);
+	}
+
+	mesh.vOffset = s->vertexBuffer.length;
+	mesh.iOffset = s->indexBuffer.length;
+	mesh.iCount  = indices.length;
+	mesh.iFormat = DXGI_FORMAT_R32_UINT;
+
+	// TODO: Passing a Slice<c8> to a log format WILL NOT work!
+	success = List_AppendRange(s->vertexBuffer, vertices);
+	LOG_IF(!success, return Mesh::Null,
+		Severity::Error, "Failed to allocate space for mesh vertices '%s'", name.data);
+
+	success = List_AppendRange(s->indexBuffer, indices);
+	LOG_IF(!success, return Mesh::Null,
+		Severity::Error, "Failed to allocate space for mesh indices '%s'", name.data);
+
+	// Commit
+	{
+		MeshData* mesh2 = List_Append(s->meshes, mesh);
+		LOG_IF(!mesh2, return Mesh::Null,
+			Severity::Error, "Failed to allocate space for mesh '%s'", name.data);
+		mesh = {};
+
+		// TODO: Eventually lists will reuse slots
+		mesh2->ref = List_GetLast(s->meshes);
+	}
+
+	return List_GetLast(s->meshes);
+}
+
 Matrix*
 Renderer_GetWVPPointer(RendererState* s)
 {
@@ -903,9 +923,13 @@ Renderer_Render(RendererState* s)
 
 		// Vertex Shader
 		{
+			size vStride = sizeof(Vertex);
+			size vOffset = 0;
+
 			s->d3dContext->VSSetShader(vs->d3dVertexShader.Get(), nullptr, 0);
 			s->d3dContext->IASetInputLayout(vs->d3dInputLayout.Get());
-			//s->d3dContext->IASetVertexBuffers(0, 1, vBuffer.GetAddressOf(), &mesh->vStride, &mesh->vOffset);
+			s->d3dContext->IASetVertexBuffers(0, 1, s->d3dVertexBuffer.GetAddressOf(), &vStride, &vOffset);
+			s->d3dContext->IASetIndexBuffer(s->d3dIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
 			s->d3dContext->IASetPrimitiveTopology(vs->d3dPrimitveTopology);
 
 			for (u32 j = 0; j < vs->constantBuffers.length; j++)
@@ -978,7 +1002,7 @@ Renderer_Render(RendererState* s)
 		// TODO: Leave constant buffers bound?
 
 		Assert(mesh->vOffset < i32Max);
-		s->d3dContext->DrawIndexed(mesh->iCount, 0, (i32) mesh->vOffset);
+		s->d3dContext->DrawIndexed(mesh->iCount, mesh->iOffset, (i32) mesh->vOffset);
 	}
 	List_Clear(s->drawCalls);
 

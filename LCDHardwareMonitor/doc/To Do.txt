@@ -3,14 +3,13 @@ Cleanup Pass
 		Improve SensorRef
 		It's time to figure out what happens when memory allocations fail
 		Put plugins in an error state when API calls fail
+		Move reused results variables into local blocks when available
 	Constant Buffers / Materials
 		Combine VS and PS cbuf updating
 		Extend cbufs to support all shader stages
 		Simplify cbuf implementation
 		Implement materials
 		Allocate constant buffers from a simulation owned arena
-	Renderer
-		Hoist debug resources out of renderer
 	Rewrite String
 		Want a constructor that takes a format and args
 		Want a scope-based RAII wrapper to auto-free
