@@ -32,10 +32,10 @@ Design Pass
 	Implement 'services' (mainly logging)
 	How will managed code use native services and api? (~~probably dllimport~~) (er, function ptr
 		like everything else?)
-	Would it be better to hide Context inside SimulationState so plugins
-	don't have to worry about it?
-	Do we need to support people using objects in plugins (e.g do we need to
-	give dtors an opportunity to run?)
+	Would it be better to hide Context inside SimulationState so plugins don't have to worry about
+		it?
+	Do we need to support people using objects in plugins (e.g do we need to give dtors an
+		opportunity to run?)
 	Consider *requiring* Update (and potentially other functions) for plugins. Does it make sense
 		to have a Widget plugin that never draws anything (drawing happens in Update)? Or a Sensor
 		that never updates sensors values (I don't think we want to encourage out-of-band updaing
@@ -79,12 +79,10 @@ Refactoring
 	Try out range based for loops
 	Ensure Platform function naming is uniform
 	Decide on 'plugin loader' naming on both sides of the managed boundary
-	Drop some of the variable name prefixes, such as d3d
 	Use this as parameter name for 'methods'
 	Should const be used on parameters and locals?
 	Include 'out' in out parameter names?
 	Decide on in-struct initializers or not. Unify things.
-	Make private functions static
 
 
 

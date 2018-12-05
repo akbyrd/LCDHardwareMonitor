@@ -64,8 +64,8 @@ operator== (const ConstantBufferDesc& lhs, const ConstantBufferDesc& rhs)
 {
 	// Because C++ is shit.
 	return lhs.size      == rhs.size
-		&& lhs.data      == rhs.data
-		&& lhs.frequency == rhs.frequency;
+	    && lhs.data      == rhs.data
+	    && lhs.frequency == rhs.frequency;
 }
 
 static inline b32
@@ -187,18 +187,8 @@ static void UpdateRasterizerState(RendererState* s);
 b32
 Renderer_Initialize(RendererState* s, v2u renderSize)
 {
-	// TODO: This assert style probably needs to be changed
-	Assert(s->d3dDevice                   == nullptr);
-	Assert(s->d3dContext                  == nullptr);
-	Assert(s->dxgiFactory                 == nullptr);
-	Assert(s->d3dRenderTexture            == nullptr);
-	Assert(s->d3dRenderTargetView         == nullptr);
-	Assert(s->d3dDepthBufferView          == nullptr);
-	Assert(s->d3dRasterizerStateSolid     == nullptr);
-	Assert(s->d3dRasterizerStateWireframe == nullptr);
 	Assert(renderSize.x < i32Max && renderSize.y < i32Max);
 
-	// TODO : Move into local blocks
 	HRESULT hr;
 
 	// Create device
@@ -527,11 +517,6 @@ Renderer_Initialize(RendererState* s, v2u renderSize)
 static void
 UpdateRasterizerState(RendererState* s)
 {
-	Assert(s->d3dContext                  != nullptr);
-	Assert(s->d3dRasterizerStateSolid     != nullptr);
-	Assert(s->d3dRasterizerStateWireframe != nullptr);
-
-
 	if (s->isWireframeEnabled)
 	{
 		s->d3dContext->RSSetState(s->d3dRasterizerStateWireframe.Get());
@@ -545,6 +530,9 @@ UpdateRasterizerState(RendererState* s)
 void
 Renderer_Teardown(RendererState* s)
 {
+	List_Free(s->drawCalls);
+	List_Free(s->meshes);
+
 	for (u32 i = 0; i < s->pixelShaders.length; i++)
 	{
 		PixelShaderData* ps = &s->pixelShaders[i];
@@ -554,6 +542,7 @@ Renderer_Teardown(RendererState* s)
 			ps->constantBuffers[j].d3dConstantBuffer.Reset();
 		List_Free(ps->constantBuffers);
 	}
+	List_Free(s->pixelShaders);
 
 	for (u32 i = 0; i < s->vertexShaders.length; i++)
 	{
@@ -565,16 +554,16 @@ Renderer_Teardown(RendererState* s)
 			vs->constantBuffers[j].d3dConstantBuffer.Reset();
 		List_Free(vs->constantBuffers);
 	}
+	List_Free(s->vertexShaders);
 
-	s->d3dDevice                  .Reset();
-	s->d3dContext                 .Reset();
-	s->dxgiFactory                .Reset();
-	s->d3dRenderTexture           .Reset();
-	s->d3dRenderTargetView        .Reset();
-	s->d3dDepthBufferView         .Reset();
-	s->d3dRasterizerStateSolid    .Reset();
 	s->d3dRasterizerStateWireframe.Reset();
-
+	s->d3dRasterizerStateSolid    .Reset();
+	s->d3dDepthBufferView         .Reset();
+	s->d3dRenderTargetView        .Reset();
+	s->d3dRenderTexture           .Reset();
+	s->dxgiFactory                .Reset();
+	s->d3dContext                 .Reset();
+	s->d3dDevice                  .Reset();
 
 	// Log live objects
 	{
@@ -649,8 +638,6 @@ Renderer_CreateConstantBuffer(RendererState* s, ConstantBufferData* cBuf)
 }
 
 // TODO: Should a failed load mark the file as bad?
-// TODO: Perhaps a read-only List would be a good idea.
-// TODO: Unify the error handling / commit semantics of LoadVertexShader and LoadPixelShader
 VertexShader
 Renderer_LoadVertexShader(RendererState* s, Slice<c8> name, c8* path, Slice<VertexAttribute> attributes, Slice<ConstantBufferDesc> cBufDescs)
 {
@@ -658,7 +645,6 @@ Renderer_LoadVertexShader(RendererState* s, Slice<c8> name, c8* path, Slice<Vert
 	HRESULT hr;
 
 	// TODO: Copy name
-	// TODO: Find a way to include shader name in errors
 	// Vertex Shader
 	VertexShaderData vs = {};
 	defer {
@@ -869,12 +855,6 @@ Renderer_UpdateConstantBuffer(RendererState* s, ConstantBufferData cBuf)
 b32
 Renderer_Render(RendererState* s)
 {
-	// TODO: Should we assert things that will immediately crash the program
-	// anyway (e.g. dereferenced below)? It probably gives us a better error
-	// message.
-	Assert(s->d3dContext       != nullptr);
-	Assert(s->d3dRenderTexture != nullptr);
-
 	s->d3dContext->ClearRenderTargetView(s->d3dRenderTargetView.Get(), DirectX::Colors::Black);
 	s->d3dContext->ClearDepthStencilView(s->d3dDepthBufferView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
 
@@ -994,11 +974,6 @@ Renderer_Render(RendererState* s)
 static b32
 Renderer_CreateSharedD3D9RenderTexture(RendererState* s)
 {
-	Assert(s->d3d9               == nullptr);
-	Assert(s->d3d9Device         == nullptr);
-	Assert(s->d3d9RenderTexture  == nullptr);
-	Assert(s->d3d9RenderSurface0 == nullptr);
-
 	HRESULT hr;
 
 	// Device

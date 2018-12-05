@@ -131,14 +131,16 @@ List_Contains(List<T>& list, T* item)
 		return false;
 
 	// TODO: This returns false positives if the address in the range, but not an actual item
-	return item >= &list.data[0] && item < &list.data[list.length];
+	b32 result = item >= &list.data[0] && item < &list.data[list.length];
+	return result;
 }
 
 template<typename T>
 inline b32
 List_Contains(List<T>& list, T& item)
 {
-	return List_Contains(list, &item);
+	b32 result = List_Contains(list, &item);
+	return result;
 }
 
 template<typename T>

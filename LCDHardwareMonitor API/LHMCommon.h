@@ -39,10 +39,10 @@ const u64 Gigabyte = 1024LL * Megabyte;
 #define HAS_FLAG(x, f) ((x & f) == f)
 #define IF(expression, ...) if (expression) { __VA_ARGS__; }
 
-template<typename T, size_t S>
-inline size_t ArrayLength(const T(&arr)[S]) { UNUSED(arr); return S; }
+template<typename T, size S>
+inline size ArrayLength(const T(&arr)[S]) { UNUSED(arr); return S; }
 
-template<typename T, size_t S>
-inline size_t ArraySize(const T(&arr)[S]) { UNUSED(arr); return S * sizeof(T); }
+template<typename T, size S>
+inline size ArraySize(const T(&arr)[S]) { UNUSED(arr); return S * sizeof(T); }
 
 #endif
