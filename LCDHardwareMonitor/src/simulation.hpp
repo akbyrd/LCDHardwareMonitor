@@ -505,7 +505,7 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 
 			widget->position         = ((v2) s->renderSize - v2{ 240, 12 }) / 2.0f;
 			widget->position.y      += ((i32) i - 2) * 15.0f;
-			widget->sensorRef.plugin = { 0 };
+			widget->sensorRef.plugin = { 1 };
 			widget->sensorRef.sensor = { debugSensorIndices[i] };
 
 			PluginContext context = {};

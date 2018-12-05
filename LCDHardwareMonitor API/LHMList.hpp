@@ -29,13 +29,12 @@ struct ListRef
 	b32 operator== (const ListRef& other) { return index == other.index; }
 	b32 operator!= (const ListRef& other) { return index != other.index; }
 
-	// TODO: Switch to 0 being a null asset everywhere
 	static const ListRef<T> Null;
 	operator b32() { return *this != Null; }
 };
 
 template<typename T>
-const ListRef<T> ListRef<T>::Null = { u32Max };
+const ListRef<T> ListRef<T>::Null = {};
 
 template<typename T>
 struct List
@@ -45,7 +44,7 @@ struct List
 	T*  data;
 
 	using RefT = ListRef<T>;
-	inline T& operator[] (RefT r) { return data[r.index]; }
+	inline T& operator[] (RefT r) { return data[r.index - 1]; }
 	inline T& operator[] (u32 i)  { return data[i]; }
 };
 
@@ -186,7 +185,7 @@ List_Get(List<T>& list, u32 index)
 {
 	UNUSED(list);
 	ListRef<T> ref = {};
-	ref.index = index;
+	ref.index = index + 1;
 	return ref;
 }
 
@@ -228,7 +227,8 @@ template<typename T>
 inline b32
 List_IsRefValid(List<T>& list, ListRef<T> ref)
 {
-	return ref.index < list.length;
+	b32 result = (ref.index - 1) < list.length;
+	return result;
 }
 
 template<typename T>

@@ -1,6 +1,5 @@
 Cleanup Pass
 	General
-		Take a hard look at ListRef
 		Improve SensorRef
 		It's time to figure out what happens when memory allocations fail
 		Put plugins in an error state when API calls fail
