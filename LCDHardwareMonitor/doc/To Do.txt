@@ -4,7 +4,6 @@ Cleanup Pass
 		Improve SensorRef
 		It's time to figure out what happens when memory allocations fail
 		Put plugins in an error state when API calls fail
-		Specialize natvis for String
 	Constant Buffers / Materials
 		Combine VS and PS cbuf updating
 		Extend cbufs to support all shader stages

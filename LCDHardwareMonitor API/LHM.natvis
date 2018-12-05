@@ -9,6 +9,15 @@
       </ArrayItems>
     </Expand>
   </Type>
+  
+  <Type Name="List&lt;char&gt;">
+    <DisplayString>{data,s}</DisplayString>
+    <StringView>data</StringView>
+    <Expand>
+      <Item Name="length">length</Item>
+      <Item Name="capacity">capacity</Item>
+    </Expand>
+  </Type>
 
   <Type Name="Slice&lt;*&gt;">
     <DisplayString>length = {length}, stride = {stride}</DisplayString>
@@ -17,6 +26,15 @@
         <Size>length</Size>
         <ValueNode>data[$i * stride]</ValueNode>
       </IndexListItems>
+    </Expand>
+  </Type>
+
+  <Type Name="Slice&lt;char&gt;">
+    <DisplayString>{data,s}</DisplayString>
+    <StringView>data</StringView>
+    <Expand>
+      <Item Name="length">length</Item>
+      <Item Name="capacity">capacity</Item>
     </Expand>
   </Type>
 
