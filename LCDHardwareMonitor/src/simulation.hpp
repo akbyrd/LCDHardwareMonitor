@@ -309,7 +309,7 @@ UnloadSensorPlugin(SimulationState* s, SensorPlugin* sensorPlugin)
 	sensorRef.plugin = sensorPlugin->ref;
 	for (u32 i = 0; i < sensorPlugin->sensors.length; i++)
 	{
-		sensorRef.sensor = { i };
+		sensorRef.sensor = List_Get(sensorPlugin->sensors, i);
 		RemoveSensorRefs(s, sensorRef);
 	}
 
@@ -539,8 +539,8 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 
 			widget->position         = ((v2) s->renderSize - v2{ 240, 12 }) / 2.0f;
 			widget->position.y      += ((i32) i - 2) * 15.0f;
-			widget->sensorRef.plugin = { 1 };
-			widget->sensorRef.sensor = { debugSensorIndices[i] };
+			widget->sensorRef.plugin = List_Get(s->sensorPlugins, 0);
+			widget->sensorRef.sensor = List_Get(s->sensorPlugins[0].sensors, debugSensorIndices[i]);
 
 			PluginContext context = {};
 			context.s               = s;
