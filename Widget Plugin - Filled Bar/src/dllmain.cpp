@@ -44,8 +44,7 @@ UpdateBarWidgets(PluginContext* context, WidgetInstanceAPI::Update api)
 		BarWidget* barWidget = (BarWidget*) &api.widgetData[i];
 
 		// Update
-		// TODO: SensorRef might want equality operators.
-		if (widget->sensorRef.plugin && widget->sensorRef.sensor)
+		if (widget->sensorRef)
 		{
 			Sensor* sensor = &api.sensors[widget->sensorRef.sensor];
 			float value = sensor->value / 100.0f;

@@ -26,8 +26,6 @@ template<typename T>
 struct ListRef
 {
 	u32 index;
-	b32 operator== (const ListRef& other) { return index == other.index; }
-	b32 operator!= (const ListRef& other) { return index != other.index; }
 
 	static const ListRef<T> Null;
 	operator b32() { return *this != Null; }
@@ -35,6 +33,12 @@ struct ListRef
 
 template<typename T>
 const ListRef<T> ListRef<T>::Null = {};
+
+template<typename T>
+inline b32 operator== (ListRef<T> lhs, ListRef<T> rhs) { return lhs.index == rhs.index; }
+
+template<typename T>
+inline b32 operator!= (ListRef<T> lhs, ListRef<T> rhs) { return lhs.index != rhs.index; }
 
 template<typename T>
 struct List

@@ -21,6 +21,8 @@ PreviewWindow_Initialize(PreviewWindowState* s, RendererState* rendererState, HI
 {
 	// Create Window
 	{
+		b32 success;
+
 		LRESULT CALLBACK
 		PreviewWndProc(HWND, u32, WPARAM, LPARAM);
 
@@ -42,7 +44,6 @@ PreviewWindow_Initialize(PreviewWindowState* s, RendererState* rendererState, HI
 
 		auto windowStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE;
 
-		b32 success;
 		RECT windowRect = { 0, 0, (i32) rendererState->renderSize.x, (i32) rendererState->renderSize.y };
 		success = AdjustWindowRect(&windowRect, (u32) windowStyle, false);
 		LOG_LAST_ERROR_IF(!success, IGNORE,

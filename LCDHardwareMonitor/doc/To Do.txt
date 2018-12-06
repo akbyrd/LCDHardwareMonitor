@@ -1,9 +1,6 @@
 Cleanup Pass
 	General
-		Improve SensorRef
 		It's time to figure out what happens when memory allocations fail
-		Put plugins in an error state when API calls fail
-		Move reused results variables into local blocks when available
 	Constant Buffers / Materials
 		Combine VS and PS cbuf updating
 		Extend cbufs to support all shader stages
@@ -30,8 +27,6 @@ Design Pass
 	Implement 'services' (mainly logging)
 	How will managed code use native services and api? (~~probably dllimport~~) (er, function ptr
 		like everything else?)
-	Would it be better to hide Context inside SimulationState so plugins don't have to worry about
-		it?
 	Do we need to support people using objects in plugins (e.g do we need to give dtors an
 		opportunity to run?)
 	Consider *requiring* Update (and potentially other functions) for plugins. Does it make sense
@@ -60,6 +55,7 @@ Back Burner
 	Add UTF-8 support
 	Runtime shader compilation
 	Shader hot-reloading
+	Put plugins in an error state when API calls fail
 
 
 
@@ -77,9 +73,6 @@ Refactoring
 	Try out range based for loops
 	Ensure Platform function naming is uniform
 	Decide on 'plugin loader' naming on both sides of the managed boundary
-	Use this as parameter name for 'methods'
-	Should const be used on parameters and locals?
-	Include 'out' in out parameter names?
 	Decide on in-struct initializers or not. Unify things.
 
 
@@ -93,6 +86,7 @@ Error Handling
 	Goal: only a single print occurs during an error, but it may be multiple lines
 	The top level handler is the one who knowis if something is a warning or an error, not the inner
 		most handler. LoadFile can't know if it's loading a cache file or a critical resource.
+	Implement a Result<T> that can hold a return value or error information
 
 
 

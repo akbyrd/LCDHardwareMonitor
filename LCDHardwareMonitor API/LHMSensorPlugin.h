@@ -13,10 +13,12 @@ struct SensorRef
 	SensorRefT       sensor;
 
 	static const SensorRef Null;
-	//operator b32() { return plugin && sensor; }
+	operator b32() { return plugin && sensor; }
 };
 
-const SensorRef SensorRef::Null = { SensorPluginRefT::Null, SensorRefT::Null };
+const SensorRef SensorRef::Null = {};
+inline b32 operator== (SensorRef lhs, SensorRef rhs) { return lhs.plugin == rhs.plugin && lhs == rhs.sensor; }
+inline b32 operator!= (SensorRef lhs, SensorRef rhs) { return lhs.plugin != rhs.plugin && lhs != rhs.sensor; }
 
 struct Sensor
 {

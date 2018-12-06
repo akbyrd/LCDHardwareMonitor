@@ -64,8 +64,7 @@ RemoveSensorRefs(SimulationState* s, Slice<SensorRef> sensorRefs)
 				for (u32 l = 0; l < widgetType->widgets.length; l++)
 				{
 					Widget* widget = &widgetType->widgets[l];
-					if (widget->sensorRef.plugin == sensorRef.plugin
-					 && widget->sensorRef.sensor == sensorRef.sensor)
+					if (widget->sensorRef == sensorRef)
 						widget->sensorRef = SensorRef::Null;
 				}
 			}
@@ -313,8 +312,7 @@ UnloadSensorPlugin(SimulationState* s, SensorPlugin* sensorPlugin)
 		RemoveSensorRefs(s, sensorRef);
 	}
 
-	b32 success;
-	success = PluginLoader_UnloadSensorPlugin(s->pluginLoader, sensorPlugin);
+	b32 success = PluginLoader_UnloadSensorPlugin(s->pluginLoader, sensorPlugin);
 	List_Free(sensorPlugin->sensors);
 	LOG_IF(!success, return false,
 		Severity::Error, "Failed to unload Sensor plugin '%s'", sensorPlugin->info.name);
@@ -330,6 +328,8 @@ UnloadSensorPlugin(SimulationState* s, SensorPlugin* sensorPlugin)
 static WidgetPlugin*
 LoadWidgetPlugin(SimulationState* s, c8* directory, c8* fileName)
 {
+	b32 success;
+
 	WidgetPlugin* widgetPlugin = List_Append(s->widgetPlugins);
 	LOG_IF(!widgetPlugin, return nullptr,
 		Severity::Error, "Failed to allocate WidgetPlugin");
@@ -339,7 +339,6 @@ LoadWidgetPlugin(SimulationState* s, c8* directory, c8* fileName)
 	widgetPlugin->header.directory = directory;
 	widgetPlugin->header.kind      = PluginKind::Widget;
 
-	b32 success;
 	success = PluginLoader_LoadWidgetPlugin(s->pluginLoader, widgetPlugin);
 	LOG_IF(!success, return nullptr,
 		Severity::Error, "Failed to load Widget plugin '%s'", fileName);
@@ -409,8 +408,7 @@ UnloadWidgetPlugin(SimulationState* s, WidgetPlugin* widgetPlugin)
 
 	RemoveAllWidgetDefinitions(&context);
 
-	b32 success;
-	success = PluginLoader_UnloadWidgetPlugin(s->pluginLoader, widgetPlugin);
+	b32 success = PluginLoader_UnloadWidgetPlugin(s->pluginLoader, widgetPlugin);
 	LOG_IF(!success, return false,
 		Severity::Error, "Failed to unload Widget plugin '%s'", widgetPlugin->info.name);
 
@@ -513,21 +511,6 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 		WidgetPlugin* filledBarPlugin = LoadWidgetPlugin(s, "Widget Plugins\\Filled Bar", "Widget Plugin - Filled Bar");
 		if (!filledBarPlugin) return false;
 
-		#if false
-		WidgetType* widgetType = &filledBarPlugin->widgetTypes[0];
-		for (i32 i = 0; i < 16; i++)
-		{
-			Widget* widget = CreateWidget(widgetType);
-			if (!widget) return false;
-
-			//widget->sensor = List_GetRef(ohmPlugin->sensors, 0);
-			widget->position = { i * 4.0f + 10.0f, i * 15.0f + 2.0f};
-			widget->sensor = SensorRef::Null;
-			// TODO: Pretty sure this should be in CreateWidget
-			b32 success = widgetType->definition.initialize(widget);
-			Assert(success);
-		}
-		#else
 		//u32 debugSensorIndices[] = { 6, 7, 8, 9, 33 }; // Desktop 780 Tis
 		u32 debugSensorIndices[] = { 6, 7, 8, 9, 32 }; // Desktop 2080 Ti
 		//u32 debugSensorIndices[] = { 0, 1, 2, 3, 12 }; // Laptop
@@ -554,7 +537,6 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 
 			widgetType->definition.initialize(&context, api);
 		}
-		#endif
 	}
 
 	success = Renderer_RebuildSharedGeometryBuffers(s->renderer);

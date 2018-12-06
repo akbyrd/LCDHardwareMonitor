@@ -182,10 +182,10 @@ Renderer_Initialize(RendererState* s, v2u renderSize)
 {
 	Assert(renderSize.x < i32Max && renderSize.y < i32Max);
 
-	HRESULT hr;
-
 	// Create device
 	{
+		HRESULT hr;
+
 		UINT createDeviceFlags = D3D11_CREATE_DEVICE_SINGLETHREADED;
 		#if DEBUG
 		createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
@@ -256,6 +256,8 @@ Renderer_Initialize(RendererState* s, v2u renderSize)
 
 	// Configure debugging
 	{
+		HRESULT hr;
+
 		// TODO: Maybe replace DEBUG with something app specific
 		#ifdef DEBUG
 		ComPtr<IDXGIDebug1> dxgiDebug;
@@ -285,6 +287,8 @@ Renderer_Initialize(RendererState* s, v2u renderSize)
 	{
 		// Create texture
 		{
+			HRESULT hr;
+
 			// Query and set MSAA quality levels
 			hr = s->d3dDevice->CheckMultisampleQualityLevels(
 				DXGI_FORMAT_B8G8R8A8_UNORM,
@@ -330,6 +334,8 @@ Renderer_Initialize(RendererState* s, v2u renderSize)
 
 		// Create depth buffer
 		{
+			HRESULT hr;
+
 			D3D11_TEXTURE2D_DESC depthDesc = {};
 			depthDesc.Width              = s->renderSize.x;
 			depthDesc.Height             = s->renderSize.y;
@@ -384,6 +390,8 @@ Renderer_Initialize(RendererState* s, v2u renderSize)
 
 	// Initialize rasterizer state
 	{
+		HRESULT hr;
+
 		// NOTE: MultisampleEnable toggles between quadrilateral AA (true) and alpha AA (false).
 		// Alpha AA has a massive performance impact while quadrilateral is much smaller
 		// (negligible for the mesh drawn here). Visually, it's hard to tell the difference between
@@ -425,12 +433,9 @@ Renderer_Initialize(RendererState* s, v2u renderSize)
 	return true;
 }
 
-// TODO: Support rebuilding buffers
 b32
 Renderer_RebuildSharedGeometryBuffers(RendererState*s)
 {
-	HRESULT hr;
-
 	// Finalize vertex buffer
 	{
 		D3D11_BUFFER_DESC vertBuffDesc = {};
@@ -447,7 +452,7 @@ Renderer_RebuildSharedGeometryBuffers(RendererState*s)
 		vertBuffInitData.SysMemSlicePitch = 0;
 
 		s->d3dVertexBuffer.Reset();
-		hr = s->d3dDevice->CreateBuffer(&vertBuffDesc, &vertBuffInitData, &s->d3dVertexBuffer);
+		HRESULT hr = s->d3dDevice->CreateBuffer(&vertBuffDesc, &vertBuffInitData, &s->d3dVertexBuffer);
 		LOG_HRESULT_IF_FAILED(hr, return false,
 			Severity::Fatal, "Failed to create shared vertex buffer");
 		SetDebugObjectName(s->d3dVertexBuffer, "Shared Vertex Buffer");
@@ -469,7 +474,7 @@ Renderer_RebuildSharedGeometryBuffers(RendererState*s)
 		indexBuffInitData.SysMemSlicePitch = 0;
 
 		s->d3dIndexBuffer.Reset();
-		hr = s->d3dDevice->CreateBuffer(&indexBuffDesc, &indexBuffInitData, &s->d3dIndexBuffer);
+		HRESULT hr = s->d3dDevice->CreateBuffer(&indexBuffDesc, &indexBuffInitData, &s->d3dIndexBuffer);
 		LOG_HRESULT_IF_FAILED(hr, return false,
 			Severity::Fatal, "Failed to create shared index buffer");
 		SetDebugObjectName(s->d3dIndexBuffer, "Shared Index Buffer");
@@ -551,17 +556,12 @@ Renderer_Teardown(RendererState* s)
 		LOG_HRESULT_IF_FAILED(hr, return,
 			Severity::Warning, "Failed to get DXGI debug interface");
 
-		// TODO: Test the differences in the output
-		// DXGI_DEBUG_RLO_ALL
-		// DXGI_DEBUG_RLO_SUMMARY
-		// DXGI_DEBUG_RLO_DETAIL
 		// NOTE: Only available with the Windows SDK installed. That's not
 		// unituitive and doesn't lead to cryptic errors or anything. Fuck you,
 		// Microsoft.
-		// TODO: Re-enable this
-		//hr = dxgiDebug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_IGNORE_INTERNAL);
-		//LOG_HRESULT_IF_FAILED(hr, return,
-		//	Severity::Warning, "Failed to report live D3D objects");
+		hr = dxgiDebug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_ALL);
+		LOG_HRESULT_IF_FAILED(hr, return,
+			Severity::Warning, "Failed to report live D3D objects");
 
 		Platform_Print("\n");
 		#endif
@@ -617,9 +617,6 @@ Renderer_CreateConstantBuffer(RendererState* s, ConstantBufferData* cBuf)
 VertexShader
 Renderer_LoadVertexShader(RendererState* s, Slice<c8> name, c8* path, Slice<VertexAttribute> attributes, Slice<ConstantBufferDesc> cBufDescs)
 {
-	b32 success;
-	HRESULT hr;
-
 	// Vertex Shader
 	VertexShaderData vs = {};
 	defer {
@@ -634,7 +631,7 @@ Renderer_LoadVertexShader(RendererState* s, Slice<c8> name, c8* path, Slice<Vert
 
 	// Copy Name
 	{
-		success = List_Duplicate(name, vs.name);
+		b32 success = List_Duplicate(name, vs.name);
 		LOG_IF(!success, IGNORE,
 			Severity::Warning, "Failed to copy vertex shader name '%s'", path);
 	}
@@ -649,7 +646,7 @@ Renderer_LoadVertexShader(RendererState* s, Slice<c8> name, c8* path, Slice<Vert
 
 	// Create
 	{
-		hr = s->d3dDevice->CreateVertexShader(vsBytes.data, vsBytes.length, nullptr, &vs.d3dVertexShader);
+		HRESULT hr = s->d3dDevice->CreateVertexShader(vsBytes.data, vsBytes.length, nullptr, &vs.d3dVertexShader);
 		LOG_HRESULT_IF_FAILED(hr, return VertexShader::Null,
 			Severity::Error, "Failed to create vertex shader '%s'", path);
 		SetDebugObjectName(vs.d3dVertexShader, "Vertex Shader: %s", name.data);
@@ -658,6 +655,8 @@ Renderer_LoadVertexShader(RendererState* s, Slice<c8> name, c8* path, Slice<Vert
 	// Constant Buffers
 	if (cBufDescs.length)
 	{
+		b32 success;
+
 		success = List_Reserve(vs.constantBuffers, cBufDescs.length);
 		LOG_IF(!success, return VertexShader::Null,
 			Severity::Error, "Failed to allocate space for VS constant buffers '%s'", path);
@@ -676,7 +675,7 @@ Renderer_LoadVertexShader(RendererState* s, Slice<c8> name, c8* path, Slice<Vert
 	// Input layout
 	{
 		List<D3D11_INPUT_ELEMENT_DESC> vsInputDescs = {};
-		success = List_Reserve(vsInputDescs, attributes.length);
+		b32 success = List_Reserve(vsInputDescs, attributes.length);
 		LOG_IF(!success, return VertexShader::Null,
 			Severity::Error, "Failed to allocate VS input descriptions '%s'", path);
 		for (u32 i = 0; i < attributes.length; i++)
@@ -716,7 +715,7 @@ Renderer_LoadVertexShader(RendererState* s, Slice<c8> name, c8* path, Slice<Vert
 			List_Append(vsInputDescs, inputDesc);
 		}
 
-		hr = s->d3dDevice->CreateInputLayout(vsInputDescs.data, vsInputDescs.length, vsBytes.data, vsBytes.length, &vs.d3dInputLayout);
+		HRESULT hr = s->d3dDevice->CreateInputLayout(vsInputDescs.data, vsInputDescs.length, vsBytes.data, vsBytes.length, &vs.d3dInputLayout);
 		LOG_HRESULT_IF_FAILED(hr, return VertexShader::Null,
 			Severity::Error, "Failed to create VS input layout '%s'", path);
 		SetDebugObjectName(vs.d3dInputLayout, "Input Layout: %s", name.data);
@@ -744,9 +743,6 @@ Renderer_LoadVertexShader(RendererState* s, Slice<c8> name, c8* path, Slice<Vert
 PixelShader
 Renderer_LoadPixelShader(RendererState* s, Slice<c8> name, c8* path, Slice<ConstantBufferDesc> cBufDescs)
 {
-	HRESULT hr;
-	b32 success;
-
 	PixelShaderData ps = {};
 	defer {
 		ps.d3dPixelShader.Reset();
@@ -759,7 +755,7 @@ Renderer_LoadPixelShader(RendererState* s, Slice<c8> name, c8* path, Slice<Const
 
 	// Copy Name
 	{
-		success = List_Duplicate(name, ps.name);
+		b32 success = List_Duplicate(name, ps.name);
 		LOG_IF(!success, IGNORE,
 			Severity::Warning, "Failed to copy pixel shader name '%s'", path);
 	}
@@ -774,7 +770,7 @@ Renderer_LoadPixelShader(RendererState* s, Slice<c8> name, c8* path, Slice<Const
 
 	// Create
 	{
-		hr = s->d3dDevice->CreatePixelShader(psBytes.data, (u64) psBytes.length, nullptr, &ps.d3dPixelShader);
+		HRESULT hr = s->d3dDevice->CreatePixelShader(psBytes.data, (u64) psBytes.length, nullptr, &ps.d3dPixelShader);
 		LOG_HRESULT_IF_FAILED(hr, return PixelShader::Null,
 			Severity::Error, "Failed to create pixel shader '%s'", path);
 		SetDebugObjectName(ps.d3dPixelShader, "Pixel Shader: %s", name.data);
@@ -783,6 +779,8 @@ Renderer_LoadPixelShader(RendererState* s, Slice<c8> name, c8* path, Slice<Const
 	// Constant Buffers
 	if (cBufDescs.length)
 	{
+		b32 success;
+
 		success = List_Reserve(ps.constantBuffers, cBufDescs.length);
 		LOG_IF(!success, return PixelShader::Null,
 			Severity::Error, "Failed to allocate space for PS constant buffers '%s'", path);
@@ -817,8 +815,6 @@ Renderer_LoadPixelShader(RendererState* s, Slice<c8> name, c8* path, Slice<Const
 Mesh
 Renderer_CreateMesh(RendererState* s, Slice<c8> name, Slice<Vertex> vertices, Slice<Index> indices)
 {
-	b32 success;
-
 	MeshData mesh = {};
 	defer {
 		// TODO: Can end up with orphaned vertices/indices allocated
@@ -827,24 +823,29 @@ Renderer_CreateMesh(RendererState* s, Slice<c8> name, Slice<Vertex> vertices, Sl
 
 	// Copy Name
 	{
-		success = List_Duplicate(name, mesh.name);
+		b32 success = List_Duplicate(name, mesh.name);
 		LOG_IF(!success, IGNORE,
 			Severity::Warning, "Failed to copy mesh name '%s'", name.data);
 	}
 
-	mesh.vOffset = s->vertexBuffer.length;
-	mesh.iOffset = s->indexBuffer.length;
-	mesh.iCount  = indices.length;
-	mesh.iFormat = DXGI_FORMAT_R32_UINT;
+	// Copy Data
+	{
+		b32 success;
 
-	// TODO: Passing a Slice<c8> to a log format WILL NOT work!
-	success = List_AppendRange(s->vertexBuffer, vertices);
-	LOG_IF(!success, return Mesh::Null,
-		Severity::Error, "Failed to allocate space for mesh vertices '%s'", name.data);
+		mesh.vOffset = s->vertexBuffer.length;
+		mesh.iOffset = s->indexBuffer.length;
+		mesh.iCount  = indices.length;
+		mesh.iFormat = DXGI_FORMAT_R32_UINT;
 
-	success = List_AppendRange(s->indexBuffer, indices);
-	LOG_IF(!success, return Mesh::Null,
-		Severity::Error, "Failed to allocate space for mesh indices '%s'", name.data);
+		// TODO: Passing a Slice<c8> to a log format WILL NOT work!
+		success = List_AppendRange(s->vertexBuffer, vertices);
+		LOG_IF(!success, return Mesh::Null,
+			Severity::Error, "Failed to allocate space for mesh vertices '%s'", name.data);
+
+		success = List_AppendRange(s->indexBuffer, indices);
+		LOG_IF(!success, return Mesh::Null,
+			Severity::Error, "Failed to allocate space for mesh indices '%s'", name.data);
+	}
 
 	// Commit
 	{
