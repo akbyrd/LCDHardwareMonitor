@@ -108,6 +108,10 @@ PluginLoader_Teardown(PluginLoaderState* s)
 	// Managed
 	{
 		HRESULT hr;
+		// TODO: Placing a breakpoint on the following line when using the
+		// mixed debugger and attempting to step over causes a crash. Placing
+		// breakpoints on code that occurs after this point may also crash
+		// (e.g. Renderer_Teardown).
 
 		hr = s->clrHost->Stop();
 		LOG_HRESULT_IF_FAILED(hr, IGNORE,

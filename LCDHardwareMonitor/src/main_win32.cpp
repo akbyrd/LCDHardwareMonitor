@@ -29,6 +29,21 @@ static const i32 togglePreviewWindowID = 0;
 i32 CALLBACK
 WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmdShow)
 {
+	__try
+	{
+		i32 WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmdShow);
+		return WinMainImpl(hInstance, hPrevInstance, pCmdLine, nCmdShow);
+	}
+	__except (true)
+	{
+		LOG(Severity::Fatal, "A structured exception has occurred");
+		return (i32) GetExceptionCode();
+	}
+}
+
+i32
+WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmdShow)
+{
 	UNUSED(hPrevInstance); UNUSED(pCmdLine); UNUSED(nCmdShow);
 
 	// NOTE: Normally, we can skip the majority of teardown code. Windows will
