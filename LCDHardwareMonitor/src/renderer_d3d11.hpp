@@ -1,6 +1,8 @@
 // TODO: What happens if we call random renderer api and the device is
 // disconnected? Presumably it can happen at anytime, not just during an update?
 
+// TODO: Handle unloading assets (will require reference counting, I think)
+
 #pragma comment(lib, "D3D11.lib")
 #pragma comment(lib, "D3D9.lib")
 #pragma comment(lib, "DXGI.lib")
@@ -124,14 +126,6 @@ struct RendererState
 	List<u32>              indexBuffer   = {};
 	List<DrawCall>         drawCalls     = {};
 };
-
-// TODO: Asset loading system (background?)
-// TODO: Initialize lists
-// TODO: We're not really handling errors cases. Going to end up partially
-// initialized. Reference counting might be a robust solution?
-// TODO: Handle unloading assets (will require reference counting, I think)
-// TODO: Start passing Strings instead of c8*?
-// TODO: StringSlice
 
 template<typename T>
 static inline void

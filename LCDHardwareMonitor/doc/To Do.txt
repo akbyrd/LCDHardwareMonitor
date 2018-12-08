@@ -1,12 +1,45 @@
+So far I can only think of per-frame and per-object constant buffers as use cases
+Could spin through and update all per-frame constant buffers at once
+Then we'd only have to rebind them
+In the same vein, we could update *all* constant buffers in a single pass
+Microsoft docs actually seem to recommend this
+The WVP matrix should probably just go into a global, automatically created buffer
+Same with time and any other useful global data
+I think we get a default PerFrame and PerObject cbuf
+How do slots work for constant buffers?
+We're not even using per-frame currently
+We need 1 copy of per-frame data pointer
+We need n copies of per-object data pointers
+Could call set buffer from each plugin each frame
+Could have plugins give pointer during creation, then expect it to always exist
+Doesn't work for per-object
+Could add UpdateBuffer API that pushes an update command
+Can't have the simulation ask for the buffer from the plugin (domain boundary is expensive)
+So plugins have to supply the information during update
+Update rates: per-frame, per-object, and custom/dirty flagged
+	per-frame: put pointer in cbuf desc // put pointer in draw call // put pointer in command list
+	per-object: put pointer in draw call // put pointer in command list
+	dirty: put pointer in command list
+2 general strategies:
+	put data pointers in draw calls (limited number of pointers to avoid allocating every frame)
+	push buffer updates as separate command list operations
+
+
+Actions
+	Update all cbufs at once
+	Add API for getting default buffers
+	Add #includes for default buffers
+	Push cbuf updates as command list items separate from draw calls
+	Binds are already specified by the shader
+
 Cleanup Pass
-	General
-		It's time to figure out what happens when memory allocations fail
 	Constant Buffers / Materials
 		Combine VS and PS cbuf updating
-		Extend cbufs to support all shader stages
 		Simplify cbuf implementation
-		Implement materials
+		Implement materials (vs, ps, mesh, cbufs)
 		Allocate constant buffers from a simulation owned arena
+	General
+		It's time to figure out what happens when memory allocations fail
 	Rewrite String
 		Want a constructor that takes a format and args
 		Want a scope-based RAII wrapper to auto-free
@@ -36,6 +69,7 @@ Design Pass
 		SensorPlugins don't need Initialize though. If you have a plugin to monitor fan speeds but
 		have no fans, it seems fine to provide no Sensors. Ok, but it still should have the
 		opportunity to look, right?
+	Asset loading might be slow. Do we need to do it on a background thread?
 
 
 
@@ -87,6 +121,8 @@ Error Handling
 	The top level handler is the one who knowis if something is a warning or an error, not the inner
 		most handler. LoadFile can't know if it's loading a cache file or a critical resource.
 	Implement a Result<T> that can hold a return value or error information
+	I'm sure there are places where we're going to end up in a partially initialized state when
+		errors occur. We need to double down on transactional changes check all existing code.
 
 
 

@@ -15,7 +15,7 @@ cbuffer cbPerObject
 	float4 fillColor;
 	float1 fillAmount;
 	float1 fillBlur;
-	float2 padding3;
+	float2 padding;
 
 	float4 backgroundColor;
 };
