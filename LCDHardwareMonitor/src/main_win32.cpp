@@ -20,6 +20,8 @@
 #include "renderer_d3d11.hpp"
 #include "previewwindow_win32_d3d11.hpp"
 
+// TODO: Should probably push renderer and plugin manager administration into
+// the simulation.
 // TODO: Remove window clamping
 // TODO: Support x86 and x64
 // TODO: Reduce link dependencies
@@ -29,16 +31,20 @@ static const i32 togglePreviewWindowID = 0;
 i32 CALLBACK
 WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmdShow)
 {
-	__try
+	// TODO: The CLR will throw structured exceptions when a debugger is
+	// attached. Not catching these will silently crash the program. D3D will
+	// throw structured exceptions when bad API calls are made. Catching these
+	// ruins the ability to inspect the stack. So we have a bit of a catch 22.
+	//__try
 	{
 		i32 WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmdShow);
 		return WinMainImpl(hInstance, hPrevInstance, pCmdLine, nCmdShow);
 	}
-	__except (true)
-	{
-		LOG(Severity::Fatal, "A structured exception has occurred");
-		return (i32) GetExceptionCode();
-	}
+	//__except (true)
+	//{
+	//	LOG(Severity::Fatal, "A structured exception has occurred");
+	//	return (i32) GetExceptionCode();
+	//}
 }
 
 i32
@@ -63,6 +69,8 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 	PluginLoaderState  pluginLoaderState = {};
 	PreviewWindowState previewState      = {};
 
+	// HACK: Remove this
+	simulationState.renderSize = { 320, 240 };
 
 	// Renderer
 	success = Renderer_Initialize(&rendererState, simulationState.renderSize);

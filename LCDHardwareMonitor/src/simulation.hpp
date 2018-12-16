@@ -3,12 +3,16 @@ struct SimulationState
 	PluginLoaderState* pluginLoader;
 	RendererState*     renderer;
 
-	v2u                renderSize = { 320, 240 };
 	List<SensorPlugin> sensorPlugins;
 	List<WidgetPlugin> widgetPlugins;
 
-	u64 startTime;
-	r32 currentTime;
+	v2u    renderSize;
+	Matrix view;
+	Matrix proj;
+	// TODO: Remove this when simulation talks to the renderer directly
+	Matrix vp;
+	u64    startTime;
+	r32    currentTime;
 };
 
 struct PluginContext
@@ -220,8 +224,49 @@ LoadPixelShader(PluginContext* context, c8* relPath, Slice<ConstantBufferDesc> c
 	return ps;
 }
 
+static Material
+CreateMaterial(PluginContext* context, Mesh mesh, VertexShader vs, PixelShader ps)
+{
+	return Renderer_CreateMaterial(context->s->renderer, mesh, vs, ps);
+}
+
+static Matrix
+GetViewMatrix(PluginContext* context)
+{
+	return context->s->view;
+}
+
+static Matrix
+GetProjectionMatrix(PluginContext* context)
+{
+	return context->s->proj;
+}
+
+static Matrix
+GetViewProjectionMatrix(PluginContext* context)
+{
+	return context->s->vp;
+}
+
 static void
-PushDrawCall(PluginContext* context, DrawCall dc)
+PushConstantBufferUpdate(PluginContext* context, Material material, ShaderStage shaderStage, u32 index, void* data)
+{
+	if (!context->success) return;
+	context->success = false;
+
+	ConstantBufferUpdate* cBufUpdate = Renderer_PushConstantBufferUpdate(context->s->renderer);
+	LOG_IF(!cBufUpdate, return,
+		Severity::Error, "Failed to allocate space for constant buffer update");
+	cBufUpdate->material    = material;
+	cBufUpdate->shaderStage = shaderStage;
+	cBufUpdate->index       = index;
+	cBufUpdate->data        = data;
+
+	context->success = true;
+}
+
+static void
+PushDrawCall(PluginContext* context, Material material)
 {
 	if (!context->success) return;
 	context->success = false;
@@ -229,15 +274,9 @@ PushDrawCall(PluginContext* context, DrawCall dc)
 	DrawCall* drawCall = Renderer_PushDrawCall(context->s->renderer);
 	LOG_IF(!drawCall, return,
 		Severity::Error, "Failed to allocate space for draw call");
-	*drawCall = dc;
+	drawCall->material = material;
 
 	context->success = true;
-}
-
-static Matrix*
-GetWVPPointer(PluginContext* context)
-{
-	return Renderer_GetWVPPointer(context->s->renderer);
 }
 
 // =================================================================================================
@@ -355,6 +394,7 @@ LoadWidgetPlugin(SimulationState* s, c8* directory, c8* fileName)
 		WidgetPluginAPI::Initialize api = {};
 		api.AddWidgetDefinitions = AddWidgetDefinitions;
 		api.LoadPixelShader      = LoadPixelShader;
+		api.CreateMaterial       = CreateMaterial;
 
 		success = widgetPlugin->functions.initialize(&context, api);
 		success &= context.success;
@@ -428,6 +468,7 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 	s->pluginLoader = pluginLoader;
 	s->renderer     = renderer;
 	s->startTime    = Platform_GetTicks();
+	s->renderSize   = { 320, 240 };
 
 	success = PluginLoader_Initialize(s->pluginLoader);
 	if (!success) return false;
@@ -440,19 +481,29 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 	LOG_IF(!success, return false,
 		Severity::Error, "Failed to allocate Widget plugins list");
 
+	// Setup Camera
+	{
+		v2 offset = -(v2) s->renderSize / 2.0f;
+		v3 pos    = { offset.x, offset.y, 1 };
+		v3 target = { offset.x, offset.y, 0 };
+
+		s->view = LookAt(pos, target);
+		s->proj = Orthographic((v2) s->renderSize, 0, 1000);
+		s->vp   = s->view * s->proj;
+	}
+
 	// Load Default Assets
 	{
 		// Vertex shader
 		{
 			VertexAttribute vsAttributes[] = {
-				{ VertexAttributeSemantic::Position, VertexAttributeFormat::Float3 },
-				{ VertexAttributeSemantic::Color,    VertexAttributeFormat::Float4 },
-				{ VertexAttributeSemantic::TexCoord, VertexAttributeFormat::Float2 },
+				{ VertexAttributeSemantic::Position, VertexAttributeFormat::v3 },
+				{ VertexAttributeSemantic::Color,    VertexAttributeFormat::v4 },
+				{ VertexAttributeSemantic::TexCoord, VertexAttributeFormat::v2 },
 			};
 
 			ConstantBufferDesc cBufDesc = {};
-			cBufDesc.size      = sizeof(Matrix);
-			cBufDesc.frequency = ConstantBufferFrequency::PerObject;
+			cBufDesc.size = sizeof(Matrix);
 
 			VertexShader vs = Renderer_LoadVertexShader(s->renderer, "Default", "Shaders/Basic Vertex Shader.cso", vsAttributes, cBufDesc);
 			LOG_IF(!vs, return false,
@@ -511,8 +562,8 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 		WidgetPlugin* filledBarPlugin = LoadWidgetPlugin(s, "Widget Plugins\\Filled Bar", "Widget Plugin - Filled Bar");
 		if (!filledBarPlugin) return false;
 
-		//u32 debugSensorIndices[] = { 6, 7, 8, 9, 33 }; // Desktop 780 Tis
 		u32 debugSensorIndices[] = { 6, 7, 8, 9, 32 }; // Desktop 2080 Ti
+		//u32 debugSensorIndices[] = { 6, 7, 8, 9, 33 }; // Desktop 780 Tis
 		//u32 debugSensorIndices[] = { 0, 1, 2, 3, 12 }; // Laptop
 		WidgetType* widgetType = &filledBarPlugin->widgetTypes[0];
 		for (u32 i = 0; i < ArrayLength(debugSensorIndices); i++)
@@ -587,18 +638,16 @@ Simulation_Update(SimulationState* s)
 		// happens on a single base pointer) (Con: drawing likely needs access to
 		// the full sensor)?
 
-		// HACK TODO: Fuuuuck. Sensors separated by plugin, so refs need to know
-		// which plugin they're referring to. Maaaybe a Slice<Slice<Sensor>> will
-		// work once we add a stride? Can also make it a 2 part ref: plugin +
-		// sensor.
-
 		WidgetPluginAPI::Update pluginAPI = {};
 
 		WidgetInstanceAPI::Update instancesAPI = {};
-		instancesAPI.t             = Platform_GetElapsedSeconds(s->startTime);
-		instancesAPI.sensors       = s->sensorPlugins[0].sensors;
-		instancesAPI.PushDrawCall  = PushDrawCall;
-		instancesAPI.GetWVPPointer = GetWVPPointer;
+		instancesAPI.t                        = Platform_GetElapsedSeconds(s->startTime);
+		instancesAPI.sensors                  = s->sensorPlugins[0].sensors;
+		instancesAPI.GetViewMatrix            = GetViewMatrix;
+		instancesAPI.GetProjectionMatrix      = GetProjectionMatrix;
+		instancesAPI.GetViewProjectionMatrix  = GetViewProjectionMatrix;
+		instancesAPI.PushConstantBufferUpdate = PushConstantBufferUpdate;
+		instancesAPI.PushDrawCall             = PushDrawCall;
 
 		for (u32 i = 0; i < s->widgetPlugins.length; i++)
 		{

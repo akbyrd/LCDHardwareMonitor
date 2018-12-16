@@ -1,45 +1,18 @@
-So far I can only think of per-frame and per-object constant buffers as use cases
-Could spin through and update all per-frame constant buffers at once
-Then we'd only have to rebind them
-In the same vein, we could update *all* constant buffers in a single pass
-Microsoft docs actually seem to recommend this
-The WVP matrix should probably just go into a global, automatically created buffer
-Same with time and any other useful global data
-I think we get a default PerFrame and PerObject cbuf
-How do slots work for constant buffers?
-We're not even using per-frame currently
-We need 1 copy of per-frame data pointer
-We need n copies of per-object data pointers
-Could call set buffer from each plugin each frame
-Could have plugins give pointer during creation, then expect it to always exist
-Doesn't work for per-object
-Could add UpdateBuffer API that pushes an update command
-Can't have the simulation ask for the buffer from the plugin (domain boundary is expensive)
-So plugins have to supply the information during update
-Update rates: per-frame, per-object, and custom/dirty flagged
-	per-frame: put pointer in cbuf desc // put pointer in draw call // put pointer in command list
-	per-object: put pointer in draw call // put pointer in command list
-	dirty: put pointer in command list
-2 general strategies:
-	put data pointers in draw calls (limited number of pointers to avoid allocating every frame)
-	push buffer updates as separate command list operations
-
-
-Actions
-	Update all cbufs at once
-	Add API for getting default buffers
-	Add #includes for default buffers
-	Push cbuf updates as command list items separate from draw calls
-	Binds are already specified by the shader
-
 Cleanup Pass
 	Constant Buffers / Materials
-		Combine VS and PS cbuf updating
-		Simplify cbuf implementation
-		Implement materials (vs, ps, mesh, cbufs)
 		Allocate constant buffers from a simulation owned arena
+		Could add SetMaterial API to optimized some redundant resouce lookups
+		Optimize out the Transpose in vector-matrix multiply
+		Split filled bar constant buffer into 2 pieces (rarely updated colors and every frame updated fill value)
+		ConstantBufferDesc seems kinda pointless now
+		Debug rendering mode
+			Mouse look controls
+			Colored grid cubemap as skybox so you can tell which way you're looking
 	General
+		Normalize line endings to LF
 		It's time to figure out what happens when memory allocations fail
+		Fix screenshots on Github
+		Get math operators working in the watch window
 	Rewrite String
 		Want a constructor that takes a format and args
 		Want a scope-based RAII wrapper to auto-free

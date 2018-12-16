@@ -5,16 +5,19 @@ using Mesh         = List<struct MeshData>::RefT;
 using VertexShader = List<struct VertexShaderData>::RefT;
 using PixelShader  = List<struct PixelShaderData>::RefT;
 
-struct DrawCall
+// TODO: Re-order structs in this file
+enum struct ShaderStage
+{
+	Null,
+	Vertex,
+	Pixel,
+};
+
+struct Material
 {
 	Mesh         mesh;
-	Matrix       world;
-
 	VertexShader vs;
-	void*        cBufPerObjDataVS;
-
 	PixelShader  ps;
-	void*        cBufPerObjDataPS;
 };
 
 struct Vertex
@@ -33,26 +36,15 @@ namespace StandardMesh
 	static const Mesh Quad     = { 2 };
 };
 
-enum struct ConstantBufferFrequency
-{
-	Null,
-	PerFrame,
-	PerObject,
-};
-
-// TODO: Dirty flag?
 struct ConstantBufferDesc
 {
-	u32                     size;
-	void*                   data;
-	ConstantBufferFrequency frequency;
-
-	static ConstantBufferDesc Null;
+	u32 size;
 };
 
 namespace StandardVertexShader
 {
 	static const VertexShader Null  = { 0 };
+	// TODO: Rename?
 	static const VertexShader Debug = { 1 };
 };
 

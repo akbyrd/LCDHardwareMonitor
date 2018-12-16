@@ -12,9 +12,9 @@ enum struct VertexAttributeSemantic
 enum struct VertexAttributeFormat
 {
 	Null,
-	Float2,
-	Float3,
-	Float4,
+	v2,
+	v3,
+	v4,
 	Count
 };
 
@@ -24,12 +24,28 @@ struct VertexAttribute
 	VertexAttributeFormat   format;
 };
 
-b32          Renderer_Initialize                   (RendererState*, v2i renderSize);
-b32          Renderer_RebuildSharedGeometryBuffers (RendererState*);
-void         Renderer_Teardown                     (RendererState*);
-VertexShader Renderer_LoadVertexShader             (RendererState*, Slice<c8> name, c8* path, Slice<VertexAttribute> attributes, Slice<ConstantBufferDesc> cBufDescs);
-PixelShader  Renderer_LoadPixelShader              (RendererState*, Slice<c8> name, c8* path, Slice<ConstantBufferDesc> cBufDescs);
-Mesh         Renderer_CreateMesh                   (RendererState*, Slice<c8> name, Slice<Vertex> vertices, Slice<Index> indices);
-Matrix*      Renderer_GetWVPPointer                (RendererState*);
-DrawCall*    Renderer_PushDrawCall                 (RendererState*);
-b32          Renderer_Render                       (RendererState*);
+// TODO: Move these back to public API?
+struct ConstantBufferUpdate
+{
+	Material    material;
+	ShaderStage shaderStage;
+	u32         index;
+	void*       data;
+};
+
+struct DrawCall
+{
+	Material material;
+};
+
+b32                   Renderer_Initialize                   (RendererState*, v2i renderSize);
+b32                   Renderer_RebuildSharedGeometryBuffers (RendererState*);
+void                  Renderer_Teardown                     (RendererState*);
+Mesh                  Renderer_CreateMesh                   (RendererState*, Slice<c8> name, Slice<Vertex> vertices, Slice<Index> indices);
+VertexShader          Renderer_LoadVertexShader             (RendererState*, Slice<c8> name, c8* path, Slice<VertexAttribute> attributes, Slice<ConstantBufferDesc> cBufDescs);
+PixelShader           Renderer_LoadPixelShader              (RendererState*, Slice<c8> name, c8* path, Slice<ConstantBufferDesc> cBufDescs);
+// TODO: Combine with CreateMesh, LoadVertexShader, and LoadPixelShader
+Material              Renderer_CreateMaterial               (RendererState*, Mesh mesh, VertexShader vs, PixelShader ps);
+ConstantBufferUpdate* Renderer_PushConstantBufferUpdate     (RendererState*);
+DrawCall*             Renderer_PushDrawCall                 (RendererState*);
+b32                   Renderer_Render                       (RendererState*);

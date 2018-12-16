@@ -49,23 +49,7 @@ struct MeshData
 	DXGI_FORMAT iFormat = DXGI_FORMAT_UNKNOWN;
 };
 
-ConstantBufferDesc ConstantBufferDesc::Null = {};
-
-static inline b32
-operator== (const ConstantBufferDesc& lhs, const ConstantBufferDesc& rhs)
-{
-	// Because C++ is shit.
-	return lhs.size      == rhs.size
-	    && lhs.data      == rhs.data
-	    && lhs.frequency == rhs.frequency;
-}
-
-static inline b32
-operator!= (const ConstantBufferDesc& lhs, const ConstantBufferDesc& rhs)
-{
-	return !(lhs == rhs);
-}
-
+// TODO: Name?
 struct ConstantBufferData
 {
 	ConstantBufferDesc   desc;
@@ -90,6 +74,23 @@ struct PixelShaderData
 	ComPtr<ID3D11PixelShader> d3dPixelShader;
 };
 
+enum struct RenderCommandType
+{
+	Null,
+	ConstantBufferUpdate,
+	DrawCall,
+};
+
+struct RenderCommand
+{
+	RenderCommandType type;
+	union
+	{
+		ConstantBufferUpdate cBufUpdate;
+		DrawCall             drawCall;
+	};
+};
+
 struct RendererState
 {
 	ComPtr<ID3D11Device>           d3dDevice                   = nullptr;
@@ -111,20 +112,18 @@ struct RendererState
 	ComPtr<IDirect3DTexture9>      d3d9RenderTexture           = nullptr;
 	ComPtr<IDirect3DSurface9>      d3d9RenderSurface0          = nullptr;
 
-	XMFLOAT4X4         proj                = {};
-	XMFLOAT4X4         wvp                 = {};
-	v2u                renderSize          = {};
-	DXGI_FORMAT        renderFormat        = DXGI_FORMAT_UNKNOWN;
-	u32                multisampleCount    = 1;
-	u32                qualityLevelCount   = 0;
-	b32                isWireframeEnabled  = false;
+	v2u         renderSize         = {};
+	DXGI_FORMAT renderFormat       = DXGI_FORMAT_UNKNOWN;
+	u32         multisampleCount   = 1;
+	u32         qualityLevelCount  = 0;
+	b32         isWireframeEnabled = false;
 
 	List<VertexShaderData> vertexShaders = {};
 	List<PixelShaderData>  pixelShaders  = {};
 	List<MeshData>         meshes        = {};
 	List<Vertex>           vertexBuffer  = {};
 	List<u32>              indexBuffer   = {};
-	List<DrawCall>         drawCalls     = {};
+	List<RenderCommand>    commandList   = {};
 };
 
 template<typename T>
@@ -155,18 +154,6 @@ SetDebugObjectName(const ComPtr<T>& resource, Slice<c8> format, Args... args)
 	// HACK
 	SetDebugObjectName(resource, { name.length, name.data });
 	#endif
-}
-
-static inline c8*
-ToString(ConstantBufferFrequency frequency)
-{
-	switch (frequency)
-	{
-		case ConstantBufferFrequency::Null:      return "Null";
-		case ConstantBufferFrequency::PerFrame:  return "PerFrame";
-		case ConstantBufferFrequency::PerObject: return "PerObject";
-		default: return "<Invalid>";
-	}
 }
 
 static void UpdateRasterizerState(RendererState* s);
@@ -372,13 +359,6 @@ Renderer_Initialize(RendererState* s, v2u renderSize)
 
 			s->d3dContext->RSSetViewports(1, &viewport);
 		}
-
-
-		// Initialize projection matrix
-		{
-			XMMATRIX P = XMMatrixOrthographicLH((r32) s->renderSize.x, (r32) s->renderSize.y, 0, 1000);
-			XMStoreFloat4x4(&s->proj, P);
-		}
 	}
 
 
@@ -493,7 +473,7 @@ UpdateRasterizerState(RendererState* s)
 void
 Renderer_Teardown(RendererState* s)
 {
-	List_Free(s->drawCalls);
+	List_Free(s->commandList);
 	List_Free(s->indexBuffer);
 	List_Free(s->vertexBuffer);
 
@@ -562,29 +542,63 @@ Renderer_Teardown(RendererState* s)
 	}
 }
 
+// TODO: Standardize asset function naming convention
+Mesh
+Renderer_CreateMesh(RendererState* s, Slice<c8> name, Slice<Vertex> vertices, Slice<Index> indices)
+{
+	MeshData mesh = {};
+	defer {
+		// TODO: Can end up with orphaned vertices/indices allocated
+		List_Free(mesh.name);
+	};
+
+	// Copy Name
+	{
+		b32 success = List_Duplicate(name, mesh.name);
+		LOG_IF(!success, IGNORE,
+			Severity::Warning, "Failed to copy mesh name '%s'", name.data);
+	}
+
+	// Copy Data
+	{
+		b32 success;
+
+		mesh.vOffset = s->vertexBuffer.length;
+		mesh.iOffset = s->indexBuffer.length;
+		mesh.iCount  = indices.length;
+		mesh.iFormat = DXGI_FORMAT_R32_UINT;
+
+		// TODO: Passing a Slice<c8> to a log format WILL NOT work! (pointer is
+		// not at the beginning of the struct, and more importantly slices are
+		// not guaranteed to be null terminated!)
+		success = List_AppendRange(s->vertexBuffer, vertices);
+		LOG_IF(!success, return Mesh::Null,
+			Severity::Error, "Failed to allocate space for mesh vertices '%s'", name.data);
+
+		success = List_AppendRange(s->indexBuffer, indices);
+		LOG_IF(!success, return Mesh::Null,
+			Severity::Error, "Failed to allocate space for mesh indices '%s'", name.data);
+	}
+
+	// Commit
+	{
+		MeshData* mesh2 = List_Append(s->meshes, mesh);
+		LOG_IF(!mesh2, return Mesh::Null,
+			Severity::Error, "Failed to allocate space for mesh '%s'", name.data);
+		mesh = {};
+
+		// TODO: Eventually lists will reuse slots
+		mesh2->ref = List_GetLast(s->meshes);
+	}
+
+	return List_GetLast(s->meshes);
+}
+
 static b32
 Renderer_CreateConstantBuffer(RendererState* s, ConstantBufferData* cBuf)
 {
 	// TODO: Add more cbuf info to logging
-	// TODO: if (ps->cBuf.desc != ConstantBufferDesc::Null)
-
-	// TODO: Actually, it seems like it makes more sense to have the buffer on
-	// the widget, not the draw call. However, that means getting a pointer to
-	// the plugin when drawing. Which is equally lame.
-
-	LOG_IF(cBuf->desc.frequency == ConstantBufferFrequency::Null, return false,
-		Severity::Error, "Constant buffer frequency not set");
-
-	if (cBuf->desc.frequency == ConstantBufferFrequency::PerObject)
-	{
-		LOG_IF(cBuf->desc.data, return false,
-			Severity::Error, "Per-object constant buffer has non-per-object data pointer set");
-	}
-	else
-	{
-		LOG_IF(!cBuf->desc.data, return false,
-			Severity::Error, "Constant buffer does not have data pointer set");
-	}
+	// TODO: Decide where validation should be handled: simulation or renderer
 
 	LOG_IF(!IsMultipleOf(cBuf->desc.size, 16), return false,
 		Severity::Error, "Constant buffer size '%u' is not a multiple of 16", cBuf->desc.size);
@@ -600,9 +614,8 @@ Renderer_CreateConstantBuffer(RendererState* s, ConstantBufferData* cBuf)
 	HRESULT hr = s->d3dDevice->CreateBuffer(&d3dDesc, nullptr, &cBuf->d3dConstantBuffer);
 	LOG_HRESULT_IF_FAILED(hr, return false,
 		Severity::Error, "Failed to create constant buffer");
-	// TODO: Pass in shader type and buffer name for better naming?
-	SetDebugObjectName(cBuf->d3dConstantBuffer, "Constant Buffer %s",
-		ToString(cBuf->desc.frequency));
+	// TODO: Pass in shader type and buffer name for better errors?
+	SetDebugObjectName(cBuf->d3dConstantBuffer, "Constant Buffer");
 
 	return true;
 }
@@ -689,9 +702,9 @@ Renderer_LoadVertexShader(RendererState* s, Slice<c8> name, c8* path, Slice<Vert
 			DXGI_FORMAT format;
 			switch (attributes[i].format)
 			{
-				case VertexAttributeFormat::Float2: format = DXGI_FORMAT_R32G32_FLOAT;       break;
-				case VertexAttributeFormat::Float3: format = DXGI_FORMAT_R32G32B32_FLOAT;    break;
-				case VertexAttributeFormat::Float4: format = DXGI_FORMAT_R32G32B32A32_FLOAT; break;
+				case VertexAttributeFormat::v2: format = DXGI_FORMAT_R32G32_FLOAT;       break;
+				case VertexAttributeFormat::v3: format = DXGI_FORMAT_R32G32B32_FLOAT;    break;
+				case VertexAttributeFormat::v4: format = DXGI_FORMAT_R32G32B32A32_FLOAT; break;
 
 				default:
 					LOG(Severity::Error, "Unrecognized VS attribute format %i '%s'", attributes[i].format, path);
@@ -805,81 +818,44 @@ Renderer_LoadPixelShader(RendererState* s, Slice<c8> name, c8* path, Slice<Const
 	return ps2->ref;
 }
 
-// TODO: Standardize asset function naming convention
-Mesh
-Renderer_CreateMesh(RendererState* s, Slice<c8> name, Slice<Vertex> vertices, Slice<Index> indices)
+Material
+Renderer_CreateMaterial(RendererState* s, Mesh mesh, VertexShader vs, PixelShader ps)
 {
-	MeshData mesh = {};
-	defer {
-		// TODO: Can end up with orphaned vertices/indices allocated
-		List_Free(mesh.name);
-	};
+	UNUSED(s);
 
-	// Copy Name
-	{
-		b32 success = List_Duplicate(name, mesh.name);
-		LOG_IF(!success, IGNORE,
-			Severity::Warning, "Failed to copy mesh name '%s'", name.data);
-	}
-
-	// Copy Data
-	{
-		b32 success;
-
-		mesh.vOffset = s->vertexBuffer.length;
-		mesh.iOffset = s->indexBuffer.length;
-		mesh.iCount  = indices.length;
-		mesh.iFormat = DXGI_FORMAT_R32_UINT;
-
-		// TODO: Passing a Slice<c8> to a log format WILL NOT work!
-		success = List_AppendRange(s->vertexBuffer, vertices);
-		LOG_IF(!success, return Mesh::Null,
-			Severity::Error, "Failed to allocate space for mesh vertices '%s'", name.data);
-
-		success = List_AppendRange(s->indexBuffer, indices);
-		LOG_IF(!success, return Mesh::Null,
-			Severity::Error, "Failed to allocate space for mesh indices '%s'", name.data);
-	}
-
-	// Commit
-	{
-		MeshData* mesh2 = List_Append(s->meshes, mesh);
-		LOG_IF(!mesh2, return Mesh::Null,
-			Severity::Error, "Failed to allocate space for mesh '%s'", name.data);
-		mesh = {};
-
-		// TODO: Eventually lists will reuse slots
-		mesh2->ref = List_GetLast(s->meshes);
-	}
-
-	return List_GetLast(s->meshes);
+	Material material = {};
+	material.mesh = mesh;
+	material.vs   = vs;
+	material.ps   = ps;
+	return material;
 }
 
-Matrix*
-Renderer_GetWVPPointer(RendererState* s)
+ConstantBufferUpdate*
+Renderer_PushConstantBufferUpdate(RendererState* s)
 {
-	return (Matrix*) &s->wvp;
+	RenderCommand* renderCommand = List_Append(s->commandList);
+	renderCommand->type = RenderCommandType::ConstantBufferUpdate;
+	return &renderCommand->cBufUpdate;
 }
 
 DrawCall*
 Renderer_PushDrawCall(RendererState* s)
 {
-	DrawCall* drawCall = List_Append(s->drawCalls);
-	return drawCall;
+	RenderCommand* renderCommand = List_Append(s->commandList);
+	renderCommand->type = RenderCommandType::DrawCall;
+	return &renderCommand->drawCall;
 }
 
 static b32
-Renderer_UpdateConstantBuffer(RendererState* s, ConstantBufferData cBuf)
+Renderer_UpdateConstantBuffer(RendererState* s, ConstantBufferData* cBuf, void* data)
 {
-	if (cBuf.desc == ConstantBufferDesc::Null) return true;
-
 	D3D11_MAPPED_SUBRESOURCE map = {};
-	HRESULT hr = s->d3dContext->Map(cBuf.d3dConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
+	HRESULT hr = s->d3dContext->Map(cBuf->d3dConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
 	LOG_HRESULT_IF_FAILED(hr, return false,
 		Severity::Error, "Failed to map constant buffer");
 
-	memcpy(map.pData, cBuf.desc.data, cBuf.desc.size);
-	s->d3dContext->Unmap(cBuf.d3dConstantBuffer.Get(), 0);
+	memcpy(map.pData, data, cBuf->desc.size);
+	s->d3dContext->Unmap(cBuf->d3dConstantBuffer.Get(), 0);
 
 	return true;
 }
@@ -890,116 +866,104 @@ Renderer_Render(RendererState* s)
 	s->d3dContext->ClearRenderTargetView(s->d3dRenderTargetView.Get(), DirectX::Colors::Black);
 	s->d3dContext->ClearDepthStencilView(s->d3dDepthBufferView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
 
-	// Update Camera
-	v2 offset = (v2) s->renderSize / 2.0f;
-	XMVECTOR pos    = { offset.x, offset.y, 0 };
-	XMVECTOR target = { offset.x, offset.y, 1 };
-	XMVECTOR up     = { 0, 1, 0 };
-
-	XMMATRIX V = XMMatrixLookAtLH(pos, target, up);
-	XMMATRIX P = XMLoadFloat4x4(&s->proj);
-
+	// TODO: Track list of active constant buffers as well
 	VertexShader lastVS = VertexShader::Null;
 	 PixelShader lastPS =  PixelShader::Null;
 
+	// TODO: DrawCall structure
+	// We can pre-update all non-per-object cbufs
+	// But for per-object cbufs we need to do it with the draw call
+	// So draw calls and per-object buffer updates may need to be specified together by the user
+	// Internally we split the draw call into 'begin' (calculate wvp), 'update buffers', and 'end' (bind and draw)
+	// Or, we hard code the buffer updating for the built in vs
+	// We'd also have to move w v calculation to the simulation and give plugins a way to get it when pushing render commands
+	// I think this is the ticket
+
 	// TODO: Sort draws
-	for (u32 i = 0; i < s->drawCalls.length; i++)
+	for (u32 i = 0; i < s->commandList.length; i++)
 	{
-		DrawCall*         dc   = &s->drawCalls[i];
-		MeshData*         mesh = &s->meshes[dc->mesh];
-		VertexShaderData* vs   = &s->vertexShaders[dc->vs];
-		PixelShaderData*  ps   = &s->pixelShaders[dc->ps];
-
-		XMMATRIX W = XMMATRIX((r32*) &dc->world.arr);
-		XMMATRIX WVP = XMMatrixTranspose(W * V * P);
-		XMStoreFloat4x4(&s->wvp, WVP);
-
-		// TODO: Slot numbers are wrong
-
-		// Vertex Shader
+		RenderCommand* renderCommand = &s->commandList[i];
+		switch (renderCommand->type)
 		{
-			size vStride = sizeof(Vertex);
-			size vOffset = 0;
+			default: Assert(false); continue;
 
-			s->d3dContext->VSSetShader(vs->d3dVertexShader.Get(), nullptr, 0);
-			s->d3dContext->IASetInputLayout(vs->d3dInputLayout.Get());
-			s->d3dContext->IASetVertexBuffers(0, 1, s->d3dVertexBuffer.GetAddressOf(), &vStride, &vOffset);
-			s->d3dContext->IASetIndexBuffer(s->d3dIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
-			s->d3dContext->IASetPrimitiveTopology(vs->d3dPrimitveTopology);
-
-			for (u32 j = 0; j < vs->constantBuffers.length; j++)
+			case RenderCommandType::ConstantBufferUpdate:
 			{
-				ConstantBufferData* cBuf = &vs->constantBuffers[j];
-				switch (cBuf->desc.frequency)
+				ConstantBufferUpdate* cBufUpdate = &renderCommand->cBufUpdate;
+
+				// TODO: Do validation in API call (ps & vs refs, shader stage, etc)
+				// TODO: If we fail to update a constant buffer do we skip drawing?
+				ConstantBufferData* cBuf = nullptr;
+				switch (cBufUpdate->shaderStage)
 				{
 					default: Assert(false); continue;
-					case ConstantBufferFrequency::Null: continue;
-
-					case ConstantBufferFrequency::PerFrame:
+					case ShaderStage::Vertex:
 					{
-						if (vs->ref == lastVS) continue;
-						b32 success = Renderer_UpdateConstantBuffer(s, *cBuf);
-						if (!success) continue;
+						VertexShaderData* vs = &s->vertexShaders[cBufUpdate->material.vs];
+						cBuf = &vs->constantBuffers[cBufUpdate->index];
 						break;
 					}
 
-					// TODO: Log warnings during widget creation if per-object buffer is null/not null based on update frequency
-					case ConstantBufferFrequency::PerObject:
+					case ShaderStage::Pixel:
 					{
-						cBuf->desc.data = dc->cBufPerObjDataVS;
-						b32 success = Renderer_UpdateConstantBuffer(s, *cBuf);
-						cBuf->desc.data = nullptr;
-						if (!success) continue;
+						PixelShaderData* ps = &s->pixelShaders[cBufUpdate->material.ps];
+						cBuf = &ps->constantBuffers[cBufUpdate->index];
 						break;
 					}
 				}
 
-				s->d3dContext->VSSetConstantBuffers(j, 1, cBuf->d3dConstantBuffer.GetAddressOf());
+				b32 success = Renderer_UpdateConstantBuffer(s, cBuf, cBufUpdate->data);
+				if (!success) break;
+				break;
 			}
-			lastVS = vs->ref;
-		}
 
-		// Pixel Shader
-		{
-			s->d3dContext->PSSetShader(ps->d3dPixelShader.Get(), nullptr, 0);
-
-			for (u32 j = 0; j < ps->constantBuffers.length; j++)
+			case RenderCommandType::DrawCall:
 			{
-				ConstantBufferData* cBuf = &ps->constantBuffers[j];
-				switch (cBuf->desc.frequency)
+				DrawCall*         dc   = &renderCommand->drawCall;
+				MeshData*         mesh = &s->meshes[dc->material.mesh];
+				VertexShaderData* vs   = &s->vertexShaders[dc->material.vs];
+				PixelShaderData*  ps   = &s->pixelShaders[dc->material.ps];
+
+				// Vertex Shader
 				{
-					default: Assert(false); continue;
-					case ConstantBufferFrequency::Null: continue;
+					size vStride = sizeof(Vertex);
+					size vOffset = 0;
 
-					case ConstantBufferFrequency::PerFrame:
-					{
-						if (ps->ref == lastPS) continue;
-						b32 success = Renderer_UpdateConstantBuffer(s, *cBuf);
-						if (!success) continue;
-						break;
-					}
+					s->d3dContext->VSSetShader(vs->d3dVertexShader.Get(), nullptr, 0);
+					s->d3dContext->IASetInputLayout(vs->d3dInputLayout.Get());
+					s->d3dContext->IASetVertexBuffers(0, 1, s->d3dVertexBuffer.GetAddressOf(), &vStride, &vOffset);
+					s->d3dContext->IASetIndexBuffer(s->d3dIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+					s->d3dContext->IASetPrimitiveTopology(vs->d3dPrimitveTopology);
 
-					case ConstantBufferFrequency::PerObject:
+					for (u32 j = 0; j < vs->constantBuffers.length; j++)
 					{
-						cBuf->desc.data = dc->cBufPerObjDataPS;
-						b32 success = Renderer_UpdateConstantBuffer(s, *cBuf);
-						cBuf->desc.data = nullptr;
-						if (!success) continue;
-						break;
+						ConstantBufferData* cBuf = &vs->constantBuffers[j];
+						s->d3dContext->VSSetConstantBuffers(j, 1, cBuf->d3dConstantBuffer.GetAddressOf());
 					}
+					lastVS = vs->ref;
 				}
 
-				s->d3dContext->PSSetConstantBuffers(j, 1, cBuf->d3dConstantBuffer.GetAddressOf());
+				// Pixel Shader
+				{
+					s->d3dContext->PSSetShader(ps->d3dPixelShader.Get(), nullptr, 0);
+
+					for (u32 j = 0; j < ps->constantBuffers.length; j++)
+					{
+						ConstantBufferData* cBuf = &ps->constantBuffers[j];
+						s->d3dContext->PSSetConstantBuffers(j, 1, cBuf->d3dConstantBuffer.GetAddressOf());
+					}
+					lastPS = ps->ref;
+				}
+
+				// TODO: Leave constant buffers bound?
+
+				Assert(mesh->vOffset < i32Max);
+				s->d3dContext->DrawIndexed(mesh->iCount, mesh->iOffset, (i32) mesh->vOffset);
+				break;
 			}
-			lastPS = ps->ref;
 		}
-
-		// TODO: Leave constant buffers bound?
-
-		Assert(mesh->vOffset < i32Max);
-		s->d3dContext->DrawIndexed(mesh->iCount, mesh->iOffset, (i32) mesh->vOffset);
 	}
-	List_Clear(s->drawCalls);
+	List_Clear(s->commandList);
 
 	// TODO: Why is this here again? I think it's for the WPF app
 	//s->d3dContext->Flush();
