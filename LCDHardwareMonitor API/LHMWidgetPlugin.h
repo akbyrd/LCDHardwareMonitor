@@ -3,7 +3,6 @@
 
 struct Widget
 {
-	// TODO: Should plugins or the renderer be responsible for creating a matrix from this information?
 	v2        position;
 	//v2        scale;
 	v2        pivot;
@@ -17,7 +16,7 @@ struct WidgetInstanceAPI
 	struct Initialize
 	{
 		Slice<Widget> widgets;
-		Slice<u8>     widgetData;
+		Slice<u8>     widgetsUserData;
 	};
 
 	struct Update
@@ -30,7 +29,7 @@ struct WidgetInstanceAPI
 
 		r32                         t;
 		Slice<Widget>               widgets;
-		Slice<u8>                   widgetData;
+		Slice<u8>                   widgetsUserData;
 		Slice<Sensor>               sensors;
 		GetViewMatrixFn*            GetViewMatrix;
 		GetProjectionMatrixFn*      GetProjectionMatrix;
@@ -42,19 +41,18 @@ struct WidgetInstanceAPI
 	struct Teardown
 	{
 		Slice<Widget> widgets;
-		Slice<u8>     widgetData;
+		Slice<u8>     widgetsUserData;
 	};
 };
 
-// TODO: Consider renaming this to WidgetDescription
-struct WidgetDefinition
+struct WidgetDesc
 {
 	using InitializeFn = b32 (PluginContext*, WidgetInstanceAPI::Initialize);
 	using UpdateFn     = void(PluginContext*, WidgetInstanceAPI::Update);
 	using TeardownFn   = void(PluginContext*, WidgetInstanceAPI::Teardown);
 
 	c8*           name;
-	u32           size;
+	u32           userDataSize;
 	InitializeFn* initialize;
 	UpdateFn*     update;
 	TeardownFn*   teardown;
@@ -64,13 +62,13 @@ struct WidgetPluginAPI
 {
 	struct Initialize
 	{
-		using AddWidgetDefinitionsFn = void       (PluginContext*, Slice<WidgetDefinition>);
-		using LoadPixelShaderFn      = PixelShader(PluginContext*, c8* relPath, Slice<ConstantBufferDesc>);
-		using CreateMaterialFn       = Material   (PluginContext*, Mesh, VertexShader, PixelShader);
+		using RegisterWidgetsFn = void       (PluginContext*, Slice<WidgetDesc>);
+		using LoadPixelShaderFn = PixelShader(PluginContext*, c8* relPath, Slice<ConstantBufferDesc>);
+		using CreateMaterialFn  = Material   (PluginContext*, Mesh, VertexShader, PixelShader);
 
-		AddWidgetDefinitionsFn* AddWidgetDefinitions;
-		LoadPixelShaderFn*      LoadPixelShader;
-		CreateMaterialFn*       CreateMaterial;
+		RegisterWidgetsFn* RegisterWidgets;
+		LoadPixelShaderFn* LoadPixelShader;
+		CreateMaterialFn*  CreateMaterial;
 	};
 
 	struct Update   {};

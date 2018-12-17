@@ -37,12 +37,11 @@ struct SensorPlugin
 	//List<SensorRefT> activeSensors;
 };
 
-// TODO: I hate this name
-struct WidgetType
+struct WidgetData
 {
-	WidgetDefinition definition;
-	List<Widget>     widgets;
-	Bytes            widgetData;
+	WidgetDesc   desc;
+	List<Widget> widgets;
+	Bytes        widgetsUserData;
 };
 
 struct WidgetPlugin;
@@ -55,5 +54,5 @@ struct WidgetPlugin
 	PluginInfo            info;
 	WidgetPluginFunctions functions;
 
-	List<WidgetType>      widgetTypes;
+	List<WidgetData>      widgetDatas;
 };

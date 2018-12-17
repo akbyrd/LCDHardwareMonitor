@@ -38,20 +38,20 @@ struct SensorPluginAPI
 {
 	struct Initialize
 	{
-		using AddSensorsFn = void(PluginContext*, Slice<Sensor>);
+		using RegisterSensorsFn = void(PluginContext*, Slice<Sensor>);
 
-		AddSensorsFn* AddSensors;
+		RegisterSensorsFn* RegisterSensors;
 	};
 
 	struct Update
 	{
-		// NOTE: Plugins should not free Sensor members until *after* calling RemoveSensors!
+		// NOTE: Plugins should not free Sensor members until *after* calling UnregisterSensors!
 
-		using AddSensorsFn    = void(PluginContext*, Slice<Sensor>);
-		using RemoveSensorsFn = void(PluginContext*, Slice<SensorRef>);
+		using RegisterSensorsFn   = void(PluginContext*, Slice<Sensor>);
+		using UnregisterSensorsFn = void(PluginContext*, Slice<SensorRef>);
 
-		AddSensorsFn*    AddSensors;
-		RemoveSensorsFn* RemoveSensors;
+		RegisterSensorsFn*   RegisterSensors;
+		UnregisterSensorsFn* UnregisterSensors;
 
 		Slice<Sensor> sensors;
 	};

@@ -282,9 +282,6 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 				newWindowTopLeft.x = windowCenter.x - ((i32) newWindowSize.x / 2);
 				newWindowTopLeft.y = windowCenter.y - ((i32) newWindowSize.y / 2);
 
-				if (newWindowTopLeft.x < 0) newWindowTopLeft.x = 0;
-				if (newWindowTopLeft.y < 0) newWindowTopLeft.y = 0;
-
 				success = SetWindowPos(
 					s->hwnd,
 					nullptr,

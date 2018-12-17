@@ -1,15 +1,22 @@
 #include "LHMAPI.h"
 #include "Filled Bar Constant Buffer.h"
 
+// TODO: Move to a shared header
+struct VSConstants
+{
+	Matrix wvp;
+};
+
 struct BarWidget
 {
 	v2u         size;
 	r32         borderSize;
 	r32         borderBlur;
-	PSConstants constants;
+	VSConstants vsConstants;
+	PSConstants psConstants;
 };
 
-static PixelShader filledBarPS = {};
+static Material filledBarMat = {};
 
 static b32
 InitializeBarWidgets(PluginContext* context, WidgetInstanceAPI::Initialize api)
@@ -19,18 +26,18 @@ InitializeBarWidgets(PluginContext* context, WidgetInstanceAPI::Initialize api)
 	for (u32 i = 0; i < api.widgets.length; i++)
 	{
 		//Widget*    widget    = &api.widgets[i];
-		BarWidget* barWidget = (BarWidget*) &api.widgetData[i];
+		BarWidget* barWidget = (BarWidget*) &api.widgetsUserData[i];
 
 		barWidget->size       = { 240, 12 };
 		barWidget->borderSize = 1.0f;
 		barWidget->borderBlur = 0.0f;
 
 		v2 pixelsPerUV = 1.0f / (v2) barWidget->size;
-		barWidget->constants.borderSizeUV    = barWidget->borderSize * pixelsPerUV;
-		barWidget->constants.borderBlurUV    = barWidget->borderBlur * pixelsPerUV;
-		barWidget->constants.borderColor     = Color32(47, 112, 22, 255);
-		barWidget->constants.fillColor       = Color32(47, 112, 22, 255);
-		barWidget->constants.backgroundColor = Color32( 0,   0,  0, 255);
+		barWidget->psConstants.borderSizeUV    = barWidget->borderSize * pixelsPerUV;
+		barWidget->psConstants.borderBlurUV    = barWidget->borderBlur * pixelsPerUV;
+		barWidget->psConstants.borderColor     = Color32(47, 112, 22, 255);
+		barWidget->psConstants.fillColor       = Color32(47, 112, 22, 255);
+		barWidget->psConstants.backgroundColor = Color32( 0,   0,  0, 255);
 	}
 	return true;
 }
@@ -41,42 +48,36 @@ UpdateBarWidgets(PluginContext* context, WidgetInstanceAPI::Update api)
 	for (u32 i = 0; i < api.widgets.length; i++)
 	{
 		Widget*    widget    = &api.widgets[i];
-		BarWidget* barWidget = (BarWidget*) &api.widgetData[i];
+		BarWidget* barWidget = (BarWidget*) &api.widgetsUserData[i];
 
 		// Update
 		if (widget->sensorRef)
 		{
 			Sensor* sensor = &api.sensors[widget->sensorRef.sensor];
 			float value = sensor->value / 100.0f;
-			barWidget->constants.fillAmount = Lerp(barWidget->constants.fillAmount, value, 0.10f);
+			barWidget->psConstants.fillAmount = Lerp(barWidget->psConstants.fillAmount, value, 0.10f);
 		}
 		else
 		{
 			r32 phase = (r32) i / (r32) (api.widgets.length + 1) * 0.5f * r32Pi;
-			barWidget->constants.fillAmount = sin(api.t + phase) * sin(api.t + phase);
+			barWidget->psConstants.fillAmount = sin(api.t + phase) * sin(api.t + phase);
 		}
 
 		// Draw
 		{
-			DrawCall dc = {};
-			dc.mesh = StandardMesh::Quad;
+			Matrix world = Identity();
 
 			v2 size = (v2) barWidget->size;
 			v2 position = widget->position;
-
+			// TODO: Add a SetPosition that takes a pivot and size
 			position += (v2{ 0.5f, 0.5f } - widget->pivot) * size;
-			v3 position3 = { position.x, position.y, -widget->depth };
+			SetPosition(world, position, -widget->depth);
+			SetScale   (world, size, 1.0f);
+			barWidget->vsConstants.wvp = world * api.GetViewProjectionMatrix(context);
 
-			SetPosition(dc.world, position3);
-			SetScale   (dc.world, size);
-
-			dc.vs               = StandardVertexShader::Debug;
-			dc.cBufPerObjDataVS = api.GetWVPPointer(context);
-
-			dc.ps               = filledBarPS;
-			dc.cBufPerObjDataPS = &barWidget->constants;
-
-			api.PushDrawCall(context, dc);
+			api.PushConstantBufferUpdate(context, filledBarMat, ShaderStage::Vertex, 0, &barWidget->vsConstants);
+			api.PushConstantBufferUpdate(context, filledBarMat, ShaderStage::Pixel,  0, &barWidget->psConstants);
+			api.PushDrawCall(context, filledBarMat);
 		}
 	}
 }
@@ -84,19 +85,18 @@ UpdateBarWidgets(PluginContext* context, WidgetInstanceAPI::Update api)
 static b32
 Initialize(PluginContext* context, WidgetPluginAPI::Initialize api)
 {
-	WidgetDefinition widgetDef = {};
-	widgetDef.name       = "Filled Bar";
-	widgetDef.size       = sizeof(BarWidget);
-	widgetDef.initialize = &InitializeBarWidgets;
-	widgetDef.update     = &UpdateBarWidgets;
-	api.AddWidgetDefinitions(context, widgetDef);
+	WidgetDesc widgetDesc = {};
+	widgetDesc.name         = "Filled Bar";
+	widgetDesc.userDataSize = sizeof(BarWidget);
+	widgetDesc.initialize   = &InitializeBarWidgets;
+	widgetDesc.update       = &UpdateBarWidgets;
+	api.RegisterWidgets(context, widgetDesc);
 
-	// TODO: This feels janky. Would like to unify the handling of cbufs in some way
 	ConstantBufferDesc cBufDesc = {};
-	cBufDesc.size      = sizeof(PSConstants);
-	cBufDesc.frequency = ConstantBufferFrequency::PerObject;
+	cBufDesc.size = sizeof(PSConstants);
+	PixelShader ps = api.LoadPixelShader(context, "Filled Bar Pixel Shader.cso", cBufDesc);
 
-	filledBarPS = api.LoadPixelShader(context, "Filled Bar Pixel Shader.cso", cBufDesc);
+	filledBarMat = api.CreateMaterial(context, StandardMesh::Quad, StandardVertexShader::WVP, ps);
 	return true;
 }
 

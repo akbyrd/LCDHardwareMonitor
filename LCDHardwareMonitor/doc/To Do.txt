@@ -1,7 +1,5 @@
 Cleanup Pass
 	Constant Buffers / Materials
-		Allocate constant buffers from a simulation owned arena
-		Could add SetMaterial API to optimized some redundant resouce lookups
 		Optimize out the Transpose in vector-matrix multiply
 		Split filled bar constant buffer into 2 pieces (rarely updated colors and every frame updated fill value)
 		ConstantBufferDesc seems kinda pointless now
@@ -38,7 +36,7 @@ Design Pass
 	Consider *requiring* Update (and potentially other functions) for plugins. Does it make sense
 		to have a Widget plugin that never draws anything (drawing happens in Update)? Or a Sensor
 		that never updates sensors values (I don't think we want to encourage out-of-band updaing
-		from a plugin). For Initialize, what's a WidgetPlugin that doesn't add WidgetDefinitions?
+		from a plugin). For Initialize, what's a WidgetPlugin that doesn't add WidgetDescs?
 		SensorPlugins don't need Initialize though. If you have a plugin to monitor fan speeds but
 		have no fans, it seems fine to provide no Sensors. Ok, but it still should have the
 		opportunity to look, right?

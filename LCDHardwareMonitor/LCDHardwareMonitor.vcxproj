@@ -172,7 +172,7 @@
     <ClInclude Include="src\simulation.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="res\Basic Pixel Shader.hlsl">
+    <FxCompile Include="res\Pixel Shader - Vertex Colored.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
@@ -182,7 +182,7 @@
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Shaders\%(Filename).cso</ObjectFileOutput>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(OutDir)Shaders\%(Filename).cso</ObjectFileOutput>
     </FxCompile>
-    <FxCompile Include="res\Basic Vertex Shader.hlsl">
+    <FxCompile Include="res\Vertex Shader - WVP.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>

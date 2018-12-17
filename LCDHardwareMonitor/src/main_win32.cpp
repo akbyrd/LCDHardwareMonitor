@@ -22,7 +22,6 @@
 
 // TODO: Should probably push renderer and plugin manager administration into
 // the simulation.
-// TODO: Remove window clamping
 // TODO: Support x86 and x64
 // TODO: Reduce link dependencies
 

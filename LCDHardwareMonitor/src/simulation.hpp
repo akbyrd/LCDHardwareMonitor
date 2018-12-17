@@ -38,16 +38,16 @@ GetWidgetPlugin(PluginContext* context)
 }
 
 static Widget*
-CreateWidget(WidgetType* widgetType)
+CreateWidget(WidgetData* widgetData)
 {
-	Widget* widget = List_Append(widgetType->widgets);
+	Widget* widget = List_Append(widgetData->widgets);
 	LOG_IF(!widget, return nullptr,
 		Severity::Error, "Failed to allocate Widget");
 
-	b32 success = List_Reserve(widgetType->widgetData, widgetType->definition.size);
+	b32 success = List_Reserve(widgetData->widgetsUserData, widgetData->desc.userDataSize);
 	LOG_IF(!success, return nullptr,
 		Severity::Error, "Failed to allocate Widget data list");
-	widgetType->widgetData.length += widgetType->definition.size;
+	widgetData->widgetsUserData.length += widgetData->desc.userDataSize;
 
 	return widget;
 }
@@ -62,12 +62,12 @@ RemoveSensorRefs(SimulationState* s, Slice<SensorRef> sensorRefs)
 		for (u32 j = 0; j < s->widgetPlugins.length; j++)
 		{
 			WidgetPlugin* widgetPlugin = &s->widgetPlugins[j];
-			for (u32 k = 0; k < widgetPlugin->widgetTypes.length; k++)
+			for (u32 k = 0; k < widgetPlugin->widgetDatas.length; k++)
 			{
-				WidgetType* widgetType = &widgetPlugin->widgetTypes[k];
-				for (u32 l = 0; l < widgetType->widgets.length; l++)
+				WidgetData* widgetData = &widgetPlugin->widgetDatas[k];
+				for (u32 l = 0; l < widgetData->widgets.length; l++)
 				{
-					Widget* widget = &widgetType->widgets[l];
+					Widget* widget = &widgetData->widgets[l];
 					if (widget->sensorRef == sensorRef)
 						widget->sensorRef = SensorRef::Null;
 				}
@@ -101,7 +101,7 @@ GetNameFromPath(String& path)
 // === Sensor API ==================================================================================
 
 static void
-AddSensors(PluginContext* context, Slice<Sensor> sensors)
+RegisterSensors(PluginContext* context, Slice<Sensor> sensors)
 {
 	if (!context->success) return;
 	context->success = false;
@@ -118,7 +118,7 @@ AddSensors(PluginContext* context, Slice<Sensor> sensors)
 }
 
 static void
-RemoveSensors(PluginContext* context, Slice<SensorRef> sensorRefs)
+UnregisterSensors(PluginContext* context, Slice<SensorRef> sensorRefs)
 {
 	if (!context->success) return;
 	context->success = false;
@@ -151,7 +151,7 @@ RemoveSensors(PluginContext* context, Slice<SensorRef> sensorRefs)
 // === Widget API ==================================================================================
 
 static void
-AddWidgetDefinitions(PluginContext* context, Slice<WidgetDefinition> widgetDefs)
+RegisterWidgets(PluginContext* context, Slice<WidgetDesc> widgetDescs)
 {
 	if (!context->success) return;
 	context->success = false;
@@ -161,40 +161,40 @@ AddWidgetDefinitions(PluginContext* context, Slice<WidgetDefinition> widgetDefs)
 	WidgetPlugin* widgetPlugin = GetWidgetPlugin(context);
 
 	b32 success;
-	for (u32 i = 0; i < widgetDefs.length; i++)
+	for (u32 i = 0; i < widgetDescs.length; i++)
 	{
-		WidgetDefinition* widgetDef = &widgetDefs[i];
+		WidgetDesc* widgetDesc = &widgetDescs[i];
 
-		WidgetType widgetType = {};
-		widgetType.definition = *widgetDef;
+		WidgetData widgetData = {};
+		widgetData.desc = *widgetDesc;
 
-		success = List_Reserve(widgetType.widgets, 8);
+		success = List_Reserve(widgetData.widgets, 8);
 		LOG_IF(!success, return,
 			Severity::Error, "Failed to allocate Widget instances list");
 
-		success = List_Reserve(widgetType.widgetData, 8 * widgetDef->size);
+		success = List_Reserve(widgetData.widgetsUserData, 8 * widgetDesc->userDataSize);
 		LOG_IF(!success, return,
 			Severity::Error, "Failed to allocate Widget data list");
 
-		WidgetType* widgetType2 = List_Append(widgetPlugin->widgetTypes, widgetType);
-		LOG_IF(!widgetType2, return,
-			Severity::Error, "Failed to allocate WidgetType");
+		WidgetData* widgetData2 = List_Append(widgetPlugin->widgetDatas, widgetData);
+		LOG_IF(!widgetData2, return,
+			Severity::Error, "Failed to allocate WidgetData");
 	}
 
 	context->success = true;
 }
 
 static void
-RemoveAllWidgetDefinitions(PluginContext* context)
+UnregisterAllWidgets(PluginContext* context)
 {
 	WidgetPlugin* widgetPlugin = GetWidgetPlugin(context);
-	for (u32 i = 0; i < widgetPlugin->widgetTypes.length; i++)
+	for (u32 i = 0; i < widgetPlugin->widgetDatas.length; i++)
 	{
-		WidgetType* widgetType = &widgetPlugin->widgetTypes[i];
-		List_Free(widgetType->widgets);
-		List_Free(widgetType->widgetData);
+		WidgetData* widgetData = &widgetPlugin->widgetDatas[i];
+		List_Free(widgetData->widgets);
+		List_Free(widgetData->widgetsUserData);
 	}
-	List_Free(widgetPlugin->widgetTypes);
+	List_Free(widgetPlugin->widgetDatas);
 }
 
 static PixelShader
@@ -312,7 +312,7 @@ LoadSensorPlugin(SimulationState* s, c8* directory, c8* fileName)
 		context.success         = true;
 
 		SensorPluginAPI::Initialize api = {};
-		api.AddSensors = AddSensors;
+		api.RegisterSensors = RegisterSensors;
 
 		success = sensorPlugin->functions.initialize(&context, api);
 		success &= context.success;
@@ -392,9 +392,9 @@ LoadWidgetPlugin(SimulationState* s, c8* directory, c8* fileName)
 		context.success         = true;
 
 		WidgetPluginAPI::Initialize api = {};
-		api.AddWidgetDefinitions = AddWidgetDefinitions;
-		api.LoadPixelShader      = LoadPixelShader;
-		api.CreateMaterial       = CreateMaterial;
+		api.RegisterWidgets = RegisterWidgets;
+		api.LoadPixelShader = LoadPixelShader;
+		api.CreateMaterial  = CreateMaterial;
 
 		success = widgetPlugin->functions.initialize(&context, api);
 		success &= context.success;
@@ -402,9 +402,9 @@ LoadWidgetPlugin(SimulationState* s, c8* directory, c8* fileName)
 		{
 			LOG(Severity::Error, "Failed to initialize Widget plugin");
 
-			// TODO: There's a decent chance we'll want to keep widget definitions
+			// TODO: There's a decent chance we'll want to keep widget descs
 			// around for unloaded plugins
-			RemoveAllWidgetDefinitions(&context);
+			UnregisterAllWidgets(&context);
 			return nullptr;
 		}
 	}
@@ -423,20 +423,20 @@ UnloadWidgetPlugin(SimulationState* s, WidgetPlugin* widgetPlugin)
 	context.widgetPluginRef = widgetPlugin->ref;
 
 	WidgetInstanceAPI::Teardown instancesAPI = {};
-	for (u32 i = 0; i < widgetPlugin->widgetTypes.length; i++)
+	for (u32 i = 0; i < widgetPlugin->widgetDatas.length; i++)
 	{
-		WidgetType* widgetType = &widgetPlugin->widgetTypes[i];
-		if (widgetType->widgets.length == 0) continue;
+		WidgetData* widgetData = &widgetPlugin->widgetDatas[i];
+		if (widgetData->widgets.length == 0) continue;
 
 		context.success = true;
 
-		instancesAPI.widgets           = widgetType->widgets;
-		instancesAPI.widgetData        = widgetType->widgetData;
-		instancesAPI.widgetData.stride = widgetType->definition.size;
+		instancesAPI.widgets                = widgetData->widgets;
+		instancesAPI.widgetsUserData        = widgetData->widgetsUserData;
+		instancesAPI.widgetsUserData.stride = widgetData->desc.userDataSize;
 
 		// TODO: try/catch?
-		if (widgetType->definition.teardown)
-			widgetType->definition.teardown(&context, instancesAPI);
+		if (widgetData->desc.teardown)
+			widgetData->desc.teardown(&context, instancesAPI);
 	}
 
 	// TODO: try/catch?
@@ -446,7 +446,7 @@ UnloadWidgetPlugin(SimulationState* s, WidgetPlugin* widgetPlugin)
 		widgetPlugin->functions.teardown(&context, api);
 	}
 
-	RemoveAllWidgetDefinitions(&context);
+	UnregisterAllWidgets(&context);
 
 	b32 success = PluginLoader_UnloadWidgetPlugin(s->pluginLoader, widgetPlugin);
 	LOG_IF(!success, return false,
@@ -505,18 +505,18 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 			ConstantBufferDesc cBufDesc = {};
 			cBufDesc.size = sizeof(Matrix);
 
-			VertexShader vs = Renderer_LoadVertexShader(s->renderer, "Default", "Shaders/Basic Vertex Shader.cso", vsAttributes, cBufDesc);
+			VertexShader vs = Renderer_LoadVertexShader(s->renderer, "Default", "Shaders/Vertex Shader - WVP.cso", vsAttributes, cBufDesc);
 			LOG_IF(!vs, return false,
-				Severity::Error, "Failed to load default vertex shader");
-			Assert(vs == StandardVertexShader::Debug);
+				Severity::Error, "Failed to load built-in wvp vertex shader");
+			Assert(vs == StandardVertexShader::WVP);
 		}
 
 		// Pixel shader
 		{
-			PixelShader ps = Renderer_LoadPixelShader(s->renderer, "Default", "Shaders/Basic Pixel Shader.cso", {});
+			PixelShader ps = Renderer_LoadPixelShader(s->renderer, "Default", "Shaders/Pixel Shader - Vertex Colored.cso", {});
 			LOG_IF(!ps, return false,
-				Severity::Error, "Failed to load default pixel shader");
-			Assert(ps == StandardPixelShader::Debug);
+				Severity::Error, "Failed to load built-in vertex colored pixel shader");
+			Assert(ps == StandardPixelShader::VertexColored);
 		}
 
 		// Triangle mesh
@@ -565,10 +565,10 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 		u32 debugSensorIndices[] = { 6, 7, 8, 9, 32 }; // Desktop 2080 Ti
 		//u32 debugSensorIndices[] = { 6, 7, 8, 9, 33 }; // Desktop 780 Tis
 		//u32 debugSensorIndices[] = { 0, 1, 2, 3, 12 }; // Laptop
-		WidgetType* widgetType = &filledBarPlugin->widgetTypes[0];
+		WidgetData* widgetData = &filledBarPlugin->widgetDatas[0];
 		for (u32 i = 0; i < ArrayLength(debugSensorIndices); i++)
 		{
-			Widget* widget = CreateWidget(widgetType);
+			Widget* widget = CreateWidget(widgetData);
 			if (!widget) return false;
 
 			widget->position         = ((v2) s->renderSize - v2{ 240, 12 }) / 2.0f;
@@ -582,11 +582,11 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 			context.success         = true;
 
 			WidgetInstanceAPI::Initialize api = {};
-			u32 iLast = widgetType->widgets.length - 1;
-			api.widgets    = widgetType->widgets[iLast];
-			api.widgetData = widgetType->widgetData[iLast * widgetType->definition.size];
+			u32 iLast = widgetData->widgets.length - 1;
+			api.widgets         = widgetData->widgets[iLast];
+			api.widgetsUserData = widgetData->widgetsUserData[iLast * widgetData->desc.userDataSize];
 
-			widgetType->definition.initialize(&context, api);
+			widgetData->desc.initialize(&context, api);
 		}
 	}
 
@@ -607,8 +607,8 @@ Simulation_Update(SimulationState* s)
 	// Update Sensors
 	{
 		SensorPluginAPI::Update api = {};
-		api.AddSensors    = AddSensors;
-		api.RemoveSensors = RemoveSensors;
+		api.RegisterSensors   = RegisterSensors;
+		api.UnregisterSensors = UnregisterSensors;
 
 		for (u32 i = 0; i < s->sensorPlugins.length; i++)
 		{
@@ -660,19 +660,19 @@ Simulation_Update(SimulationState* s)
 			if (widgetPlugin->functions.update)
 				widgetPlugin->functions.update(&context, pluginAPI);
 
-			for (u32 j = 0; j < widgetPlugin->widgetTypes.length; j++)
+			for (u32 j = 0; j < widgetPlugin->widgetDatas.length; j++)
 			{
-				WidgetType* widgetType = &widgetPlugin->widgetTypes[i];
-				if (widgetType->widgets.length == 0) continue;
+				WidgetData* widgetData = &widgetPlugin->widgetDatas[i];
+				if (widgetData->widgets.length == 0) continue;
 
 				context.success = true;
 
-				instancesAPI.widgets           = widgetType->widgets;
-				instancesAPI.widgetData        = widgetType->widgetData;
-				instancesAPI.widgetData.stride = widgetType->definition.size;
+				instancesAPI.widgets                = widgetData->widgets;
+				instancesAPI.widgetsUserData        = widgetData->widgetsUserData;
+				instancesAPI.widgetsUserData.stride = widgetData->desc.userDataSize;
 
 				// TODO: try/catch?
-				widgetType->definition.update(&context, instancesAPI);
+				widgetData->desc.update(&context, instancesAPI);
 			}
 		}
 	}

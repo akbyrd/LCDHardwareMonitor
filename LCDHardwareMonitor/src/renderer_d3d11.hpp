@@ -93,37 +93,37 @@ struct RenderCommand
 
 struct RendererState
 {
-	ComPtr<ID3D11Device>           d3dDevice                   = nullptr;
-	ComPtr<ID3D11DeviceContext>    d3dContext                  = nullptr;
-	ComPtr<IDXGIFactory1>          dxgiFactory                 = nullptr;
+	ComPtr<ID3D11Device>           d3dDevice;
+	ComPtr<ID3D11DeviceContext>    d3dContext;
+	ComPtr<IDXGIFactory1>          dxgiFactory;
 
-	ComPtr<ID3D11Texture2D>        d3dRenderTexture            = nullptr;
-	ComPtr<ID3D11RenderTargetView> d3dRenderTargetView         = nullptr;
-	ComPtr<ID3D11DepthStencilView> d3dDepthBufferView          = nullptr;
+	ComPtr<ID3D11Texture2D>        d3dRenderTexture;
+	ComPtr<ID3D11RenderTargetView> d3dRenderTargetView;
+	ComPtr<ID3D11DepthStencilView> d3dDepthBufferView;
 
-	ComPtr<ID3D11RasterizerState>  d3dRasterizerStateSolid     = nullptr;
-	ComPtr<ID3D11RasterizerState>  d3dRasterizerStateWireframe = nullptr;
+	ComPtr<ID3D11RasterizerState>  d3dRasterizerStateSolid;
+	ComPtr<ID3D11RasterizerState>  d3dRasterizerStateWireframe;
 
-	ComPtr<ID3D11Buffer>           d3dVertexBuffer             = nullptr;
-	ComPtr<ID3D11Buffer>           d3dIndexBuffer              = nullptr;
+	ComPtr<ID3D11Buffer>           d3dVertexBuffer;
+	ComPtr<ID3D11Buffer>           d3dIndexBuffer;
 
-	ComPtr<IDirect3D9Ex>           d3d9                        = nullptr;
-	ComPtr<IDirect3DDevice9Ex>     d3d9Device                  = nullptr;
-	ComPtr<IDirect3DTexture9>      d3d9RenderTexture           = nullptr;
-	ComPtr<IDirect3DSurface9>      d3d9RenderSurface0          = nullptr;
+	ComPtr<IDirect3D9Ex>           d3d9;
+	ComPtr<IDirect3DDevice9Ex>     d3d9Device;
+	ComPtr<IDirect3DTexture9>      d3d9RenderTexture;
+	ComPtr<IDirect3DSurface9>      d3d9RenderSurface0;
 
-	v2u         renderSize         = {};
-	DXGI_FORMAT renderFormat       = DXGI_FORMAT_UNKNOWN;
-	u32         multisampleCount   = 1;
-	u32         qualityLevelCount  = 0;
-	b32         isWireframeEnabled = false;
+	v2u         renderSize;
+	DXGI_FORMAT renderFormat;
+	u32         multisampleCount;
+	u32         qualityLevelCount;
+	b32         isWireframeEnabled;
 
-	List<VertexShaderData> vertexShaders = {};
-	List<PixelShaderData>  pixelShaders  = {};
-	List<MeshData>         meshes        = {};
-	List<Vertex>           vertexBuffer  = {};
-	List<u32>              indexBuffer   = {};
-	List<RenderCommand>    commandList   = {};
+	List<VertexShaderData> vertexShaders;
+	List<PixelShaderData>  pixelShaders;
+	List<MeshData>         meshes;
+	List<Vertex>           vertexBuffer;
+	List<u32>              indexBuffer;
+	List<RenderCommand>    commandList;
 };
 
 template<typename T>
@@ -162,6 +162,8 @@ b32
 Renderer_Initialize(RendererState* s, v2u renderSize)
 {
 	Assert(renderSize.x < i32Max && renderSize.y < i32Max);
+
+	s->multisampleCount = 1;
 
 	// Create device
 	{
@@ -866,20 +868,12 @@ Renderer_Render(RendererState* s)
 	s->d3dContext->ClearRenderTargetView(s->d3dRenderTargetView.Get(), DirectX::Colors::Black);
 	s->d3dContext->ClearDepthStencilView(s->d3dDepthBufferView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
 
-	// TODO: Track list of active constant buffers as well
 	VertexShader lastVS = VertexShader::Null;
 	 PixelShader lastPS =  PixelShader::Null;
 
-	// TODO: DrawCall structure
-	// We can pre-update all non-per-object cbufs
-	// But for per-object cbufs we need to do it with the draw call
-	// So draw calls and per-object buffer updates may need to be specified together by the user
-	// Internally we split the draw call into 'begin' (calculate wvp), 'update buffers', and 'end' (bind and draw)
-	// Or, we hard code the buffer updating for the built in vs
-	// We'd also have to move w v calculation to the simulation and give plugins a way to get it when pushing render commands
-	// I think this is the ticket
+	// OPTIMIZE: Sort draws?
+	// OPTIMIZE: Adding a "SetMaterial" command would remove some redundant shader lookups.
 
-	// TODO: Sort draws
 	for (u32 i = 0; i < s->commandList.length; i++)
 	{
 		RenderCommand* renderCommand = &s->commandList[i];
@@ -897,6 +891,7 @@ Renderer_Render(RendererState* s)
 				switch (cBufUpdate->shaderStage)
 				{
 					default: Assert(false); continue;
+
 					case ShaderStage::Vertex:
 					{
 						VertexShaderData* vs = &s->vertexShaders[cBufUpdate->material.vs];
@@ -925,7 +920,10 @@ Renderer_Render(RendererState* s)
 				PixelShaderData*  ps   = &s->pixelShaders[dc->material.ps];
 
 				// Vertex Shader
+				if (vs->ref != lastVS)
 				{
+					lastVS = vs->ref;
+
 					size vStride = sizeof(Vertex);
 					size vOffset = 0;
 
@@ -940,11 +938,13 @@ Renderer_Render(RendererState* s)
 						ConstantBufferData* cBuf = &vs->constantBuffers[j];
 						s->d3dContext->VSSetConstantBuffers(j, 1, cBuf->d3dConstantBuffer.GetAddressOf());
 					}
-					lastVS = vs->ref;
 				}
 
 				// Pixel Shader
+				if (ps->ref != lastPS)
 				{
+					lastPS = ps->ref;
+
 					s->d3dContext->PSSetShader(ps->d3dPixelShader.Get(), nullptr, 0);
 
 					for (u32 j = 0; j < ps->constantBuffers.length; j++)
@@ -952,7 +952,6 @@ Renderer_Render(RendererState* s)
 						ConstantBufferData* cBuf = &ps->constantBuffers[j];
 						s->d3dContext->PSSetConstantBuffers(j, 1, cBuf->d3dConstantBuffer.GetAddressOf());
 					}
-					lastPS = ps->ref;
 				}
 
 				// TODO: Leave constant buffers bound?

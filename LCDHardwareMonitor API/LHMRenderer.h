@@ -43,15 +43,14 @@ struct ConstantBufferDesc
 
 namespace StandardVertexShader
 {
-	static const VertexShader Null  = { 0 };
-	// TODO: Rename?
-	static const VertexShader Debug = { 1 };
+	static const VertexShader Null = { 0 };
+	static const VertexShader WVP  = { 1 };
 };
 
 namespace StandardPixelShader
 {
-	static const PixelShader Null  = { 0 };
-	static const PixelShader Debug = { 1 };
+	static const PixelShader Null          = { 0 };
+	static const PixelShader VertexColored = { 1 };
 };
 
 #endif
