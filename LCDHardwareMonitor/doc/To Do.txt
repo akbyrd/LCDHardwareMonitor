@@ -1,6 +1,5 @@
 Cleanup Pass
-	Constant Buffers / Materials
-		Optimize out the Transpose in vector-matrix multiply
+	Rendering
 		Split filled bar constant buffer into 2 pieces (rarely updated colors and every frame updated fill value)
 		ConstantBufferDesc seems kinda pointless now
 		Debug rendering mode

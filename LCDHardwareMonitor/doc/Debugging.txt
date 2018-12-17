@@ -10,3 +10,23 @@ Visual Studio Graphics Debugging
 		VsgDbgEndCapture();
 		VsgDbgBeginCapture();
 		VsgDbgUnInit();
+
+
+Matrix Math
+{
+	Matrix world = Identity();
+	Matrix view  = api.GetViewMatrix(context);
+	Matrix proj  = api.GetProjectionMatrix(context);
+
+	Matrix vp   = view * proj;
+	Matrix wvp  = world * view * proj;
+	Matrix vp2  = api.GetViewProjectionMatrix(context);
+	Matrix wvp2 = world * vp2;
+	Matrix wvp3 = world * vp;
+
+	v4 pos = { 0, 0, 0, 1 };    // Expected
+	v4 pWorld = pos    * world; // 0, 0, 0
+	v4 pView  = pWorld * view;  // -160, -120, 1
+	v4 pProj  = pView  * proj;  // -1, -1, .001
+	int foo = 0; UNUSED(foo);
+}

@@ -4,13 +4,13 @@
 // Conventions:
 //   Right handed world
 //   +X right, +Y up, -Z forward
-//   Vectors are column vectors
+//   Vectors are row vectors
 //   Matrices are applied from the right side of vectors
 //   v' = v * M
-//   Matrices store axes and translation in rows *CHANGE THIS*
-//   Matrices are stored in row-major order
-//   Matrices are addressed in row-major order
-//   m12 = M[1][2] = y.z
+//   Matrices store axes and translation in columns
+//   Matrices are stored in column-major order
+//   Matrices are indexed in column-major order
+//   m12 = M[2][1] = y.z
 //   Transformations are applied S then R then T
 
 
@@ -783,42 +783,42 @@ union Matrix
 {
 	struct
 	{
-		r32 m00, m01, m02, m03;
-		r32 m10, m11, m12, m13;
-		r32 m20, m21, m22, m23;
-		r32 m30, m31, m32, m33;
+		r32 m00, m10, m20, m30;
+		r32 m01, m11, m21, m31;
+		r32 m02, m12, m22, m32;
+		r32 m03, m13, m23, m33;
 	};
 
 	// Aliases
 	struct
 	{
-		r32 xx, xy, xz, m03;
-		r32 yx, yy, yz, m13;
-		r32 zx, zy, zz, m23;
-		r32 tx, ty, tz, m33;
+		r32 xx,  yx,  zx,  tx;
+		r32 xy,  yy,  zy,  ty;
+		r32 xz,  yz,  zz,  tz;
+		r32 m03, m13, m23, m33;
 	};
 	struct
 	{
-		r32 sx,  m01, m02, m03;
-		r32 m10, sy,  m12, m13;
-		r32 m20, m21, sz,  m23;
-		r32 m30, m31, m32, m33;
+		r32 sx,  m10, m20, m30;
+		r32 m01, sy,  m21, m31;
+		r32 m02, m12, sz,  m32;
+		r32 m03, m13, m23, m33;
 	};
 	r32 raw[16];
 	r32 arr[4][4];
-	v4 row[4];
+	v4 col[4];
 
-	v4& operator[] (i32 row);
+	v4& operator[] (i32 col);
 };
 
 inline Matrix
 Transpose(Matrix m)
 {
 	Matrix result = {
-		m.m00, m.m10, m.m20, m.m30,
-		m.m01, m.m11, m.m21, m.m31,
-		m.m02, m.m12, m.m22, m.m32,
-		m.m03, m.m13, m.m23, m.m33,
+		m.m00, m.m01, m.m02, m.m03,
+		m.m10, m.m11, m.m12, m.m13,
+		m.m20, m.m21, m.m22, m.m23,
+		m.m30, m.m31, m.m32, m.m33,
 	};
 	return result;
 }
@@ -826,12 +826,12 @@ Transpose(Matrix m)
 inline Matrix
 operator* (Matrix lhs, Matrix rhs)
 {
-	Matrix rTrans = Transpose(rhs);
+	Matrix lTrans = Transpose(lhs);
 	Matrix result = {
-		Dot(lhs[0], rTrans[0]), Dot(lhs[0], rTrans[1]), Dot(lhs[0], rTrans[2]), Dot(lhs[0], rTrans[3]),
-		Dot(lhs[1], rTrans[0]), Dot(lhs[1], rTrans[1]), Dot(lhs[1], rTrans[2]), Dot(lhs[1], rTrans[3]),
-		Dot(lhs[2], rTrans[0]), Dot(lhs[2], rTrans[1]), Dot(lhs[2], rTrans[2]), Dot(lhs[2], rTrans[3]),
-		Dot(lhs[3], rTrans[0]), Dot(lhs[3], rTrans[1]), Dot(lhs[3], rTrans[2]), Dot(lhs[3], rTrans[3])
+		Dot(lTrans[0], rhs[0]), Dot(lTrans[1], rhs[0]), Dot(lTrans[2], rhs[0]), Dot(lTrans[3], rhs[0]),
+		Dot(lTrans[0], rhs[1]), Dot(lTrans[1], rhs[1]), Dot(lTrans[2], rhs[1]), Dot(lTrans[3], rhs[1]),
+		Dot(lTrans[0], rhs[2]), Dot(lTrans[1], rhs[2]), Dot(lTrans[2], rhs[2]), Dot(lTrans[3], rhs[2]),
+		Dot(lTrans[0], rhs[3]), Dot(lTrans[1], rhs[3]), Dot(lTrans[2], rhs[3]), Dot(lTrans[3], rhs[3])
 	};
 	return result;
 }
@@ -841,21 +841,19 @@ template <typename T>
 inline v4t<T>
 operator* (v4t<T> lhs, Matrix rhs)
 {
-	// TODO: Get rid of this transpose
-	Matrix rTrans = Transpose(rhs);
 	v4t<T> result = {
-		Dot(lhs, rTrans[0]),
-		Dot(lhs, rTrans[1]),
-		Dot(lhs, rTrans[2]),
-		Dot(lhs, rTrans[3])
+		Dot(lhs, rhs.col[0]),
+		Dot(lhs, rhs.col[1]),
+		Dot(lhs, rhs.col[2]),
+		Dot(lhs, rhs.col[3])
 	};
 	return result;
 }
 
 inline v4&
-Matrix::operator[] (i32 _row)
+Matrix::operator[] (i32 _col)
 {
-	v4& result = row[_row];
+	v4& result = col[_col];
 	return result;
 }
 
@@ -881,10 +879,11 @@ LookAt(v3t<T> pos, v3t<U> target)
 	v3 y = Normalize(Cross(z, x));
 
 	Matrix result = {
-		  x.x,   x.y,   x.z, 0.0f,
-		  y.x,   y.y,   y.z, 0.0f,
-		  z.x,   z.y,   z.z, 0.0f,
-		pos.x, pos.y, pos.z, 1.0f
+		x.x,  x.y,  x.z,  pos.x,
+		y.x,  y.y,  y.z,  pos.y,
+		z.x,  z.y,  z.z,  pos.z,
+		0.0f, 0.0f, 0.0f, 1.0f
+
 	};
 	return result;
 }
@@ -897,8 +896,15 @@ Orthographic(v2t<T> size, r32 near, r32 far)
 	result[0][0] =  2.0f / size.x;
 	result[1][1] =  2.0f / size.y;
 	result[2][2] = -1.0f / (near - far);
-	result[3][2] =  near / (near - far);
+	result[2][3] =  near / (near - far);
 	result[3][3] =  1.0f;
+	return result;
+}
+
+inline v4
+Row(Matrix& m, i32 row)
+{
+	v4 result = { m[0][row], m[1][row], m[2][row], m[3][row] };
 	return result;
 }
 

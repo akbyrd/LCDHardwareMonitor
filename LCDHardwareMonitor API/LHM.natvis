@@ -41,10 +41,18 @@
   <Type Name="Matrix">
     <DisplayString>...</DisplayString>
     <Expand>
-      <Item Name="Row 0">row[0]</Item>
-      <Item Name="Row 1">row[1]</Item>
-      <Item Name="Row 2">row[2]</Item>
-      <Item Name="Row 3">row[3]</Item>
+      <Synthetic Name ="Row 0">
+        <DisplayString>{{ {m00,g}, {m01,g}, {m02,g}, {m03,g} }}</DisplayString>
+      </Synthetic>
+      <Synthetic Name ="Row 1">
+        <DisplayString>{{ {m10,g}, {m11,g}, {m12,g}, {m13,g} }}</DisplayString>
+      </Synthetic>
+      <Synthetic Name ="Row 2">
+        <DisplayString>{{ {m20,g}, {m21,g}, {m22,g}, {m23,g} }}</DisplayString>
+      </Synthetic>
+      <Synthetic Name ="Row 3">
+        <DisplayString>{{ {m30,g}, {m31,g}, {m32,g}, {m33,g} }}</DisplayString>
+      </Synthetic>
     </Expand>
   </Type>
 

@@ -1,6 +1,6 @@
 cbuffer cbPerObject
 {
-	row_major matrix gWorldViewProj;
+	matrix gWorldViewProj;
 };
 
 struct Vertex
