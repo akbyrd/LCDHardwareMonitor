@@ -1,19 +1,15 @@
 #include "LHMAPI.h"
-#include "Filled Bar Constant Buffer.h"
-
-// TODO: Move to a shared header
-struct VSConstants
-{
-	Matrix wvp;
-};
+#include "Vertex Shader - WVP.h"
+#include "Pixel Shader - Filled Bar.h"
 
 struct BarWidget
 {
-	v2u         size;
-	r32         borderSize;
-	r32         borderBlur;
-	VSConstants vsConstants;
-	PSConstants psConstants;
+	v2u          size;
+	r32          borderSize;
+	r32          borderBlur;
+	VSPerObject  vsPerObject;
+	PSInitialize psInitialize;
+	PSPerObject  psPerObject;
 };
 
 static Material filledBarMat = {};
@@ -21,8 +17,6 @@ static Material filledBarMat = {};
 static b32
 InitializeBarWidgets(PluginContext* context, WidgetInstanceAPI::Initialize api)
 {
-	UNUSED(context);
-
 	for (u32 i = 0; i < api.widgets.length; i++)
 	{
 		//Widget*    widget    = &api.widgets[i];
@@ -33,11 +27,13 @@ InitializeBarWidgets(PluginContext* context, WidgetInstanceAPI::Initialize api)
 		barWidget->borderBlur = 0.0f;
 
 		v2 pixelsPerUV = 1.0f / (v2) barWidget->size;
-		barWidget->psConstants.borderSizeUV    = barWidget->borderSize * pixelsPerUV;
-		barWidget->psConstants.borderBlurUV    = barWidget->borderBlur * pixelsPerUV;
-		barWidget->psConstants.borderColor     = Color32(47, 112, 22, 255);
-		barWidget->psConstants.fillColor       = Color32(47, 112, 22, 255);
-		barWidget->psConstants.backgroundColor = Color32( 0,   0,  0, 255);
+		barWidget->psInitialize.borderSizeUV    = barWidget->borderSize * pixelsPerUV;
+		barWidget->psInitialize.borderBlurUV    = barWidget->borderBlur * pixelsPerUV;
+		barWidget->psInitialize.borderColor     = Color32(47, 112, 22, 255);
+		barWidget->psInitialize.fillColor       = Color32(47, 112, 22, 255);
+		barWidget->psInitialize.backgroundColor = Color32( 0,   0,  0, 255);
+
+		api.PushConstantBufferUpdate(context, filledBarMat, ShaderStage::Pixel,  0, &barWidget->psInitialize);
 	}
 	return true;
 }
@@ -55,12 +51,12 @@ UpdateBarWidgets(PluginContext* context, WidgetInstanceAPI::Update api)
 		{
 			Sensor* sensor = &api.sensors[widget->sensorRef.sensor];
 			float value = sensor->value / 100.0f;
-			barWidget->psConstants.fillAmount = Lerp(barWidget->psConstants.fillAmount, value, 0.10f);
+			barWidget->psPerObject.fillAmount = Lerp(barWidget->psPerObject.fillAmount, value, 0.10f);
 		}
 		else
 		{
 			r32 phase = (r32) i / (r32) (api.widgets.length + 1) * 0.5f * r32Pi;
-			barWidget->psConstants.fillAmount = sin(api.t + phase) * sin(api.t + phase);
+			barWidget->psPerObject.fillAmount = sin(api.t + phase) * sin(api.t + phase);
 		}
 
 		// Draw
@@ -73,10 +69,10 @@ UpdateBarWidgets(PluginContext* context, WidgetInstanceAPI::Update api)
 			position += (v2{ 0.5f, 0.5f } - widget->pivot) * size;
 			SetPosition(world, position, -widget->depth);
 			SetScale   (world, size, 1.0f);
-			barWidget->vsConstants.wvp = world * api.GetViewProjectionMatrix(context);
+			barWidget->vsPerObject.wvp = world * api.GetViewProjectionMatrix(context);
 
-			api.PushConstantBufferUpdate(context, filledBarMat, ShaderStage::Vertex, 0, &barWidget->vsConstants);
-			api.PushConstantBufferUpdate(context, filledBarMat, ShaderStage::Pixel,  0, &barWidget->psConstants);
+			api.PushConstantBufferUpdate(context, filledBarMat, ShaderStage::Vertex, 0, &barWidget->vsPerObject);
+			api.PushConstantBufferUpdate(context, filledBarMat, ShaderStage::Pixel,  1, &barWidget->psPerObject);
 			api.PushDrawCall(context, filledBarMat);
 		}
 	}
@@ -92,9 +88,11 @@ Initialize(PluginContext* context, WidgetPluginAPI::Initialize api)
 	widgetDesc.update       = &UpdateBarWidgets;
 	api.RegisterWidgets(context, widgetDesc);
 
-	ConstantBufferDesc cBufDesc = {};
-	cBufDesc.size = sizeof(PSConstants);
-	PixelShader ps = api.LoadPixelShader(context, "Filled Bar Pixel Shader.cso", cBufDesc);
+	ConstantBufferDesc cBufDescs[] = {
+		{ sizeof(PSInitialize) },
+		{ sizeof(PSPerObject)  }
+	};
+	PixelShader ps = api.LoadPixelShader(context, "Filled Bar Pixel Shader.cso", cBufDescs);
 
 	filledBarMat = api.CreateMaterial(context, StandardMesh::Quad, StandardVertexShader::WVP, ps);
 	return true;

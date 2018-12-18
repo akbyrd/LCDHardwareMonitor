@@ -1,6 +1,5 @@
 Cleanup Pass
 	Rendering
-		Split filled bar constant buffer into 2 pieces (rarely updated colors and every frame updated fill value)
 		ConstantBufferDesc seems kinda pointless now
 		Debug rendering mode
 			Mouse look controls

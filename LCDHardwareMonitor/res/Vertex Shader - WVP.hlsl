@@ -1,3 +1,5 @@
+#include "../../LCDHardwareMonitor API/Vertex Shader - WVP.h"
+
 cbuffer cbPerObject
 {
 	matrix gWorldViewProj;

@@ -583,8 +583,9 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 
 			WidgetInstanceAPI::Initialize api = {};
 			u32 iLast = widgetData->widgets.length - 1;
-			api.widgets         = widgetData->widgets[iLast];
-			api.widgetsUserData = widgetData->widgetsUserData[iLast * widgetData->desc.userDataSize];
+			api.widgets                  = widgetData->widgets[iLast];
+			api.widgetsUserData          = widgetData->widgetsUserData[iLast * widgetData->desc.userDataSize];
+			api.PushConstantBufferUpdate = PushConstantBufferUpdate;
 
 			widgetData->desc.initialize(&context, api);
 		}

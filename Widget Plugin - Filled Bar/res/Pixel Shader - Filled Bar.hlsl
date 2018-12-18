@@ -4,8 +4,7 @@
 // TODO: Corners in the border blur don't look right
 // TODO: The border blur size isn't quite correct (give it large numbers, expect it to cap out. Not sure if it does?)
 
-// TODO: Move
-#include "../src/Filled Bar Constant Buffer.h"
+#include "../src/Pixel Shader - Filled Bar.h"
 
 struct PixelFragment
 {
