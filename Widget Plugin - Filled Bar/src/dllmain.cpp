@@ -92,7 +92,7 @@ Initialize(PluginContext* context, WidgetPluginAPI::Initialize api)
 		{ sizeof(PSInitialize) },
 		{ sizeof(PSPerObject)  }
 	};
-	PixelShader ps = api.LoadPixelShader(context, "Filled Bar Pixel Shader.cso", cBufDescs);
+	PixelShader ps = api.LoadPixelShader(context, "Pixel Shader - Filled Bar.cso", cBufDescs);
 
 	filledBarMat = api.CreateMaterial(context, StandardMesh::Quad, StandardVertexShader::WVP, ps);
 	return true;
