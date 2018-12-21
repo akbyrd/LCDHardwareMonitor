@@ -42,8 +42,8 @@ b32                   Renderer_Initialize                   (RendererState*, v2i
 b32                   Renderer_RebuildSharedGeometryBuffers (RendererState*);
 void                  Renderer_Teardown                     (RendererState*);
 Mesh                  Renderer_CreateMesh                   (RendererState*, Slice<c8> name, Slice<Vertex> vertices, Slice<Index> indices);
-VertexShader          Renderer_LoadVertexShader             (RendererState*, Slice<c8> name, c8* path, Slice<VertexAttribute> attributes, Slice<ConstantBufferDesc> cBufDescs);
-PixelShader           Renderer_LoadPixelShader              (RendererState*, Slice<c8> name, c8* path, Slice<ConstantBufferDesc> cBufDescs);
+VertexShader          Renderer_LoadVertexShader             (RendererState*, Slice<c8> name, c8* path, Slice<VertexAttribute> attributes, Slice<u32> cBufSizes);
+PixelShader           Renderer_LoadPixelShader              (RendererState*, Slice<c8> name, c8* path, Slice<u32> cBufSizes);
 // TODO: Combine with CreateMesh, LoadVertexShader, and LoadPixelShader
 Material              Renderer_CreateMaterial               (RendererState*, Mesh mesh, VertexShader vs, PixelShader ps);
 ConstantBufferUpdate* Renderer_PushConstantBufferUpdate     (RendererState*);

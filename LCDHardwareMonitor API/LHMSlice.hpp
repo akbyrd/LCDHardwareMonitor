@@ -12,10 +12,10 @@ struct Slice
 	// than constructors.
 	Slice()                      { length = 0;           stride = sizeof(T); data = (u8*) nullptr; }
 	Slice(u32 _length, T* _data) { length = _length;     stride = sizeof(T); data = (u8*) _data; }
-	Slice(T& element)            { length = 1;           stride = sizeof(T); data = (u8*) &element; }
+	Slice(const T& element)      { length = 1;           stride = sizeof(T); data = (u8*) &element; }
 	Slice(List<T>& list)         { length = list.length; stride = sizeof(T); data = (u8*) list.data; }
 	template<u32 Length>
-	Slice(const T(&arr)[Length])       { length = Length;      stride = sizeof(T); data = (u8*) arr; }
+	Slice(const T(&arr)[Length]) { length = Length;      stride = sizeof(T); data = (u8*) arr; }
 
 	using RefT = ListRef<T>;
 	inline T& operator[] (RefT r) { return *((T*) &data[stride*(r.index - 1)]); }

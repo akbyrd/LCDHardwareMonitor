@@ -36,11 +36,6 @@ namespace StandardMesh
 	static const Mesh Quad     = { 2 };
 };
 
-struct ConstantBufferDesc
-{
-	u32 size;
-};
-
 namespace StandardVertexShader
 {
 	static const VertexShader Null = { 0 };

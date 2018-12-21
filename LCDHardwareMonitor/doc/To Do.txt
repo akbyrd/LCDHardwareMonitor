@@ -1,6 +1,5 @@
 Cleanup Pass
 	Rendering
-		ConstantBufferDesc seems kinda pointless now
 		Debug rendering mode
 			Mouse look controls
 			Colored grid cubemap as skybox so you can tell which way you're looking

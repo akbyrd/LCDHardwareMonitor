@@ -88,11 +88,11 @@ Initialize(PluginContext* context, WidgetPluginAPI::Initialize api)
 	widgetDesc.update       = &UpdateBarWidgets;
 	api.RegisterWidgets(context, widgetDesc);
 
-	ConstantBufferDesc cBufDescs[] = {
+	u32 cBufSizes[] = {
 		{ sizeof(PSInitialize) },
 		{ sizeof(PSPerObject)  }
 	};
-	PixelShader ps = api.LoadPixelShader(context, "Pixel Shader - Filled Bar.cso", cBufDescs);
+	PixelShader ps = api.LoadPixelShader(context, "Pixel Shader - Filled Bar.cso", cBufSizes);
 
 	filledBarMat = api.CreateMaterial(context, StandardMesh::Quad, StandardVertexShader::WVP, ps);
 	return true;

@@ -49,10 +49,9 @@ struct MeshData
 	DXGI_FORMAT iFormat = DXGI_FORMAT_UNKNOWN;
 };
 
-// TODO: Name?
-struct ConstantBufferData
+struct ConstantBuffer
 {
-	ConstantBufferDesc   desc;
+	u32                  size;
 	ComPtr<ID3D11Buffer> d3dConstantBuffer;
 };
 
@@ -60,7 +59,7 @@ struct VertexShaderData
 {
 	VertexShader               ref;
 	String                     name;
-	List<ConstantBufferData>   constantBuffers;
+	List<ConstantBuffer>       constantBuffers;
 	ComPtr<ID3D11VertexShader> d3dVertexShader;
 	ComPtr<ID3D11InputLayout>  d3dInputLayout;
 	D3D_PRIMITIVE_TOPOLOGY     d3dPrimitveTopology;
@@ -70,7 +69,7 @@ struct PixelShaderData
 {
 	PixelShader               ref;
 	String                    name;
-	List<ConstantBufferData>  constantBuffers;
+	List<ConstantBuffer>      constantBuffers;
 	ComPtr<ID3D11PixelShader> d3dPixelShader;
 };
 
@@ -597,16 +596,16 @@ Renderer_CreateMesh(RendererState* s, Slice<c8> name, Slice<Vertex> vertices, Sl
 }
 
 static b32
-Renderer_CreateConstantBuffer(RendererState* s, ConstantBufferData* cBuf)
+Renderer_CreateConstantBuffer(RendererState* s, ConstantBuffer* cBuf)
 {
 	// TODO: Add more cbuf info to logging
 	// TODO: Decide where validation should be handled: simulation or renderer
 
-	LOG_IF(!IsMultipleOf(cBuf->desc.size, 16), return false,
-		Severity::Error, "Constant buffer size '%u' is not a multiple of 16", cBuf->desc.size);
+	LOG_IF(!IsMultipleOf(cBuf->size, 16), return false,
+		Severity::Error, "Constant buffer size '%u' is not a multiple of 16", cBuf->size);
 
 	D3D11_BUFFER_DESC d3dDesc = {};
-	d3dDesc.ByteWidth           = cBuf->desc.size;
+	d3dDesc.ByteWidth           = cBuf->size;
 	d3dDesc.Usage               = D3D11_USAGE_DYNAMIC;
 	d3dDesc.BindFlags           = D3D11_BIND_CONSTANT_BUFFER;
 	d3dDesc.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
@@ -624,7 +623,7 @@ Renderer_CreateConstantBuffer(RendererState* s, ConstantBufferData* cBuf)
 
 // TODO: Should a failed load mark the file as bad?
 VertexShader
-Renderer_LoadVertexShader(RendererState* s, Slice<c8> name, c8* path, Slice<VertexAttribute> attributes, Slice<ConstantBufferDesc> cBufDescs)
+Renderer_LoadVertexShader(RendererState* s, Slice<c8> name, c8* path, Slice<VertexAttribute> attributes, Slice<u32> cBufSizes)
 {
 	// Vertex Shader
 	VertexShaderData vs = {};
@@ -662,18 +661,18 @@ Renderer_LoadVertexShader(RendererState* s, Slice<c8> name, c8* path, Slice<Vert
 	}
 
 	// Constant Buffers
-	if (cBufDescs.length)
+	if (cBufSizes.length)
 	{
 		b32 success;
 
-		success = List_Reserve(vs.constantBuffers, cBufDescs.length);
+		success = List_Reserve(vs.constantBuffers, cBufSizes.length);
 		LOG_IF(!success, return VertexShader::Null,
 			Severity::Error, "Failed to allocate space for VS constant buffers '%s'", path);
 
-		for (u32 i = 0; i < cBufDescs.length; i++)
+		for (u32 i = 0; i < cBufSizes.length; i++)
 		{
-			ConstantBufferData* cBuf = List_Append(vs.constantBuffers);
-			cBuf->desc = cBufDescs[i];
+			ConstantBuffer* cBuf = List_Append(vs.constantBuffers);
+			cBuf->size = cBufSizes[i];
 
 			success = Renderer_CreateConstantBuffer(s, cBuf);
 			LOG_IF(!success, return VertexShader::Null,
@@ -750,7 +749,7 @@ Renderer_LoadVertexShader(RendererState* s, Slice<c8> name, c8* path, Slice<Vert
 
 // TODO: Unload functions
 PixelShader
-Renderer_LoadPixelShader(RendererState* s, Slice<c8> name, c8* path, Slice<ConstantBufferDesc> cBufDescs)
+Renderer_LoadPixelShader(RendererState* s, Slice<c8> name, c8* path, Slice<u32> cBufSizes)
 {
 	PixelShaderData ps = {};
 	defer {
@@ -786,18 +785,18 @@ Renderer_LoadPixelShader(RendererState* s, Slice<c8> name, c8* path, Slice<Const
 	}
 
 	// Constant Buffers
-	if (cBufDescs.length)
+	if (cBufSizes.length)
 	{
 		b32 success;
 
-		success = List_Reserve(ps.constantBuffers, cBufDescs.length);
+		success = List_Reserve(ps.constantBuffers, cBufSizes.length);
 		LOG_IF(!success, return PixelShader::Null,
 			Severity::Error, "Failed to allocate space for PS constant buffers '%s'", path);
 
-		for (u32 i = 0; i < cBufDescs.length; i++)
+		for (u32 i = 0; i < cBufSizes.length; i++)
 		{
-			ConstantBufferData* cBuf = List_Append(ps.constantBuffers);
-			cBuf->desc = cBufDescs[i];
+			ConstantBuffer* cBuf = List_Append(ps.constantBuffers);
+			cBuf->size = cBufSizes[i];
 
 			success = Renderer_CreateConstantBuffer(s, cBuf);
 			LOG_IF(!success, return PixelShader::Null,
@@ -849,14 +848,14 @@ Renderer_PushDrawCall(RendererState* s)
 }
 
 static b32
-Renderer_UpdateConstantBuffer(RendererState* s, ConstantBufferData* cBuf, void* data)
+Renderer_UpdateConstantBuffer(RendererState* s, ConstantBuffer* cBuf, void* data)
 {
 	D3D11_MAPPED_SUBRESOURCE map = {};
 	HRESULT hr = s->d3dContext->Map(cBuf->d3dConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
 	LOG_HRESULT_IF_FAILED(hr, return false,
 		Severity::Error, "Failed to map constant buffer");
 
-	memcpy(map.pData, data, cBuf->desc.size);
+	memcpy(map.pData, data, cBuf->size);
 	s->d3dContext->Unmap(cBuf->d3dConstantBuffer.Get(), 0);
 
 	return true;
@@ -887,7 +886,7 @@ Renderer_Render(RendererState* s)
 
 				// TODO: Do validation in API call (ps & vs refs, shader stage, etc)
 				// TODO: If we fail to update a constant buffer do we skip drawing?
-				ConstantBufferData* cBuf = nullptr;
+				ConstantBuffer* cBuf = nullptr;
 				switch (cBufUpdate->shaderStage)
 				{
 					default: Assert(false); continue;
@@ -935,7 +934,7 @@ Renderer_Render(RendererState* s)
 
 					for (u32 j = 0; j < vs->constantBuffers.length; j++)
 					{
-						ConstantBufferData* cBuf = &vs->constantBuffers[j];
+						ConstantBuffer* cBuf = &vs->constantBuffers[j];
 						s->d3dContext->VSSetConstantBuffers(j, 1, cBuf->d3dConstantBuffer.GetAddressOf());
 					}
 				}
@@ -949,7 +948,7 @@ Renderer_Render(RendererState* s)
 
 					for (u32 j = 0; j < ps->constantBuffers.length; j++)
 					{
-						ConstantBufferData* cBuf = &ps->constantBuffers[j];
+						ConstantBuffer* cBuf = &ps->constantBuffers[j];
 						s->d3dContext->PSSetConstantBuffers(j, 1, cBuf->d3dConstantBuffer.GetAddressOf());
 					}
 				}

@@ -198,7 +198,7 @@ UnregisterAllWidgets(PluginContext* context)
 }
 
 static PixelShader
-LoadPixelShader(PluginContext* context, c8* relPath, Slice<ConstantBufferDesc> cBufDescs)
+LoadPixelShader(PluginContext* context, c8* relPath, Slice<u32> cBufSizes)
 {
 	if (!context->success) return PixelShader::Null;
 	context->success = false;
@@ -216,7 +216,7 @@ LoadPixelShader(PluginContext* context, c8* relPath, Slice<ConstantBufferDesc> c
 	LOG_IF(!psName.data, psName = path,
 		Severity::Warning, "Failed to get pixel shader name from path '%s'", relPath);
 
-	PixelShader ps = Renderer_LoadPixelShader(context->s->renderer, psName, path.data, cBufDescs);
+	PixelShader ps = Renderer_LoadPixelShader(context->s->renderer, psName, path.data, cBufSizes);
 	LOG_IF(!ps, return PixelShader::Null,
 		Severity::Error, "Failed to load pixel shader '%s'", path);
 
@@ -502,10 +502,7 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 				{ VertexAttributeSemantic::TexCoord, VertexAttributeFormat::v2 },
 			};
 
-			ConstantBufferDesc cBufDesc = {};
-			cBufDesc.size = sizeof(Matrix);
-
-			VertexShader vs = Renderer_LoadVertexShader(s->renderer, "Default", "Shaders/Vertex Shader - WVP.cso", vsAttributes, cBufDesc);
+			VertexShader vs = Renderer_LoadVertexShader(s->renderer, "Default", "Shaders/Vertex Shader - WVP.cso", vsAttributes, sizeof(Matrix));
 			LOG_IF(!vs, return false,
 				Severity::Error, "Failed to load built-in wvp vertex shader");
 			Assert(vs == StandardVertexShader::WVP);
