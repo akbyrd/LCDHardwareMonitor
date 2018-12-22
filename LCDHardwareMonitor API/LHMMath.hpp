@@ -803,6 +803,7 @@ union Matrix
 	// Aliases
 	struct
 	{
+		// TODO: Not sure if this is correct
 		r32 xx,  yx,  zx,  tx;
 		r32 xy,  yy,  zy,  ty;
 		r32 xz,  yz,  zz,  tz;
@@ -890,16 +891,30 @@ LookAt(v3t<T> pos, v3t<U> target)
 	v3 y = Normalize(Cross(z, x));
 
 	Matrix result = {
-		x.x,  x.y,  x.z,  -pos.x,
-		y.x,  y.y,  y.z,  -pos.y,
-		z.x,  z.y,  z.z,  -pos.z,
+		x.x,  x.y,  x.z,  -Dot(pos, x),
+		y.x,  y.y,  y.z,  -Dot(pos, y),
+		z.x,  z.y,  z.z,  -Dot(pos, z),
 		0.0f, 0.0f, 0.0f, 1.0f
-
 	};
+
 	return result;
 }
 
-// TODO: Pretty sure this is wrong
+template<typename T, typename U>
+inline Matrix
+Orbit(v3t<T> target, v3t<U> ypr)
+{
+	r32 cy = cos(ypr.yaw);
+	r32 sy = sin(ypr.yaw);
+	r32 cp = cos(-ypr.pitch);
+	r32 sp = sin(-ypr.pitch);
+
+	// Using roll as radius
+	v3 offset = ypr.roll * v3{ -sy, cy*sp, cy*cp };
+	v3 pos = target + offset;
+	return LookAt(pos, target);
+}
+
 template<typename T>
 inline Matrix
 Orthographic(v2t<T> size, r32 near, r32 far)
@@ -908,7 +923,7 @@ Orthographic(v2t<T> size, r32 near, r32 far)
 	result[0][0] = 2.0f / size.x;
 	result[1][1] = 2.0f / size.y;
 	result[2][2] = 1.0f / (near - far);
-	result[3][2] = near / (near - far);
+	result[2][3] = near / (near - far);
 	result[3][3] = 1.0f;
 	return result;
 }
@@ -948,12 +963,33 @@ SetPosition(Matrix& m, v3t<T> pos)
 
 template<typename T>
 inline void
+SetTranslation(Matrix& m, v2t<T> pos)
+{
+	SetPosition(m, pos);
+}
+
+template<typename T, typename U>
+inline void
+SetTranslation(Matrix& m, v2t<T> pos, U zPos)
+{
+	SetPosition(m, pos, zPos);
+}
+
+template<typename T>
+inline void
+SetTranslation(Matrix& m, v3t<T> pos)
+{
+	SetPosition(m, pos);
+}
+
+template<typename T>
+inline void
 SetRotation(Matrix& m, v2t<T> yp)
 {
-	r32 cy = cos(-yp.yaw);
-	r32 sy = sin(-yp.yaw);
-	r32 cp = cos(yp.pitch);
-	r32 sp = sin(yp.pitch);
+	r32 cy = cos(yp.yaw);
+	r32 sy = sin(yp.yaw);
+	r32 cp = cos(-yp.pitch);
+	r32 sp = sin(-yp.pitch);
 
 	m.m00 = cy;
 	m.m10 = sy*sp;
@@ -975,15 +1011,10 @@ SetRotation(Matrix& m, v3t<T> ypr)
 	// Yaw (y), then pitch (x), then roll (z)
 	// Active, intrinsic rotation
 
-	// TODO: Positive roll = right
-	// TODO: Positive pitch = up
-	// TODO: Positive yaw = right
-	// TODO: These are for the camera, bars move opposite
-
-	r32 cy = cos(-ypr.yaw);
-	r32 sy = sin(-ypr.yaw);
-	r32 cp = cos(ypr.pitch);
-	r32 sp = sin(ypr.pitch);
+	r32 cy = cos(ypr.yaw);
+	r32 sy = sin(ypr.yaw);
+	r32 cp = cos(-ypr.pitch);
+	r32 sp = sin(-ypr.pitch);
 	r32 cr = cos(ypr.roll);
 	r32 sr = sin(ypr.roll);
 
@@ -1022,6 +1053,215 @@ SetScale(Matrix& m, v3t<T> scale)
 	m.sx = scale.x;
 	m.sy = scale.y;
 	m.sz = scale.z;
+}
+
+template<typename T, typename U, typename V>
+inline void
+SetSRT(Matrix& m, v3t<T> scale, v3t<U> ypr, v3t<V> pos)
+{
+	m.tx = pos.x;
+	m.ty = pos.y;
+	m.tz = pos.z;
+
+	SetRotation(m, ypr);
+
+	m.xx *= scale.x;
+	m.xy *= scale.x;
+	m.xz *= scale.x;
+
+	m.yx *= scale.y;
+	m.yy *= scale.y;
+	m.yz *= scale.y;
+
+	m.zx *= scale.z;
+	m.zy *= scale.z;
+	m.zz *= scale.z;
+}
+
+template<typename T, typename U, typename V>
+inline void
+SetSRT(Matrix& m, v2t<T> scale, v2t<U> yp, v2t<V> pos)
+{
+	m.tx = pos.x;
+	m.ty = pos.y;
+
+	SetRotation(m, yp);
+
+	m.xx *= scale.x;
+	m.xy *= scale.x;
+	m.xz *= scale.x;
+
+	m.yx *= scale.y;
+	m.yy *= scale.y;
+	m.yz *= scale.y;
+}
+
+template<typename T, typename U, typename V>
+inline Matrix
+GetSRT(v3t<T> scale, v3t<U> ypr, v3t<V> pos)
+{
+	Matrix result = Identity();
+	SetSRT(result, scale, ypr, pos);
+	return result;
+}
+
+template<typename T, typename U, typename V>
+inline Matrix
+GetSRT(v2t<T> scale, v2t<U> yp, v2t<V> pos)
+{
+	Matrix result = Identity();
+	SetSRT(result, scale, yp, pos);
+	return result;
+}
+
+template<typename T, typename U>
+inline void
+SetSR(Matrix& m, v3t<T> scale, v3t<U> ypr)
+{
+	SetRotation(m, ypr);
+
+	m.xx *= scale.x;
+	m.xy *= scale.x;
+	m.xz *= scale.x;
+
+	m.yx *= scale.y;
+	m.yy *= scale.y;
+	m.yz *= scale.y;
+
+	m.zx *= scale.z;
+	m.zy *= scale.z;
+	m.zz *= scale.z;
+}
+
+template<typename T, typename U>
+inline void
+SetSR(Matrix& m, v2t<T> scale, v2t<U> yp)
+{
+	SetRotation(m, yp);
+
+	m.xx *= scale.x;
+	m.xy *= scale.x;
+	m.xz *= scale.x;
+
+	m.yx *= scale.y;
+	m.yy *= scale.y;
+	m.yz *= scale.y;
+}
+
+template<typename T, typename U>
+inline Matrix
+GetSR(v3t<T> scale, v3t<U> ypr)
+{
+	Matrix result = Identity();
+	SetSR(result, scale, ypr, pos);
+	return result;
+}
+
+template<typename T, typename U>
+inline Matrix
+GetSR(v2t<T> scale, v2t<U> yp)
+{
+	Matrix result = Identity();
+	SetSR(result, scale, yp, pos);
+	return result;
+}
+
+template<typename T, typename U>
+inline void
+SetST(Matrix& m, v3t<T> scale, v3t<U> pos)
+{
+	m.tx = pos.x;
+	m.ty = pos.y;
+	m.tz = pos.z;
+
+	m.xx = scale.x;
+	m.xy = 0.0f;
+	m.xz = 0.0f;
+
+	m.yx = 0.0f;
+	m.yy = scale.y;
+	m.yz = 0.0f;
+
+	m.zx = 0.0f;
+	m.zy = 0.0f;
+	m.zz = scale.z;
+}
+
+template<typename T, typename U>
+inline void
+SetST(Matrix& m, v2t<T> scale, v2t<U> pos)
+{
+	m.tx = pos.x;
+	m.ty = pos.y;
+
+	m.xx = scale.x;
+	m.xy = 0.0f;
+	m.xz = 0.0f;
+
+	m.yx = 0.0f;
+	m.yy = scale.y;
+	m.yz = 0.0f;
+
+	m.zx = 0.0f;
+	m.zy = 1.0f;
+	m.zz = 0.0f;
+}
+
+template<typename T, typename U>
+inline Matrix
+GetST(v3t<T> scale, v3t<U> pos)
+{
+	Matrix result = Identity();
+	SetST(result, scale, pos);
+	return result;
+}
+
+template<typename T, typename U>
+inline Matrix
+GetST(v2t<T> scale, v2t<U> pos)
+{
+	Matrix result = Identity();
+	SetST(result, scale, pos);
+	return result;
+}
+
+template<typename T, typename U>
+inline void
+SetRT(Matrix& m, v3t<T> ypr, v3t<U> pos)
+{
+	SetRotation(m, ypr);
+
+	m.tx = pos.x;
+	m.ty = pos.y;
+	m.tz = pos.z;
+}
+
+template<typename T, typename U>
+inline void
+SetRT(Matrix& m, v2t<T> yp, v2t<U> pos)
+{
+	SetRotation(m, yp);
+
+	m.tx = pos.x;
+	m.ty = pos.y;
+}
+
+template<typename T, typename U>
+inline Matrix
+GetRT(v3t<T> ypr, v3t<U> pos)
+{
+	Matrix result = Identity();
+	SetRT(result, ypr, pos);
+	return result;
+}
+
+template<typename T, typename U>
+inline Matrix
+GetRT(v2t<T> yp, v2t<U> pos)
+{
+	Matrix result = Identity();
+	SetRT(result, yp, pos);
+	return result;
 }
 
 #endif

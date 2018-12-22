@@ -484,7 +484,7 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 	// Setup Camera
 	{
 		v2 offset = (v2) s->renderSize / 2.0f;
-		v3 pos    = { offset.x, offset.y, 320 };
+		v3 pos    = { offset.x, offset.y, 500 };
 		v3 target = { offset.x, offset.y, 0 };
 
 		s->view = LookAt(pos, target);

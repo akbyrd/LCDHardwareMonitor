@@ -58,14 +58,29 @@
 
   <Type Name="v2t&lt;*&gt;">
     <DisplayString>{{ {x,g}, {y,g} }}</DisplayString>
+    <Expand>
+      <Item Name="x">x</Item>
+      <Item Name="y">y</Item>
+    </Expand>
   </Type>
 
   <Type Name="v3t&lt;*&gt;">
     <DisplayString>{{ {x,g}, {y,g}, {z,g} }}</DisplayString>
+    <Expand>
+      <Item Name="x">x</Item>
+      <Item Name="y">y</Item>
+      <Item Name="z">z</Item>
+    </Expand>
   </Type>
 
   <Type Name="v4t&lt;*&gt;">
     <DisplayString>{{ {x,g}, {y,g}, {z,g}, {w,g} }}</DisplayString>
+    <Expand>
+      <Item Name="x">x</Item>
+      <Item Name="y">y</Item>
+      <Item Name="z">z</Item>
+      <Item Name="w">w</Item>
+    </Expand>
   </Type>
 
   <Type Name="ListRef&lt;*&gt;">

@@ -76,6 +76,24 @@ UpdateBarWidgets(PluginContext* context, WidgetInstanceAPI::Update api)
 			api.PushDrawCall(context, filledBarMat);
 		}
 	}
+
+	// DEBUG: Background Quad
+	{
+		v3 pos   = { 160.0f, 120.0f, -10.0f };
+		v3 scale = { 244.0f,  76.0f,   1.0f };
+		Matrix world = GetST(scale, pos);
+
+		static Matrix wvp;
+		wvp = world * api.GetViewProjectionMatrix(context);
+
+		Material material = {};
+		material.mesh = StandardMesh::Quad;
+		material.vs   = StandardVertexShader::WVP;
+		material.ps   = StandardPixelShader::VertexColored;
+
+		api.PushConstantBufferUpdate(context, filledBarMat, ShaderStage::Vertex, 0, &wvp);
+		api.PushDrawCall(context, material);
+	}
 }
 
 static b32

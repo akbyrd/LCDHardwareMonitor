@@ -15,8 +15,8 @@ struct PreviewWindowState
 	i16                     mouseWheelAccumulator = 0;
 	SimulationState*        simulationState       = nullptr;
 	b32                     mouseLook             = false;
-	v2i                     mouseStartPos         = {};
-	Matrix                  mouseStartRot         = {};
+	v2i                     mousePosStart         = {};
+	v2                      cameraRotStart        = {};
 	v2                      cameraRot             = {};
 };
 
@@ -209,6 +209,23 @@ PreviewWindow_Render(PreviewWindowState* s)
 	return true;
 }
 
+static void
+UpdateCameraPosition(PreviewWindowState* s, LPARAM lParam)
+{
+	v2i mousePos = { GET_X_LPARAM(lParam), -GET_Y_LPARAM(lParam) };
+	v2i deltaPos = mousePos - s->mousePosStart;
+	s->cameraRot.yaw   = 0.0005f * deltaPos.x * 2*r32Pi;
+	s->cameraRot.pitch = 0.0005f * deltaPos.y * 2*r32Pi;
+
+	v3 rot = (v3) (s->cameraRotStart + s->cameraRot);
+	rot.pitch = Clamp(rot.pitch, -0.49f*r32Pi, 0.49f*r32Pi);
+	rot.roll  = 500;
+
+	v3 target = { 160.0f, 120.0f, 0.0f };
+	s->simulationState->view = Orbit(target, rot);
+	s->simulationState->vp   = s->simulationState->view * s->simulationState->proj;
+}
+
 LRESULT CALLBACK
 PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -239,26 +256,16 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 		{
 			SetCapture(s->hwnd);
 
-			s->mouseLook     = true;
-			s->mouseStartPos = { GET_X_LPARAM(lParam), -GET_Y_LPARAM(lParam) };
-			s->mouseStartRot = s->simulationState->view;
+			s->mouseLook      = true;
+			s->mousePosStart  = { GET_X_LPARAM(lParam), -GET_Y_LPARAM(lParam) };
+			s->cameraRotStart = s->cameraRot;
 			break;
 		}
 
 		case WM_MOUSEMOVE:
 		{
 			if (!s->mouseLook) break;
-
-			v2i mousePos = { GET_X_LPARAM(lParam), -GET_Y_LPARAM(lParam) };
-			v2i deltaPos = mousePos - s->mouseStartPos;
-			s->cameraRot.yaw   = 0.0005f * deltaPos.x * 2 * r32Pi;
-			s->cameraRot.pitch = 0.0005f * deltaPos.y * 2 * r32Pi;
-
-			// TODO: Looks like the projection might be wrong
-			Matrix rotation = Identity();
-			SetRotation(rotation, s->cameraRot);
-			s->simulationState->view = s->mouseStartRot * rotation;
-			s->simulationState->vp   = s->simulationState->view * s->simulationState->proj;
+			UpdateCameraPosition(s, lParam);
 			break;
 		}
 
@@ -267,9 +274,17 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 			b32 success = ReleaseCapture();
 			LOG_LAST_ERROR_IF(!success, IGNORE, Severity::Warning, "Failed to release mouse capture");
 
-			s->mouseLook     = false;
-			s->mouseStartPos = {};
-			s->mouseStartRot = {};
+			s->mouseLook       = false;
+			s->mousePosStart   = {};
+			s->cameraRot      += s->cameraRotStart;
+			s->cameraRotStart  = {};
+			break;
+		}
+
+		case WM_MBUTTONDOWN:
+		{
+			s->mousePosStart = { GET_X_LPARAM(lParam), -GET_Y_LPARAM(lParam) };
+			UpdateCameraPosition(s, lParam);
 			break;
 		}
 
