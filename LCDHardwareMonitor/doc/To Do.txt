@@ -1,8 +1,6 @@
 Cleanup Pass
-	Rendering
-		Debug rendering mode
-			Mouse look controls
-			Colored grid cubemap as skybox so you can tell which way you're looking
+	Debug Tools
+		Colored grid cubemap as skybox so you can tell which way you're looking
 	General
 		It's time to figure out what happens when memory allocations fail
 		Get math operators working in the watch window

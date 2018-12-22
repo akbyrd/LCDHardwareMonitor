@@ -904,13 +904,17 @@ template<typename T, typename U>
 inline Matrix
 Orbit(v3t<T> target, v3t<U> ypr)
 {
-	r32 cy = cos(ypr.yaw);
-	r32 sy = sin(ypr.yaw);
-	r32 cp = cos(-ypr.pitch);
-	r32 sp = sin(-ypr.pitch);
-
+	// NOTE:
 	// Using roll as radius
-	v3 offset = ypr.roll * v3{ -sy, cy*sp, cy*cp };
+	// Pitch, then yaw
+
+	r32 cy = cos(-ypr.yaw);
+	r32 sy = sin(-ypr.yaw);
+	r32 cp = cos(ypr.pitch);
+	r32 sp = sin(ypr.pitch);
+
+	v3 offset = ypr.roll * v3 { sy*cp, -sp, cy*cp };
+
 	v3 pos = target + offset;
 	return LookAt(pos, target);
 }
@@ -1010,6 +1014,9 @@ SetRotation(Matrix& m, v3t<T> ypr)
 	// Tait-Bryan
 	// Yaw (y), then pitch (x), then roll (z)
 	// Active, intrinsic rotation
+	// Positive yaw rotates right
+	// Positive pitch rotates up
+	// Positive rolls rotates right
 
 	r32 cy = cos(ypr.yaw);
 	r32 sy = sin(ypr.yaw);
