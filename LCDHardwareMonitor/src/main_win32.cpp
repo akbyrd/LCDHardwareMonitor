@@ -93,8 +93,8 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 
 
 	// Debug
-	PreviewWindow_Initialize(&previewState, &rendererState, hInstance);
-	auto previewGuard = guard { PreviewWindow_Teardown(&previewState, &rendererState, hInstance); };
+	PreviewWindow_Initialize(&previewState, &simulationState, hInstance);
+	auto previewGuard = guard { PreviewWindow_Teardown(&previewState); };
 	success = RegisterHotKey(nullptr, togglePreviewWindowID, MOD_NOREPEAT, VK_F1);
 	LOG_LAST_ERROR_IF(!success, IGNORE, Severity::Warning, "Failed to register hotkeys");
 
@@ -112,7 +112,7 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 			switch (msg.message)
 			{
 				case WM_PREVIEWWINDOWCLOSED:
-					PreviewWindow_Teardown(&previewState, &rendererState, hInstance);
+					PreviewWindow_Teardown(&previewState);
 					break;
 
 				case WM_HOTKEY:
@@ -121,12 +121,12 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 					{
 						if (!previewState.hwnd)
 						{
-							PreviewWindow_Initialize(&previewState, &rendererState, hInstance);
+							PreviewWindow_Initialize(&previewState, &simulationState, hInstance);
 							previewGuard.dismiss = false;
 						}
 						else
 						{
-							PreviewWindow_Teardown(&previewState, &rendererState, hInstance);
+							PreviewWindow_Teardown(&previewState);
 							previewGuard.dismiss = true;
 						}
 					}
@@ -142,7 +142,7 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 		// Tick
 		Simulation_Update(&simulationState);
 		Renderer_Render(&rendererState);
-		PreviewWindow_Render(&previewState, &rendererState);
+		PreviewWindow_Render(&previewState);
 
 		Sleep(10);
 	}

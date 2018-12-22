@@ -1,24 +1,32 @@
+#include <Windowsx.h>
+
 const c8  previewWindowClass[] = "LCDHardwareMonitor Preview Class";
 const u32 WM_PREVIEWWINDOWCLOSED = WM_USER + 0;
 
 struct PreviewWindowState
 {
 	HWND                    hwnd                  = nullptr;
+	HINSTANCE               hInstance             = nullptr;
 	ComPtr<IDXGISwapChain>  swapChain             = nullptr;
 	ComPtr<ID3D11Texture2D> backBuffer            = nullptr;
 	v2u                     renderSize            = {};
 	v2u                     nonClientSize         = {};
 	u16                     zoomFactor            = 1;
 	i16                     mouseWheelAccumulator = 0;
+	SimulationState*        simulationState       = nullptr;
+	b32                     mouseLook             = false;
+	v2i                     mouseStartPos         = {};
+	Matrix                  mouseStartRot         = {};
+	v2                      cameraRot             = {};
 };
 
-b32 PreviewWindow_Initialize (PreviewWindowState*, RendererState*, HINSTANCE);
-b32 PreviewWindow_Teardown   (PreviewWindowState*, RendererState*, HINSTANCE);
-b32 PreviewWindow_Render     (RendererState*, PreviewWindowState*);
-
 b32
-PreviewWindow_Initialize(PreviewWindowState* s, RendererState* rendererState, HINSTANCE hInstance)
+PreviewWindow_Initialize(PreviewWindowState* s, SimulationState* simulationState, HINSTANCE hInstance)
 {
+	s->hInstance       = hInstance;
+	s->simulationState = simulationState;
+	RendererState* rendererState = s->simulationState->renderer;
+
 	// Create Window
 	{
 		b32 success;
@@ -154,10 +162,8 @@ PreviewWindow_Initialize(PreviewWindowState* s, RendererState* rendererState, HI
 }
 
 b32
-PreviewWindow_Teardown(PreviewWindowState* s, RendererState* rendererState, HINSTANCE hInstance)
+PreviewWindow_Teardown(PreviewWindowState* s)
 {
-	UNUSED(rendererState);
-
 	// Detach Renderer
 	{
 		s->backBuffer.Reset();
@@ -173,7 +179,7 @@ PreviewWindow_Teardown(PreviewWindowState* s, RendererState* rendererState, HINS
 		LOG_LAST_ERROR_IF(!success, return false,
 			Severity::Error, "Failed to destroy preview window");
 
-		success = UnregisterClassA(previewWindowClass, hInstance);
+		success = UnregisterClassA(previewWindowClass, s->hInstance);
 		LOG_LAST_ERROR_IF(!success, IGNORE,
 			Severity::Error, "Failed to unregister preview window class");
 
@@ -184,8 +190,10 @@ PreviewWindow_Teardown(PreviewWindowState* s, RendererState* rendererState, HINS
 }
 
 b32
-PreviewWindow_Render(PreviewWindowState* s, RendererState* rendererState)
+PreviewWindow_Render(PreviewWindowState* s)
 {
+	RendererState* rendererState = s->simulationState->renderer;
+
 	if (s->hwnd)
 	{
 		// TODO: Handle DXGI_ERROR_DEVICE_RESET and DXGI_ERROR_DEVICE_REMOVED
@@ -224,6 +232,44 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 				LOG_LAST_ERROR(Severity::Error, "Failed to stash preview window state pointer");
 				return false;
 			}
+			break;
+		}
+
+		case WM_LBUTTONDOWN:
+		{
+			SetCapture(s->hwnd);
+
+			s->mouseLook     = true;
+			s->mouseStartPos = { GET_X_LPARAM(lParam), -GET_Y_LPARAM(lParam) };
+			s->mouseStartRot = s->simulationState->view;
+			break;
+		}
+
+		case WM_MOUSEMOVE:
+		{
+			if (!s->mouseLook) break;
+
+			v2i mousePos = { GET_X_LPARAM(lParam), -GET_Y_LPARAM(lParam) };
+			v2i deltaPos = mousePos - s->mouseStartPos;
+			s->cameraRot.yaw   = 0.0005f * deltaPos.x * 2 * r32Pi;
+			s->cameraRot.pitch = 0.0005f * deltaPos.y * 2 * r32Pi;
+
+			// TODO: Looks like the projection might be wrong
+			Matrix rotation = Identity();
+			SetRotation(rotation, s->cameraRot);
+			s->simulationState->view = s->mouseStartRot * rotation;
+			s->simulationState->vp   = s->simulationState->view * s->simulationState->proj;
+			break;
+		}
+
+		case WM_LBUTTONUP:
+		{
+			b32 success = ReleaseCapture();
+			LOG_LAST_ERROR_IF(!success, IGNORE, Severity::Warning, "Failed to release mouse capture");
+
+			s->mouseLook     = false;
+			s->mouseStartPos = {};
+			s->mouseStartRot = {};
 			break;
 		}
 

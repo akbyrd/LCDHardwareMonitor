@@ -12,7 +12,7 @@ Visual Studio Graphics Debugging
 		VsgDbgUnInit();
 
 
-Matrix Math
+// Matrix Math
 {
 	Matrix world = Identity();
 	Matrix view  = api.GetViewMatrix(context);
@@ -29,4 +29,20 @@ Matrix Math
 	v4 pView  = pWorld * view;  // -160, -120, 1
 	v4 pProj  = pView  * proj;  // -1, -1, .001
 	int foo = 0; UNUSED(foo);
+}
+
+// Background Quad
+{
+	Matrix world = Identity();
+	SetPosition(world, v3 { 160.0f, 120.0f, -0.1f });
+	SetScale(world, v3 { 244.0f, 76.0f, 1.0f });
+	static Matrix wvp;
+	wvp = world * api.GetViewProjectionMatrix(context);
+	Material material = {};
+	material.mesh = StandardMesh::Quad;
+	material.vs   = StandardVertexShader::WVP;
+	material.ps   = StandardPixelShader::VertexColored;
+
+	api.PushConstantBufferUpdate(context, filledBarMat, ShaderStage::Vertex, 0, &wvp);
+	api.PushDrawCall(context, material);
 }

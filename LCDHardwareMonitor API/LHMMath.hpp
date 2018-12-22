@@ -84,6 +84,11 @@ union v2t
 	};
 
 	// Aliases
+	struct
+	{
+		T yaw;
+		T pitch;
+	};
 	T arr[2];
 
 	T& operator[] (i32 index);
@@ -307,6 +312,12 @@ union v3t
 		T radius;
 		T theta;
 		T phi;
+	};
+	struct
+	{
+		T yaw;
+		T pitch;
+		T roll;
 	};
 	T arr[3];
 
@@ -879,25 +890,26 @@ LookAt(v3t<T> pos, v3t<U> target)
 	v3 y = Normalize(Cross(z, x));
 
 	Matrix result = {
-		x.x,  x.y,  x.z,  pos.x,
-		y.x,  y.y,  y.z,  pos.y,
-		z.x,  z.y,  z.z,  pos.z,
+		x.x,  x.y,  x.z,  -pos.x,
+		y.x,  y.y,  y.z,  -pos.y,
+		z.x,  z.y,  z.z,  -pos.z,
 		0.0f, 0.0f, 0.0f, 1.0f
 
 	};
 	return result;
 }
 
+// TODO: Pretty sure this is wrong
 template<typename T>
 inline Matrix
 Orthographic(v2t<T> size, r32 near, r32 far)
 {
 	Matrix result = {};
-	result[0][0] =  2.0f / size.x;
-	result[1][1] =  2.0f / size.y;
-	result[2][2] = -1.0f / (near - far);
-	result[2][3] =  near / (near - far);
-	result[3][3] =  1.0f;
+	result[0][0] = 2.0f / size.x;
+	result[1][1] = 2.0f / size.y;
+	result[2][2] = 1.0f / (near - far);
+	result[3][2] = near / (near - far);
+	result[3][3] = 1.0f;
 	return result;
 }
 
@@ -936,6 +948,58 @@ SetPosition(Matrix& m, v3t<T> pos)
 
 template<typename T>
 inline void
+SetRotation(Matrix& m, v2t<T> yp)
+{
+	r32 cy = cos(-yp.yaw);
+	r32 sy = sin(-yp.yaw);
+	r32 cp = cos(yp.pitch);
+	r32 sp = sin(yp.pitch);
+
+	m.m00 = cy;
+	m.m10 = sy*sp;
+	m.m20 = sy*cp;
+	m.m01 = 0;
+	m.m11 = cp;
+	m.m21 = -sp;
+	m.m02 = -sy;
+	m.m12 = cy*sp;
+	m.m22 = cy*cp;
+}
+
+template<typename T>
+inline void
+SetRotation(Matrix& m, v3t<T> ypr)
+{
+	// NOTE: Conventions
+	// Tait-Bryan
+	// Yaw (y), then pitch (x), then roll (z)
+	// Active, intrinsic rotation
+
+	// TODO: Positive roll = right
+	// TODO: Positive pitch = up
+	// TODO: Positive yaw = right
+	// TODO: These are for the camera, bars move opposite
+
+	r32 cy = cos(-ypr.yaw);
+	r32 sy = sin(-ypr.yaw);
+	r32 cp = cos(ypr.pitch);
+	r32 sp = sin(ypr.pitch);
+	r32 cr = cos(ypr.roll);
+	r32 sr = sin(ypr.roll);
+
+	m.m00 = cr*cy;
+	m.m10 = cr*sy*sp - sr*cp;
+	m.m20 = cr*sy*cp + sr*sp;
+	m.m01 = sr*cy;
+	m.m11 = sr*sy*sp + cr*cp;
+	m.m21 = sr*sy*cp - cr*sp;
+	m.m02 = -sy;
+	m.m12 = cy*sp;
+	m.m22 = cy*cp;
+}
+
+template<typename T>
+inline void
 SetScale(Matrix& m, v2t<T> scale)
 {
 	m.sx = scale.x;
@@ -959,4 +1023,5 @@ SetScale(Matrix& m, v3t<T> scale)
 	m.sy = scale.y;
 	m.sz = scale.z;
 }
+
 #endif
