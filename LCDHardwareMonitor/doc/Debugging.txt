@@ -46,3 +46,23 @@ Visual Studio Graphics Debugging
 	api.PushConstantBufferUpdate(context, filledBarMat, ShaderStage::Vertex, 0, &wvp);
 	api.PushDrawCall(context, material);
 }
+
+// DEBUG: Draw Coordinate System
+{
+	Matrix world = Identity();
+	SetScale(world, v3 { 2000, 2000, 2000 });
+	SetTranslation(world, s->cameraPos);
+	static Matrix wvp;
+	wvp = world * s->vp;
+
+	Material material = {};
+	material.mesh = StandardMesh::Cube;
+	material.vs   = StandardVertexShader::WVP;
+	material.ps   = StandardPixelShader::DebugCoordinates;
+
+	PluginContext context2 = {};
+	context2.success = true;
+	context2.s = s;
+	PushConstantBufferUpdate(&context2, material, ShaderStage::Vertex, 0, &wvp);
+	PushDrawCall(&context2, material);
+}

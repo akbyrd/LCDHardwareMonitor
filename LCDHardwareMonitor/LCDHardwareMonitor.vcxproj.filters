@@ -49,6 +49,7 @@
     <FxCompile Include="res\Vertex Shader - WVP.hlsl">
       <Filter>Resources</Filter>
     </FxCompile>
+    <FxCompile Include="res\Pixel Shader - Debug Coordinates.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main_win32.cpp">

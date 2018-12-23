@@ -498,6 +498,25 @@ Dot(v3t<T> lhs, v3t<U> rhs)
 }
 
 template<typename T, typename U>
+inline v3
+GetOrbitPos(v3t<T> target, v3t<U> ypr)
+{
+	// NOTE:
+	// Using roll as radius
+	// Pitch, then yaw
+
+	r32 cy = cos(-ypr.yaw);
+	r32 sy = sin(-ypr.yaw);
+	r32 cp = cos(ypr.pitch);
+	r32 sp = sin(ypr.pitch);
+
+	v3 offset = ypr.roll * v3 { sy*cp, -sp, cy*cp };
+
+	v3 pos = target + offset;
+	return pos;
+}
+
+template<typename T, typename U>
 inline v3t<T>
 Lerp(v3t<T> lhs, v3t<U> rhs, r32 t)
 {

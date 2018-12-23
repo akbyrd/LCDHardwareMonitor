@@ -7,6 +7,7 @@ struct SimulationState
 	List<WidgetPlugin> widgetPlugins;
 
 	v2u    renderSize;
+	v3     cameraPos;
 	Matrix view;
 	Matrix proj;
 	// TODO: Remove this when simulation talks to the renderer directly
@@ -487,9 +488,10 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 		v3 pos    = { offset.x, offset.y, 500 };
 		v3 target = { offset.x, offset.y, 0 };
 
-		s->view = LookAt(pos, target);
-		s->proj = Orthographic((v2) s->renderSize, 0, 1000);
-		s->vp   = s->view * s->proj;
+		s->cameraPos = pos;
+		s->view      = LookAt(pos, target);
+		s->proj      = Orthographic((v2) s->renderSize, 0, 10000);
+		s->vp        = s->view * s->proj;
 	}
 
 	// Load Default Assets
@@ -510,10 +512,17 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 
 		// Pixel shader
 		{
-			PixelShader ps = Renderer_LoadPixelShader(s->renderer, "Default", "Shaders/Pixel Shader - Vertex Colored.cso", {});
+			PixelShader ps;
+
+			ps = Renderer_LoadPixelShader(s->renderer, "Default", "Shaders/Pixel Shader - Vertex Colored.cso", {});
 			LOG_IF(!ps, return false,
 				Severity::Error, "Failed to load built-in vertex colored pixel shader");
 			Assert(ps == StandardPixelShader::VertexColored);
+
+			ps = Renderer_LoadPixelShader(s->renderer, "Default", "Shaders/Pixel Shader - Debug Coordinates.cso", {});
+			LOG_IF(!ps, return false,
+				Severity::Error, "Failed to load built-in vertex colored pixel shader");
+			Assert(ps == StandardPixelShader::DebugCoordinates);
 		}
 
 		// Triangle mesh
@@ -548,6 +557,85 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 
 			Mesh quad = Renderer_CreateMesh(s->renderer, "Quad Mesh", vertices, indices);
 			Assert(quad == StandardMesh::Quad);
+		}
+
+		// Cube Mesh
+		{
+			// TODO: Oh no, I think I fucked up the coordinate convention. If +Z
+			// is backwards and the camera is looking forward, then we're
+			// currently looking at the 'back' of objects. Need to do some
+			// flipping because the current bars are drawing backwards and the
+			// camera is positioned backwards.
+
+			// NOTE: Directions are from the perspective of the mesh itself, not
+			// an onlooker.
+
+			Vertex vertices[] = {
+				// Back
+				{ { -0.5f, -0.5f,  0.5f }, { 0.0f, 0.0f, 1.0f, 1.0f }, { 0.0f, 0.0f } },
+				{ { -0.5f,  0.5f,  0.5f }, { 0.0f, 0.0f, 1.0f, 1.0f }, { 0.0f, 1.0f } },
+				{ {  0.5f,  0.5f,  0.5f }, { 0.0f, 0.0f, 1.0f, 1.0f }, { 1.0f, 1.0f } },
+				{ {  0.5f, -0.5f,  0.5f }, { 0.0f, 0.0f, 1.0f, 1.0f }, { 1.0f, 0.0f } },
+
+				// Right
+				{ {  0.5f, -0.5f,  0.5f }, { 1.0f, 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f } },
+				{ {  0.5f,  0.5f,  0.5f }, { 1.0f, 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f } },
+				{ {  0.5f,  0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f } },
+				{ {  0.5f, -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f } },
+
+				// Front
+				{ {  0.5f, -0.5f, -0.5f }, { 0.0f, 0.0f, 0.5f, 1.0f }, { 0.0f, 0.0f } },
+				{ {  0.5f,  0.5f, -0.5f }, { 0.0f, 0.0f, 0.5f, 1.0f }, { 0.0f, 1.0f } },
+				{ { -0.5f,  0.5f, -0.5f }, { 0.0f, 0.0f, 0.5f, 1.0f }, { 1.0f, 1.0f } },
+				{ { -0.5f, -0.5f, -0.5f }, { 0.0f, 0.0f, 0.5f, 1.0f }, { 1.0f, 0.0f } },
+
+				// Left
+				{ { -0.5f, -0.5f, -0.5f }, { 0.5f, 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f } },
+				{ { -0.5f,  0.5f, -0.5f }, { 0.5f, 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f } },
+				{ { -0.5f,  0.5f,  0.5f }, { 0.5f, 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f } },
+				{ { -0.5f, -0.5f,  0.5f }, { 0.5f, 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f } },
+
+				// Top
+				{ { -0.5f,  0.5f,  0.5f }, { 0.0f, 1.0f, 0.0f, 1.0f }, { 0.0f, 0.0f } },
+				{ { -0.5f,  0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f, 1.0f }, { 0.0f, 1.0f } },
+				{ {  0.5f,  0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f, 1.0f }, { 1.0f, 1.0f } },
+				{ {  0.5f,  0.5f,  0.5f }, { 0.0f, 1.0f, 0.0f, 1.0f }, { 1.0f, 0.0f } },
+
+				// Bottom
+				{ { -0.5f, -0.5f, -0.5f }, { 0.0f, 0.5f, 0.0f, 1.0f }, { 0.0f, 0.0f } },
+				{ { -0.5f, -0.5f,  0.5f }, { 0.0f, 0.5f, 0.0f, 1.0f }, { 0.0f, 1.0f } },
+				{ {  0.5f, -0.5f,  0.5f }, { 0.0f, 0.5f, 0.0f, 1.0f }, { 1.0f, 1.0f } },
+				{ {  0.5f, -0.5f, -0.5f }, { 0.0f, 0.5f, 0.0f, 1.0f }, { 1.0f, 0.0f } },
+			};
+
+			Index indices[] = {
+				// Back
+				 0,  1,  2,
+				 2,  3,  0,
+
+				// Right
+				 4,  5,  6,
+				 6,  7,  4,
+
+				// Front
+				 8,  9, 10,
+				10, 11,  8,
+
+				// Left
+				12, 13, 14,
+				14, 15, 12,
+
+				// Top
+				16, 17, 18,
+				18, 19, 16,
+
+				// Bottom
+				20, 21, 22,
+				22, 23, 20,
+			};
+
+			Mesh quad = Renderer_CreateMesh(s->renderer, "Cube Mesh", vertices, indices);
+			Assert(quad == StandardMesh::Cube);
 		}
 	}
 
@@ -673,6 +761,26 @@ Simulation_Update(SimulationState* s)
 				widgetData->desc.update(&context, instancesAPI);
 			}
 		}
+	}
+
+	// DEBUG: Draw Coordinate System
+	{
+		Matrix world = Identity();
+		SetScale(world, v3 { 2000, 2000, 2000 });
+		SetTranslation(world, s->cameraPos);
+		static Matrix wvp;
+		wvp = world * s->vp;
+
+		Material material = {};
+		material.mesh = StandardMesh::Cube;
+		material.vs   = StandardVertexShader::WVP;
+		material.ps   = StandardPixelShader::DebugCoordinates;
+
+		PluginContext context2 = {};
+		context2.success = true;
+		context2.s = s;
+		PushConstantBufferUpdate(&context2, material, ShaderStage::Vertex, 0, &wvp);
+		PushDrawCall(&context2, material);
 	}
 }
 

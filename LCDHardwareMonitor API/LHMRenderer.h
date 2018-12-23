@@ -34,6 +34,7 @@ namespace StandardMesh
 	static const Mesh Null     = { 0 };
 	static const Mesh Triangle = { 1 };
 	static const Mesh Quad     = { 2 };
+	static const Mesh Cube     = { 3 };
 };
 
 namespace StandardVertexShader
@@ -44,8 +45,9 @@ namespace StandardVertexShader
 
 namespace StandardPixelShader
 {
-	static const PixelShader Null          = { 0 };
-	static const PixelShader VertexColored = { 1 };
+	static const PixelShader Null             = { 0 };
+	static const PixelShader VertexColored    = { 1 };
+	static const PixelShader DebugCoordinates = { 2 };
 };
 
 #endif

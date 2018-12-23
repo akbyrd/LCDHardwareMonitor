@@ -222,8 +222,11 @@ UpdateCameraPosition(PreviewWindowState* s, LPARAM lParam)
 	rot.roll  = 500;
 
 	v3 target = { 160.0f, 120.0f, 0.0f };
-	s->simulationState->view = Orbit(target, rot);
-	s->simulationState->vp   = s->simulationState->view * s->simulationState->proj;
+	v3 pos    = GetOrbitPos(target, rot);
+
+	s->simulationState->cameraPos = pos;
+	s->simulationState->view      = LookAt(pos, target);
+	s->simulationState->vp        = s->simulationState->view * s->simulationState->proj;
 }
 
 LRESULT CALLBACK
