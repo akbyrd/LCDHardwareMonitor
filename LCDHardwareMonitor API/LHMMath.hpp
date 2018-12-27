@@ -105,7 +105,7 @@ using v2u = v2t<u32>;
 // Operators
 template<typename T, typename U>
 inline b32
-operator== (v2t<T> lhs, v2t<U> rhs)
+operator== (v2t<T>& lhs, v2t<U>& rhs)
 {
 	b32 result = lhs.x == rhs.x && lhs.y == rhs.y;
 	return result;
@@ -113,7 +113,7 @@ operator== (v2t<T> lhs, v2t<U> rhs)
 
 template<typename T, typename U>
 inline b32
-operator!= (v2t<T> lhs, v2t<U> rhs)
+operator!= (v2t<T>& lhs, v2t<U>& rhs)
 {
 	b32 result = !(lhs.x == rhs.x && lhs.y == rhs.y);
 	return result;
@@ -121,7 +121,7 @@ operator!= (v2t<T> lhs, v2t<U> rhs)
 
 template<typename T, typename U>
 inline v2t<T>
-operator+ (v2t<T> lhs, v2t<U> rhs)
+operator+ (v2t<T>& lhs, v2t<U>& rhs)
 {
 	v2t<T> result = { lhs.x + rhs.x, lhs.y + rhs.y };
 	return result;
@@ -136,7 +136,7 @@ operator+= (v2t<T>& lhs, U rhs)
 
 template<typename T>
 inline v2t<T>
-operator- (v2t<T> v)
+operator- (v2t<T>& v)
 {
 	v2t<T> result = { -v.x, -v.y };
 	return result;
@@ -144,7 +144,7 @@ operator- (v2t<T> v)
 
 template<typename T, typename U>
 inline v2t<T>
-operator- (v2t<T> lhs, v2t<U> rhs)
+operator- (v2t<T>& lhs, v2t<U>& rhs)
 {
 	v2t<T> result = { lhs.x - rhs.x, lhs.y - rhs.y };
 	return result;
@@ -159,7 +159,7 @@ operator-= (v2t<T>& lhs, U rhs)
 
 template<typename T, typename U>
 inline v2t<T>
-operator* (U multiplier, v2t<T> v)
+operator* (U multiplier, v2t<T>& v)
 {
 	v2t<T> result = { multiplier * v.x, multiplier * v.y };
 	return result;
@@ -167,7 +167,7 @@ operator* (U multiplier, v2t<T> v)
 
 template<typename T, typename U>
 inline v2t<T>
-operator* (v2t<T> lhs, v2t<U> rhs)
+operator* (v2t<T>& lhs, v2t<U>& rhs)
 {
 	v2t<T> result = { lhs.x * rhs.x, lhs.y * rhs.y };
 	return result;
@@ -182,7 +182,7 @@ operator*= (v2t<T>& lhs, U rhs)
 
 template<typename T, typename U>
 inline v2t<T>
-operator/ (v2t<T> v, U divisor)
+operator/ (v2t<T>& v, U divisor)
 {
 	v2t<T> result = { v.x / divisor, v.y / divisor };
 	return result;
@@ -190,7 +190,7 @@ operator/ (v2t<T> v, U divisor)
 
 template<typename T, typename U>
 inline v2t<T>
-operator/ (U dividend, v2t<T> v)
+operator/ (U dividend, v2t<T>& v)
 {
 	v2t<T> result = { dividend / v.x, dividend / v.y };
 	return result;
@@ -239,16 +239,16 @@ v2t<T>::operator v4t<U>()
 }
 
 template<typename T, typename U>
-inline r32
-Dot(v2t<T> lhs, v2t<U> rhs)
+inline T
+Dot(v2t<T>& lhs, v2t<U>& rhs)
 {
-	r32 result = lhs.x*rhs.x + lhs.y*rhs.y;
+	T result = lhs.x*rhs.x + lhs.y*rhs.y;
 	return result;
 }
 
 template<typename T, typename U, typename V>
 inline v2t<T>
-Clamp(v2t<T> v, v2t<U> min, v2t<V> max)
+Clamp(v2t<T>& v, v2t<U>& min, v2t<V>& max)
 {
 	v2t<T> result = { Clamp(v.x, min.x, max.x), Clamp(v.y, min.y, max.y) };
 	return result;
@@ -256,7 +256,7 @@ Clamp(v2t<T> v, v2t<U> min, v2t<V> max)
 
 template<typename T, typename U>
 inline v2t<T>
-Lerp(v2t<T> lhs, v2t<U> rhs, r32 t)
+Lerp(v2t<T>& lhs, v2t<U>& rhs, r32 t)
 {
 	v2t<T> result = { Lerp(lhs.x, rhs.x, t), Lerp(lhs.y, rhs.y, t) };
 	return result;
@@ -264,7 +264,7 @@ Lerp(v2t<T> lhs, v2t<U> rhs, r32 t)
 
 template<typename T, typename U>
 inline v2t<T>
-Max(v2t<T> lhs, v2t<U> rhs)
+Max(v2t<T>& lhs, v2t<U>& rhs)
 {
 	v2t<T> result = { Max(lhs.x, rhs.x), Max(lhs.y, rhs.y) };
 	return result;
@@ -272,7 +272,7 @@ Max(v2t<T> lhs, v2t<U> rhs)
 
 template<typename T, typename U>
 inline v2t<T>
-Min(v2t<T> lhs, v2t<U> rhs)
+Min(v2t<T>& lhs, v2t<U>& rhs)
 {
 	v2t<T> result = { Min(lhs.x, rhs.x), Min(lhs.y, rhs.y) };
 	return result;
@@ -280,7 +280,7 @@ Min(v2t<T> lhs, v2t<U> rhs)
 
 template<typename T>
 inline v2t<T>
-Normalize(v2t<T> v)
+Normalize(v2t<T>& v)
 {
 	r32 magnitude = sqrt(v.x*v.x + v.y*v.y);
 	v2t<T> result = { v.x / magnitude, v.y / magnitude };
@@ -335,7 +335,7 @@ using v3u = v3t<u32>;
 // Operators
 template<typename T, typename U>
 inline b32
-operator== (v3t<T> lhs, v3t<U> rhs)
+operator== (v3t<T>& lhs, v3t<U>& rhs)
 {
 	b32 result = lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z;
 	return result;
@@ -343,7 +343,7 @@ operator== (v3t<T> lhs, v3t<U> rhs)
 
 template<typename T, typename U>
 inline b32
-operator!= (v3t<T> lhs, v3t<U> rhs)
+operator!= (v3t<T>& lhs, v3t<U>& rhs)
 {
 	b32 result = !(lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z);
 	return result;
@@ -351,7 +351,7 @@ operator!= (v3t<T> lhs, v3t<U> rhs)
 
 template<typename T, typename U>
 inline v3t<T>
-operator+ (v3t<T> lhs, v3t<U> rhs)
+operator+ (v3t<T>& lhs, v3t<U>& rhs)
 {
 	v3t<T> result = { lhs.x + rhs.x, lhs.y + rhs.y, lhs.z + rhs.z };
 	return result;
@@ -366,7 +366,7 @@ operator+= (v3t<T>& lhs, U rhs)
 
 template<typename T>
 inline v3t<T>
-operator- (v3t<T> v)
+operator- (v3t<T>& v)
 {
 	v3t<T> result = { -v.x, -v.y, -v.z };
 	return result;
@@ -374,7 +374,7 @@ operator- (v3t<T> v)
 
 template<typename T, typename U>
 inline v3t<T>
-operator- (v3t<T> lhs, v3t<U> rhs)
+operator- (v3t<T>& lhs, v3t<U>& rhs)
 {
 	v3t<T> result = { lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z };
 	return result;
@@ -389,7 +389,7 @@ operator-= (v3t<T>& lhs, U rhs)
 
 template<typename T, typename U>
 inline v3t<T>
-operator* (U multiplier, v3t<T> v)
+operator* (U multiplier, v3t<T>& v)
 {
 	v3t<T> result = { multiplier * v.x, multiplier * v.y, multiplier * v.z };
 	return result;
@@ -397,7 +397,7 @@ operator* (U multiplier, v3t<T> v)
 
 template<typename T, typename U>
 inline v3t<T>
-operator* (v3t<T> lhs, v3t<U> rhs)
+operator* (v3t<T>& lhs, v3t<U>& rhs)
 {
 	v3t<T> result = { lhs.x * rhs.x, lhs.y * rhs.y, lhs.z * rhs.z };
 	return result;
@@ -412,7 +412,7 @@ operator*= (v3t<T>& lhs, U rhs)
 
 template<typename T, typename U>
 inline v3t<T>
-operator/ (v3t<T> v, U divisor)
+operator/ (v3t<T>& v, U divisor)
 {
 	v3t<T> result = { v.x / divisor, v.y / divisor, v.z / divisor };
 	return result;
@@ -427,7 +427,7 @@ operator/= (v3t<T>& lhs, U rhs)
 
 template<typename T, typename U>
 inline v3t<T>
-operator/ (U dividend, v3t<T> v)
+operator/ (U dividend, v3t<T>& v)
 {
 	v3t<T> result = { dividend / v.x, dividend / v.y, dividend / v.z };
 	return result;
@@ -470,7 +470,7 @@ v3t<T>::operator v4t<U>()
 
 template<typename T, typename U, typename V>
 inline v3t<T>
-Clamp(v3t<T> v, v3t<U> min, v3t<V> max)
+Clamp(v3t<T>& v, v3t<U>& min, v3t<V>& max)
 {
 	v3t<T> result = { Clamp(v.x, min.x, max.x), Clamp(v.y, min.y, max.y), Clamp(v.z, min.z, max.z) };
 	return result;
@@ -478,7 +478,7 @@ Clamp(v3t<T> v, v3t<U> min, v3t<V> max)
 
 template<typename T, typename U>
 inline v3t<T>
-Cross(v3t<T> lhs, v3t<U> rhs)
+Cross(v3t<T>& lhs, v3t<U>& rhs)
 {
 	// TODO: This is right handed. What's our system?
 	v3t<T> result = {
@@ -490,16 +490,16 @@ Cross(v3t<T> lhs, v3t<U> rhs)
 }
 
 template<typename T, typename U>
-inline r32
-Dot(v3t<T> lhs, v3t<U> rhs)
+inline T
+Dot(v3t<T>& lhs, v3t<U>& rhs)
 {
-	r32 result = lhs.x*rhs.x + lhs.y*rhs.y + lhs.z*rhs.z;
+	T result = lhs.x*rhs.x + lhs.y*rhs.y + lhs.z*rhs.z;
 	return result;
 }
 
 template<typename T, typename U>
 inline v3
-GetOrbitPos(v3t<T> target, v3t<U> ypr)
+GetOrbitPos(v3t<T>& target, v3t<U>& ypr)
 {
 	// NOTE:
 	// Using roll as radius
@@ -518,7 +518,7 @@ GetOrbitPos(v3t<T> target, v3t<U> ypr)
 
 template<typename T, typename U>
 inline v3t<T>
-Lerp(v3t<T> lhs, v3t<U> rhs, r32 t)
+Lerp(v3t<T>& lhs, v3t<U>& rhs, r32 t)
 {
 	v3t<T> result = { Lerp(lhs.x, rhs.x, t), Lerp(lhs.y, rhs.y, t), Lerp(lhs.z, rhs.z, t) };
 	return result;
@@ -526,7 +526,7 @@ Lerp(v3t<T> lhs, v3t<U> rhs, r32 t)
 
 template<typename T, typename U>
 inline v3t<T>
-Max(v3t<T> lhs, v3t<U> rhs)
+Max(v3t<T>& lhs, v3t<U>& rhs)
 {
 	v3t<T> result = { Max(lhs.x, rhs.x), Max(lhs.y, rhs.y), Max(lhs.z, rhs.z) };
 	return result;
@@ -534,7 +534,7 @@ Max(v3t<T> lhs, v3t<U> rhs)
 
 template<typename T, typename U>
 inline v3t<T>
-Min(v3t<T> lhs, v3t<U> rhs)
+Min(v3t<T>& lhs, v3t<U>& rhs)
 {
 	v3t<T> result = { Min(lhs.x, rhs.x), Min(lhs.y, rhs.y), Min(lhs.z, rhs.z) };
 	return result;
@@ -542,7 +542,7 @@ Min(v3t<T> lhs, v3t<U> rhs)
 
 template<typename T>
 inline v3t<T>
-Normalize(v3t<T> v)
+Normalize(v3t<T>& v)
 {
 	r32 magnitude = sqrt(v.x*v.x + v.y*v.y + v.z*v.z);
 	v3t<T> result = { v.x / magnitude, v.y / magnitude, v.z / magnitude };
@@ -587,7 +587,7 @@ using v4u = v4t<u32>;
 // Operators
 template<typename T, typename U>
 inline b32
-operator== (v4t<T> lhs, v4t<U> rhs)
+operator== (v4t<T>& lhs, v4t<U>& rhs)
 {
 	b32 result = lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z && lhs.w == rhs.w;
 	return result;
@@ -595,7 +595,7 @@ operator== (v4t<T> lhs, v4t<U> rhs)
 
 template<typename T, typename U>
 inline b32
-operator!= (v4t<T> lhs, v4t<U> rhs)
+operator!= (v4t<T>& lhs, v4t<U>& rhs)
 {
 	v4t<T> result = !(lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z && lhs.w == rhs.w);
 	return result;
@@ -603,7 +603,7 @@ operator!= (v4t<T> lhs, v4t<U> rhs)
 
 template<typename T, typename U>
 inline v4t<T>
-operator+ (v4t<T> lhs, v4t<U> rhs)
+operator+ (v4t<T>& lhs, v4t<U>& rhs)
 {
 	v4t<T> result = { lhs.x + rhs.x, lhs.y + rhs.y, lhs.z + rhs.z, lhs.w + rhs.w };
 	return result;
@@ -618,7 +618,7 @@ operator+= (v4t<T>& lhs, U rhs)
 
 template<typename T>
 inline v4t<T>
-operator- (v4t<T> v)
+operator- (v4t<T>& v)
 {
 	v4t<T> result = { -v.x, -v.y, -v.z, -v.w };
 	return result;
@@ -626,7 +626,7 @@ operator- (v4t<T> v)
 
 template<typename T, typename U>
 inline v4t<T>
-operator- (v4t<T> lhs, v4t<U> rhs)
+operator- (v4t<T>& lhs, v4t<U>& rhs)
 {
 	v4t<T> result = { lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z, lhs.w - rhs.w };
 	return result;
@@ -641,7 +641,7 @@ operator-= (v4t<T>& lhs, U rhs)
 
 template<typename T, typename U>
 inline v4t<T>
-operator* (U multiplier, v4t<T> v)
+operator* (U multiplier, v4t<T>& v)
 {
 	v4t<T> result = { multiplier * v.x, multiplier * v.y, multiplier * v.z, multiplier * v.w };
 	return result;
@@ -649,7 +649,7 @@ operator* (U multiplier, v4t<T> v)
 
 template<typename T, typename U>
 inline v4t<T>
-operator* (v4t<T> lhs, v4t<U> rhs)
+operator* (v4t<T>& lhs, v4t<U>& rhs)
 {
 	v4t<T> result = { lhs.x * rhs.x, lhs.y * rhs.y, lhs.z * rhs.z, lhs.w * rhs.w };
 	return result;
@@ -664,7 +664,7 @@ operator*= (v4t<T>& lhs, U rhs)
 
 template<typename T, typename U>
 inline v4t<T>
-operator/ (v4t<T> v, U divisor)
+operator/ (v4t<T>& v, U divisor)
 {
 	v4t<T> result = { v.x / divisor, v.y / divisor, v.z / divisor, v.w / divisor };
 	return result;
@@ -672,7 +672,7 @@ operator/ (v4t<T> v, U divisor)
 
 template<typename T, typename U>
 inline v4t<T>
-operator/ (U dividend, v4t<T> v)
+operator/ (U dividend, v4t<T>& v)
 {
 	v4t<T> result = { dividend / v.x, dividend / v.y, dividend / v.z, dividend / v.w };
 	return result;
@@ -722,7 +722,7 @@ v4t<T>::operator v4t<U>()
 
 template<typename T, typename U, typename V>
 inline v4t<T>
-Clamp(v4t<T> v, v4t<U> min, v4t<V> max)
+Clamp(v4t<T>& v, v4t<U>& min, v4t<V>& max)
 {
 	v4t<T> result = {
 		Clamp(v.x, min.x, max.x),
@@ -746,16 +746,16 @@ Color32(u8 r, u8 g, u8 b, u8 a)
 }
 
 template<typename T, typename U>
-inline r32
-Dot(v4t<T> lhs, v4t<U> rhs)
+inline T
+Dot(v4t<T>& lhs, v4t<U>& rhs)
 {
-	r32 result = lhs.x*rhs.x + lhs.y*rhs.y + lhs.z*rhs.z + lhs.w*rhs.w;
+	T result = lhs.x*rhs.x + lhs.y*rhs.y + lhs.z*rhs.z + lhs.w*rhs.w;
 	return result;
 }
 
 template<typename T, typename U>
 inline v4t<T>
-Lerp(v4t<T> lhs, v4t<U> rhs, r32 t)
+Lerp(v4t<T>& lhs, v4t<U>& rhs, r32 t)
 {
 	v4t<T> result = {
 		Lerp(lhs.x, rhs.x, t),
@@ -768,7 +768,7 @@ Lerp(v4t<T> lhs, v4t<U> rhs, r32 t)
 
 template<typename T, typename U>
 inline v4t<T>
-Max(v4t<T> lhs, v4t<U> rhs)
+Max(v4t<T>& lhs, v4t<U>& rhs)
 {
 	v4t<T> result = {
 		Max(lhs.x, rhs.x),
@@ -781,7 +781,7 @@ Max(v4t<T> lhs, v4t<U> rhs)
 
 template<typename T, typename U>
 inline v4t<T>
-Min(v4t<T> lhs, v4t<U> rhs)
+Min(v4t<T>& lhs, v4t<U>& rhs)
 {
 	v4t<T> result = {
 		Min(lhs.x, rhs.x),
@@ -794,7 +794,7 @@ Min(v4t<T> lhs, v4t<U> rhs)
 
 template<typename T>
 inline v4t<T>
-Normalize(v4t<T> v)
+Normalize(v4t<T>& v)
 {
 	r32 magnitude = sqrt(v.x*v.x + v.y*v.y + v.z*v.z + v.w*v.w);
 	v4t<T> result = {
@@ -843,7 +843,7 @@ union Matrix
 };
 
 inline Matrix
-Transpose(Matrix m)
+Transpose(Matrix& m)
 {
 	Matrix result = {
 		m.m00, m.m01, m.m02, m.m03,
@@ -855,7 +855,7 @@ Transpose(Matrix m)
 }
 
 inline Matrix
-operator* (Matrix lhs, Matrix rhs)
+operator* (Matrix& lhs, Matrix& rhs)
 {
 	Matrix lTrans = Transpose(lhs);
 	Matrix result = {
@@ -870,7 +870,7 @@ operator* (Matrix lhs, Matrix rhs)
 // TODO: Versions for v3?
 template <typename T>
 inline v4t<T>
-operator* (v4t<T> lhs, Matrix rhs)
+operator* (v4t<T>& lhs, Matrix& rhs)
 {
 	v4t<T> result = {
 		Dot(lhs, rhs.col[0]),
@@ -902,7 +902,7 @@ Identity()
 
 template<typename T, typename U>
 inline Matrix
-LookAt(v3t<T> pos, v3t<U> target)
+LookAt(v3t<T>& pos, v3t<U>& target)
 {
 	v3 u = { 0.0f, 1.0f, 0.0f };
 	v3 z = Normalize(pos - target);
@@ -921,7 +921,7 @@ LookAt(v3t<T> pos, v3t<U> target)
 
 template<typename T, typename U>
 inline Matrix
-Orbit(v3t<T> target, v3t<U> ypr)
+Orbit(v3t<T>& target, v3t<U>& ypr)
 {
 	// NOTE:
 	// Using roll as radius
@@ -940,7 +940,7 @@ Orbit(v3t<T> target, v3t<U> ypr)
 
 template<typename T>
 inline Matrix
-Orthographic(v2t<T> size, r32 near, r32 far)
+Orthographic(v2t<T>& size, r32 near, r32 far)
 {
 	Matrix result = {};
 	result[0][0] = 2.0f / size.x;
@@ -960,7 +960,7 @@ Row(Matrix& m, i32 row)
 
 template<typename T>
 inline void
-SetPosition(Matrix& m, v2t<T> pos)
+SetPosition(Matrix& m, v2t<T>& pos)
 {
 	m.tx = pos.x;
 	m.ty = pos.y;
@@ -968,7 +968,7 @@ SetPosition(Matrix& m, v2t<T> pos)
 
 template<typename T, typename U>
 inline void
-SetPosition(Matrix& m, v2t<T> pos, U zPos)
+SetPosition(Matrix& m, v2t<T>& pos, U zPos)
 {
 	m.tx = pos.x;
 	m.ty = pos.y;
@@ -977,7 +977,7 @@ SetPosition(Matrix& m, v2t<T> pos, U zPos)
 
 template<typename T>
 inline void
-SetPosition(Matrix& m, v3t<T> pos)
+SetPosition(Matrix& m, v3t<T>& pos)
 {
 	m.tx = pos.x;
 	m.ty = pos.y;
@@ -986,28 +986,28 @@ SetPosition(Matrix& m, v3t<T> pos)
 
 template<typename T>
 inline void
-SetTranslation(Matrix& m, v2t<T> pos)
+SetTranslation(Matrix& m, v2t<T>& pos)
 {
 	SetPosition(m, pos);
 }
 
 template<typename T, typename U>
 inline void
-SetTranslation(Matrix& m, v2t<T> pos, U zPos)
+SetTranslation(Matrix& m, v2t<T>& pos, U zPos)
 {
 	SetPosition(m, pos, zPos);
 }
 
 template<typename T>
 inline void
-SetTranslation(Matrix& m, v3t<T> pos)
+SetTranslation(Matrix& m, v3t<T>& pos)
 {
 	SetPosition(m, pos);
 }
 
 template<typename T>
 inline void
-SetRotation(Matrix& m, v2t<T> yp)
+SetRotation(Matrix& m, v2t<T>& yp)
 {
 	r32 cy = cos(yp.yaw);
 	r32 sy = sin(yp.yaw);
@@ -1027,7 +1027,7 @@ SetRotation(Matrix& m, v2t<T> yp)
 
 template<typename T>
 inline void
-SetRotation(Matrix& m, v3t<T> ypr)
+SetRotation(Matrix& m, v3t<T>& ypr)
 {
 	// NOTE: Conventions
 	// Tait-Bryan
@@ -1057,7 +1057,7 @@ SetRotation(Matrix& m, v3t<T> ypr)
 
 template<typename T>
 inline void
-SetScale(Matrix& m, v2t<T> scale)
+SetScale(Matrix& m, v2t<T>& scale)
 {
 	m.sx = scale.x;
 	m.sy = scale.y;
@@ -1065,7 +1065,7 @@ SetScale(Matrix& m, v2t<T> scale)
 
 template<typename T, typename U>
 inline void
-SetScale(Matrix& m, v2t<T> scale, U zScale)
+SetScale(Matrix& m, v2t<T>& scale, U zScale)
 {
 	m.sx = scale.x;
 	m.sy = scale.y;
@@ -1074,7 +1074,7 @@ SetScale(Matrix& m, v2t<T> scale, U zScale)
 
 template<typename T>
 inline void
-SetScale(Matrix& m, v3t<T> scale)
+SetScale(Matrix& m, v3t<T>& scale)
 {
 	m.sx = scale.x;
 	m.sy = scale.y;
@@ -1083,7 +1083,7 @@ SetScale(Matrix& m, v3t<T> scale)
 
 template<typename T, typename U, typename V>
 inline void
-SetSRT(Matrix& m, v3t<T> scale, v3t<U> ypr, v3t<V> pos)
+SetSRT(Matrix& m, v3t<T>& scale, v3t<U>& ypr, v3t<V>& pos)
 {
 	m.tx = pos.x;
 	m.ty = pos.y;
@@ -1106,7 +1106,7 @@ SetSRT(Matrix& m, v3t<T> scale, v3t<U> ypr, v3t<V> pos)
 
 template<typename T, typename U, typename V>
 inline void
-SetSRT(Matrix& m, v2t<T> scale, v2t<U> yp, v2t<V> pos)
+SetSRT(Matrix& m, v2t<T>& scale, v2t<U>& yp, v2t<V>& pos)
 {
 	m.tx = pos.x;
 	m.ty = pos.y;
@@ -1124,7 +1124,7 @@ SetSRT(Matrix& m, v2t<T> scale, v2t<U> yp, v2t<V> pos)
 
 template<typename T, typename U, typename V>
 inline Matrix
-GetSRT(v3t<T> scale, v3t<U> ypr, v3t<V> pos)
+GetSRT(v3t<T>& scale, v3t<U>& ypr, v3t<V>& pos)
 {
 	Matrix result = Identity();
 	SetSRT(result, scale, ypr, pos);
@@ -1133,7 +1133,7 @@ GetSRT(v3t<T> scale, v3t<U> ypr, v3t<V> pos)
 
 template<typename T, typename U, typename V>
 inline Matrix
-GetSRT(v2t<T> scale, v2t<U> yp, v2t<V> pos)
+GetSRT(v2t<T>& scale, v2t<U>& yp, v2t<V>& pos)
 {
 	Matrix result = Identity();
 	SetSRT(result, scale, yp, pos);
@@ -1142,7 +1142,7 @@ GetSRT(v2t<T> scale, v2t<U> yp, v2t<V> pos)
 
 template<typename T, typename U>
 inline void
-SetSR(Matrix& m, v3t<T> scale, v3t<U> ypr)
+SetSR(Matrix& m, v3t<T>& scale, v3t<U>& ypr)
 {
 	SetRotation(m, ypr);
 
@@ -1161,7 +1161,7 @@ SetSR(Matrix& m, v3t<T> scale, v3t<U> ypr)
 
 template<typename T, typename U>
 inline void
-SetSR(Matrix& m, v2t<T> scale, v2t<U> yp)
+SetSR(Matrix& m, v2t<T>& scale, v2t<U>& yp)
 {
 	SetRotation(m, yp);
 
@@ -1176,7 +1176,7 @@ SetSR(Matrix& m, v2t<T> scale, v2t<U> yp)
 
 template<typename T, typename U>
 inline Matrix
-GetSR(v3t<T> scale, v3t<U> ypr)
+GetSR(v3t<T>& scale, v3t<U>& ypr)
 {
 	Matrix result = Identity();
 	SetSR(result, scale, ypr, pos);
@@ -1194,7 +1194,7 @@ GetSR(v2t<T> scale, v2t<U> yp)
 
 template<typename T, typename U>
 inline void
-SetST(Matrix& m, v3t<T> scale, v3t<U> pos)
+SetST(Matrix& m, v3t<T>& scale, v3t<U>& pos)
 {
 	m.tx = pos.x;
 	m.ty = pos.y;
@@ -1215,7 +1215,7 @@ SetST(Matrix& m, v3t<T> scale, v3t<U> pos)
 
 template<typename T, typename U>
 inline void
-SetST(Matrix& m, v2t<T> scale, v2t<U> pos)
+SetST(Matrix& m, v2t<T>& scale, v2t<U>& pos)
 {
 	m.tx = pos.x;
 	m.ty = pos.y;
@@ -1235,7 +1235,7 @@ SetST(Matrix& m, v2t<T> scale, v2t<U> pos)
 
 template<typename T, typename U>
 inline Matrix
-GetST(v3t<T> scale, v3t<U> pos)
+GetST(v3t<T>& scale, v3t<U>& pos)
 {
 	Matrix result = Identity();
 	SetST(result, scale, pos);
@@ -1244,7 +1244,7 @@ GetST(v3t<T> scale, v3t<U> pos)
 
 template<typename T, typename U>
 inline Matrix
-GetST(v2t<T> scale, v2t<U> pos)
+GetST(v2t<T>& scale, v2t<U>& pos)
 {
 	Matrix result = Identity();
 	SetST(result, scale, pos);
@@ -1253,7 +1253,7 @@ GetST(v2t<T> scale, v2t<U> pos)
 
 template<typename T, typename U>
 inline void
-SetRT(Matrix& m, v3t<T> ypr, v3t<U> pos)
+SetRT(Matrix& m, v3t<T>& ypr, v3t<U>& pos)
 {
 	SetRotation(m, ypr);
 
@@ -1264,7 +1264,7 @@ SetRT(Matrix& m, v3t<T> ypr, v3t<U> pos)
 
 template<typename T, typename U>
 inline void
-SetRT(Matrix& m, v2t<T> yp, v2t<U> pos)
+SetRT(Matrix& m, v2t<T>& yp, v2t<U>& pos)
 {
 	SetRotation(m, yp);
 
@@ -1274,7 +1274,7 @@ SetRT(Matrix& m, v2t<T> yp, v2t<U> pos)
 
 template<typename T, typename U>
 inline Matrix
-GetRT(v3t<T> ypr, v3t<U> pos)
+GetRT(v3t<T>& ypr, v3t<U>& pos)
 {
 	Matrix result = Identity();
 	SetRT(result, ypr, pos);
@@ -1283,7 +1283,7 @@ GetRT(v3t<T> ypr, v3t<U> pos)
 
 template<typename T, typename U>
 inline Matrix
-GetRT(v2t<T> yp, v2t<U> pos)
+GetRT(v2t<T>& yp, v2t<U>& pos)
 {
 	Matrix result = Identity();
 	SetRT(result, yp, pos);

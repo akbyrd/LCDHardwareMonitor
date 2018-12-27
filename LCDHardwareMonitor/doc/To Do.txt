@@ -1,8 +1,8 @@
 Cleanup Pass
 	General
 		It's time to figure out what happens when memory allocations fail
-		Get math operators working in the watch window
 		There's a frame of flicker where the old image size is drawn when zooming. Is this fixable?
+		There's some sort of mouse position jump on my laptop when rotating the camera
 	Rewrite String
 		Want a constructor that takes a format and args
 		Want a scope-based RAII wrapper to auto-free
