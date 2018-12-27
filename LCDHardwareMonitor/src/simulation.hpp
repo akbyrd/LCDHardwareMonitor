@@ -1,3 +1,5 @@
+#include "LHMMath.hpp"
+
 struct SimulationState
 {
 	PluginLoaderState* pluginLoader;
@@ -19,27 +21,13 @@ struct SimulationState
 struct PluginContext
 {
 	SimulationState* s;
-	SensorPluginRef  sensorPluginRef;
-	WidgetPluginRef  widgetPluginRef;
+	SensorPlugin*    sensorPlugin;
+	WidgetPlugin*    widgetPlugin;
 	b32              success;
 };
 
-static SensorPlugin*
-GetSensorPlugin(PluginContext* context)
-{
-	Assert(context->sensorPluginRef);
-	return &context->s->sensorPlugins[context->sensorPluginRef];
-}
-
-static WidgetPlugin*
-GetWidgetPlugin(PluginContext* context)
-{
-	Assert(context->widgetPluginRef);
-	return &context->s->widgetPlugins[context->widgetPluginRef];
-}
-
 static Widget*
-CreateWidget(WidgetData* widgetData)
+CreateWidget(WidgetPlugin* widgetPlugin, WidgetData* widgetData)
 {
 	Widget* widget = List_Append(widgetData->widgets);
 	LOG_IF(!widget, return nullptr,
@@ -47,7 +35,8 @@ CreateWidget(WidgetData* widgetData)
 
 	b32 success = List_Reserve(widgetData->widgetsUserData, widgetData->desc.userDataSize);
 	LOG_IF(!success, return nullptr,
-		Severity::Error, "Failed to allocate Widget data list");
+		Severity::Error, "Failed to allocate space for %u bytes of Widget user data '%s'",
+		widgetData->desc.userDataSize, widgetPlugin->info.name);
 	widgetData->widgetsUserData.length += widgetData->desc.userDataSize;
 
 	return widget;
@@ -107,11 +96,12 @@ RegisterSensors(PluginContext* context, Slice<Sensor> sensors)
 	if (!context->success) return;
 	context->success = false;
 
-	SensorPlugin* sensorPlugin = GetSensorPlugin(context);
+	SensorPlugin* sensorPlugin = context->sensorPlugin;
 
 	b32 success = List_AppendRange(sensorPlugin->sensors, sensors);
 	LOG_IF(!success, return,
-		Severity::Error, "Failed to allocate Sensors");
+		Severity::Error, "Failed to allocate space for %u Sensors '%s'",
+		sensors.length, context->sensorPlugin->info.name);
 
 	// TODO: Re-use empty slots in the list (from removes)
 
@@ -124,7 +114,7 @@ UnregisterSensors(PluginContext* context, Slice<SensorRef> sensorRefs)
 	if (!context->success) return;
 	context->success = false;
 
-	SensorPlugin* sensorPlugin = GetSensorPlugin(context);
+	SensorPlugin* sensorPlugin = context->sensorPlugin;
 
 	for (u32 i = 0; i < sensorRefs.length; i++)
 	{
@@ -159,7 +149,7 @@ RegisterWidgets(PluginContext* context, Slice<WidgetDesc> widgetDescs)
 
 	// TODO: Handle invalid widgetDef
 
-	WidgetPlugin* widgetPlugin = GetWidgetPlugin(context);
+	WidgetPlugin* widgetPlugin = context->widgetPlugin;
 
 	b32 success;
 	for (u32 i = 0; i < widgetDescs.length; i++)
@@ -171,11 +161,12 @@ RegisterWidgets(PluginContext* context, Slice<WidgetDesc> widgetDescs)
 
 		success = List_Reserve(widgetData.widgets, 8);
 		LOG_IF(!success, return,
-			Severity::Error, "Failed to allocate Widget instances list");
+			Severity::Error, "Failed to allocate space for Widget instances list");
 
 		success = List_Reserve(widgetData.widgetsUserData, 8 * widgetDesc->userDataSize);
 		LOG_IF(!success, return,
-			Severity::Error, "Failed to allocate Widget data list");
+			Severity::Error, "Failed to allocate space for Widget user data list. %u bytes each '%s'",
+			widgetDesc->userDataSize, widgetPlugin->info.name);
 
 		WidgetData* widgetData2 = List_Append(widgetPlugin->widgetDatas, widgetData);
 		LOG_IF(!widgetData2, return,
@@ -188,7 +179,7 @@ RegisterWidgets(PluginContext* context, Slice<WidgetDesc> widgetDescs)
 static void
 UnregisterAllWidgets(PluginContext* context)
 {
-	WidgetPlugin* widgetPlugin = GetWidgetPlugin(context);
+	WidgetPlugin* widgetPlugin = context->widgetPlugin;
 	for (u32 i = 0; i < widgetPlugin->widgetDatas.length; i++)
 	{
 		WidgetData* widgetData = &widgetPlugin->widgetDatas[i];
@@ -204,7 +195,7 @@ LoadPixelShader(PluginContext* context, c8* relPath, Slice<u32> cBufSizes)
 	if (!context->success) return PixelShader::Null;
 	context->success = false;
 
-	WidgetPlugin* widgetPlugin = GetWidgetPlugin(context);
+	WidgetPlugin* widgetPlugin = context->widgetPlugin;
 
 	String path = {};
 	defer { List_Free(path); };
@@ -308,9 +299,9 @@ LoadSensorPlugin(SimulationState* s, c8* directory, c8* fileName)
 	if (sensorPlugin->functions.initialize)
 	{
 		PluginContext context = {};
-		context.s               = s;
-		context.sensorPluginRef = sensorPlugin->ref;
-		context.success         = true;
+		context.s            = s;
+		context.sensorPlugin = sensorPlugin;
+		context.success      = true;
 
 		SensorPluginAPI::Initialize api = {};
 		api.RegisterSensors = RegisterSensors;
@@ -334,9 +325,9 @@ UnloadSensorPlugin(SimulationState* s, SensorPlugin* sensorPlugin)
 	if (sensorPlugin->functions.teardown)
 	{
 		PluginContext context = {};
-		context.s               = s;
-		context.sensorPluginRef = sensorPlugin->ref;
-		context.success         = true;
+		context.s            = s;
+		context.sensorPlugin = sensorPlugin;
+		context.success      = true;
 
 		SensorPluginAPI::Teardown api = {};
 		api.sensors = sensorPlugin->sensors;
@@ -388,9 +379,9 @@ LoadWidgetPlugin(SimulationState* s, c8* directory, c8* fileName)
 	{
 		// TODO: Hoist these parameters up
 		PluginContext context = {};
-		context.s               = s;
-		context.widgetPluginRef = widgetPlugin->ref;
-		context.success         = true;
+		context.s            = s;
+		context.widgetPlugin = widgetPlugin;
+		context.success      = true;
 
 		WidgetPluginAPI::Initialize api = {};
 		api.RegisterWidgets = RegisterWidgets;
@@ -420,8 +411,8 @@ UnloadWidgetPlugin(SimulationState* s, WidgetPlugin* widgetPlugin)
 	auto pluginGuard = guard { widgetPlugin->header.isWorking = false; };
 
 	PluginContext context = {};
-	context.s               = s;
-	context.widgetPluginRef = widgetPlugin->ref;
+	context.s            = s;
+	context.widgetPlugin = widgetPlugin;
 
 	WidgetInstanceAPI::Teardown instancesAPI = {};
 	for (u32 i = 0; i < widgetPlugin->widgetDatas.length; i++)
@@ -647,13 +638,13 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 		WidgetPlugin* filledBarPlugin = LoadWidgetPlugin(s, "Widget Plugins\\Filled Bar", "Widget Plugin - Filled Bar");
 		if (!filledBarPlugin) return false;
 
-		u32 debugSensorIndices[] = { 6, 7, 8, 9, 32 }; // Desktop 2080 Ti
+		//u32 debugSensorIndices[] = { 6, 7, 8, 9, 32 }; // Desktop 2080 Ti
 		//u32 debugSensorIndices[] = { 6, 7, 8, 9, 33 }; // Desktop 780 Tis
-		//u32 debugSensorIndices[] = { 0, 1, 2, 3, 12 }; // Laptop
+		u32 debugSensorIndices[] = { 0, 1, 2, 3, 12 }; // Laptop
 		WidgetData* widgetData = &filledBarPlugin->widgetDatas[0];
 		for (u32 i = 0; i < ArrayLength(debugSensorIndices); i++)
 		{
-			Widget* widget = CreateWidget(widgetData);
+			Widget* widget = CreateWidget(filledBarPlugin, widgetData);
 			if (!widget) return false;
 
 			widget->position         = ((v2) s->renderSize - v2{ 240, 12 }) / 2.0f;
@@ -662,9 +653,9 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 			widget->sensorRef.sensor = List_Get(s->sensorPlugins[0].sensors, debugSensorIndices[i]);
 
 			PluginContext context = {};
-			context.s               = s;
-			context.widgetPluginRef = filledBarPlugin->ref;
-			context.success         = true;
+			context.s            = s;
+			context.widgetPlugin = filledBarPlugin;
+			context.success      = true;
 
 			WidgetInstanceAPI::Initialize api = {};
 			u32 iLast = widgetData->widgets.length - 1;
@@ -680,6 +671,18 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 	if (!success) return false;
 
 	return true;
+}
+
+bool
+operator+ (const v4& lhs, const v4& rhs)
+{
+	return false;
+}
+
+bool
+Add (const v4& lhs, const v4& rhs)
+{
+	return false;
 }
 
 void
@@ -703,8 +706,8 @@ Simulation_Update(SimulationState* s)
 			// TODO: try/catch?
 			if (sensorPlugin->functions.update)
 			{
-				context.sensorPluginRef = sensorPlugin->ref;
-				context.success         = true;
+				context.sensorPlugin = sensorPlugin;
+				context.success      = true;
 
 				api.sensors = sensorPlugin->sensors;
 				sensorPlugin->functions.update(&context, api);
@@ -739,8 +742,8 @@ Simulation_Update(SimulationState* s)
 		{
 			WidgetPlugin* widgetPlugin = &s->widgetPlugins[i];
 
-			context.widgetPluginRef = widgetPlugin->ref;
-			context.success         = true;
+			context.widgetPlugin = widgetPlugin;
+			context.success      = true;
 
 			// TODO: try/catch?
 			if (widgetPlugin->functions.update)

@@ -574,11 +574,11 @@ Renderer_CreateMesh(RendererState* s, Slice<c8> name, Slice<Vertex> vertices, Sl
 		// not guaranteed to be null terminated!)
 		success = List_AppendRange(s->vertexBuffer, vertices);
 		LOG_IF(!success, return Mesh::Null,
-			Severity::Error, "Failed to allocate space for mesh vertices '%s'", name.data);
+			Severity::Error, "Failed to allocate space for %u mesh vertices '%s'", vertices.length, name.data);
 
 		success = List_AppendRange(s->indexBuffer, indices);
 		LOG_IF(!success, return Mesh::Null,
-			Severity::Error, "Failed to allocate space for mesh indices '%s'", name.data);
+			Severity::Error, "Failed to allocate space for %u mesh indices '%s'", indices.length, name.data);
 	}
 
 	// Commit
@@ -667,7 +667,7 @@ Renderer_LoadVertexShader(RendererState* s, Slice<c8> name, c8* path, Slice<Vert
 
 		success = List_Reserve(vs.constantBuffers, cBufSizes.length);
 		LOG_IF(!success, return VertexShader::Null,
-			Severity::Error, "Failed to allocate space for VS constant buffers '%s'", path);
+			Severity::Error, "Failed to allocate space for %u VS constant buffers '%s'", cBufSizes.length, path);
 
 		for (u32 i = 0; i < cBufSizes.length; i++)
 		{
@@ -685,7 +685,7 @@ Renderer_LoadVertexShader(RendererState* s, Slice<c8> name, c8* path, Slice<Vert
 		List<D3D11_INPUT_ELEMENT_DESC> vsInputDescs = {};
 		b32 success = List_Reserve(vsInputDescs, attributes.length);
 		LOG_IF(!success, return VertexShader::Null,
-			Severity::Error, "Failed to allocate VS input descriptions '%s'", path);
+			Severity::Error, "Failed to allocate space for %u VS input descriptions '%s'", attributes.length, path);
 		for (u32 i = 0; i < attributes.length; i++)
 		{
 			const c8* semantic;
@@ -791,7 +791,7 @@ Renderer_LoadPixelShader(RendererState* s, Slice<c8> name, c8* path, Slice<u32> 
 
 		success = List_Reserve(ps.constantBuffers, cBufSizes.length);
 		LOG_IF(!success, return PixelShader::Null,
-			Severity::Error, "Failed to allocate space for PS constant buffers '%s'", path);
+			Severity::Error, "Failed to allocate space for %u PS constant buffers '%s'", cBufSizes.length, path);
 
 		for (u32 i = 0; i < cBufSizes.length; i++)
 		{

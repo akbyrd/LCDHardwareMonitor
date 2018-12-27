@@ -10,8 +10,6 @@ Cleanup Pass
 		Take String or StringSlice in all API functions
 		Re-use memory when formatting
 	Logging
-		We *do* want context for allocation failures because a plugin could be asking for stupid
-			sizes, caught in a loop, etc
 		Allow logging from plugins
 		Use an arena
 
