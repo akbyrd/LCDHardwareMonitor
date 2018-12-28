@@ -1,17 +1,18 @@
 Cleanup Pass
-	General
-		It's time to figure out what happens when memory allocations fail
-		There's a frame of flicker where the old image size is drawn when zooming. Is this fixable?
-		There's some sort of mouse position jump on my laptop when rotating the camera
 	Rewrite String
 		Want a constructor that takes a format and args
 		Want a scope-based RAII wrapper to auto-free
 		e.g. for passing a formatted string to SetDebugObjectName
 		Take String or StringSlice in all API functions
+		Fix ability to pass StringSlice to printf (logging)
 		Re-use memory when formatting
 	Logging
 		Allow logging from plugins
 		Use an arena
+	General
+		There's a frame of flicker where the old image size is drawn when zooming. Is this fixable?
+		There's some sort of mouse position jump on my laptop when rotating the camera
+		It's time to figure out what happens when memory allocations fail
 
 
 
