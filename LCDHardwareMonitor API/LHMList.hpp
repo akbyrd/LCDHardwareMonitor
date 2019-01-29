@@ -53,6 +53,27 @@ struct List
 };
 
 template<typename T>
+struct Slice
+{
+	u32 length;
+	u32 stride;
+	T*  data;
+
+	// TODO: I wish we could use actual operators for these conversions, rather
+	// than constructors.
+	Slice()                      { length = 0;           stride = sizeof(T); data = nullptr; }
+	Slice(u32 _length, T* _data) { length = _length;     stride = sizeof(T); data = _data; }
+	Slice(const T& element)      { length = 1;           stride = sizeof(T); data = (T*) &element; }
+	Slice(List<T>& list)         { length = list.length; stride = sizeof(T); data = list.data; }
+	template<u32 Length>
+	Slice(const T(&arr)[Length]) { length = Length;      stride = sizeof(T); data = (T*) arr; }
+
+	using RefT = ListRef<T>;
+	inline T& operator[] (RefT r) { return *((T*) &((u8*) data)[stride*(r.index - 1)]); }
+	inline T& operator[] (u32 i)  { return *((T*) &((u8*) data)[stride*i]); }
+};
+
+template<typename T>
 inline b32
 List_Reserve(List<T>& list, u32 capacity)
 {
@@ -70,14 +91,6 @@ List_Reserve(List<T>& list, u32 capacity)
 	}
 
 	return true;
-}
-
-template<typename T>
-inline void
-List_Free(List<T>& list)
-{
-	free(list.data);
-	list = {};
 }
 
 template<typename T>
@@ -124,7 +137,34 @@ List_Append(List<T>& list)
 	return slot;
 }
 
-// List_AppendRange - See LHMSlice.hpp
+template<typename T>
+inline b32
+List_AppendRange(List<T>& list, Slice<T> items)
+{
+	if (!List_Reserve(list, list.length + items.length))
+		return false;
+
+	if (items.stride == sizeof(T))
+	{
+		memcpy(&list.data[list.length], items.data, items.length * sizeof(T));
+		list.length += items.length;
+	}
+	else
+	{
+		for (u32 i = 0; i < items.length; i++)
+			list.data[list.length++] = items[i];
+	}
+
+	return true;
+}
+
+template<typename T>
+inline void
+List_Clear(List<T>& list)
+{
+	list.length = 0;
+	memset(list.data, 0, sizeof(T) * list.capacity);
+}
 
 template<typename T>
 inline b32
@@ -162,6 +202,39 @@ List_ContainsValue(List<T>& list, T item)
 }
 
 template<typename T>
+inline b32
+List_Duplicate(Slice<T>& slice, List<T>& duplicate)
+{
+	List_Reserve(duplicate, slice.length);
+	if (!duplicate.data)
+		return false;
+
+	duplicate.length   = slice.length;
+	duplicate.capacity = slice.length;
+
+	for (u32 i = 0; i < slice.length; i++)
+		duplicate[i] = slice[i];
+
+	return true;
+}
+
+template<typename T>
+inline b32
+List_Equal(List<T>& lhs, List<T>& rhs)
+{
+	if (lhs.length != rhs.length)
+		return false;
+
+	for (u32 i = 0; i < lhs.length; i++)
+	{
+		if (lhs[i] != rhs[i])
+			return false;
+	}
+
+	return true;
+}
+
+template<typename T>
 inline ListRef<T>
 List_FindFirst(List<T>& list, T item)
 {
@@ -181,6 +254,14 @@ List_FindLast(List<T>& list, T item)
 			return List_Get(list, i);
 
 	return ListRef<T>::Null;
+}
+
+template<typename T>
+inline void
+List_Free(List<T>& list)
+{
+	free(list.data);
+	list = {};
 }
 
 template<typename T>
@@ -256,6 +337,24 @@ List_RemoveLast(List<T>& list)
 }
 
 template<typename T>
+inline b32
+List_Shrink(List<T>& list)
+{
+	u32 capacity = list.capacity / 2;
+	if (list.length < capacity)
+	{
+		u64 totalSize = sizeof(T) * capacity;
+		T* data = (T*) realloc(list.data, (size) totalSize);
+		if (!data) return false;
+
+		list.capacity = capacity;
+		list.data     = data;
+	}
+
+	return true;
+}
+
+template<typename T>
 inline size
 List_SizeOf(List<T>& list)
 {
@@ -263,57 +362,13 @@ List_SizeOf(List<T>& list)
 	return result;
 }
 
-template<typename T>
-inline void
-List_Clear(List<T>& list)
-{
-	list.length = 0;
-	memset(list.data, 0, sizeof(T) * list.capacity);
-}
-
-template<typename T>
-inline b32
-List_Duplicate(List<T>& list, List<T>& duplicate)
-{
-	List_Reserve(duplicate, list.capacity);
-	if (!duplicate.data)
-		return false;
-
-	duplicate.length   = list.length;
-	duplicate.capacity = list.capacity;
-
-	if (duplicate.data && list.data)
-		memcpy(duplicate.data, list.data, list.capacity);
-
-	return true;
-}
-
-template<typename T>
-inline b32
-List_Equal(List<T>& lhs, List<T>& rhs)
-{
-	if (lhs.length != rhs.length)
-		return false;
-
-	for (u32 i = 0; i < lhs.length; i++)
-	{
-		if (lhs[i] != rhs[i])
-			return false;
-	}
-
-	return true;
-}
-
 using Bytes = List<u8>;
 
+// TODO: Change most of the API to take a Slice
 // TODO: This data structure needs to be reworked entirely. The API is all
 // over the place and generally garbage.
-// TODO: I bet we can make a pretty simple fixed-size list with the same
-// interface (e.g. transparently change between them).
 // TODO: Settle on references or pointers
-// TODO: Handle cases where this may fail
 // TODO: Where should memory be included?
-// TODO: List_Shrink - if <=25% full shrink to 50%
 // TODO: Allow foreach style usage
 // TODO: Use placement new to avoid calling destructors on garbage objects?
 
