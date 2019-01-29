@@ -16,6 +16,8 @@ using namespace OpenHardwareMonitor::Hardware;
 template<typename T>
 using SList = System::Collections::Generic::List<T>;
 
+using SString = System::String;
+
 public ref struct State : ISensorPlugin, ISensorInitialize, ISensorUpdate, ISensorTeardown
 {
 	Computer^          computer;
@@ -72,7 +74,7 @@ public ref struct State : ISensorPlugin, ISensorInitialize, ISensorUpdate, ISens
 				ISensor^ ohmSensor = ohmSensors[j];
 				activeSensors->Add(ohmSensor);
 
-				String^ format;
+				SString^ format;
 				switch (ohmSensor->SensorType)
 				{
 					case SensorType::Clock:       format = "%i MHz";   break;
@@ -91,7 +93,7 @@ public ref struct State : ISensorPlugin, ISensorInitialize, ISensorUpdate, ISens
 				}
 				// TODO: Format in C
 				// TODO: Don't update unless changed
-				String^ value  = String::Format(format, ohmSensor->Value);
+				SString^ value  = SString::Format(format, ohmSensor->Value);
 
 				Sensor sensor = {};
 				sensor.name       = (c8*) Marshal::StringToHGlobalAnsi(ohmSensor->Name).ToPointer();

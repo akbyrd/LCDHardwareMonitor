@@ -6,8 +6,8 @@
 #include "LHMCommon.h"
 #include "LHMMath.hpp"
 #include "LHMList.hpp"
-//#include "LHMString.hpp"
 #include "LHMDefer.hpp"
+#include "LHMString.hpp"
 
 // Systems
 #include "LHMRenderer.h"

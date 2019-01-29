@@ -1,5 +1,4 @@
 #include "LHMAPI.h"
-#include "LHMString.hpp"
 
 #include "platform.h"
 #include "pluginloader.h"

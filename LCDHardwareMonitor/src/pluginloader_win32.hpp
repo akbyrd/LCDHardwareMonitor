@@ -211,8 +211,8 @@ static b32
 ValidatePluginInfo(PluginInfo* pluginInfo)
 {
 	b32 valid = true;
-	valid = valid && pluginInfo->name;
-	valid = valid && pluginInfo->author;
+	valid = valid && pluginInfo->name.length > 0;
+	valid = valid && pluginInfo->author.length > 0;
 	valid = valid && pluginInfo->version;
 	return valid;
 }

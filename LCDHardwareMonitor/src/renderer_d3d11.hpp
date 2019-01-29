@@ -41,12 +41,12 @@ namespace HLSLSemantic
 
 struct MeshData
 {
-	Mesh        ref     = {};
-	String      name    = {};
-	u32         vOffset = 0;
-	u32         iOffset = 0;
-	u32         iCount  = 0;
-	DXGI_FORMAT iFormat = DXGI_FORMAT_UNKNOWN;
+	Mesh        ref;
+	String      name;
+	u32         vOffset;
+	u32         iOffset;
+	u32         iCount;
+	DXGI_FORMAT iFormat;
 };
 
 struct ConstantBuffer
@@ -127,16 +127,17 @@ struct RendererState
 
 template<typename T>
 static inline void
-SetDebugObjectName(const ComPtr<T>& resource, Slice<c8> name)
+SetDebugObjectName(const ComPtr<T>& resource, StringSlice name)
 {
 	#if defined(DEBUG)
+	Assert(name.length > 0);
 	resource->SetPrivateData(WKPDID_D3DDebugObjectName, name.length - 1, name.data);
 	#endif
 }
 
 template<typename T, typename... Args>
 static inline void
-SetDebugObjectName(const ComPtr<T>& resource, Slice<c8> format, Args... args)
+SetDebugObjectName(const ComPtr<T>& resource, StringSlice format, Args... args)
 {
 	#if defined(DEBUG)
 	String name = {};
@@ -150,8 +151,7 @@ SetDebugObjectName(const ComPtr<T>& resource, Slice<c8> format, Args... args)
 		return;
 	}
 
-	// HACK
-	SetDebugObjectName(resource, { name.length, name.data });
+	SetDebugObjectName(resource, name);
 	#endif
 }
 
@@ -545,7 +545,7 @@ Renderer_Teardown(RendererState* s)
 
 // TODO: Standardize asset function naming convention
 Mesh
-Renderer_CreateMesh(RendererState* s, Slice<c8> name, Slice<Vertex> vertices, Slice<Index> indices)
+Renderer_CreateMesh(RendererState* s, StringSlice name, Slice<Vertex> vertices, Slice<Index> indices)
 {
 	MeshData mesh = {};
 	defer {
@@ -569,9 +569,6 @@ Renderer_CreateMesh(RendererState* s, Slice<c8> name, Slice<Vertex> vertices, Sl
 		mesh.iCount  = indices.length;
 		mesh.iFormat = DXGI_FORMAT_R32_UINT;
 
-		// TODO: Passing a Slice<c8> to a log format WILL NOT work! (pointer is
-		// not at the beginning of the struct, and more importantly slices are
-		// not guaranteed to be null terminated!)
 		success = List_AppendRange(s->vertexBuffer, vertices);
 		LOG_IF(!success, return Mesh::Null,
 			Severity::Error, "Failed to allocate space for %u mesh vertices '%s'", vertices.length, name.data);
@@ -623,7 +620,7 @@ Renderer_CreateConstantBuffer(RendererState* s, ConstantBuffer* cBuf)
 
 // TODO: Should a failed load mark the file as bad?
 VertexShader
-Renderer_LoadVertexShader(RendererState* s, Slice<c8> name, c8* path, Slice<VertexAttribute> attributes, Slice<u32> cBufSizes)
+Renderer_LoadVertexShader(RendererState* s, StringSlice name, c8* path, Slice<VertexAttribute> attributes, Slice<u32> cBufSizes)
 {
 	// Vertex Shader
 	VertexShaderData vs = {};
@@ -749,7 +746,7 @@ Renderer_LoadVertexShader(RendererState* s, Slice<c8> name, c8* path, Slice<Vert
 
 // TODO: Unload functions
 PixelShader
-Renderer_LoadPixelShader(RendererState* s, Slice<c8> name, c8* path, Slice<u32> cBufSizes)
+Renderer_LoadPixelShader(RendererState* s, StringSlice name, c8* path, Slice<u32> cBufSizes)
 {
 	PixelShaderData ps = {};
 	defer {

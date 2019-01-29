@@ -66,7 +66,7 @@ RemoveSensorRefs(SimulationState* s, Slice<SensorRef> sensorRefs)
 	}
 }
 
-static Slice<c8>
+static StringSlice
 GetNameFromPath(String& path)
 {
 	if (path.length == 0) return {};
@@ -81,10 +81,10 @@ GetNameFromPath(String& path)
 
 	if (first == last) return {};
 
-	Slice<c8> result = {};
+	StringSlice result = {};
 	result.length = last.index - first.index + 1;
 	result.stride = sizeof(c8);
-	result.data   = (u8*) &path[first];
+	result.data   = &path[first];
 	return result;
 }
 
@@ -204,7 +204,7 @@ LoadPixelShader(PluginContext* context, c8* relPath, Slice<u32> cBufSizes)
 	LOG_IF(!success, return PixelShader::Null,
 		Severity::Error, "Failed to format pixel shader path '%s'", relPath);
 
-	Slice<c8> psName = GetNameFromPath(path);
+	StringSlice psName = GetNameFromPath(path);
 	LOG_IF(!psName.data, psName = path,
 		Severity::Warning, "Failed to get pixel shader name from path '%s'", relPath);
 
