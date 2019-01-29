@@ -1,18 +1,8 @@
-Cleanup Pass
-	Rewrite String
-		Want a constructor that takes a format and args
-		Want a scope-based RAII wrapper to auto-free
-		e.g. for passing a formatted string to SetDebugObjectName
-		Take String or StringSlice in all API functions
-		Fix ability to pass StringSlice to printf (logging)
-		Re-use memory when formatting
-	Logging
-		Allow logging from plugins
-		Use an arena
-	General
-		There's a frame of flicker where the old image size is drawn when zooming. Is this fixable?
-		There's some sort of mouse position jump on my laptop when rotating the camera
-		It's time to figure out what happens when memory allocations fail
+Next steps
+	GUI Application
+	Inter-process communication (for GUI to Simulation communication)
+	Text rendering
+	Settings
 
 
 
@@ -45,6 +35,8 @@ OHM Plugin
 
 
 Back Burner
+	Can one of the template parameters to Scoped be eliminated through partial specialization?
+	Allow logging from plugins
 	Is it cleaner to use the auto-COM-interface of LHMPluginLoader?
 	Handle multiple plugins in the same file (probably just a detailed error)
 	Use #import instead of project references?
@@ -52,6 +44,11 @@ Back Burner
 	Runtime shader compilation
 	Shader hot-reloading
 	Put plugins in an error state when API calls fail
+	There's a frame of flicker where the old image size is drawn when zooming. Is this fixable?
+	There's some sort of mouse position jump on my laptop when rotating the camera
+	Re-use memory when formatting
+	Use an arena for logging
+	Figure out what happens when memory allocations fail
 
 
 
@@ -66,6 +63,8 @@ Sensor Plugins
 
 Refactoring
 	Rewrite List<T>
+	Rewrite String. String is a fucking nightmare right now.
+	Passing a SliceSlice to a log format WILL NOT work and is a super likely mistake!
 	Try out range based for loops
 	Ensure Platform function naming is uniform
 	Decide on 'plugin loader' naming on both sides of the managed boundary
