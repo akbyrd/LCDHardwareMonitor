@@ -29,7 +29,7 @@ public ref struct State : ISensorPlugin, ISensorInitialize, ISensorUpdate, ISens
 	};
 
 	virtual void
-	GetPluginInfo (PluginInfo* info)
+	GetPluginInfo(PluginInfo* info)
 	{
 		// TODO: Do we need a Teardown function in case these strings are allocated?
 		info->name    = "OHM Sensors";

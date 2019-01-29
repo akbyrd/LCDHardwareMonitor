@@ -76,7 +76,6 @@ struct Scoped
 	~Scoped() { Cleanup(resource); }
 
 	const TResource resource;
-	b32 operator== (TResource other) { return resource == other; }
 	operator TResource() { return resource; }
 };
 

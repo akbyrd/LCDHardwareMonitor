@@ -19,7 +19,7 @@
 #endif
 
 #if __cplusplus_cli
-	// NOTE: This warning is surpiously raised when using #pragma make_public on
+	// NOTE: This warning is spuriously raised when using #pragma make_public on
 	// a nested native type.
 	#pragma warning (disable: 4692) // Non-private member contains private type
 #endif

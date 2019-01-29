@@ -34,7 +34,7 @@
     <StringView>data</StringView>
     <Expand>
       <Item Name="length">length</Item>
-      <Item Name="capacity">capacity</Item>
+      <Item Name="stride">stride</Item>
     </Expand>
   </Type>
 

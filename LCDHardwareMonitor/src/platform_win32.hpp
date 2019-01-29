@@ -258,7 +258,8 @@ Platform_LoadFileString(c8* path)
 	return result;
 }
 
-u64 Platform_GetTicks()
+u64
+Platform_GetTicks()
 {
 	// TODO: Ensure we're not on XP
 	// NOTE: Never fails above XP
@@ -268,7 +269,8 @@ u64 Platform_GetTicks()
 	return (u64) counter.QuadPart;
 }
 
-r32 Platform_TicksToSeconds(i64 ticks)
+r32
+Platform_TicksToSeconds(i64 ticks)
 {
 	// TODO: Ensure we're not on XP
 	// NOTE: Never fails above XP
@@ -277,7 +279,8 @@ r32 Platform_TicksToSeconds(i64 ticks)
 	return (r32) ticks / (r32) frequency.QuadPart;
 }
 
-r32 Platform_GetElapsedSeconds(u64 startTicks)
+r32
+Platform_GetElapsedSeconds(u64 startTicks)
 {
 	i64 elapsedTicks = (i64) (Platform_GetTicks() - startTicks);
 	return Platform_TicksToSeconds(elapsedTicks);

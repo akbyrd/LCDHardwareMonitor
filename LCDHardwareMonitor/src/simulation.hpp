@@ -638,9 +638,9 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 		WidgetPlugin* filledBarPlugin = LoadWidgetPlugin(s, "Widget Plugins\\Filled Bar", "Widget Plugin - Filled Bar");
 		if (!filledBarPlugin) return false;
 
-		//u32 debugSensorIndices[] = { 6, 7, 8, 9, 32 }; // Desktop 2080 Ti
+		u32 debugSensorIndices[] = { 6, 7, 8, 9, 32 }; // Desktop 2080 Ti
 		//u32 debugSensorIndices[] = { 6, 7, 8, 9, 33 }; // Desktop 780 Tis
-		u32 debugSensorIndices[] = { 0, 1, 2, 3, 12 }; // Laptop
+		//u32 debugSensorIndices[] = { 0, 1, 2, 3, 12 }; // Laptop
 		WidgetData* widgetData = &filledBarPlugin->widgetDatas[0];
 		for (u32 i = 0; i < ArrayLength(debugSensorIndices); i++)
 		{
@@ -671,18 +671,6 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 	if (!success) return false;
 
 	return true;
-}
-
-bool
-operator+ (const v4& lhs, const v4& rhs)
-{
-	return false;
-}
-
-bool
-Add (const v4& lhs, const v4& rhs)
-{
-	return false;
 }
 
 void
