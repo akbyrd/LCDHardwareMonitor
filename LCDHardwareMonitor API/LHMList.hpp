@@ -20,7 +20,11 @@
 //   Grow returns false.
 //   Append return a nullptr instead of a pointer to the new slot.
 
+// Fuck you, Microsoft
+#pragma warning(push, 0)
+#pragma warning(disable : 4365)
 #include <memory>
+#pragma warning(pop)
 
 template<typename T>
 struct ListRef
