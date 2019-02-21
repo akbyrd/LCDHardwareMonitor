@@ -1,0 +1,18 @@
+Shared Memory
+
+File Mapping            Basically shared memory. Sounds acceptable.
+Sockets                 Low level. Sounds acceptable.
+Pipes                   Send data back and forth. Maybe ok.
+Mailslots               Simple messages only?
+Remote Procedure Calls  Call functions directly. Meh.
+
+IPC Method
+1) The GUI reads application memory directly to get the things to display
+2) The GUI requests lists of data and keeps a local copy
+
+Process Structure
+Simulation and GUI are independent processes
+Each can start the other if necessary
+
+Crazy Idea
+The GUI could just be a plugin and run in the simulation

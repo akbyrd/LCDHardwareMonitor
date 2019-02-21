@@ -19,7 +19,8 @@ struct Location
 struct PipeImpl;
 struct Pipe
 {
-	//b32       isConnected;
+	b32       isConnected;
+	b32       isConnectionPending;
 	PipeImpl* impl;
 };
 
