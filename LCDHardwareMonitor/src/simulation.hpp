@@ -7,6 +7,7 @@ struct SimulationState
 
 	List<SensorPlugin> sensorPlugins;
 	List<WidgetPlugin> widgetPlugins;
+	Pipe               guiPipe;
 
 	v2u    renderSize;
 	v3     cameraPos;
@@ -632,15 +633,16 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 
 	// DEBUG: Testing
 	{
-		SensorPlugin* ohmPlugin = LoadSensorPlugin(s, "Sensor Plugins\\OpenHardwareMonitor", "Sensor Plugin - OpenHardwareMonitor");
-		if (!ohmPlugin) return false;
+		//SensorPlugin* ohmPlugin = LoadSensorPlugin(s, "Sensor Plugins\\OpenHardwareMonitor", "Sensor Plugin - OpenHardwareMonitor");
+		//if (!ohmPlugin) return false;
 
 		WidgetPlugin* filledBarPlugin = LoadWidgetPlugin(s, "Widget Plugins\\Filled Bar", "Widget Plugin - Filled Bar");
 		if (!filledBarPlugin) return false;
 
-		u32 debugSensorIndices[] = { 6, 7, 8, 9, 32 }; // Desktop 2080 Ti
+		//u32 debugSensorIndices[] = { 6, 7, 8, 9, 32 }; // Desktop 2080 Ti
 		//u32 debugSensorIndices[] = { 6, 7, 8, 9, 33 }; // Desktop 780 Tis
 		//u32 debugSensorIndices[] = { 0, 1, 2, 3, 12 }; // Laptop
+		u32 debugSensorIndices[] = { u32Max, u32Max, u32Max, u32Max, u32Max }; // Empty
 		WidgetData* widgetData = &filledBarPlugin->widgetDatas[0];
 		for (u32 i = 0; i < ArrayLength(debugSensorIndices); i++)
 		{
@@ -667,10 +669,45 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 		}
 	}
 
+	// Create a GUI Pipe
+	{
+		// TODO: Ensure there's only a single connection
+		success = Platform_CreatePipe("LCDHardwareMonitor GUI Pipe", &s->guiPipe);
+		LOG_IF(!success, return false,
+			Severity::Error, "Failed to create pipe for GUI communication");
+	}
+
 	success = Renderer_RebuildSharedGeometryBuffers(s->renderer);
 	if (!success) return false;
 
 	return true;
+}
+
+enum struct MessageType
+{
+	Null,
+	Handshake,
+};
+
+struct Handshake
+{
+	static const MessageType Type = MessageType::Handshake;
+
+	MessageType type;
+	u64         size;
+	int         value;
+};
+
+template<typename T, typename... Args>
+static inline T
+Simulation_CreateMessage(Args... args)
+{
+	T message = {
+		T::Type,
+		sizeof(T),
+		args...
+	};
+	return message;
 }
 
 void
@@ -752,6 +789,15 @@ Simulation_Update(SimulationState* s)
 				widgetData->desc.update(&context, instancesAPI);
 			}
 		}
+	}
+
+	// GUI Communication
+	{
+		// DEBUG:
+		Platform_Print("Sim Tick\n");
+		auto handshake = Simulation_CreateMessage<Handshake>(42);
+		b32 success = Platform_WritePipe(&s->guiPipe, handshake);
+		UNUSED(success);
 	}
 
 	// DEBUG: Draw Coordinate System
