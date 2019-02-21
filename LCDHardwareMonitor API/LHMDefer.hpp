@@ -69,7 +69,7 @@ struct
 
 #define guard make_guard << [&]
 
-template <typename TResource, typename TCleanup, TCleanup Cleanup>
+template<typename TResource, typename TCleanup, TCleanup Cleanup>
 struct Scoped
 {
 	Scoped(TResource resource) : resource(resource) { }

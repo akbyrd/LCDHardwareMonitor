@@ -21,7 +21,7 @@ Platform_Print(c8* format, Args... args)
 		return;
 	}
 
-	Platform_Print(message);
+	Platform_Print(message.data);
 }
 
 void
@@ -93,7 +93,7 @@ LogFormatMessage(u32 messageID, Severity severity, Location location, c8* messag
 	while (length > 0 && (windowsMessage[length - 1] == '\n' || windowsMessage[length - 1] == '\r'))
 		windowsMessage[(length--) - 1] = '\0';
 
-	Platform_Log(severity, location, "%s: %s", message, windowsMessage);
+	Platform_Log(severity, location, "%s: %s (%u)", message, windowsMessage, messageID);
 }
 
 template<typename... Args>
@@ -116,6 +116,8 @@ LogFormatMessage(u32 messageID, Severity severity, Location location, c8* format
 void
 LogHRESULT(HRESULT hr, Severity severity, Location location, c8* message)
 {
+	// TODO: This cast is weird. I feel like either LogHRESULT or LogLastError is doing the wrong
+	// thing. There's a function for converting an error to an HRESULT which implies the difference
 	// is meaningful.
 	LogFormatMessage((u32) hr, severity, location, message);
 }

@@ -192,19 +192,18 @@ PreviewWindow_Teardown(PreviewWindowState* s)
 b32
 PreviewWindow_Render(PreviewWindowState* s)
 {
+	if (!s->hwnd) return true;
+
 	RendererState* rendererState = s->simulationState->renderer;
 
-	if (s->hwnd)
-	{
-		// TODO: Handle DXGI_ERROR_DEVICE_RESET and DXGI_ERROR_DEVICE_REMOVED
-		// Developer Command Prompt for Visual Studio as an administrator, and
-		// typing dxcap -forcetdr which will immediately cause all currently
-		// running Direct3D apps to get a DXGI_ERROR_DEVICE_REMOVED event.
-		rendererState->d3dContext->CopyResource(s->backBuffer.Get(), rendererState->d3dRenderTexture.Get());
-		HRESULT hr = s->swapChain->Present(0, 0);
-		LOG_HRESULT_IF_FAILED(hr, return false,
-			Severity::Error, "Failed to present preview window");
-	}
+	// TODO: Handle DXGI_ERROR_DEVICE_RESET and DXGI_ERROR_DEVICE_REMOVED
+	// Developer Command Prompt for Visual Studio as an administrator, and
+	// typing dxcap -forcetdr which will immediately cause all currently
+	// running Direct3D apps to get a DXGI_ERROR_DEVICE_REMOVED event.
+	rendererState->d3dContext->CopyResource(s->backBuffer.Get(), rendererState->d3dRenderTexture.Get());
+	HRESULT hr = s->swapChain->Present(0, 0);
+	LOG_HRESULT_IF_FAILED(hr, return false,
+		Severity::Error, "Failed to present preview window");
 
 	return true;
 }

@@ -143,6 +143,7 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 		// Tick
 		Simulation_Update(&simulationState);
 		Renderer_Render(&rendererState);
+		// BUG: Looks like it's possible to get WM_PREVIEWWINDOWCLOSED without WM_QUIT
 		PreviewWindow_Render(&previewState);
 
 		Sleep(10);

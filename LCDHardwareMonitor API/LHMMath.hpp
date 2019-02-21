@@ -900,7 +900,7 @@ operator* (const Matrix& lhs, const Matrix& rhs)
 }
 
 // TODO: Versions for v3?
-template <typename T>
+template<typename T>
 inline v4t<T>
 operator* (v4t<T> lhs, const Matrix& rhs)
 {
