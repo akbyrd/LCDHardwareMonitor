@@ -1,29 +1,98 @@
-﻿<controls:MetroWindow x:Class="LCDHardwareMonitor.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:controls="http://metro.mahapps.com/winfx/xaml/controls"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:LCDHardwareMonitor"
-        mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-  <Grid>
-    <Grid.ColumnDefinitions>
-      <ColumnDefinition MinWidth="320" />
-      <ColumnDefinition Width="10" />
-      <ColumnDefinition MinWidth="320" />
-    </Grid.ColumnDefinitions>
+﻿<mah:MetroWindow x:Class="LCDHardwareMonitor.MainWindow"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
+                 Height="450" Width="800"
+                 WindowStartupLocation="CenterScreen"
+                 TitlebarHeight="24"
+                 ResizeMode="CanResizeWithGrip" ResizeBorderThickness="0, 0, 10, 10"
+                 WindowTitleBrush="Transparent" NonActiveWindowTitleBrush="Transparent">
 
-    <Label Grid.Column="0"
-           Margin="10,10,0,10"
-           VerticalAlignment="Stretch" HorizontalAlignment="Stretch"
-           BorderBrush="#3F3F46" BorderThickness="1"
-           Content="Left" />
+  <!-- Resize Grip Style -->
+  <mah:MetroWindow.Resources>
+    <Style TargetType="{x:Type ResizeGrip}">
+      <Style.Setters>
+        <Setter Property="Opacity" Value="0.25" />
+        <Setter Property="Margin" Value="0, 0, 1, 1" />
+      </Style.Setters>
+    </Style>
+  </mah:MetroWindow.Resources>
 
-    <Label Grid.Column="2"
-           Margin="0,10,10,10"
-           VerticalAlignment="Stretch" HorizontalAlignment="Stretch"
-           BorderBrush="#3F3F46" BorderThickness="1"
-           Content="Right" />
-  </Grid>
-</controls:MetroWindow>
+
+  <!-- Close Button Style -->
+  <mah:MetroWindow.WindowButtonCommands>
+    <mah:WindowButtonCommands>
+      <mah:WindowButtonCommands.LightCloseButtonStyle>
+        <Style BasedOn="{StaticResource LightMetroWindowButtonStyle}"
+               TargetType="{x:Type Button}">
+          <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter Property="Background" Value="#FFE81123" />
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+              <Setter Property="Background" Value="#FFF1707A" />
+            </Trigger>
+          </Style.Triggers>
+        </Style>
+      </mah:WindowButtonCommands.LightCloseButtonStyle>
+    </mah:WindowButtonCommands>
+  </mah:MetroWindow.WindowButtonCommands>
+
+
+  <!-- Content -->
+  <mah:MetroAnimatedTabControl Margin="10, 0, 10, 10">
+    <!-- TabItem Styling -->
+    <mah:MetroAnimatedTabControl.ItemContainerStyle>
+      <Style BasedOn="{StaticResource MetroTabItem}"
+             TargetType="{x:Type TabItem}">
+        <Style.Setters>
+          <Setter Property="Padding" Value="6, -6, 6, 2" />
+          <Setter Property="mah:ControlsHelper.HeaderFontSize" Value="20" />
+          <Setter Property="mah:ControlsHelper.HeaderFontWeight" Value="Light" />
+          <Setter Property="mah:ControlsHelper.ContentCharacterCasing" Value="Lower" />
+        </Style.Setters>
+      </Style>
+    </mah:MetroAnimatedTabControl.ItemContainerStyle>
+
+
+    <!-- LCD Designer -->
+    <TabItem Header="LCD Designer">
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition MinWidth="320" />
+          <ColumnDefinition Width="10" />
+          <ColumnDefinition MinWidth="320" />
+        </Grid.ColumnDefinitions>
+
+        <Label Grid.Column="0"
+               VerticalAlignment="Stretch" HorizontalAlignment="Stretch"
+               BorderBrush="#3F3F46" BorderThickness="1"
+               Content="Left" />
+
+        <Label Grid.Column="2"
+               VerticalAlignment="Stretch" HorizontalAlignment="Stretch"
+               BorderBrush="#3F3F46" BorderThickness="1"
+               Content="Right" />
+      </Grid>
+    </TabItem>
+
+
+    <!-- Sources -->
+    <TabItem Header="Sources">
+      <Label BorderBrush="#3F3F46" BorderThickness="1" Content="Sources" />
+    </TabItem>
+
+
+    <!-- Settings -->
+    <TabItem Header="Settings">
+      <Label BorderBrush="#3F3F46" BorderThickness="1" Content="Settings" />
+    </TabItem>
+  </mah:MetroAnimatedTabControl>
+
+</mah:MetroWindow>
+
+<!-- TODO: Is there a way to grab the current TabItem style without having to specify the mah style directly? -->
+
+<!-- TODO: Nitpicky things -->
+<!-- TODO: Close button doesn't work when window in pinned right with mouse in corner (default works) -->
+<!-- TODO: Clicking and dragging off of a Button should not trigger the IsMouseOver state (default works) -->
