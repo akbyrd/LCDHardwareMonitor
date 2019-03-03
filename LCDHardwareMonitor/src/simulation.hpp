@@ -1,5 +1,3 @@
-#include "LHMMath.hpp"
-
 struct SimulationState
 {
 	PluginLoaderState* pluginLoader;
@@ -8,6 +6,8 @@ struct SimulationState
 	List<SensorPlugin> sensorPlugins;
 	List<WidgetPlugin> widgetPlugins;
 	Pipe               guiPipe;
+	GUIConnectionState guiConnectionState;
+	GUIMessage         guiActiveMessage;
 
 	v2u    renderSize;
 	v3     cameraPos;
@@ -672,42 +672,17 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 	// Create a GUI Pipe
 	{
 		// TODO: Ensure there's only a single connection
-		success = Platform_CreatePipe("LCDHardwareMonitor GUI Pipe", &s->guiPipe);
+		success = Platform_CreatePipeServer("LCDHardwareMonitor GUI Pipe", &s->guiPipe);
 		LOG_IF(!success, return false,
 			Severity::Error, "Failed to create pipe for GUI communication");
+
+		s->guiConnectionState = GUIConnectionState::Disconnected;
 	}
 
 	success = Renderer_RebuildSharedGeometryBuffers(s->renderer);
 	if (!success) return false;
 
 	return true;
-}
-
-enum struct MessageType
-{
-	Null,
-	Handshake,
-};
-
-struct Handshake
-{
-	static const MessageType Type = MessageType::Handshake;
-
-	MessageType type;
-	u64         size;
-	int         value;
-};
-
-template<typename T, typename... Args>
-static inline T
-Simulation_CreateMessage(Args... args)
-{
-	T message = {
-		T::Type,
-		sizeof(T),
-		args...
-	};
-	return message;
 }
 
 void
@@ -793,11 +768,47 @@ Simulation_Update(SimulationState* s)
 
 	// GUI Communication
 	{
-		// DEBUG:
-		Platform_Print("Sim Tick\n");
-		auto handshake = Simulation_CreateMessage<Handshake>(42);
-		b32 success = Platform_WritePipe(&s->guiPipe, handshake);
-		UNUSED(success);
+		switch (s->guiConnectionState)
+		{
+			case GUIConnectionState::Connected:
+				switch (s->guiActiveMessage)
+				{
+					case GUIMessage::Null: break;
+
+					case GUIMessage::Handshake:
+					{
+						// TODO: Handle disconnected
+						// Ignore failures, retry next frame
+						Handshake handshake = { 1, 2, 3 };
+						b32 success = Platform_WritePipe(&s->guiPipe, handshake);
+						if (success)
+						{
+							//Platform_Print("Sim Write\n");
+							//s->guiActiveMessage = GUIMessage::Null;
+						}
+						break;
+					}
+
+					default:
+						Assert(false);
+						break;
+				}
+				break;
+
+			case GUIConnectionState::Disconnected:
+				// Ignore failures, retry next frame
+				Platform_ConnectPipe(&s->guiPipe);
+				if (s->guiPipe.isConnected)
+				{
+					s->guiActiveMessage = GUIMessage::Handshake;
+					s->guiConnectionState = GUIConnectionState::Connected;
+				}
+				break;
+
+			default:
+				Assert(false);
+				break;
+		}
 	}
 
 	// DEBUG: Draw Coordinate System
@@ -828,6 +839,9 @@ Simulation_Teardown(SimulationState* s)
 	// Remove this once plugin loading and unloading is solidified. It's good to
 	// do this for testing, but it's unnecessary work in the normal teardown
 	// case.
+
+	// TODO: Is there anything sane we can do with failures?
+	Platform_DisconnectPipe(&s->guiPipe);
 
 	for (u32 i = 0; i < s->widgetPlugins.length; i++)
 		UnloadWidgetPlugin(s, &s->widgetPlugins[i]);

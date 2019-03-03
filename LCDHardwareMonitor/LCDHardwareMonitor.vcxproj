@@ -161,9 +161,11 @@
     <ClCompile Include="src\main_win32.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\gui_protocol.h" />
     <ClInclude Include="src\pluginheader.h" />
     <ClInclude Include="src\pluginloader.h" />
     <ClInclude Include="src\pluginloader_win32.hpp" />
+    <ClInclude Include="src\plugin_shared.h" />
     <ClInclude Include="src\previewwindow_win32_d3d11.hpp" />
     <ClInclude Include="src\platform.h" />
     <ClInclude Include="src\platform_win32.hpp" />

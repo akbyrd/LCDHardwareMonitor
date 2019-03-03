@@ -32,4 +32,21 @@ String_Format(String& string, c8* format, Args... args)
 	return true;
 }
 
+inline b32
+String_FromSlice(String& string, StringSlice slice)
+{
+	bool preallocated = string.data != nullptr;
+	auto allocGuard = guard { if (!preallocated) List_Free(string); };
+
+	b32 success = List_Reserve(string, slice.length + 1);
+	if (!success) return false;
+
+	string.length = 0;
+	List_AppendRange(string, slice);
+	string[string.length++] = 0;
+
+	allocGuard.dismiss = true;
+	return true;
+}
+
 #endif

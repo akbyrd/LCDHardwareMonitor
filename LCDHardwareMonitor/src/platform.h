@@ -19,8 +19,10 @@ struct Location
 struct PipeImpl;
 struct Pipe
 {
+	String    name;
 	b32       isConnected;
 	b32       isConnectionPending;
+	b32       isServer;
 	PipeImpl* impl;
 };
 
@@ -41,12 +43,16 @@ u64    Platform_GetTicks          (); // TODO: Might want to make ticks always s
 r32    Platform_TicksToSeconds    (i64 ticks);
 r32    Platform_GetElapsedSeconds (u64 startTicks);
 
-b32    Platform_CreatePipe        (StringSlice name, Pipe*);
+b32    Platform_CreatePipeServer  (StringSlice name, Pipe*);
+b32    Platform_CreatePipeClient  (StringSlice name, Pipe*);
 void   Platform_DestroyPipe       (Pipe*);
+b32    Platform_ConnectPipe       (Pipe*);
+b32    Platform_DisconnectPipe    (Pipe*);
 
 template<typename T>
-b32    Platform_WritePipe         (Pipe*, T bytes);
+b32    Platform_WritePipe         (Pipe*, T& bytes);
 b32    Platform_WritePipe         (Pipe*, Slice<u8> bytes);
+b32    Platform_ReadPipe          (Pipe*, List<u8>& bytes);
 
 #define LOCATION { __FILE__, __LINE__, __FUNCTION__ }
 #define LOG(severity, format, ...) Platform_Log(severity, LOCATION, format, __VA_ARGS__)

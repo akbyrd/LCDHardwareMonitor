@@ -291,11 +291,22 @@ Platform_GetElapsedSeconds(u64 startTicks)
 
 struct PipeImpl
 {
+	String     fullName;
 	HANDLE     handle;
 	OVERLAPPED connect;
 	//OVERLAPPED read;
 };
 
+static inline b32
+IsValidHandle(HANDLE handle)
+{
+	// NOTE: Some Win32 functions return nullptr and some return INVALID_HANDLE_VALUE on failure.
+	// Things would be fine if that were the end of it. But some functions take 'pseudohandles' and
+	// INVALID_HANDLE_VALUE can be a valid pseudohandle. Fuck you, Microsoft.
+	return handle != nullptr && handle != INVALID_HANDLE_VALUE;
+}
+
+// TODO: Does this need to branch for client vs server?
 b32
 Platform_DisconnectPipe(Pipe* pipe)
 {
@@ -304,14 +315,14 @@ Platform_DisconnectPipe(Pipe* pipe)
 
 	b32 success = DisconnectNamedPipe(pipe->impl->handle);
 	LOG_LAST_ERROR_IF(!success, return false,
-		Severity::Warning, "Failed to disconnect pipe");
+		Severity::Warning, "Failed to disconnect pipe '%s'", pipe->name.data);
 
 	pipe->isConnected = false;
 	return true;
 }
 
 b32
-Platform_ConnectPipe(Pipe* pipe)
+Platform_ConnectPipeServer(Pipe* pipe)
 {
 	b32 success;
 
@@ -390,32 +401,107 @@ Platform_ConnectPipe(Pipe* pipe)
 }
 
 b32
-Platform_CreatePipe(StringSlice name, Pipe* pipe)
+Platform_ConnectPipeClient(Pipe* pipe)
 {
-	*pipe = {};
+	if (IsValidHandle(pipe->impl->handle)) return true;
+
+	auto cleanupGuard = guard {
+		CloseHandle(pipe->impl->handle);
+		pipe->impl->handle = nullptr;
+	};
+
+	pipe->impl->handle = CreateFileA(
+		pipe->impl->fullName.data,
+		GENERIC_READ | GENERIC_WRITE,
+		0,
+		nullptr,
+		OPEN_EXISTING,
+		FILE_ATTRIBUTE_NORMAL,
+		nullptr
+	);
+	if (pipe->impl->handle == INVALID_HANDLE_VALUE)
+	{
+		u32 error = GetLastError();
+		switch (error)
+		{
+			// Server hasn't created the pipe yet
+			case ERROR_FILE_NOT_FOUND: break;
+
+			// Max clients already connected
+			case ERROR_PIPE_BUSY: break;
+
+			// This should never occur
+			default:
+				SetLastError(error);
+				LOG_LAST_ERROR(Severity::Error, "Failed to create pipe client '%s'", pipe->name.data);
+				return false;
+		}
+	}
+	else
+	{
+		u32 mode = PIPE_READMODE_MESSAGE | PIPE_WAIT;
+		b32 success = SetNamedPipeHandleState(
+			pipe->impl->handle,
+			(DWORD*) &mode,
+			nullptr,
+			nullptr
+		);
+		LOG_LAST_ERROR_IF(!success, return false,
+			Severity::Warning, "Failed to set pipe client mode '%s'", pipe->name.data);
+	}
+
+	// TODO: Handle ERROR_PIPE_BUSY (max clients are already connected)
+	// TODO: The connection event will be null for clients. Handle that part.
+
+	pipe->isConnected = true;
+
+	cleanupGuard.dismiss = true;
+	return true;
+}
+
+b32
+Platform_ConnectPipe(Pipe* pipe)
+{
+	return pipe->isServer
+		? Platform_ConnectPipeServer(pipe)
+		: Platform_ConnectPipeClient(pipe);
+}
+
+b32
+Platform_CreatePipeServer(StringSlice name, Pipe* pipe)
+{
 	auto cleanupGuard = guard {
 		Platform_DestroyPipe(pipe);
 	};
 
-	// Create the pipe
+	// Initialize
+	{
+		*pipe = {};
+		pipe->isServer = true;
+
+		b32 success = String_FromSlice(pipe->name, name);
+		LOG_IF(!success, return false,
+			Severity::Warning, "Failed to allocate pipe");
+	}
+
+	// Allocate platform data
 	{
 		pipe->impl = (PipeImpl*) malloc(sizeof(PipeImpl));
 		LOG_IF(!pipe->impl, return false,
-			Severity::Warning, "Failed to allocate pipe");
+			Severity::Warning, "Failed to allocate pipe '%s'", pipe->name.data);
 
 		*pipe->impl = {};
 
-		String fullName = {};
-		defer { List_Free(fullName); };
-
-		b32 success = String_Format(fullName, "\\\\.\\pipe\\%s", name.data);
+		b32 success = String_Format(pipe->impl->fullName, "\\\\.\\pipe\\%s", pipe->name.data);
 		LOG_IF(!success, return false,
-			Severity::Warning, "Failed to format string for pipe name");
+			Severity::Warning, "Failed to format string for pipe name '%s'", pipe->name.data);
 
+		// TODO: This actual pipe creation should be moved to part of connect since it can fail either
+		// because the server hasn't created the pipe or because two clients are trying to connect at
+		// the same time.
 		// TODO: Enforce a single instance of the simulation
-		// TODO: I don't think we should be specifying FILE_FLAG_OVERLAPPED
 		pipe->impl->handle = CreateNamedPipeA(
-			fullName.data,
+			pipe->impl->fullName.data,
 			PIPE_ACCESS_DUPLEX,
 			PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT | PIPE_REJECT_REMOTE_CLIENTS,
 			1,
@@ -425,14 +511,16 @@ Platform_CreatePipe(StringSlice name, Pipe* pipe)
 			nullptr
 		);
 		LOG_LAST_ERROR_IF(pipe->impl->handle == INVALID_HANDLE_VALUE, return false,
-			Severity::Warning, "Failed to create pipe '%s'", name.data);
+			Severity::Warning, "Failed to create pipe server '%s'", pipe->name.data);
+
+		// TODO: Handle ERROR_PIPE_BUSY (another server is trying to create the pipe)
 	}
 
 	// Listen for connection
 	{
 		pipe->impl->connect.hEvent = CreateEventA(nullptr, true, true, nullptr);
 		LOG_LAST_ERROR_IF(pipe->impl->connect.hEvent == INVALID_HANDLE_VALUE, return false,
-			Severity::Warning, "Failed to create pipe connect event '%s'", name.data);
+			Severity::Warning, "Failed to create pipe server connect event '%s'", pipe->name.data);
 
 		// TODO: This is crazy town. Find confirmation for this behavior.
 		// NOTE: Windows holds the pointer to the overlapped struct and will update the Internal
@@ -446,13 +534,44 @@ Platform_CreatePipe(StringSlice name, Pipe* pipe)
 	return true;
 }
 
-static inline b32
-IsValidHandle(HANDLE handle)
+b32
+Platform_CreatePipeClient(StringSlice name, Pipe* pipe)
 {
-	// NOTE: Some Win32 functions return nullptr and some return INVALID_HANDLE_VALUE on failure.
-	// Things would be fine if that were the end of it. But some functions take 'pseudohandles' and
-	// INVALID_HANDLE_VALUE can be a valid pseudohandle. Fuck you, Microsoft.
-	return handle != nullptr && handle != INVALID_HANDLE_VALUE;
+	auto cleanupGuard = guard {
+		Platform_DestroyPipe(pipe);
+	};
+
+	// Initialize
+	{
+		*pipe = {};
+		pipe->isServer = false;
+
+		b32 success = String_FromSlice(pipe->name, name);
+		LOG_IF(!success, return false,
+			Severity::Warning, "Failed to allocate pipe");
+	}
+
+	// Allocate platform data
+	{
+		pipe->impl = (PipeImpl*) malloc(sizeof(PipeImpl));
+		LOG_IF(!pipe->impl, return false,
+			Severity::Warning, "Failed to allocate pipe");
+
+		*pipe->impl = {};
+
+		b32 success = String_Format(pipe->impl->fullName, "\\\\.\\pipe\\%s", pipe->name.data);
+		LOG_IF(!success, return false,
+			Severity::Warning, "Failed to format string for pipe name '%s'", pipe->name.data);
+	}
+
+	// Attempt to connect
+	{
+		b32 success = Platform_ConnectPipeClient(pipe);
+		if (!success) return false;
+	}
+
+	cleanupGuard.dismiss = true;
+	return true;
 }
 
 void
@@ -468,6 +587,8 @@ Platform_DestroyPipe(Pipe* pipe)
 	}
 	#endif
 
+	List_Free(pipe->name);
+	List_Free(pipe->impl->fullName);
 	CloseHandle(pipe->impl->handle);
 	CloseHandle(pipe->impl->connect.hEvent);
 	free(pipe->impl);
@@ -476,7 +597,7 @@ Platform_DestroyPipe(Pipe* pipe)
 
 template<typename T>
 b32
-Platform_WritePipe(Pipe* pipe, T data)
+Platform_WritePipe(Pipe* pipe, T& data)
 {
 	Slice<u8> bytes = {};
 	bytes.length = sizeof(T);
@@ -505,7 +626,7 @@ Platform_WritePipe(Pipe* pipe, Slice<u8> bytes)
 		pipe->impl->handle,
 		bytes.data,
 		bytes.length,
-		(LPDWORD) &written,
+		(DWORD*) &written,
 		nullptr
 	);
 	if (!success)
@@ -519,7 +640,7 @@ Platform_WritePipe(Pipe* pipe, Slice<u8> bytes)
 				return false;
 
 			default:
-				LOG_LAST_ERROR(Severity::Warning, "Writing to pipe failed");
+				LOG_LAST_ERROR(Severity::Warning, "Writing to pipe failed '%s'", pipe->name.data);
 				return false;
 		}
 	}
@@ -532,7 +653,66 @@ Platform_WritePipe(Pipe* pipe, Slice<u8> bytes)
 	// The sender will get a failure message and simply resend the message next time it gets a
 	// chance.
 	LOG_IF(written != bytes.length, return false,
-		Severity::Fatal, "Writing to pipe truncated");
+		Severity::Fatal, "Writing to pipe truncated '%s'", pipe->name.data);
 
+	return true;
+}
+
+b32
+Platform_ReadPipe(Pipe* pipe, List<u8>& bytes)
+{
+	b32 success;
+	bytes.length = 0;
+
+	if (!Platform_ConnectPipe(pipe)) return false;
+	if (!pipe->isConnected) return false;
+
+	u32 available;
+	success = PeekNamedPipe(
+		pipe->impl->handle,
+		nullptr,
+		0,
+		nullptr,
+		nullptr,
+		(DWORD*) &available
+	);
+	LOG_LAST_ERROR_IF(!success, return false,
+		Severity::Warning, "Failed to peek pipe '%s'", pipe->name.data);
+
+	if (available == 0) return true;
+
+	success = List_Reserve(bytes, available);
+	LOG_IF(!success, return false,
+		Severity::Warning, "Failed to reserve pipe read buffer '%s'", pipe->name.data);
+
+	u32 read;
+	success = ReadFile(
+		pipe->impl->handle,
+		bytes.data,
+		available,
+		(DWORD*) &read,
+		nullptr
+	);
+	if (!success)
+	{
+		u32 error = GetLastError();
+		switch (error)
+		{
+			// Read is pending
+			case ERROR_IO_PENDING: break;
+
+			default:
+				SetLastError(error);
+				LOG_LAST_ERROR(Severity::Warning, "Reading from pipe failed '%s'", pipe->name.data);
+				return false;
+		}
+	}
+
+	// TODO: Could potentially drop the connection instead of fataling. Or implement an ack for each
+	// message
+	LOG_IF(read != available, return false,
+		Severity::Fatal, "Reading from pipe truncateed '%s'", pipe->name.data);
+
+	bytes.length = read;
 	return true;
 }
