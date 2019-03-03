@@ -6,7 +6,6 @@ struct SimulationState
 	List<SensorPlugin> sensorPlugins;
 	List<WidgetPlugin> widgetPlugins;
 	Pipe               guiPipe;
-	GUIConnectionState guiConnectionState;
 	GUIMessage         guiActiveMessage;
 
 	v2u    renderSize;
@@ -676,7 +675,7 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 		LOG_IF(!success, return false,
 			Severity::Error, "Failed to create pipe for GUI communication");
 
-		s->guiConnectionState = GUIConnectionState::Disconnected;
+		s->guiActiveMessage = GUIMessage::Handshake;
 	}
 
 	success = Renderer_RebuildSharedGeometryBuffers(s->renderer);
@@ -768,42 +767,25 @@ Simulation_Update(SimulationState* s)
 
 	// GUI Communication
 	{
-		switch (s->guiConnectionState)
+		switch (s->guiActiveMessage)
 		{
-			case GUIConnectionState::Connected:
-				switch (s->guiActiveMessage)
-				{
-					case GUIMessage::Null: break;
+			case GUIMessage::Null: break;
 
-					case GUIMessage::Handshake:
-					{
-						// TODO: Handle disconnected
-						// Ignore failures, retry next frame
-						Handshake handshake = { 1, 2, 3 };
-						b32 success = Platform_WritePipe(&s->guiPipe, handshake);
-						if (success)
-						{
-							//Platform_Print("Sim Write\n");
-							//s->guiActiveMessage = GUIMessage::Null;
-						}
-						break;
-					}
-
-					default:
-						Assert(false);
-						break;
-				}
-				break;
-
-			case GUIConnectionState::Disconnected:
+			case GUIMessage::Handshake:
+			{
+				// TODO: Handle disconnected
 				// Ignore failures, retry next frame
-				Platform_ConnectPipe(&s->guiPipe);
-				if (s->guiPipe.isConnected)
+				Handshake handshake = { 1, 2, 3 };
+				b32 success = Platform_WritePipe(&s->guiPipe, handshake);
+				if (!success)
 				{
-					s->guiActiveMessage = GUIMessage::Handshake;
-					s->guiConnectionState = GUIConnectionState::Connected;
+					s->guiActiveMessage = GUIMessage::Null;
+					break;
 				}
+
+				//s->guiActiveMessage = GUIMessage::Null;
 				break;
+			}
 
 			default:
 				Assert(false);

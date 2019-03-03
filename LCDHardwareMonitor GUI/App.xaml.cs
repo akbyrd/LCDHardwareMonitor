@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO.Pipes;
 using System.Windows;
 using System.Windows.Threading;
 
@@ -7,12 +6,11 @@ namespace LCDHardwareMonitor
 {
     public partial class App : Application
     {
-        DispatcherTimer       timer;
-        //NamedPipeClientStream pipe;
-        //IAsyncResult          pendingRead;
+        DispatcherTimer timer;
 
         public App()
         {
+            // TODO: Handle failure
             GUIInterop.Initialize();
 
             // TODO: Is it possible to get the animation rate or max refresh rate for the interval?
@@ -22,8 +20,6 @@ namespace LCDHardwareMonitor
             timer.Start();
 
             // TODO: Launch the simulation if necessary
-            //pipe = new NamedPipeClientStream(".", "LCDHardwareMonitor GUI Pipe", PipeDirection.InOut);
-            //pipe.ConnectAsync();
         }
 
         ~App()
@@ -34,7 +30,7 @@ namespace LCDHardwareMonitor
         // NOTE: The 'runtime tools' overlay causes massive frame rate hitching
         public void Tick(object sender, EventArgs e)
         {
-            //GUIInterop.Tick(pipe, ref pendingRead);
+            // TODO: Handle failure
             GUIInterop.Update();
         }
     }

@@ -324,12 +324,39 @@ Platform_DisconnectPipe(Pipe* pipe)
 b32
 Platform_ConnectPipeServer(Pipe* pipe)
 {
-	b32 success;
+	// Create the platform pipe
+	if (!IsValidHandle(pipe->impl->handle))
+	{
+		// TODO: Enforce a single instance of the simulation
+		pipe->impl->handle = CreateNamedPipeA(
+			pipe->impl->fullName.data,
+			PIPE_ACCESS_DUPLEX,
+			PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT | PIPE_REJECT_REMOTE_CLIENTS,
+			1,
+			// TODO: See remarks
+			1024, 1024,
+			0,
+			nullptr
+		);
+		if (pipe->impl->handle == INVALID_HANDLE_VALUE)
+		{
+			u32 error = GetLastError();
+			switch (error)
+			{
+				// Another server has created the pipe
+				case ERROR_PIPE_BUSY: break;
+
+				default:
+					LOG_LAST_ERROR(Severity::Warning, "Failed to create pipe server '%s'", pipe->name.data);
+					return false;
+			}
+		}
+	}
 
 	// Begin a connection
 	if (!pipe->isConnected && !pipe->isConnectionPending)
 	{
-		success = ConnectNamedPipe(pipe->impl->handle, &pipe->impl->connect);
+		b32 success = ConnectNamedPipe(pipe->impl->handle, &pipe->impl->connect);
 		if (success)
 		{
 			pipe->isConnected = true;
@@ -358,7 +385,6 @@ Platform_ConnectPipeServer(Pipe* pipe)
 					break;
 
 				default:
-					SetLastError(error);
 					LOG_LAST_ERROR(Severity::Warning, "Failed to begin pipe connection");
 					return false;
 			}
@@ -368,7 +394,7 @@ Platform_ConnectPipeServer(Pipe* pipe)
 	else if (pipe->isConnectionPending)
 	{
 		u32 written;
-		success = GetOverlappedResult(
+		b32 success = GetOverlappedResult(
 			pipe->impl->handle,
 			&pipe->impl->connect,
 			(DWORD*) &written,
@@ -388,9 +414,7 @@ Platform_ConnectPipeServer(Pipe* pipe)
 				// Connection is still pending
 				case ERROR_IO_INCOMPLETE: break;
 
-				// This should never occur
 				default:
-					SetLastError(error);
 					LOG_LAST_ERROR(Severity::Error, "Pipe connection check failed");
 					return false;
 			}
@@ -430,9 +454,7 @@ Platform_ConnectPipeClient(Pipe* pipe)
 			// Max clients already connected
 			case ERROR_PIPE_BUSY: break;
 
-			// This should never occur
 			default:
-				SetLastError(error);
 				LOG_LAST_ERROR(Severity::Error, "Failed to create pipe client '%s'", pipe->name.data);
 				return false;
 		}
@@ -449,9 +471,6 @@ Platform_ConnectPipeClient(Pipe* pipe)
 		LOG_LAST_ERROR_IF(!success, return false,
 			Severity::Warning, "Failed to set pipe client mode '%s'", pipe->name.data);
 	}
-
-	// TODO: Handle ERROR_PIPE_BUSY (max clients are already connected)
-	// TODO: The connection event will be null for clients. Handle that part.
 
 	pipe->isConnected = true;
 
@@ -495,25 +514,6 @@ Platform_CreatePipeServer(StringSlice name, Pipe* pipe)
 		b32 success = String_Format(pipe->impl->fullName, "\\\\.\\pipe\\%s", pipe->name.data);
 		LOG_IF(!success, return false,
 			Severity::Warning, "Failed to format string for pipe name '%s'", pipe->name.data);
-
-		// TODO: This actual pipe creation should be moved to part of connect since it can fail either
-		// because the server hasn't created the pipe or because two clients are trying to connect at
-		// the same time.
-		// TODO: Enforce a single instance of the simulation
-		pipe->impl->handle = CreateNamedPipeA(
-			pipe->impl->fullName.data,
-			PIPE_ACCESS_DUPLEX,
-			PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT | PIPE_REJECT_REMOTE_CLIENTS,
-			1,
-			// TODO: See remarks
-			1024, 1024,
-			0,
-			nullptr
-		);
-		LOG_LAST_ERROR_IF(pipe->impl->handle == INVALID_HANDLE_VALUE, return false,
-			Severity::Warning, "Failed to create pipe server '%s'", pipe->name.data);
-
-		// TODO: Handle ERROR_PIPE_BUSY (another server is trying to create the pipe)
 	}
 
 	// Listen for connection
@@ -615,7 +615,7 @@ Platform_WritePipe(Pipe* pipe, Slice<u8> bytes)
 
 	// NOTE: Non-overlapped writes will only block once the buffer is full.
 
-	// TODO: Try doing overlapped io with a non-overlap flagged pipe
+	// TODO: Confirm that doing overlapped io with a non-overlap flagged pipe is ok
 	// TODO: Be careful to ensure the gui and sim never end up doing a blocking write simultaneously
 
 	if (!Platform_ConnectPipe(pipe)) return false;
@@ -702,7 +702,6 @@ Platform_ReadPipe(Pipe* pipe, List<u8>& bytes)
 			case ERROR_IO_PENDING: break;
 
 			default:
-				SetLastError(error);
 				LOG_LAST_ERROR(Severity::Warning, "Reading from pipe failed '%s'", pipe->name.data);
 				return false;
 		}
