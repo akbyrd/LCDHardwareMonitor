@@ -5,6 +5,9 @@
 // TODO: Why is the output sometimes corrupted? Is it a problem with VS or our code?
 // TODO: Add loops to connecting, reading, and writing (predicated on making progress each iteration)
 // TODO: Does the server actually need to keep track of whether it's connected?
+// TODO: Ensure starting multiple sim instances works
+// TODO: Ensure starting multiple gui instances works
+// TODO: Enforce a single instance of the simulation and gui?
 
 #pragma unmanaged
 #include "LHMAPI.h"

@@ -779,7 +779,7 @@ Simulation_Update(SimulationState* s)
 				b32 success = Platform_WritePipe(&s->guiPipe, handshake);
 				if (!success)
 				{
-					s->guiActiveMessage = GUIMessage::Null;
+					//s->guiActiveMessage = GUIMessage::Null;
 					break;
 				}
 

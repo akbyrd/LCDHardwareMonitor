@@ -306,19 +306,40 @@ IsValidHandle(HANDLE handle)
 	return handle != nullptr && handle != INVALID_HANDLE_VALUE;
 }
 
-// TODO: Does this need to branch for client vs server?
 b32
-Platform_DisconnectPipe(Pipe* pipe)
+Platform_DisconnectPipeServer(Pipe* pipe)
 {
 	// TODO: What should we do if a connection is pending?
 	if (!pipe->isConnected) return true;
 
 	b32 success = DisconnectNamedPipe(pipe->impl->handle);
 	LOG_LAST_ERROR_IF(!success, return false,
-		Severity::Warning, "Failed to disconnect pipe '%s'", pipe->name.data);
+		Severity::Warning, "Failed to disconnect pipe server '%s'", pipe->name.data);
 
 	pipe->isConnected = false;
 	return true;
+}
+
+b32
+Platform_DisconnectPipeClient(Pipe* pipe)
+{
+	if (!pipe->isConnected) return true;
+
+	b32 success = CloseHandle(pipe->impl->handle);
+	LOG_LAST_ERROR_IF(!success, return false,
+		Severity::Warning, "Failed to disconnect pipe client '%s'", pipe->name.data);
+
+	pipe->impl->handle = nullptr;
+	pipe->isConnected = false;
+	return true;
+}
+
+b32
+Platform_DisconnectPipe(Pipe* pipe)
+{
+	return pipe->isServer
+		? Platform_DisconnectPipeServer(pipe)
+		: Platform_DisconnectPipeClient(pipe);
 }
 
 b32
@@ -327,10 +348,13 @@ Platform_ConnectPipeServer(Pipe* pipe)
 	// Create the platform pipe
 	if (!IsValidHandle(pipe->impl->handle))
 	{
-		// TODO: Enforce a single instance of the simulation
+		// NOTE: *MUST* specify FILE_FLAG_OVERLAPPED or ConnectNamedPipe stalls even when providing
+		// an overlapped struct.
+		// TODO: Not specifying FILE_FLAG_OVERLAPPED causes ConnectNamedPipe to stall. Specifying it
+		// causes PeekNamePipe to always return zero bytes.
 		pipe->impl->handle = CreateNamedPipeA(
 			pipe->impl->fullName.data,
-			PIPE_ACCESS_DUPLEX,
+			PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,
 			PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT | PIPE_REJECT_REMOTE_CLIENTS,
 			1,
 			// TODO: See remarks
@@ -344,7 +368,7 @@ Platform_ConnectPipeServer(Pipe* pipe)
 			switch (error)
 			{
 				// Another server has created the pipe
-				case ERROR_PIPE_BUSY: break;
+				case ERROR_PIPE_BUSY: return true;
 
 				default:
 					LOG_LAST_ERROR(Severity::Warning, "Failed to create pipe server '%s'", pipe->name.data);
@@ -461,6 +485,8 @@ Platform_ConnectPipeClient(Pipe* pipe)
 	}
 	else
 	{
+		pipe->isConnected = true;
+
 		u32 mode = PIPE_READMODE_MESSAGE | PIPE_WAIT;
 		b32 success = SetNamedPipeHandleState(
 			pipe->impl->handle,
@@ -471,8 +497,6 @@ Platform_ConnectPipeClient(Pipe* pipe)
 		LOG_LAST_ERROR_IF(!success, return false,
 			Severity::Warning, "Failed to set pipe client mode '%s'", pipe->name.data);
 	}
-
-	pipe->isConnected = true;
 
 	cleanupGuard.dismiss = true;
 	return true;
@@ -676,8 +700,23 @@ Platform_ReadPipe(Pipe* pipe, List<u8>& bytes)
 		nullptr,
 		(DWORD*) &available
 	);
-	LOG_LAST_ERROR_IF(!success, return false,
-		Severity::Warning, "Failed to peek pipe '%s'", pipe->name.data);
+	if (!success)
+	{
+		u32 error = GetLastError();
+		switch (error)
+		{
+			// Pipe has been closed
+			case ERROR_BROKEN_PIPE:
+			case ERROR_PIPE_NOT_CONNECTED:
+				success = Platform_DisconnectPipe(pipe);
+				if (!success) return false;
+				return true;
+
+			default:
+				LOG_LAST_ERROR(Severity::Warning, "Failed to peek pipe '%s'", pipe->name.data);
+				return false;
+		}
+	}
 
 	if (available == 0) return true;
 
