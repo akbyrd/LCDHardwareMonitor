@@ -350,8 +350,6 @@ Platform_ConnectPipeServer(Pipe* pipe)
 	{
 		// NOTE: *MUST* specify FILE_FLAG_OVERLAPPED or ConnectNamedPipe stalls even when providing
 		// an overlapped struct.
-		// TODO: Not specifying FILE_FLAG_OVERLAPPED causes ConnectNamedPipe to stall. Specifying it
-		// causes PeekNamePipe to always return zero bytes.
 		pipe->impl->handle = CreateNamedPipeA(
 			pipe->impl->fullName.data,
 			PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,
@@ -637,10 +635,7 @@ Platform_WritePipe(Pipe* pipe, Slice<u8> bytes)
 	// 'written' parameter is not valid for async writes and 2) the data buffer MUST NOT CHANGE
 	// during an async write (i.e. build a buffer of outgoing information).
 
-	// NOTE: Non-overlapped writes will only block once the buffer is full.
-
-	// TODO: Confirm that doing overlapped io with a non-overlap flagged pipe is ok
-	// TODO: Be careful to ensure the gui and sim never end up doing a blocking write simultaneously
+	// NOTE: Synchronous writes will begin blocking once the pipes internal buffer is full.
 
 	if (!Platform_ConnectPipe(pipe)) return false;
 	if (!pipe->isConnected) return false;
@@ -708,8 +703,7 @@ Platform_ReadPipe(Pipe* pipe, List<u8>& bytes)
 			// Pipe has been closed
 			case ERROR_BROKEN_PIPE:
 			case ERROR_PIPE_NOT_CONNECTED:
-				success = Platform_DisconnectPipe(pipe);
-				if (!success) return false;
+				if (!Platform_DisconnectPipe(pipe)) return false;
 				return true;
 
 			default:
