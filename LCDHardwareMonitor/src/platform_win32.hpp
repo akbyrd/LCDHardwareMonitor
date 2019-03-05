@@ -306,35 +306,35 @@ IsValidHandle(HANDLE handle)
 	return handle != nullptr && handle != INVALID_HANDLE_VALUE;
 }
 
-b32
+PipeResult
 Platform_DisconnectPipeServer(Pipe* pipe)
 {
 	// TODO: What should we do if a connection is pending?
-	if (!pipe->isConnected) return true;
+	if (!pipe->isConnected) return PipeResult::Success;
 
 	b32 success = DisconnectNamedPipe(pipe->impl->handle);
-	LOG_LAST_ERROR_IF(!success, return false,
+	LOG_LAST_ERROR_IF(!success, return PipeResult::UnexpectedFailure,
 		Severity::Warning, "Failed to disconnect pipe server '%s'", pipe->name.data);
 
 	pipe->isConnected = false;
-	return true;
+	return PipeResult::Success;
 }
 
-b32
+PipeResult
 Platform_DisconnectPipeClient(Pipe* pipe)
 {
-	if (!pipe->isConnected) return true;
+	if (!pipe->isConnected) return PipeResult::Success;
 
 	b32 success = CloseHandle(pipe->impl->handle);
-	LOG_LAST_ERROR_IF(!success, return false,
+	LOG_LAST_ERROR_IF(!success, return PipeResult::UnexpectedFailure,
 		Severity::Warning, "Failed to disconnect pipe client '%s'", pipe->name.data);
 
 	pipe->impl->handle = nullptr;
 	pipe->isConnected = false;
-	return true;
+	return PipeResult::Success;
 }
 
-b32
+PipeResult
 Platform_DisconnectPipe(Pipe* pipe)
 {
 	return pipe->isServer
@@ -342,7 +342,7 @@ Platform_DisconnectPipe(Pipe* pipe)
 		: Platform_DisconnectPipeClient(pipe);
 }
 
-b32
+PipeResult
 Platform_ConnectPipeServer(Pipe* pipe)
 {
 	// Create the platform pipe
@@ -366,14 +366,20 @@ Platform_ConnectPipeServer(Pipe* pipe)
 			switch (error)
 			{
 				// Another server has created the pipe
-				case ERROR_PIPE_BUSY: return true;
+				case ERROR_PIPE_BUSY:
+					return PipeResult::TransientFailure;
 
 				default:
 					LOG_LAST_ERROR(Severity::Warning, "Failed to create pipe server '%s'", pipe->name.data);
-					return false;
+					return PipeResult::UnexpectedFailure;
 			}
 		}
 	}
+
+	// NOTE: Though it's not documented clearly, it appears you *must* call ConnectNamedPipe for a
+	// client to be able to conect. It's not an optional way to wait/check for clients. A client will
+	// be able to connect once, but after it disconnects (and even after the server calls
+	// DiconnectNamedPipe) it won't be able to reconnect again.
 
 	// Begin a connection
 	if (!pipe->isConnected && !pipe->isConnectionPending)
@@ -393,22 +399,25 @@ Platform_ConnectPipeServer(Pipe* pipe)
 				case ERROR_IO_PENDING:
 					pipe->isConnected = false;
 					pipe->isConnectionPending = true;
-					break;
+					return PipeResult::TransientFailure;
 
 				// Already connected
 				case ERROR_PIPE_CONNECTED:
 					pipe->isConnected = true;
 					pipe->isConnectionPending = false;
-					break;
+					return PipeResult::Success;
 
 				// Pipe is being closed
 				case ERROR_NO_DATA:
-					if (!Platform_DisconnectPipe(pipe)) return false;
-					break;
+				{
+					PipeResult result = Platform_DisconnectPipe(pipe);
+					if (result != PipeResult::Success) return result;
+					return PipeResult::TransientFailure;
+				}
 
 				default:
 					LOG_LAST_ERROR(Severity::Warning, "Failed to begin pipe connection");
-					return false;
+					return PipeResult::UnexpectedFailure;
 			}
 		}
 	}
@@ -434,22 +443,23 @@ Platform_ConnectPipeServer(Pipe* pipe)
 			switch (error)
 			{
 				// Connection is still pending
-				case ERROR_IO_INCOMPLETE: break;
+				case ERROR_IO_INCOMPLETE:
+					return PipeResult::TransientFailure;
 
 				default:
 					LOG_LAST_ERROR(Severity::Error, "Pipe connection check failed");
-					return false;
+					return PipeResult::UnexpectedFailure;
 			}
 		}
 	}
 
-	return true;
+	return PipeResult::Success;
 }
 
-b32
+PipeResult
 Platform_ConnectPipeClient(Pipe* pipe)
 {
-	if (IsValidHandle(pipe->impl->handle)) return true;
+	if (IsValidHandle(pipe->impl->handle)) return PipeResult::Success;
 
 	auto cleanupGuard = guard {
 		CloseHandle(pipe->impl->handle);
@@ -471,14 +481,16 @@ Platform_ConnectPipeClient(Pipe* pipe)
 		switch (error)
 		{
 			// Server hasn't created the pipe yet
-			case ERROR_FILE_NOT_FOUND: break;
+			case ERROR_FILE_NOT_FOUND:
+				return PipeResult::TransientFailure;
 
 			// Max clients already connected
-			case ERROR_PIPE_BUSY: break;
+			case ERROR_PIPE_BUSY:
+				return PipeResult::TransientFailure;
 
 			default:
 				LOG_LAST_ERROR(Severity::Error, "Failed to create pipe client '%s'", pipe->name.data);
-				return false;
+				return PipeResult::UnexpectedFailure;
 		}
 	}
 	else
@@ -492,15 +504,15 @@ Platform_ConnectPipeClient(Pipe* pipe)
 			nullptr,
 			nullptr
 		);
-		LOG_LAST_ERROR_IF(!success, return false,
+		LOG_LAST_ERROR_IF(!success, return PipeResult::UnexpectedFailure,
 			Severity::Warning, "Failed to set pipe client mode '%s'", pipe->name.data);
 	}
 
 	cleanupGuard.dismiss = true;
-	return true;
+	return PipeResult::Success;
 }
 
-b32
+PipeResult
 Platform_ConnectPipe(Pipe* pipe)
 {
 	return pipe->isServer
@@ -508,7 +520,7 @@ Platform_ConnectPipe(Pipe* pipe)
 		: Platform_ConnectPipeClient(pipe);
 }
 
-b32
+PipeResult
 Platform_CreatePipeServer(StringSlice name, Pipe* pipe)
 {
 	auto cleanupGuard = guard {
@@ -521,42 +533,46 @@ Platform_CreatePipeServer(StringSlice name, Pipe* pipe)
 		pipe->isServer = true;
 
 		b32 success = String_FromSlice(pipe->name, name);
-		LOG_IF(!success, return false,
+		LOG_IF(!success, return PipeResult::UnexpectedFailure,
 			Severity::Warning, "Failed to allocate pipe");
 	}
 
 	// Allocate platform data
 	{
 		pipe->impl = (PipeImpl*) malloc(sizeof(PipeImpl));
-		LOG_IF(!pipe->impl, return false,
+		LOG_IF(!pipe->impl, return PipeResult::UnexpectedFailure,
 			Severity::Warning, "Failed to allocate pipe '%s'", pipe->name.data);
 
 		*pipe->impl = {};
 
 		b32 success = String_Format(pipe->impl->fullName, "\\\\.\\pipe\\%s", pipe->name.data);
-		LOG_IF(!success, return false,
+		LOG_IF(!success, return PipeResult::UnexpectedFailure,
 			Severity::Warning, "Failed to format string for pipe name '%s'", pipe->name.data);
 	}
 
-	// Listen for connection
+	// Create connection event
 	{
-		pipe->impl->connect.hEvent = CreateEventA(nullptr, true, true, nullptr);
-		LOG_LAST_ERROR_IF(pipe->impl->connect.hEvent == INVALID_HANDLE_VALUE, return false,
-			Severity::Warning, "Failed to create pipe server connect event '%s'", pipe->name.data);
-
 		// TODO: This is crazy town. Find confirmation for this behavior.
 		// NOTE: Windows holds the pointer to the overlapped struct and will update the Internal
 		// status asynchronously.
 
-		b32 success = Platform_ConnectPipe(pipe);
-		if (!success) return false;
+		pipe->impl->connect.hEvent = CreateEventA(nullptr, true, true, nullptr);
+		LOG_LAST_ERROR_IF(pipe->impl->connect.hEvent == INVALID_HANDLE_VALUE, return PipeResult::UnexpectedFailure,
+			Severity::Warning, "Failed to create pipe server connect event '%s'", pipe->name.data);
 	}
 
-	cleanupGuard.dismiss = true;
-	return true;
+	// Attempt to connect
+	{
+		cleanupGuard.dismiss = true;
+
+		PipeResult result = Platform_ConnectPipe(pipe);
+		if (result != PipeResult::Success) return result;
+	}
+
+	return PipeResult::Success;
 }
 
-b32
+PipeResult
 Platform_CreatePipeClient(StringSlice name, Pipe* pipe)
 {
 	auto cleanupGuard = guard {
@@ -569,31 +585,32 @@ Platform_CreatePipeClient(StringSlice name, Pipe* pipe)
 		pipe->isServer = false;
 
 		b32 success = String_FromSlice(pipe->name, name);
-		LOG_IF(!success, return false,
+		LOG_IF(!success, return PipeResult::UnexpectedFailure,
 			Severity::Warning, "Failed to allocate pipe");
 	}
 
 	// Allocate platform data
 	{
 		pipe->impl = (PipeImpl*) malloc(sizeof(PipeImpl));
-		LOG_IF(!pipe->impl, return false,
+		LOG_IF(!pipe->impl, return PipeResult::UnexpectedFailure,
 			Severity::Warning, "Failed to allocate pipe");
 
 		*pipe->impl = {};
 
 		b32 success = String_Format(pipe->impl->fullName, "\\\\.\\pipe\\%s", pipe->name.data);
-		LOG_IF(!success, return false,
+		LOG_IF(!success, return PipeResult::UnexpectedFailure,
 			Severity::Warning, "Failed to format string for pipe name '%s'", pipe->name.data);
 	}
 
 	// Attempt to connect
 	{
-		b32 success = Platform_ConnectPipeClient(pipe);
-		if (!success) return false;
+		cleanupGuard.dismiss = true;
+
+		PipeResult result = Platform_ConnectPipeClient(pipe);
+		if (result != PipeResult::Success) return result;
 	}
 
-	cleanupGuard.dismiss = true;
-	return true;
+	return PipeResult::Success;
 }
 
 void
@@ -611,6 +628,7 @@ Platform_DestroyPipe(Pipe* pipe)
 
 	List_Free(pipe->name);
 	List_Free(pipe->impl->fullName);
+	// TODO: Handle failure?
 	CloseHandle(pipe->impl->handle);
 	CloseHandle(pipe->impl->connect.hEvent);
 	free(pipe->impl);
@@ -618,7 +636,7 @@ Platform_DestroyPipe(Pipe* pipe)
 }
 
 template<typename T>
-b32
+PipeResult
 Platform_WritePipe(Pipe* pipe, T& data)
 {
 	Slice<u8> bytes = {};
@@ -628,7 +646,7 @@ Platform_WritePipe(Pipe* pipe, T& data)
 	return Platform_WritePipe(pipe, bytes);
 }
 
-b32
+PipeResult
 Platform_WritePipe(Pipe* pipe, Slice<u8> bytes)
 {
 	// NOTE: Writes are synchronous. If this changes be aware of the following facts: 1) The
@@ -637,8 +655,10 @@ Platform_WritePipe(Pipe* pipe, Slice<u8> bytes)
 
 	// NOTE: Synchronous writes will begin blocking once the pipes internal buffer is full.
 
-	if (!Platform_ConnectPipe(pipe)) return false;
-	if (!pipe->isConnected) return false;
+	PipeResult result;
+	
+	result = Platform_ConnectPipe(pipe);
+	if (result != PipeResult::Success) return result;
 
 	u32 written;
 	b32 success = WriteFile(
@@ -655,12 +675,13 @@ Platform_WritePipe(Pipe* pipe, Slice<u8> bytes)
 		{
 			// The pipe is being closed
 			case ERROR_NO_DATA:
-				Platform_DisconnectPipe(pipe);
-				return false;
+				result = Platform_DisconnectPipe(pipe);
+				if (result != PipeResult::Success) return result;
+				return PipeResult::TransientFailure;
 
 			default:
 				LOG_LAST_ERROR(Severity::Warning, "Writing to pipe failed '%s'", pipe->name.data);
-				return false;
+				return PipeResult::UnexpectedFailure;
 		}
 	}
 
@@ -671,20 +692,22 @@ Platform_WritePipe(Pipe* pipe, Slice<u8> bytes)
 	// message that is bigger than the header but doesn't match the expected size it can ignore it.
 	// The sender will get a failure message and simply resend the message next time it gets a
 	// chance.
-	LOG_IF(written != bytes.length, return false,
+	LOG_IF(written != bytes.length, return PipeResult::TransientFailure,
 		Severity::Fatal, "Writing to pipe truncated '%s'", pipe->name.data);
 
-	return true;
+	return PipeResult::Success;
 }
 
-b32
+PipeResult
 Platform_ReadPipe(Pipe* pipe, List<u8>& bytes)
 {
+	PipeResult result;
 	b32 success;
+
 	bytes.length = 0;
 
-	if (!Platform_ConnectPipe(pipe)) return false;
-	if (!pipe->isConnected) return false;
+	result = Platform_ConnectPipe(pipe);
+	if (result != PipeResult::Success) return result;
 
 	u32 available;
 	success = PeekNamedPipe(
@@ -703,19 +726,20 @@ Platform_ReadPipe(Pipe* pipe, List<u8>& bytes)
 			// Pipe has been closed
 			case ERROR_BROKEN_PIPE:
 			case ERROR_PIPE_NOT_CONNECTED:
-				if (!Platform_DisconnectPipe(pipe)) return false;
-				return true;
+				result = Platform_DisconnectPipe(pipe);
+				if (result != PipeResult::Success) return result;
+				return PipeResult::Success;
 
 			default:
 				LOG_LAST_ERROR(Severity::Warning, "Failed to peek pipe '%s'", pipe->name.data);
-				return false;
+				return PipeResult::UnexpectedFailure;
 		}
 	}
 
-	if (available == 0) return true;
+	if (available == 0) return PipeResult::Success;
 
 	success = List_Reserve(bytes, available);
-	LOG_IF(!success, return false,
+	LOG_IF(!success, return PipeResult::TransientFailure,
 		Severity::Warning, "Failed to reserve pipe read buffer '%s'", pipe->name.data);
 
 	u32 read;
@@ -732,19 +756,20 @@ Platform_ReadPipe(Pipe* pipe, List<u8>& bytes)
 		switch (error)
 		{
 			// Read is pending
-			case ERROR_IO_PENDING: break;
+			case ERROR_IO_PENDING:
+				return PipeResult::TransientFailure;
 
 			default:
 				LOG_LAST_ERROR(Severity::Warning, "Reading from pipe failed '%s'", pipe->name.data);
-				return false;
+				return PipeResult::UnexpectedFailure;
 		}
 	}
 
 	// TODO: Could potentially drop the connection instead of fataling. Or implement an ack for each
 	// message
-	LOG_IF(read != available, return false,
+	LOG_IF(read != available, return PipeResult::UnexpectedFailure,
 		Severity::Fatal, "Reading from pipe truncateed '%s'", pipe->name.data);
 
 	bytes.length = read;
-	return true;
+	return PipeResult::Success;
 }

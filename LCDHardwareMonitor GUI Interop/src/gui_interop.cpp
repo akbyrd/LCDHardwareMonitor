@@ -1,15 +1,12 @@
 // TODO: Does the server actually need to keep track of whether it's connected?
 // TODO: Change connection state to an enum
-// TODO: Fix return values: success, recoverable error, irrecoverable error
 
 // TODO: Spend up to 8 ms receiving messages
 // TODO: What happens when the simulation tries to send a message larger than the pipe buffer size?
 // TODO: Fix warnings about _TP_POOL and _TP_CLEANUP_GROUP being used in in CLR meta-data (disable all meta-data?)
 // TODO: Add loops to connecting, reading, and writing (predicated on making progress each iteration)
-// TODO: Ensure starting multiple sim instances works
-// TODO: Ensure starting multiple gui instances works
-// TODO: Enforce a single instance of the simulation and gui?
 // TODO: Be careful to ensure the gui and sim never end up doing a blocking write simultaneously
+// TODO: Decide whether to support multiple instances or enforce a single instance
 
 #pragma unmanaged
 #include "LHMAPI.h"
@@ -38,8 +35,8 @@ static State s = {};
 b32
 Initialize()
 {
-	b32 success = Platform_CreatePipeClient("LCDHardwareMonitor GUI Pipe", &s.pipe);
-	LOG_IF(!success, return false,
+	PipeResult result = Platform_CreatePipeClient("LCDHardwareMonitor GUI Pipe", &s.pipe);
+	LOG_IF(result == PipeResult::UnexpectedFailure, return false,
 		Severity::Error, "Failed to create pipe for GUI communication");
 
 	return true;
@@ -49,8 +46,8 @@ b32
 Update()
 {
 	List<u8> bytes = {};
-	b32 success = Platform_ReadPipe(&s.pipe, bytes);
-	if (!success) return false;
+	PipeResult result = Platform_ReadPipe(&s.pipe, bytes);
+	if (result == PipeResult::UnexpectedFailure) return false;
 
 	if (bytes.length > 0)
 	{
@@ -60,6 +57,7 @@ Update()
 		Platform_Print(")\n");
 	}
 
+	List_Free(bytes);
 	return true;
 }
 

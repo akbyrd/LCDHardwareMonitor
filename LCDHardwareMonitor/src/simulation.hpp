@@ -671,8 +671,8 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 	// Create a GUI Pipe
 	{
 		// TODO: Ensure there's only a single connection
-		success = Platform_CreatePipeServer("LCDHardwareMonitor GUI Pipe", &s->guiPipe);
-		LOG_IF(!success, return false,
+		PipeResult result = Platform_CreatePipeServer("LCDHardwareMonitor GUI Pipe", &s->guiPipe);
+		LOG_IF(result == PipeResult::UnexpectedFailure, return false,
 			Severity::Error, "Failed to create pipe for GUI communication");
 
 		s->guiActiveMessage = GUIMessage::Handshake;
@@ -773,17 +773,26 @@ Simulation_Update(SimulationState* s)
 
 			case GUIMessage::Handshake:
 			{
-				// TODO: Handle disconnected
-				// Ignore failures, retry next frame
 				Handshake handshake = { 1, 2, 3 };
-				b32 success = Platform_WritePipe(&s->guiPipe, handshake);
-				if (!success)
+				PipeResult result = Platform_WritePipe(&s->guiPipe, handshake);
+				switch (result)
 				{
-					//s->guiActiveMessage = GUIMessage::Null;
-					break;
-				}
+					case PipeResult::Success:
+						//s->guiActiveMessage = GUIMessage::Null;
+						break;
 
-				//s->guiActiveMessage = GUIMessage::Null;
+					case PipeResult::TransientFailure:
+						// Ignore failures, retry next frame
+						break;
+
+					case PipeResult::UnexpectedFailure:
+						// TODO: Shutdown simulation
+						break;
+
+					default:
+						Assert(false);
+						break;
+				}
 				break;
 			}
 
