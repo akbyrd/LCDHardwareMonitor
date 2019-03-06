@@ -769,6 +769,7 @@ Simulation_Update(SimulationState* s)
 	{
 		switch (s->guiActiveMessage)
 		{
+			default: Assert(false); break;
 			case GUIMessage::Null: break;
 
 			case GUIMessage::Handshake:
@@ -777,6 +778,8 @@ Simulation_Update(SimulationState* s)
 				PipeResult result = Platform_WritePipe(&s->guiPipe, handshake);
 				switch (result)
 				{
+					default: Assert(false); break;
+
 					case PipeResult::Success:
 						//s->guiActiveMessage = GUIMessage::Null;
 						break;
@@ -788,17 +791,9 @@ Simulation_Update(SimulationState* s)
 					case PipeResult::UnexpectedFailure:
 						// TODO: Shutdown simulation
 						break;
-
-					default:
-						Assert(false);
-						break;
 				}
 				break;
 			}
-
-			default:
-				Assert(false);
-				break;
 		}
 	}
 

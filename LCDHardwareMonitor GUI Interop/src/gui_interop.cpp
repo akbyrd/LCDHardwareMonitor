@@ -1,6 +1,3 @@
-// TODO: Does the server actually need to keep track of whether it's connected?
-// TODO: Change connection state to an enum
-
 // TODO: Spend up to 8 ms receiving messages
 // TODO: What happens when the simulation tries to send a message larger than the pipe buffer size?
 // TODO: Fix warnings about _TP_POOL and _TP_CLEANUP_GROUP being used in in CLR meta-data (disable all meta-data?)

@@ -16,12 +16,20 @@ struct Location
 	c8* function;
 };
 
+enum struct PipeState
+{
+	Null,
+	Connecting,
+	Connected,
+	Disconnecting,
+	Disconnected,
+};
+
 struct PipeImpl;
 struct Pipe
 {
 	String    name;
-	b32       isConnected;
-	b32       isConnectionPending;
+	PipeState state;
 	b32       isServer;
 	PipeImpl* impl;
 };
