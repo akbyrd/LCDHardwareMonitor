@@ -6,6 +6,7 @@
 	#pragma warning (disable: 4061) // Enum not explicitly handle in switch
 	#pragma warning (disable: 4201) // Nameless struct/union
 	#pragma warning (disable: 4324) // Struct padded due to alignment specifier
+	#pragma warning (disable: 4339) // Undefined type in CLR metadata
 	#pragma warning (disable: 4464) // Relative include path
 	#pragma warning (disable: 4472) // Native enum
 	#pragma warning (disable: 4514) // Unreferenced inline removed

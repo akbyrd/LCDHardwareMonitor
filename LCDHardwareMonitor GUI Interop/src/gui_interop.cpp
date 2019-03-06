@@ -1,6 +1,9 @@
+// TODO: Compare to .NET reference source
+// TODO: Copy output to run folder
+// TODO: Ensure compiler settings are uniform
+
 // TODO: Spend up to 8 ms receiving messages
 // TODO: What happens when the simulation tries to send a message larger than the pipe buffer size?
-// TODO: Fix warnings about _TP_POOL and _TP_CLEANUP_GROUP being used in in CLR meta-data (disable all meta-data?)
 // TODO: Add loops to connecting, reading, and writing (predicated on making progress each iteration)
 // TODO: Be careful to ensure the gui and sim never end up doing a blocking write simultaneously
 // TODO: Decide whether to support multiple instances or enforce a single instance
