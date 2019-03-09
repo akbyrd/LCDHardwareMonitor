@@ -371,8 +371,6 @@ Platform_DisconnectPipe(Pipe* pipe)
 PipeResult
 Platform_ConnectPipeServer(Pipe* pipe)
 {
-	// TODO: What should we do if a connection is pending?
-
 	// Create the platform pipe
 	if (!IsValidHandle(pipe->impl->handle))
 	{
@@ -405,8 +403,8 @@ Platform_ConnectPipeServer(Pipe* pipe)
 	}
 
 	// NOTE: Though it's not documented clearly, it appears you *must* call ConnectNamedPipe for a
-	// client to be able to conect. It's not an optional way to wait/check for clients. A client will
-	// be able to connect once, but after it disconnects (and even after the server calls
+	// client to be able to connect. It's not an optional way to wait/check for clients. A client
+	// will be able to connect once, but after it disconnects (and even after the server calls
 	// DiconnectNamedPipe) it won't be able to reconnect again.
 
 	switch (pipe->state)
@@ -770,10 +768,12 @@ Platform_ReadPipe(Pipe* pipe, List<u8>& bytes)
 		u32 error = GetLastError();
 		switch (error)
 		{
-			// TODO: Can we distinguish the difference between these errors?
+			// TODO: What is the exact cause of each of these errors?
 			// Pipe has been closed
 			case ERROR_BROKEN_PIPE:
 			case ERROR_PIPE_NOT_CONNECTED:
+			case ERROR_NO_DATA:
+				Assert(available == 0);
 				pipe->state = PipeState::Disconnecting;
 				result = Platform_DisconnectPipe(pipe);
 				if (result != PipeResult::Success) return result;
@@ -817,7 +817,7 @@ Platform_ReadPipe(Pipe* pipe, List<u8>& bytes)
 	// TODO: Could potentially drop the connection instead of fataling. Or implement an ack for each
 	// message
 	LOG_IF(read != available, return PipeResult::UnexpectedFailure,
-		Severity::Fatal, "Reading from pipe truncateed '%s'", pipe->name.data);
+		Severity::Fatal, "Read wrong amount of data from pipe '%s'", pipe->name.data);
 
 	bytes.length = read;
 	return PipeResult::Success;

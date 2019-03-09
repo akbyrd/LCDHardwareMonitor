@@ -1,4 +1,6 @@
-// TODO: Compare to .NET reference source
+// TODO: Think about flushing on close. Want to ensure other end has had a chance to read but don't
+// want to hang if the other end doesn't want to read.
+
 // TODO: Copy output to run folder
 // TODO: Ensure compiler settings are uniform
 
