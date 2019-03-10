@@ -87,10 +87,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>bin\$(Configuration)_$(Platform)\</OutDir>
     <IntDir>obj\$(Configuration)_$(Platform)\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>bin\$(Configuration)_$(Platform)\</OutDir>
     <IntDir>obj\$(Configuration)_$(Platform)\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>bin\$(Configuration)_$(Platform)\</OutDir>
@@ -112,9 +114,7 @@
       <Command>"..\build\GenTLB.bat" "$(OutDir)" "$(TargetName)" &amp;&amp; ^
 "..\build\Deploy.bat" "$(OutDir)"</Command>
     </PostBuildEvent>
-    <Link>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-    </Link>
+    <Link />
     <Manifest />
     <Manifest />
   </ItemDefinitionGroup>
@@ -130,9 +130,7 @@
       <Command>"..\build\GenTLB.bat" "$(OutDir)" "$(TargetName)" &amp;&amp; ^
 "..\build\Deploy.bat" "$(OutDir)"</Command>
     </PostBuildEvent>
-    <Link>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-    </Link>
+    <Link />
     <Manifest />
     <Manifest />
   </ItemDefinitionGroup>

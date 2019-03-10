@@ -1,6 +1,11 @@
 Compiler: MSVC 2015
 Language: C++14
 
+C++ /CLI Projects
+Disable incremental linking (not supported)
+Do not use /DEBUG:Fastlink (not supported)
+Can't launch from the run folder because CS project debug settings don't support VS macros.
+
 
 
 Projects

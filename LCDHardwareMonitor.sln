@@ -42,6 +42,14 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LCDHardwareMonitor GUI", "L
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LCDHardwareMonitor GUI Interop", "LCDHardwareMonitor GUI Interop\LCDHardwareMonitor GUI Interop.vcxproj", "{E16AAA6C-043D-416E-8CE7-D7FDB83B8722}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build Scripts", "Build Scripts", "{88E61B82-2958-4CE2-82FF-6F5952702AB3}"
+	ProjectSection(SolutionItems) = preProject
+		build\CopyD3DC.bat = build\CopyD3DC.bat
+		build\Deploy.bat = build\Deploy.bat
+		build\GenTLB.bat = build\GenTLB.bat
+		build\ignored.txt = build\ignored.txt
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64

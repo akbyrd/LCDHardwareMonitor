@@ -27,6 +27,15 @@ const u64 Kilobyte = 1024LL;
 const u64 Megabyte = 1024LL * Kilobyte;
 const u64 Gigabyte = 1024LL * Megabyte;
 
+template<typename T, size S>
+inline size ArrayLength(const T(&)[S]) { return S; }
+
+template<typename T, size S>
+inline size ArraySize(const T(&)[S]) { return S * sizeof(T); }
+
+template<typename ...Args>
+inline void UnusedArgs(Args const& ...) {}
+
 #if DEBUG
 	#define Assert(condition) if (!(condition)) { *((u8 *) 0) = 0; }
 #else
@@ -36,13 +45,8 @@ const u64 Gigabyte = 1024LL * Megabyte;
 #define nameof(x) #x
 #define IGNORE
 #define UNUSED(x) (x);
+#define UNUSED_ARGS(...) UnusedArgs(__VA_ARGS__);
 #define HAS_FLAG(x, f) ((x & f) == f)
 #define IF(expression, ...) if (expression) { __VA_ARGS__; }
-
-template<typename T, size S>
-inline size ArrayLength(const T(&arr)[S]) { UNUSED(arr); return S; }
-
-template<typename T, size S>
-inline size ArraySize(const T(&arr)[S]) { UNUSED(arr); return S * sizeof(T); }
 
 #endif

@@ -132,6 +132,8 @@ SetDebugObjectName(const ComPtr<T>& resource, StringSlice name)
 	#if defined(DEBUG)
 	Assert(name.length > 0);
 	resource->SetPrivateData(WKPDID_D3DDebugObjectName, name.length - 1, name.data);
+	#else
+		UNUSED(resource); UNUSED(name);
 	#endif
 }
 
@@ -152,6 +154,8 @@ SetDebugObjectName(const ComPtr<T>& resource, StringSlice format, Args... args)
 	}
 
 	SetDebugObjectName(resource, name);
+	#else
+		UNUSED(resource); UNUSED(format); UNUSED_ARGS(args...);
 	#endif
 }
 
@@ -238,10 +242,10 @@ Renderer_Initialize(RendererState* s, v2u renderSize)
 
 	// Configure debugging
 	{
-		HRESULT hr;
-
 		// TODO: Maybe replace DEBUG with something app specific
 		#ifdef DEBUG
+		HRESULT hr;
+
 		ComPtr<IDXGIDebug1> dxgiDebug;
 		hr = DXGIGetDebugInterface1(0, IID_PPV_ARGS(&dxgiDebug));
 		LOG_HRESULT_IF_FAILED(hr, return false,
@@ -414,7 +418,7 @@ Renderer_RebuildSharedGeometryBuffers(RendererState*s)
 	// Finalize vertex buffer
 	{
 		D3D11_BUFFER_DESC vertBuffDesc = {};
-		vertBuffDesc.ByteWidth           = List_SizeOf(s->vertexBuffer);
+		vertBuffDesc.ByteWidth           = (u32) List_SizeOf(s->vertexBuffer);
 		vertBuffDesc.Usage               = D3D11_USAGE_DYNAMIC;
 		vertBuffDesc.BindFlags           = D3D11_BIND_VERTEX_BUFFER;
 		vertBuffDesc.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
@@ -436,7 +440,7 @@ Renderer_RebuildSharedGeometryBuffers(RendererState*s)
 	// Finalize index buffer
 	{
 		D3D11_BUFFER_DESC indexBuffDesc = {};
-		indexBuffDesc.ByteWidth           = List_SizeOf(s->indexBuffer);
+		indexBuffDesc.ByteWidth           = (u32) List_SizeOf(s->indexBuffer);
 		indexBuffDesc.Usage               = D3D11_USAGE_IMMUTABLE;
 		indexBuffDesc.BindFlags           = D3D11_BIND_INDEX_BUFFER;
 		indexBuffDesc.CPUAccessFlags      = 0;
@@ -920,8 +924,8 @@ Renderer_Render(RendererState* s)
 				{
 					lastVS = vs->ref;
 
-					size vStride = sizeof(Vertex);
-					size vOffset = 0;
+					u32 vStride = (u32) sizeof(Vertex);
+					u32 vOffset = 0;
 
 					s->d3dContext->VSSetShader(vs->d3dVertexShader.Get(), nullptr, 0);
 					s->d3dContext->IASetInputLayout(vs->d3dInputLayout.Get());
