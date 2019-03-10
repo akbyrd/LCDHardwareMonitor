@@ -311,9 +311,18 @@ Platform_DisconnectPipeServer(Pipe* pipe)
 {
 	switch (pipe->state)
 	{
-		// TODO: What should we do if a connection is pending?
-		case PipeState::Connecting:
 		default: Assert(false); break;
+
+		case PipeState::Connecting:
+		{
+			b32 success = CancelIoEx(
+				pipe->impl->handle,
+				&pipe->impl->connect
+			);
+			LOG_LAST_ERROR_IF(!success, return PipeResult::UnexpectedFailure,
+				Severity::Warning, "Failed to cancel pending pipe server connection '%s'", pipe->name.data);
+			break;
+		}
 
 		case PipeState::Disconnected:
 			break;
@@ -337,9 +346,12 @@ Platform_DisconnectPipeClient(Pipe* pipe)
 {
 	switch (pipe->state)
 	{
-		// TODO: What should we do if a connection is pending?
-		case PipeState::Connecting:
 		default: Assert(false); break;
+
+		// Not used for client pipes
+		case PipeState::Connecting:
+			Assert(false);
+			break;
 
 		case PipeState::Disconnected:
 			break;
@@ -496,9 +508,12 @@ Platform_ConnectPipeClient(Pipe* pipe)
 
 	switch (pipe->state)
 	{
-		case PipeState::Connecting:
-			// Fallthrough
 		default: Assert(false); break;
+
+		// Impossible for client pipes
+		case PipeState::Connecting:
+			Assert(false);
+			break;
 
 		case PipeState::Connected:
 			break;
