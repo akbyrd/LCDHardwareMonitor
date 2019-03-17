@@ -18,6 +18,7 @@
 	#pragma warning (disable: 4820) // Struct padding added
 
 	#define EXPORT extern "C" __declspec(dllexport)
+	#define __FUNCTION_FULL_NAME__ __FUNCSIG__
 #endif
 
 #if __cplusplus_cli

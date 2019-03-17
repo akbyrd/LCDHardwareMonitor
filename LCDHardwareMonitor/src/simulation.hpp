@@ -6,7 +6,7 @@ struct SimulationState
 	List<SensorPlugin> sensorPlugins;
 	List<WidgetPlugin> widgetPlugins;
 	Pipe               guiPipe;
-	GUIMessage         guiActiveMessage;
+	u32                guiActiveMessageId;
 
 	v2u    renderSize;
 	v3     cameraPos;
@@ -675,7 +675,7 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 		LOG_IF(result == PipeResult::UnexpectedFailure, return false,
 			Severity::Error, "Failed to create pipe for GUI communication");
 
-		s->guiActiveMessage = GUIMessage::Handshake;
+		s->guiActiveMessageId = Handshake::Id;
 	}
 
 	success = Renderer_RebuildSharedGeometryBuffers(s->renderer);
@@ -767,12 +767,12 @@ Simulation_Update(SimulationState* s)
 
 	// GUI Communication
 	{
-		switch (s->guiActiveMessage)
+		switch (s->guiActiveMessageId)
 		{
 			default: Assert(false); break;
-			case GUIMessage::Null: break;
+			case Null::Id: break;
 
-			case GUIMessage::Handshake:
+			case Handshake::Id:
 			{
 				Handshake handshake = { 1, 2, 3 };
 				PipeResult result = Platform_WritePipe(&s->guiPipe, handshake);

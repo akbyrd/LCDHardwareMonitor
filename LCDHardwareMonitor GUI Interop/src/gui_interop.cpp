@@ -1,6 +1,3 @@
-// TODO: Think about flushing on close. Want to ensure other end has had a chance to read but don't
-// want to hang if the other end doesn't want to read.
-
 // TODO: Spend up to 8 ms receiving messages
 // TODO: What happens when the simulation tries to send a message larger than the pipe buffer size?
 // TODO: Add loops to connecting, reading, and writing (predicated on making progress each iteration)
