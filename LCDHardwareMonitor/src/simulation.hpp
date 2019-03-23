@@ -687,6 +687,8 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 void
 Simulation_Update(SimulationState* s)
 {
+	s->currentTime = Platform_GetElapsedSeconds(s->startTime);
+
 	PluginContext context = {};
 	context.s = s;
 
@@ -729,7 +731,7 @@ Simulation_Update(SimulationState* s)
 		WidgetPluginAPI::Update pluginAPI = {};
 
 		WidgetInstanceAPI::Update instancesAPI = {};
-		instancesAPI.t                        = Platform_GetElapsedSeconds(s->startTime);
+		instancesAPI.t                        = s->currentTime;
 		instancesAPI.sensors                  = s->sensorPlugins[0].sensors;
 		instancesAPI.GetViewMatrix            = GetViewMatrix;
 		instancesAPI.GetProjectionMatrix      = GetProjectionMatrix;

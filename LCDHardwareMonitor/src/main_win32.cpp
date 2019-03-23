@@ -29,6 +29,12 @@
 
 static const i32 togglePreviewWindowID = 0;
 
+struct MessagePumpContext
+{
+	MSG*  msg;
+	void* mainFiber;
+};
+
 i32 CALLBACK
 WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmdShow)
 {
@@ -90,27 +96,44 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 
 
 	// Misc
+	// TODO: Set a core affinity
 	success = SetPriorityClass(GetCurrentProcess(), BELOW_NORMAL_PRIORITY_CLASS);
 	LOG_LAST_ERROR_IF(!success, IGNORE, Severity::Warning, "Failed to set process priority");
 
 
 	// Debug
-	PreviewWindow_Initialize(&previewState, &simulationState, hInstance);
+	PreviewWindow_Initialize(&previewState, &simulationState, hInstance, nullptr);
 	auto previewGuard = guard { PreviewWindow_Teardown(&previewState); };
 	success = RegisterHotKey(nullptr, togglePreviewWindowID, MOD_NOREPEAT, VK_F1);
 	LOG_LAST_ERROR_IF(!success, IGNORE, Severity::Warning, "Failed to register hotkeys");
 
 
-	// Main loop
-	while (true)
-	{
-		// Message loop
-		MSG msg = {};
-		while (PeekMessageA(&msg, nullptr, 0, 0, PM_REMOVE))
-		{
-			TranslateMessage(&msg);
-			DispatchMessageA(&msg);
+	// Fibers
+	void* mainFiber = ConvertThreadToFiber(nullptr);
+	LOG_LAST_ERROR_IF(!mainFiber, return -1, Severity::Warning, "Failed to convert main thread to a fiber");
+	previewState.mainFiber = mainFiber;
 
+	MessagePumpContext msgPumpContext = {};
+	msgPumpContext.mainFiber = previewState.mainFiber;
+
+	void CALLBACK MessagePump(MessagePumpContext*);
+	void* messageFiber = CreateFiber(
+		0,
+		(LPFIBER_START_ROUTINE) MessagePump,
+		&msgPumpContext
+	);
+	LOG_LAST_ERROR_IF(!messageFiber, return -1, Severity::Warning, "Failed to create message fiber");
+
+
+	// Main loop
+	for(;;)
+	{
+		// Pump messages
+		SwitchToFiber(messageFiber);
+		while (msgPumpContext.msg)
+		{
+			// TODO: Don't copy
+			MSG msg = *msgPumpContext.msg;
 			switch (msg.message)
 			{
 				case WM_PREVIEWWINDOWCLOSED:
@@ -123,7 +146,7 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 					{
 						if (!previewState.hwnd)
 						{
-							PreviewWindow_Initialize(&previewState, &simulationState, hInstance);
+							PreviewWindow_Initialize(&previewState, &simulationState, hInstance, mainFiber);
 							previewGuard.dismiss = false;
 						}
 						else
@@ -138,8 +161,8 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 				case WM_QUIT:
 					return (i32) msg.wParam;
 			}
+			SwitchToFiber(messageFiber);
 		}
-
 
 		// Tick
 		Simulation_Update(&simulationState);
@@ -147,8 +170,28 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 		// BUG: Looks like it's possible to get WM_PREVIEWWINDOWCLOSED without WM_QUIT
 		PreviewWindow_Render(&previewState);
 
+		// TODO: Probably not a good idea when using fibers
 		Sleep(10);
 	}
 
 	return 0;
+}
+
+void CALLBACK
+MessagePump(MessagePumpContext* context)
+{
+	for (;;)
+	{
+		MSG msg = {};
+		while (PeekMessageA(&msg, nullptr, 0, 0, PM_REMOVE))
+		{
+			TranslateMessage(&msg);
+			DispatchMessageA(&msg);
+
+			context->msg = &msg;
+			SwitchToFiber(context->mainFiber);
+			context->msg = nullptr;
+		}
+		SwitchToFiber(context->mainFiber);
+	}
 }

@@ -6,6 +6,7 @@ const u32 WM_PREVIEWWINDOWCLOSED = WM_USER + 0;
 struct PreviewWindowState
 {
 	HWND                    hwnd                  = nullptr;
+	void*                   mainFiber             = nullptr;
 	HINSTANCE               hInstance             = nullptr;
 	ComPtr<IDXGISwapChain>  swapChain             = nullptr;
 	ComPtr<ID3D11Texture2D> backBuffer            = nullptr;
@@ -21,8 +22,9 @@ struct PreviewWindowState
 };
 
 b32
-PreviewWindow_Initialize(PreviewWindowState* s, SimulationState* simulationState, HINSTANCE hInstance)
+PreviewWindow_Initialize(PreviewWindowState* s, SimulationState* simulationState, HINSTANCE hInstance, void* mainFiber)
 {
+	s->mainFiber       = mainFiber;
 	s->hInstance       = hInstance;
 	s->simulationState = simulationState;
 	RendererState* rendererState = s->simulationState->renderer;
@@ -50,7 +52,7 @@ PreviewWindow_Initialize(PreviewWindowState* s, SimulationState* simulationState
 		LOG_LAST_ERROR_IF(classAtom == INVALID_ATOM, return false,
 			Severity::Error, "Failed to register preview window class");
 
-		auto windowStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE;
+		u32 windowStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE;
 
 		RECT windowRect = { 0, 0, (i32) rendererState->renderSize.x, (i32) rendererState->renderSize.y };
 		success = AdjustWindowRect(&windowRect, (u32) windowStyle, false);
@@ -231,14 +233,14 @@ UpdateCameraPosition(PreviewWindowState* s, LPARAM lParam)
 LRESULT CALLBACK
 PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 {
-	auto s = (PreviewWindowState*) GetWindowLongPtrA(hwnd, GWLP_USERDATA);
+	PreviewWindowState* s = (PreviewWindowState*) GetWindowLongPtrA(hwnd, GWLP_USERDATA);
 
 
 	switch (uMsg)
 	{
 		case WM_NCCREATE:
 		{
-			auto createStruct = (CREATESTRUCT*) lParam;
+			CREATESTRUCT* createStruct = (CREATESTRUCT*) lParam;
 			s = (PreviewWindowState*) createStruct->lpCreateParams;
 
 			// NOTE: Because Windows is dumb. See Return value section:
@@ -251,6 +253,29 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 				LOG_LAST_ERROR(Severity::Error, "Failed to stash preview window state pointer");
 				return false;
 			}
+			break;
+		}
+
+		case WM_ENTERMENULOOP:
+		case WM_ENTERSIZEMOVE:
+		{
+			u32 result = SetTimer(s->hwnd, 1, 1, 0);
+			LOG_LAST_ERROR_IF(result == 0, IGNORE, Severity::Warning, "Failed to set modal timer");
+			break;
+		}
+
+		case WM_EXITMENULOOP:
+		case WM_EXITSIZEMOVE:
+		{
+			b32 success = KillTimer(s->hwnd, 1);
+			LOG_LAST_ERROR_IF(!success, IGNORE, Severity::Warning, "Failed to kill modal timer");
+			break;
+		}
+
+		case WM_PAINT:
+		case WM_TIMER:
+		{
+			SwitchToFiber(s->mainFiber);
 			break;
 		}
 
