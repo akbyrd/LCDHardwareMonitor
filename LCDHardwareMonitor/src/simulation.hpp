@@ -73,11 +73,11 @@ GetNameFromPath(String& path)
 
 	String::RefT first = List_FindLast(path, '/');
 	if (first == String::RefT::Null)
-		first = List_GetFirst(path);
+		first = List_GetFirstRef(path);
 
 	String::RefT last = List_FindLast(path, '.');
 	if (last == String::RefT::Null)
-		last = List_GetLast(path);
+		last = List_GetLastRef(path);
 
 	if (first == last) return {};
 
@@ -282,7 +282,7 @@ LoadSensorPlugin(SimulationState* s, c8* directory, c8* fileName)
 	LOG_IF(!sensorPlugin, return nullptr,
 		Severity::Error, "Failed to allocate Sensor plugin");
 
-	sensorPlugin->ref              = List_GetLast(s->sensorPlugins);
+	sensorPlugin->ref              = List_GetLastRef(s->sensorPlugins);
 	sensorPlugin->header.fileName  = fileName;
 	sensorPlugin->header.directory = directory;
 	sensorPlugin->header.kind      = PluginKind::Sensor;
@@ -339,7 +339,7 @@ UnloadSensorPlugin(SimulationState* s, SensorPlugin* sensorPlugin)
 	sensorRef.plugin = sensorPlugin->ref;
 	for (u32 i = 0; i < sensorPlugin->sensors.length; i++)
 	{
-		sensorRef.sensor = List_Get(sensorPlugin->sensors, i);
+		sensorRef.sensor = List_GetRef(sensorPlugin->sensors, i);
 		RemoveSensorRefs(s, sensorRef);
 	}
 
@@ -365,7 +365,7 @@ LoadWidgetPlugin(SimulationState* s, c8* directory, c8* fileName)
 	LOG_IF(!widgetPlugin, return nullptr,
 		Severity::Error, "Failed to allocate WidgetPlugin");
 
-	widgetPlugin->ref              = List_GetLast(s->widgetPlugins);
+	widgetPlugin->ref              = List_GetLastRef(s->widgetPlugins);
 	widgetPlugin->header.fileName  = fileName;
 	widgetPlugin->header.directory = directory;
 	widgetPlugin->header.kind      = PluginKind::Widget;
@@ -650,8 +650,8 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 
 			widget->position         = ((v2) s->renderSize - v2{ 240, 12 }) / 2.0f;
 			widget->position.y      += ((i32) i - 2) * 15.0f;
-			widget->sensorRef.plugin = List_Get(s->sensorPlugins, 0);
-			widget->sensorRef.sensor = List_Get(s->sensorPlugins[0].sensors, debugSensorIndices[i]);
+			widget->sensorRef.plugin = List_GetRef(s->sensorPlugins, 0);
+			widget->sensorRef.sensor = List_GetRef(s->sensorPlugins[0].sensors, debugSensorIndices[i]);
 
 			PluginContext context = {};
 			context.s            = s;

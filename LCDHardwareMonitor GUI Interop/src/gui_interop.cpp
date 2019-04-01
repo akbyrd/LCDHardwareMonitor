@@ -7,8 +7,8 @@
 #pragma unmanaged
 #include "LHMAPI.h"
 
-#include "gui_protocol.h"
 #include "platform.h"
+#include "gui_protocol.h"
 
 // Fuck you, Microsoft
 #pragma warning(push, 0)
@@ -41,11 +41,12 @@ Initialize()
 b32
 Update()
 {
-	List<u8> bytes = {};
 	PipeResult result = Platform_ReadPipe(&s.pipe, bytes);
 	if (result == PipeResult::UnexpectedFailure) return false;
 
 	if (bytes.length > 0)
+	Bytes bytes = {};
+	defer { List_Free(bytes); };
 	{
 		Platform_Print("Read %u bytes (", bytes.length);
 		for (u32 i = 0; i < bytes.length; i++)
@@ -53,7 +54,6 @@ Update()
 		Platform_Print(")\n");
 	}
 
-	List_Free(bytes);
 	return true;
 }
 
@@ -76,7 +76,7 @@ public value struct GUIInterop abstract sealed
 	}
 
 	static b32
-		Update()
+	Update()
 	{
 		return ::Update();
 	}

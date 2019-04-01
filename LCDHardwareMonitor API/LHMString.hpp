@@ -2,7 +2,7 @@
 #define LHM_STRING
 
 // NOTE: Strings are null terminated for C compatibility.
-// NOTE: StringSlices are NOT null terminated.
+// NOTE: StringSlices are NOT GUARANTEED to be null terminated.
 // NOTE: The length of a String DOES include the null terminator
 // NOTE: The length of a StringSlice DOES include the null terminator (if present)
 // TODO: Length should not include the null terminator

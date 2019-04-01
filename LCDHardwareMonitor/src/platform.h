@@ -66,9 +66,9 @@ PipeResult Platform_DisconnectPipe    (Pipe*);
 PipeResult Platform_ConnectPipe       (Pipe*);
 
 template<typename T>
-PipeResult Platform_WritePipe         (Pipe*, T& bytes);
-PipeResult Platform_WritePipe         (Pipe*, Slice<u8> bytes);
-PipeResult Platform_ReadPipe          (Pipe*, List<u8>& bytes);
+PipeResult Platform_WritePipe         (Pipe*, T& data);
+PipeResult Platform_WritePipe         (Pipe*, ByteSlice bytes);
+PipeResult Platform_ReadPipe          (Pipe*, Bytes& bytes);
 
 #define LOCATION { __FILE__, __LINE__, __FUNCTION__ }
 #define LOG(severity, format, ...) Platform_Log(severity, LOCATION, format, __VA_ARGS__)

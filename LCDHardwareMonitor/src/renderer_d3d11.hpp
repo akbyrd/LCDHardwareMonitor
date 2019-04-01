@@ -590,10 +590,10 @@ Renderer_CreateMesh(RendererState* s, StringSlice name, Slice<Vertex> vertices, 
 		mesh = {};
 
 		// TODO: Eventually lists will reuse slots
-		mesh2->ref = List_GetLast(s->meshes);
+		mesh2->ref = List_GetLastRef(s->meshes);
 	}
 
-	return List_GetLast(s->meshes);
+	return List_GetLastRef(s->meshes);
 }
 
 static b32
@@ -742,7 +742,7 @@ Renderer_LoadVertexShader(RendererState* s, StringSlice name, c8* path, Slice<Ve
 		vs = {};
 
 		// TODO: Eventually lists will reuse slots
-		vs2->ref = List_GetLast(s->vertexShaders);
+		vs2->ref = List_GetLastRef(s->vertexShaders);
 	}
 
 	return vs2->ref;
@@ -814,7 +814,7 @@ Renderer_LoadPixelShader(RendererState* s, StringSlice name, c8* path, Slice<u32
 		ps = {};
 
 		// TODO: Eventually lists will reuse slots
-		ps2->ref = List_GetLast(s->pixelShaders);
+		ps2->ref = List_GetLastRef(s->pixelShaders);
 	}
 
 	return ps2->ref;

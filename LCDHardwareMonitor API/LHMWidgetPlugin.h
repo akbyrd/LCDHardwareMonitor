@@ -18,7 +18,7 @@ struct WidgetInstanceAPI
 		using PushConstantBufferUpdateFn = void  (PluginContext*, Material, ShaderStage, u32 index, void* data);
 
 		Slice<Widget>               widgets;
-		Slice<u8>                   widgetsUserData;
+		ByteSlice                   widgetsUserData;
 		PushConstantBufferUpdateFn* PushConstantBufferUpdate;
 	};
 
@@ -32,7 +32,7 @@ struct WidgetInstanceAPI
 
 		r32                         t;
 		Slice<Widget>               widgets;
-		Slice<u8>                   widgetsUserData;
+		ByteSlice                   widgetsUserData;
 		Slice<Sensor>               sensors;
 		GetViewMatrixFn*            GetViewMatrix;
 		GetProjectionMatrixFn*      GetProjectionMatrix;
@@ -44,7 +44,7 @@ struct WidgetInstanceAPI
 	struct Teardown
 	{
 		Slice<Widget> widgets;
-		Slice<u8>     widgetsUserData;
+		ByteSlice     widgetsUserData;
 	};
 };
 

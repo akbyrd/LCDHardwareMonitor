@@ -18,7 +18,7 @@
 //
 // - Grow and Append can fail due to allocations.
 //   Grow returns false.
-//   Append return a nullptr instead of a pointer to the new slot.
+//   Append returns a nullptr instead of a pointer to the new slot.
 
 // Fuck you, Microsoft
 #pragma warning(push, 0)
@@ -63,8 +63,8 @@ struct Slice
 	u32 stride;
 	T*  data;
 
-	// TODO: I wish we could use actual operators for these conversions, rather
-	// than constructors.
+	// TODO: I'm not sure these const versions are valid (would accept an rvalue and keep a pointer to it)
+	// TODO: I wish we could use actual operators for these conversions, rather than constructors.
 	Slice()                      { length = 0;           stride = sizeof(T); data = nullptr; }
 	Slice(u32 _length, T* _data) { length = _length;     stride = sizeof(T); data = _data; }
 	Slice(const T& element)      { length = 1;           stride = sizeof(T); data = (T*) &element; }
@@ -209,8 +209,7 @@ template<typename T>
 inline b32
 List_Duplicate(Slice<T>& slice, List<T>& duplicate)
 {
-	List_Reserve(duplicate, slice.length);
-	if (!duplicate.data)
+	if (!List_Reserve(duplicate, slice.length))
 		return false;
 
 	duplicate.length   = slice.length;
@@ -244,7 +243,7 @@ List_FindFirst(List<T>& list, T item)
 {
 	for (u32 i = 0; i < list.length; i++)
 		if (list.data[i] == item)
-			return List_Get(list, i);
+			return List_GetRef(list, i);
 
 	return ListRef<T>::Null;
 }
@@ -255,7 +254,7 @@ List_FindLast(List<T>& list, T item)
 {
 	for (u32 i = list.length - 1; i >= 0; i--)
 		if (list.data[i] == item)
-			return List_Get(list, i);
+			return List_GetRef(list, i);
 
 	return ListRef<T>::Null;
 }
@@ -270,7 +269,7 @@ List_Free(List<T>& list)
 
 template<typename T>
 inline ListRef<T>
-List_Get(List<T>& list, u32 index)
+List_GetRef(List<T>& list, u32 index)
 {
 	UNUSED(list);
 	ListRef<T> ref = {};
@@ -280,16 +279,16 @@ List_Get(List<T>& list, u32 index)
 
 template<typename T>
 inline ListRef<T>
-List_GetFirst(List<T>& list)
+List_GetFirstRef(List<T>& list)
 {
-	return List_Get(list, 0);
+	return List_GetRef(list, 0);
 }
 
 template<typename T>
 inline ListRef<T>
-List_GetLast(List<T>& list)
+List_GetLastRef(List<T>& list)
 {
-	return List_Get(list, list.length - 1);
+	return List_GetRef(list, list.length - 1);
 }
 
 template<typename T>
@@ -367,13 +366,21 @@ List_SizeOf(List<T>& list)
 }
 
 using Bytes = List<u8>;
+template<typename T>
+inline size
+{
+	size result = slice.length * sizeof(T);
+inline Slice<T>
+List_Slice(Slice<T>& slice, u32 start)
+	Slice<T> result = {};
+	result.length = slice.length - start;
 
-// TODO: Change most of the API to take a Slice
-// TODO: This data structure needs to be reworked entirely. The API is all
-// over the place and generally garbage.
+// TODO: Change most of the API to take a Slice (have to deal with T deduction on the functions)
+// TODO: This data structure needs to be reworked entirely. The API is all over the place and
+// generally garbage.
 // TODO: Settle on references or pointers
 // TODO: Where should memory be included?
-// TODO: Allow foreach style usage
+// TODO: Allow range-for usage
 // TODO: Use placement new to avoid calling destructors on garbage objects?
 
 #endif

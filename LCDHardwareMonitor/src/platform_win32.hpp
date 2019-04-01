@@ -706,11 +706,11 @@ Platform_WritePipe(Pipe* pipe, T& data)
 }
 
 PipeResult
-Platform_WritePipe(Pipe* pipe, Slice<u8> bytes)
+Platform_WritePipe(Pipe* pipe, Bytes bytes)
 {
 	// NOTE: Writes are synchronous. If this changes be aware of the following facts: 1) The
 	// 'written' parameter is not valid for async writes and 2) the data buffer MUST NOT CHANGE
-	// during an async write (i.e. build a buffer of outgoing information).
+	// during an async write (i.e. build a buffer of outgoing data).
 
 	// NOTE: Synchronous writes will begin blocking once the pipes internal buffer is full.
 
@@ -759,7 +759,7 @@ Platform_WritePipe(Pipe* pipe, Slice<u8> bytes)
 }
 
 PipeResult
-Platform_ReadPipe(Pipe* pipe, List<u8>& bytes)
+Platform_ReadPipe(Pipe* pipe, Bytes& bytes)
 {
 	PipeResult result;
 	b32 success;
