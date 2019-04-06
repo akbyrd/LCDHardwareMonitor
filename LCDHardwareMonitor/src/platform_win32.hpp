@@ -698,10 +698,13 @@ template<typename T>
 PipeResult
 Platform_WritePipe(Pipe* pipe, T& data)
 {
-	Slice<u8> bytes = {};
-	bytes.length = sizeof(T);
-	bytes.stride = 1;
-	bytes.data   = (u8*) &data;
+	// TODO: Need to do something about the Bytes vs ByteSlice issues
+	//ByteSlice bytes = ByteSlice_FromObject(&data);
+	//return Platform_WritePipe(pipe, bytes);
+	Bytes bytes = {};
+	bytes.length   = sizeof(T);
+	bytes.capacity = sizeof(T);
+	bytes.data     = (u8*) &data;
 	return Platform_WritePipe(pipe, bytes);
 }
 

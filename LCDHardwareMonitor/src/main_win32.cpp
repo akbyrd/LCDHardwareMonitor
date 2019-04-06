@@ -128,12 +128,12 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 	// Main loop
 	for(;;)
 	{
+		// TODO: Should probably push the entire message loop down into the preview window, eh?
 		// Pump messages
 		SwitchToFiber(messageFiber);
 		while (msgPumpContext.msg)
 		{
-			// TODO: Don't copy
-			MSG msg = *msgPumpContext.msg;
+			MSG& msg = *msgPumpContext.msg;
 			switch (msg.message)
 			{
 				case WM_PREVIEWWINDOWCLOSED:
@@ -165,7 +165,10 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 		}
 
 		// Tick
-		Simulation_Update(&simulationState);
+		// TODO: Need a proper shutdown implementation (clean vs error)
+		b32 success = Simulation_Update(&simulationState);
+		if (!success) return -1;
+
 		Renderer_Render(&rendererState);
 		// BUG: Looks like it's possible to get WM_PREVIEWWINDOWCLOSED without WM_QUIT
 		PreviewWindow_Render(&previewState);

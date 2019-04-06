@@ -225,7 +225,6 @@ PluginLoader_LoadSensorPlugin(PluginLoaderState* s, SensorPlugin* sensorPlugin)
 
 	PluginHeader* pluginHeader = &sensorPlugin->header;
 	success = DetectPluginLanguage(pluginHeader);
-	if (!success) return false;
 
 	switch (pluginHeader->language)
 	{

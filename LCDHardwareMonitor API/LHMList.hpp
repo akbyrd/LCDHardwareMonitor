@@ -268,6 +268,27 @@ List_Free(List<T>& list)
 }
 
 template<typename T>
+inline T&
+List_Get(List<T>& list, u32 index)
+{
+	return list.data[index];
+}
+
+template<typename T>
+inline T&
+List_GetFirst(List<T>& list)
+{
+	return list.data[0];
+}
+
+template<typename T>
+inline T&
+List_GetLast(List<T>& list)
+{
+	return list.data[list.length - 1];
+}
+
+template<typename T>
 inline ListRef<T>
 List_GetRef(List<T>& list, u32 index)
 {
@@ -365,15 +386,39 @@ List_SizeOf(List<T>& list)
 	return result;
 }
 
-using Bytes = List<u8>;
 template<typename T>
 inline size
+List_SizeOf(Slice<T>& slice)
 {
 	size result = slice.length * sizeof(T);
+	return result;
+}
+
+template<typename T>
 inline Slice<T>
 List_Slice(Slice<T>& slice, u32 start)
+{
 	Slice<T> result = {};
 	result.length = slice.length - start;
+	result.stride = slice.stride;
+	result.data   = &slice.data[start];
+	return result;
+}
+
+// TODO: Do we need separate specializations for List and Slice?
+template<typename T, typename U>
+inline Slice<U>
+List_MemberSlice(List<T>& list, U T::* memberPtr)
+{
+	Slice<U> result = {};
+	result.length = list.length;
+	result.stride = sizeof(T);
+
+	if (list.length > 0)
+		result.data = &(list.data[0].*memberPtr);
+
+	return result;
+}
 
 // TODO: Change most of the API to take a Slice (have to deal with T deduction on the functions)
 // TODO: This data structure needs to be reworked entirely. The API is all over the place and

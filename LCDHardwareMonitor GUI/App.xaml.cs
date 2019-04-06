@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Threading;
 
@@ -7,9 +8,14 @@ namespace LCDHardwareMonitor
     public partial class App : Application
     {
         DispatcherTimer timer;
+        public ObservableCollection<Source> Sources { get; set; }
 
         public App()
         {
+            Sources = new ObservableCollection<Source>();
+            //for (int i = 0; i < 10; i++)
+            //    Sources.Add(new Source() { name = "Some Source " + i, author = "Some Author " + i, version = 10 + (uint) i });
+
             // TODO: Handle failure
             GUIInterop.Initialize();
 
@@ -31,7 +37,7 @@ namespace LCDHardwareMonitor
         public void Tick(object sender, EventArgs e)
         {
             // TODO: Handle failure
-            GUIInterop.Update();
+            GUIInterop.Update(Sources);
         }
     }
 }

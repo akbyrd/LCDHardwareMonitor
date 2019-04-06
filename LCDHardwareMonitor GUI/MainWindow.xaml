@@ -6,7 +6,8 @@
                  WindowStartupLocation="CenterScreen"
                  TitlebarHeight="24"
                  ResizeMode="CanResizeWithGrip" ResizeBorderThickness="0, 0, 10, 10"
-                 WindowTitleBrush="Transparent" NonActiveWindowTitleBrush="Transparent">
+                 WindowTitleBrush="Transparent" NonActiveWindowTitleBrush="Transparent"
+                 DataContext="{Binding Source={x:Static Application.Current}}">
 
   <!-- Resize Grip Style -->
   <mah:MetroWindow.Resources>
@@ -77,9 +78,47 @@
     </TabItem>
 
 
+    <!-- TODO: Implement * sizing
+        https://stackoverflow.com/questions/911243/wpf-extend-last-column-of-listviews-gridview
+        https://social.msdn.microsoft.com/Forums/vstudio/en-US/83bd7ab9-3407-461f-a0bc-69e04870075c/quotstarquot-size-of-a-listview-column?forum=wpf
+    -->
     <!-- Sources -->
     <TabItem Header="Sources">
-      <Label BorderBrush="#3F3F46" BorderThickness="1" Content="Sources" />
+      <!--
+      <ListView ItemsSource="{Binding Sources}"
+                DisplayMemberPath="name"
+                BorderBrush="#3F3F46" BorderThickness="1">
+        <ListView.View>
+          <GridView>
+            <GridViewColumn DisplayMemberBinding="{Binding name}"
+                            Header="Name" />
+            <GridViewColumn DisplayMemberBinding="{Binding author}"
+                            Header="Author" />
+            <GridViewColumn DisplayMemberBinding="{Binding version}"
+                            Header="Version" />
+          </GridView>
+        </ListView.View>
+      </ListView>
+      -->
+
+      <DataGrid ItemsSource="{Binding Sources}"
+                AutoGenerateColumns="false">
+        <DataGrid.Columns>
+          <DataGridTextColumn Binding="{Binding name}"
+                              Header="Name"
+                              Width="*"
+                              IsReadOnly="true" />
+          <DataGridTextColumn Binding="{Binding author}"
+                              Header="Author"
+                              Width="*"
+                              IsReadOnly="true" />
+          <DataGridTextColumn Binding="{Binding version}"
+                              Header="Version"
+                              Width="*"
+                              IsReadOnly="true" />
+        </DataGrid.Columns>
+          
+      </DataGrid>
     </TabItem>
 
 

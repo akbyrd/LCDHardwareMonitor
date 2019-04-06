@@ -1,8 +1,31 @@
 Next steps
+	SHouldn't be allowed to fail once past init. update should just handle it
+	Decide on passing args by pointer or reference
 	GUI Application
-	Inter-process communication (for GUI to Simulation communication)
+		Organize project files
+		Set project include dirs
+		Set project settings
+		Boot the main exe
+		Inter-process communication
+	Compile time printf replacement
 	Text rendering
 	Settings
+	Users probably need to be able to create custom UI for plugin settings
+	Ensure we're handling CloseHandle failures correctly
+	Implement update rate control
+		1) SetTimer: Must set system timer frequency
+		2) Multimedia timers: Accurate. Appears to set system timer frequency
+		3) Waitable timers
+		4) Timer queue timers
+		5) Threadpool timers
+		6) select() (winsock2)
+		7) usleep/nanosleep (posix)
+		* Might be stuck changing the windows timer. Only set it when necessary. Don't set it at all
+		  when on battery power (give user an option to set it anyway).
+		* CreateTimerQueueTimer, timeSetEvent, timeBeginPeriod appear to all use the timer
+		  resolution. CreateWaitableTimer appears to enforce an accurate average (looks like it still
+		  works in multiples of the timer resolution, so still not good enough).
+		  https://www.codeguru.com/cpp/w-p/system/timers/article.php/c5759/Creating-a-HighPrecision-HighResolution-and-Highly-Reliable-Timer-Utilising-Minimal-CPU-Resources.htm
 
 
 

@@ -48,5 +48,6 @@ inline void UnusedArgs(Args const& ...) {}
 #define UNUSED_ARGS(...) UnusedArgs(__VA_ARGS__);
 #define HAS_FLAG(x, f) ((x & f) == f)
 #define IF(expression, ...) if (expression) { __VA_ARGS__; }
+#define LHMVersion 0x00000001
 
 #endif

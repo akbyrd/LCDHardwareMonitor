@@ -1,0 +1,26 @@
+Binding Context
+	'this' from codebehind: DataContext = this;
+	'this' from XAML: DataContext="{Binding RelativeSource={RelativeSource Self}}"
+
+Binding
+	Looks like it *has* to be a property currently, but isn't in the old app. wtf?
+	{} is a XAML markup extension. {Binding} is the binding extension.
+	Binding ElementName binds to a UI element
+	Custom data will not automatically update. Use ObservableCollection and INotifyPropertyChanged.
+	Use IValueConverter to manipulate data before display (lots of built-ins)
+	xmlns:diag="clr-namespace:System.Diagnostics;assembly=WindowsBase"
+	{Binding Title, diag:PresentationTraceSources.TraceLevel=High}
+	VS -> Tools -> Options -> Debugging -> Output Window -> WPF Trace Settings
+	DisplayMemberPath
+
+Display
+	{Binding ElementName=wnd, Path=ActualWidth, StringFormat=Window width: {0:#,#.0}}
+	{Binding ElementName=wnd, Path=ActualWidth, StringFormat={}{0:#,#.0}}
+
+Debugging
+	DebugDataBindingConverter : IValueConverter { Debug.Break }
+	https://spin.atomicobject.com/2013/12/11/wpf-data-binding-debug/
+
+Questions / To Do
+	Read the Data Binding Overview
+	What is a DependencyProperty?

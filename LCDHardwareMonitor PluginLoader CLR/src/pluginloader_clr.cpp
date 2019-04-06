@@ -228,6 +228,9 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 
 		sensorPluginCLR.pluginInstance->GetPluginInfo(&sensorPlugin->info);
 
+		// DEBUG: Remove me (just for fast loading)
+		return true;
+
 		auto iInitialize = dynamic_cast<ISensorInitialize^>(sensorPluginCLR.pluginInstance);
 		if (iInitialize)
 		{

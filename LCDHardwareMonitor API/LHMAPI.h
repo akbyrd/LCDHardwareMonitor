@@ -7,6 +7,7 @@
 #include "LHMMath.hpp"
 #include "LHMList.hpp"
 #include "LHMDefer.hpp"
+#include "LHMBytes.hpp"
 #include "LHMString.hpp"
 #include "LHMHash.hpp"
 

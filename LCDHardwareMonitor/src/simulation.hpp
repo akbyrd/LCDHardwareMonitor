@@ -632,8 +632,8 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 
 	// DEBUG: Testing
 	{
-		//SensorPlugin* ohmPlugin = LoadSensorPlugin(s, "Sensor Plugins\\OpenHardwareMonitor", "Sensor Plugin - OpenHardwareMonitor");
-		//if (!ohmPlugin) return false;
+		SensorPlugin* ohmPlugin = LoadSensorPlugin(s, "Sensor Plugins\\OpenHardwareMonitor", "Sensor Plugin - OpenHardwareMonitor");
+		if (!ohmPlugin) return false;
 
 		WidgetPlugin* filledBarPlugin = LoadWidgetPlugin(s, "Widget Plugins\\Filled Bar", "Widget Plugin - Filled Bar");
 		if (!filledBarPlugin) return false;
@@ -670,12 +670,14 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 
 	// Create a GUI Pipe
 	{
+		using namespace Message;
+
 		// TODO: Ensure there's only a single connection
 		PipeResult result = Platform_CreatePipeServer("LCDHardwareMonitor GUI Pipe", &s->guiPipe);
 		LOG_IF(result == PipeResult::UnexpectedFailure, return false,
 			Severity::Error, "Failed to create pipe for GUI communication");
 
-		s->guiActiveMessageId = Handshake::Id;
+		s->guiActiveMessageId = Connect::Id;
 	}
 
 	success = Renderer_RebuildSharedGeometryBuffers(s->renderer);
@@ -684,7 +686,7 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 	return true;
 }
 
-void
+b32
 Simulation_Update(SimulationState* s)
 {
 	s->currentTime = Platform_GetElapsedSeconds(s->startTime);
@@ -769,32 +771,44 @@ Simulation_Update(SimulationState* s)
 
 	// GUI Communication
 	{
+		using namespace Message;
+
 		switch (s->guiActiveMessageId)
 		{
 			default: Assert(false); break;
 			case Null::Id: break;
 
-			case Handshake::Id:
+			case Connect::Id:
 			{
-				Handshake handshake = { 1, 2, 3 };
-				PipeResult result = Platform_WritePipe(&s->guiPipe, handshake);
-				switch (result)
-				{
-					default: Assert(false); break;
-
-					case PipeResult::Success:
-						//s->guiActiveMessage = GUIMessage::Null;
-						break;
-
-					case PipeResult::TransientFailure:
-						// Ignore failures, retry next frame
-						break;
-
-					case PipeResult::UnexpectedFailure:
-						// TODO: Shutdown simulation
-						break;
-				}
+				Connect connect = {};
+				connect.version = LHMVersion;
+				b32 success = SendMessage(&s->guiPipe, connect, &s->guiActiveMessageId);
+				if (!success) return false;
 				break;
+			}
+
+			case Sources::Id:
+			{
+				b32 success;
+
+				ByteStream stream = {};
+				stream.mode = ByteStreamMode::Write;
+
+				//success = List_Reserve(stream.bytes, 1024);
+				//LOG_IF(!success, return false,
+				//	Severity::Fatal, "Failed to preallocate GUI message");
+
+				Sources sources = {};
+				sources.sources = List_MemberSlice(s->sensorPlugins, &SensorPlugin::info);
+
+				// TODO: Push the serialize down into SendMessage
+				success = Sources_Serialize(sources, stream);
+				LOG_IF(!success, return false,
+					Severity::Fatal, "Failed to serialize GUI message");
+				Assert(stream.cursor == stream.bytes.length);
+
+				success = SendMessage(&s->guiPipe, sources, stream.bytes, &s->guiActiveMessageId);
+				if (!success) return false;
 			}
 		}
 	}
@@ -818,6 +832,8 @@ Simulation_Update(SimulationState* s)
 		PushConstantBufferUpdate(&context2, material, ShaderStage::Vertex, 0, &wvp);
 		PushDrawCall(&context2, material);
 	}
+
+	return true;
 }
 
 void
