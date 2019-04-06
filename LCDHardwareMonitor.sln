@@ -54,6 +54,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build Scripts", "Build Scri
 		build\ignored.txt = build\ignored.txt
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LCDHardwareMonitor GUI Types", "LCDHardwareMonitor GUI Types\LCDHardwareMonitor GUI Types.csproj", "{2B164CDE-859B-4767-A810-EE42EDCFA64B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -118,6 +120,14 @@ Global
 		{E16AAA6C-043D-416E-8CE7-D7FDB83B8722}.Release|x64.Build.0 = Release|x64
 		{E16AAA6C-043D-416E-8CE7-D7FDB83B8722}.Release|x86.ActiveCfg = Release|Win32
 		{E16AAA6C-043D-416E-8CE7-D7FDB83B8722}.Release|x86.Build.0 = Release|Win32
+		{2B164CDE-859B-4767-A810-EE42EDCFA64B}.Debug|x64.ActiveCfg = Debug|x64
+		{2B164CDE-859B-4767-A810-EE42EDCFA64B}.Debug|x64.Build.0 = Debug|x64
+		{2B164CDE-859B-4767-A810-EE42EDCFA64B}.Debug|x86.ActiveCfg = Debug|x86
+		{2B164CDE-859B-4767-A810-EE42EDCFA64B}.Debug|x86.Build.0 = Debug|x86
+		{2B164CDE-859B-4767-A810-EE42EDCFA64B}.Release|x64.ActiveCfg = Release|x64
+		{2B164CDE-859B-4767-A810-EE42EDCFA64B}.Release|x64.Build.0 = Release|x64
+		{2B164CDE-859B-4767-A810-EE42EDCFA64B}.Release|x86.ActiveCfg = Release|x86
+		{2B164CDE-859B-4767-A810-EE42EDCFA64B}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

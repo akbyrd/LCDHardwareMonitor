@@ -160,6 +160,11 @@
       <EmbedInteropTypes>False</EmbedInteropTypes>
       <Private>True</Private>
     </ProjectReference>
+    <ProjectReference Include="..\LCDHardwareMonitor GUI Types\LCDHardwareMonitor GUI Types.csproj">
+      <Project>{2b164cde-859b-4767-a810-ee42edcfa64b}</Project>
+      <Name>LCDHardwareMonitor GUI Types</Name>
+      <Private>True</Private>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

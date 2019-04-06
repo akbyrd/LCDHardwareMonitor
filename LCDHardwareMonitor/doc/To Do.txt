@@ -1,12 +1,15 @@
+GUI Cleanup
+	Remove unnecessary C# dependencies
+	Send sensors
+	Deal with StringSlice issues
+	Implement state machine restarts
+	"Deserialize" in place. Point to data in buffer!
+	winmain cleanup
+
+
 Next steps
-	SHouldn't be allowed to fail once past init. update should just handle it
+	Shouldn't be allowed to fail once past init. update should just handle it
 	Decide on passing args by pointer or reference
-	GUI Application
-		Organize project files
-		Set project include dirs
-		Set project settings
-		Boot the main exe
-		Inter-process communication
 	Compile time printf replacement
 	Text rendering
 	Settings
@@ -137,4 +140,3 @@ Plugins
 Architecture
 	Decide on static or dynamic linking to e.g. the CRT. Bundle redistributables
 		if dynamically linking.
-	Load default/fallback resources

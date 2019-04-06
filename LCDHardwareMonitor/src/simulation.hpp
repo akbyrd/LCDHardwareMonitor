@@ -787,7 +787,7 @@ Simulation_Update(SimulationState* s)
 				break;
 			}
 
-			case Sources::Id:
+			case Plugins::Id:
 			{
 				b32 success;
 
@@ -798,16 +798,16 @@ Simulation_Update(SimulationState* s)
 				//LOG_IF(!success, return false,
 				//	Severity::Fatal, "Failed to preallocate GUI message");
 
-				Sources sources = {};
-				sources.sources = List_MemberSlice(s->sensorPlugins, &SensorPlugin::info);
+				Plugins plugins = {};
+				plugins.plugins = List_MemberSlice(s->sensorPlugins, &SensorPlugin::info);
 
 				// TODO: Push the serialize down into SendMessage
-				success = Sources_Serialize(sources, stream);
+				success = Plugins_Serialize(plugins, stream);
 				LOG_IF(!success, return false,
 					Severity::Fatal, "Failed to serialize GUI message");
 				Assert(stream.cursor == stream.bytes.length);
 
-				success = SendMessage(&s->guiPipe, sources, stream.bytes, &s->guiActiveMessageId);
+				success = SendMessage(&s->guiPipe, plugins, stream.bytes, &s->guiActiveMessageId);
 				if (!success) return false;
 			}
 		}

@@ -20,19 +20,18 @@ namespace Message
 		u32 version;
 	};
 
-	struct Sources
+	struct Plugins
 	{
-		static constexpr u32 Id = IdOf<Sources>();
+		static constexpr u32 Id = IdOf<Plugins>();
 		Header header;
 
-		//SerialList<PluginInfo> sources;
-		Slice<PluginInfo> sources;
+		Slice<PluginInfo> plugins;
 	};
 };
 
 u32 messageOrder[] = {
 	Message::Connect::Id,
-	Message::Sources::Id,
+	Message::Plugins::Id,
 	Message::Null::Id,
 };
 
@@ -181,7 +180,7 @@ template<typename T>
 b32 Primitive_Serialize(T&, ByteStream&);
 
 b32 String_Serialize(StringSlice&, ByteStream&);
-b32 Sources_Serialize(Message::Sources&, ByteStream&);
+b32 Plugins_Serialize(Message::Plugins&, ByteStream&);
 b32 PluginInfo_Serialize(PluginInfo&, ByteStream&);
 
 template<typename T>
@@ -278,11 +277,11 @@ String_Serialize(StringSlice& string, ByteStream& stream)
 }
 
 b32
-Sources_Serialize(Message::Sources& sources, ByteStream& stream)
+Plugins_Serialize(Message::Plugins& plugins, ByteStream& stream)
 {
 	b32 success = true;
-	success = success && Primitive_Serialize(sources.header, stream);
-	success = success && Slice_Serialize(sources.sources, stream, PluginInfo_Serialize);
+	success = success && Primitive_Serialize(plugins.header, stream);
+	success = success && Slice_Serialize(plugins.plugins, stream, PluginInfo_Serialize);
 	return success;
 }
 
