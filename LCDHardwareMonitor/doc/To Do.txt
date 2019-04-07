@@ -1,5 +1,4 @@
 GUI Cleanup
-	Remove unnecessary C# dependencies
 	Send sensors
 	Deal with StringSlice issues
 	Implement state machine restarts
