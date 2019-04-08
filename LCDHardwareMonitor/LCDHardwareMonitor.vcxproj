@@ -161,7 +161,7 @@
     <ClCompile Include="src\main_win32.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\gui_protocol.h" />
+    <ClInclude Include="src\gui_protocol.hpp" />
     <ClInclude Include="src\pluginheader.h" />
     <ClInclude Include="src\pluginloader.h" />
     <ClInclude Include="src\pluginloader_win32.hpp" />

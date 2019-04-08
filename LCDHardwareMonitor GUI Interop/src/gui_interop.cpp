@@ -9,7 +9,7 @@
 
 #include "platform.h"
 #include "plugin_shared.h"
-#include "gui_protocol.h"
+#include "gui_protocol.hpp"
 
 // Fuck you, Microsoft
 #pragma warning(push, 0)

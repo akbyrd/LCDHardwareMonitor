@@ -4,7 +4,7 @@
 #include "pluginloader.h"
 #include "renderer.h"
 #include "plugin_shared.h"
-#include "gui_protocol.h"
+#include "gui_protocol.hpp"
 #include "simulation.hpp"
 
 // Fuck you, Microsoft

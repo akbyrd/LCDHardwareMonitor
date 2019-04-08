@@ -44,7 +44,7 @@
     <ClInclude Include="src\plugin_shared.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\gui_protocol.h">
+    <ClInclude Include="src\gui_protocol.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
