@@ -782,6 +782,7 @@ Simulation_Update(SimulationState* s)
 			{
 				Connect connect = {};
 				connect.version = LHMVersion;
+
 				b32 success = SendMessage(&s->guiPipe, connect, &s->guiActiveMessageId);
 				if (!success) return false;
 				break;
@@ -789,26 +790,12 @@ Simulation_Update(SimulationState* s)
 
 			case Plugins::Id:
 			{
-				b32 success;
-
-				ByteStream stream = {};
-				stream.mode = ByteStreamMode::Write;
-
-				//success = List_Reserve(stream.bytes, 1024);
-				//LOG_IF(!success, return false,
-				//	Severity::Fatal, "Failed to preallocate GUI message");
-
 				Plugins plugins = {};
 				plugins.plugins = List_MemberSlice(s->sensorPlugins, &SensorPlugin::info);
 
-				// TODO: Push the serialize down into SendMessage
-				success = Plugins_Serialize(plugins, stream);
-				LOG_IF(!success, return false,
-					Severity::Fatal, "Failed to serialize GUI message");
-				Assert(stream.cursor == stream.bytes.length);
-
-				success = SendMessage(&s->guiPipe, plugins, stream.bytes, &s->guiActiveMessageId);
+				b32 success = SendMessage(&s->guiPipe, plugins, &s->guiActiveMessageId);
 				if (!success) return false;
+				break;
 			}
 		}
 	}

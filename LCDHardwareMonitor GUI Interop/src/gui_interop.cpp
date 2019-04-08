@@ -63,18 +63,17 @@ public value struct GUIInterop abstract sealed
 	{
 		using namespace Message;
 
-		ByteStream stream = {};
-		stream.mode = ByteStreamMode::Read;
-		defer { List_Free(stream.bytes); };
+		Bytes bytes = {};
+		defer { List_Free(bytes); };
 
-		PipeResult result = ReceiveMessage(&s.pipe, stream.bytes, &s.activeMessageId);
+		PipeResult result = ReceiveMessage(&s.pipe, bytes, &s.activeMessageId);
 		switch (result)
 		{
 			default: Assert(false); break;
 
 			case PipeResult::Success:
 			{
-				Header* header = (Header*) stream.bytes.data;
+				Header* header = (Header*) bytes.data;
 				switch (header->id)
 				{
 					default: Assert(false); break;
@@ -82,23 +81,18 @@ public value struct GUIInterop abstract sealed
 
 					case Connect::Id:
 					{
-						Connect* connect = (Connect*) stream.bytes.data;
+						Connect* connect = (Connect*) bytes.data;
 						simState->Version = connect->version;
 						break;
 					}
 
 					case Plugins::Id:
 					{
-						Plugins plugins = {};
-						b32 success = Plugins_Serialize(plugins, stream);
-						LOG_IF(!success, return false,
-							Severity::Error, "Failed to deserialize GUI message");
-
-						for (u32 i = 0; i < plugins.plugins.length; i++)
+						Plugins* plugins = (Plugins*) bytes.data;
+						for (u32 i = 0; i < plugins->plugins.length; i++)
 						{
-							PluginInfo info = plugins.plugins[i];
+							PluginInfo info = plugins->plugins[i];
 
-							// TODO: Strip null terminator (at StringSlice creation)
 							PluginInfo_CLR pluginInfo = {};
 							pluginInfo.Name    = ToSystemString(info.name);
 							pluginInfo.Kind    = PluginKind::Sensor;

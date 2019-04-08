@@ -1,9 +1,11 @@
 GUI Cleanup
+	Compression pass on interop
+	Deal with StringSlice issues, Sensor strings
 	Send sensors
-	Deal with StringSlice issues
+
 	Implement state machine restarts
-	"Deserialize" in place. Point to data in buffer!
 	winmain cleanup
+	Use namespaces or something so we don't need _CLR on type names
 
 
 Next steps

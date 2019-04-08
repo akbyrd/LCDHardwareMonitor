@@ -378,6 +378,7 @@ List_Shrink(List<T>& list)
 	return true;
 }
 
+// TODO: Consider renaming to List_SizeOfData
 template<typename T>
 inline size
 List_SizeOf(List<T>& list)
