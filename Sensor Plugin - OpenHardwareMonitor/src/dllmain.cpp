@@ -39,6 +39,16 @@ public ref struct State : ISensorPlugin, ISensorInitialize, ISensorUpdate, ISens
 		info->version = 1;
 	}
 
+	StringSlice
+	ToStringSlice(SString^ string)
+	{
+		StringSlice result = {};
+		result.length = (u32) string->Length;
+		result.stride = 1;
+		result.data   = (c8*) Marshal::StringToHGlobalAnsi(string).ToPointer();
+		return result;
+	}
+
 	virtual b32
 	Initialize(PluginContext* context, SensorPluginAPI::Initialize api)
 	{
@@ -96,9 +106,9 @@ public ref struct State : ISensorPlugin, ISensorInitialize, ISensorUpdate, ISens
 				SString^ value  = SString::Format(format, ohmSensor->Value);
 
 				Sensor sensor = {};
-				sensor.name       = (c8*) Marshal::StringToHGlobalAnsi(ohmSensor->Name).ToPointer();
-				sensor.identifier = (c8*) Marshal::StringToHGlobalAnsi(ohmSensor->Identifier->ToString()).ToPointer();
-				sensor.string     = (c8*) Marshal::StringToHGlobalAnsi(value).ToPointer();
+				sensor.name       = ToStringSlice(ohmSensor->Name);
+				sensor.identifier = ToStringSlice(ohmSensor->Identifier->ToString());
+				sensor.string     = ToStringSlice(value);
 				api.RegisterSensors(context, sensor);
 			}
 
@@ -159,9 +169,9 @@ public ref struct State : ISensorPlugin, ISensorInitialize, ISensorUpdate, ISens
 		{
 			Sensor* sensor = &api.sensors[i];
 
-			Marshal::FreeHGlobal((IntPtr) sensor->name);
-			Marshal::FreeHGlobal((IntPtr) sensor->identifier);
-			Marshal::FreeHGlobal((IntPtr) sensor->string);
+			Marshal::FreeHGlobal((IntPtr) sensor->name.data);
+			Marshal::FreeHGlobal((IntPtr) sensor->identifier.data);
+			Marshal::FreeHGlobal((IntPtr) sensor->string.data);
 
 			*sensor = {};
 		}

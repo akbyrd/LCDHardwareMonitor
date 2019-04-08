@@ -123,7 +123,7 @@ UnregisterSensors(PluginContext* context, Slice<SensorRef> sensorRefs)
 		b32 valid = true;
 		valid = valid && sensorRef.plugin != sensorPlugin->ref;
 		valid = valid && List_IsRefValid(sensorPlugin->sensors, sensorRef.sensor);
-		valid = valid && sensorPlugin->sensors[sensorRef.sensor].name != nullptr;
+		valid = valid && sensorPlugin->sensors[sensorRef.sensor].name.data != nullptr;
 		LOG_IF(!valid, return,
 			Severity::Error, "Sensor plugin gave a bad SensorRef '%s'", sensorPlugin->info.name);
 	}
@@ -788,12 +788,28 @@ Simulation_Update(SimulationState* s)
 				break;
 			}
 
+			// TODO: Should probably break these up into PluginAdded, SensorAdded, & WidgetAdded
 			case Plugins::Id:
 			{
 				Plugins plugins = {};
-				plugins.plugins = List_MemberSlice(s->sensorPlugins, &SensorPlugin::info);
+				plugins.sensorPluginRefs = List_MemberSlice(s->sensorPlugins, &SensorPlugin::ref);
+				plugins.sensorPlugins    = List_MemberSlice(s->sensorPlugins, &SensorPlugin::info);
+
+				plugins.widgetPluginRefs = List_MemberSlice(s->widgetPlugins, &WidgetPlugin::ref);
+				plugins.widgetPlugins    = List_MemberSlice(s->widgetPlugins, &WidgetPlugin::info);
 
 				b32 success = SendMessage(&s->guiPipe, plugins, &s->guiActiveMessageId);
+				if (!success) return false;
+				break;
+			}
+
+			case Sensors::Id:
+			{
+				Sensors sensors = {};
+				sensors.sensorPluginRefs = List_MemberSlice(s->sensorPlugins, &SensorPlugin::ref);
+				sensors.sensors          = List_MemberSlice(s->sensorPlugins, &SensorPlugin::sensors);
+
+				b32 success = SendMessage(&s->guiPipe, sensors, &s->guiActiveMessageId);
 				if (!success) return false;
 				break;
 			}

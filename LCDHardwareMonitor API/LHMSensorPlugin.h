@@ -22,13 +22,13 @@ inline b32 operator!= (SensorRef lhs, SensorRef rhs) { return lhs.plugin != rhs.
 
 struct Sensor
 {
-	c8* name;
-	c8* identifier;
-	c8* string;
-	r32 value;
+	StringSlice name;
+	StringSlice identifier;
+	StringSlice string;
+	r32         value;
 	// TODO: Range struct?
-	r32 minValue;
-	r32 maxValue;
+	r32         minValue;
+	r32         maxValue;
 
 	// TODO: Might want an integer Type field with a plugin provided to-string
 	// function.

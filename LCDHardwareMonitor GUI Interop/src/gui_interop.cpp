@@ -8,6 +8,7 @@
 #include "LHMAPI.h"
 
 #include "platform.h"
+#include "plugin_shared.h"
 #include "gui_protocol.h"
 
 // Fuck you, Microsoft
@@ -30,7 +31,6 @@ struct State
 static State s = {};
 
 #pragma managed
-using namespace System::Collections::Generic;
 
 // TODO: Can this be implemented as an extension method to System::String?
 System::String^
@@ -89,16 +89,50 @@ public value struct GUIInterop abstract sealed
 					case Plugins::Id:
 					{
 						Plugins* plugins = (Plugins*) bytes.data;
-						for (u32 i = 0; i < plugins->plugins.length; i++)
+						for (u32 i = 0; i < plugins->sensorPlugins.length; i++)
 						{
-							PluginInfo info = plugins->plugins[i];
+							PluginInfo pluginInfo = plugins->sensorPlugins[i];
 
-							PluginInfo_CLR pluginInfo = {};
-							pluginInfo.Name    = ToSystemString(info.name);
-							pluginInfo.Kind    = PluginKind::Sensor;
-							pluginInfo.Author  = ToSystemString(info.author);
-							pluginInfo.Version = info.version;
-							simState->Plugins->Add(pluginInfo);
+							PluginInfo_CLR pluginInfo_clr = {};
+							pluginInfo_clr.Name    = ToSystemString(pluginInfo.name);
+							pluginInfo_clr.Kind    = PluginKind_CLR::Sensor;
+							pluginInfo_clr.Author  = ToSystemString(pluginInfo.author);
+							pluginInfo_clr.Version = pluginInfo.version;
+							simState->Plugins->Add(pluginInfo_clr);
+						}
+						for (u32 i = 0; i < plugins->widgetPlugins.length; i++)
+						{
+							PluginInfo pluginInfo = plugins->widgetPlugins[i];
+
+							PluginInfo_CLR pluginInfo_clr = {};
+							pluginInfo_clr.Name    = ToSystemString(pluginInfo.name);
+							pluginInfo_clr.Kind    = PluginKind_CLR::Widget;
+							pluginInfo_clr.Author  = ToSystemString(pluginInfo.author);
+							pluginInfo_clr.Version = pluginInfo.version;
+							simState->Plugins->Add(pluginInfo_clr);
+						}
+						break;
+					}
+
+					case Sensors::Id:
+					{
+						Sensors* sensors = (Sensors*) bytes.data;
+						for (u32 i = 0; i < sensors->sensors.length; i++)
+						{
+							List<Sensor> sensors2 = sensors->sensors[i];
+							for (u32 j = 0; j < sensors2.length; j++)
+							{
+								Sensor sensor = sensors2[j];
+
+								Sensor_CLR sensor_clr = {};
+								sensor_clr.Name       = ToSystemString(sensor.name);
+								sensor_clr.Identifier = ToSystemString(sensor.identifier);
+								sensor_clr.String     = ToSystemString(sensor.string);
+								sensor_clr.Value      = sensor.value;
+								sensor_clr.MinValue   = sensor.minValue;
+								sensor_clr.MaxValue   = sensor.maxValue;
+								simState->Sensors->Add(sensor_clr);
+							}
 						}
 						break;
 					}

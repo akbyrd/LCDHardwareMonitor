@@ -70,10 +70,30 @@
                BorderBrush="#3F3F46" BorderThickness="1"
                Content="Left" />
 
-        <Label Grid.Column="2"
-               VerticalAlignment="Stretch" HorizontalAlignment="Stretch"
-               BorderBrush="#3F3F46" BorderThickness="1"
-               Content="Right" />
+        <DataGrid Grid.Column="2"
+                  VerticalAlignment="Stretch" HorizontalAlignment="Stretch"
+                  BorderBrush="#3F3F46" BorderThickness="1"
+                  ItemsSource="{Binding Sensors}"
+                  AutoGenerateColumns="false">
+        <DataGrid.Columns>
+          <DataGridTextColumn Binding="{Binding Name}"
+                              Header="Name"
+                              Width="*"
+                              IsReadOnly="true" />
+          <DataGridTextColumn Binding="{Binding Identifier}"
+                              Header="Identifier"
+                              Width="*"
+                              IsReadOnly="true" />
+          <DataGridTextColumn Binding="{Binding String}"
+                              Header="String"
+                              Width="*"
+                              IsReadOnly="true" />
+          <DataGridTextColumn Binding="{Binding Value}"
+                              Header="Value"
+                              Width="*"
+                              IsReadOnly="true" />
+        </DataGrid.Columns>
+      </DataGrid>
       </Grid>
     </TabItem>
 
@@ -121,7 +141,6 @@
                               Width="*"
                               IsReadOnly="true" />
         </DataGrid.Columns>
-
       </DataGrid>
     </TabItem>
 

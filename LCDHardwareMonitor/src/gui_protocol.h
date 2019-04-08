@@ -25,7 +25,11 @@ namespace Message
 		static constexpr u32 Id = IdOf<Plugins>();
 		Header header;
 
-		Slice<PluginInfo> plugins;
+		Slice<SensorPluginRef> sensorPluginRefs;
+		Slice<PluginInfo>      sensorPlugins;
+
+		Slice<WidgetPluginRef> widgetPluginRefs;
+		Slice<PluginInfo>      widgetPlugins;
 	};
 
 	struct Sensors
@@ -33,14 +37,15 @@ namespace Message
 		static constexpr u32 Id = IdOf<Sensors>();
 		Header header;
 
-		// TODO: The raw strings here are a problem. I think we need to do the in-place serialize before this step
-		Slice<Sensor> sensors;
+		Slice<SensorPluginRef> sensorPluginRefs;
+		Slice<List<Sensor>>    sensors;
 	};
 };
 
 u32 messageOrder[] = {
 	Message::Connect::Id,
 	Message::Plugins::Id,
+	Message::Sensors::Id,
 	Message::Null::Id,
 };
 
@@ -76,13 +81,18 @@ template<typename T>
 void Serialize(T&, ByteStream&);
 
 template<typename T>
+void Serialize(List<T>&, ByteStream&);
+
+template<typename T>
 void Serialize(Slice<T>&, ByteStream&);
 
 void Serialize(StringSlice&, ByteStream&);
 
 void Serialize(Message::Plugins&, ByteStream&);
 void Serialize(Message::Connect&, ByteStream&);
+void Serialize(Message::Sensors&, ByteStream&);
 void Serialize(PluginInfo&, ByteStream&);
+void Serialize(Sensor&, ByteStream&);
 
 void
 IncrementMessage(u32* currentMessageId)
@@ -135,7 +145,6 @@ SendMessage(Pipe* pipe, T& message, u32* currentMessageId)
 			default: Assert(false); break;
 
 			case PipeResult::Success:
-				IncrementMessage(currentMessageId);
 				break;
 
 			case PipeResult::TransientFailure:
@@ -147,6 +156,7 @@ SendMessage(Pipe* pipe, T& message, u32* currentMessageId)
 		}
 	}
 
+	IncrementMessage(currentMessageId);
 	return true;
 }
 
@@ -161,46 +171,7 @@ ReceiveMessage(Pipe* pipe, Bytes& bytes, u32* currentMessageId)
 		default: Assert(false); break;
 
 		case PipeResult::Success:
-		{
-			if (bytes.length == 0) return PipeResult::TransientFailure;
-
-			LOG_IF(bytes.length < sizeof(Header), return PipeResult::TransientFailure,
-				Severity::Warning, "Corrupted message received");
-
-			Header* header = (Header*) bytes.data;
-
-			LOG_IF(*currentMessageId != header->id, return PipeResult::TransientFailure,
-				Severity::Warning, "Unexpected message received");
-
-			LOG_IF(bytes.length != header->size, return PipeResult::TransientFailure,
-				Severity::Warning, "Incorrectly sized message received");
-
-			ByteStream stream = {};
-			stream.mode  = ByteStreamMode::Read;
-			stream.bytes = bytes;
-
-			switch (header->id)
-			{
-				default: Assert(false); break;
-
-				case Connect::Id:
-				{
-					Connect* connect = (Connect*) &bytes[0];
-					Serialize(connect, stream);
-					break;
-				}
-
-				case Plugins::Id:
-				{
-					Plugins* plugins = (Plugins*) &bytes[0];
-					Serialize(plugins, stream);
-					break;
-				}
-			}
-
-			IncrementMessage(currentMessageId);
 			break;
-		}
 
 		case PipeResult::TransientFailure:
 			// Ignore failures, retry next frame
@@ -210,6 +181,50 @@ ReceiveMessage(Pipe* pipe, Bytes& bytes, u32* currentMessageId)
 			return PipeResult::UnexpectedFailure;
 	}
 
+	if (bytes.length == 0) return PipeResult::TransientFailure;
+
+	LOG_IF(bytes.length < sizeof(Header), return PipeResult::TransientFailure,
+		Severity::Warning, "Corrupted message received");
+
+	Header* header = (Header*) bytes.data;
+
+	LOG_IF(*currentMessageId != header->id, return PipeResult::TransientFailure,
+		Severity::Warning, "Unexpected message received");
+
+	LOG_IF(bytes.length != header->size, return PipeResult::TransientFailure,
+		Severity::Warning, "Incorrectly sized message received");
+
+	ByteStream stream = {};
+	stream.mode  = ByteStreamMode::Read;
+	stream.bytes = bytes;
+
+	switch (header->id)
+	{
+		default: Assert(false); break;
+
+		case Connect::Id:
+		{
+			Connect* connect = (Connect*) &bytes[0];
+			Serialize(connect, stream);
+			break;
+		}
+
+		case Plugins::Id:
+		{
+			Plugins* plugins = (Plugins*) &bytes[0];
+			Serialize(plugins, stream);
+			break;
+		}
+
+		case Sensors::Id:
+		{
+			Sensors* sensors = (Sensors*) &bytes[0];
+			Serialize(sensors, stream);
+			break;
+		}
+	}
+
+	IncrementMessage(currentMessageId);
 	return PipeResult::Success;
 }
 
@@ -263,6 +278,40 @@ Serialize(T& value, ByteStream& stream)
 }
 
 template<typename T>
+void Serialize(List<T>& list, ByteStream& stream)
+{
+	T* data = (T*) &stream.bytes[stream.cursor];
+	stream.cursor += List_SizeOf(list);
+
+	switch (stream.mode)
+	{
+		default: Assert(false); break;
+
+		case ByteStreamMode::Size:
+			for (u32 i = 0; i < list.length; i++)
+				Serialize(list[i], stream);
+			break;
+
+		case ByteStreamMode::Read:
+			list.data = data;
+			for (u32 i = 0; i < list.length; i++)
+				Serialize(list[i], stream);
+			break;
+
+		case ByteStreamMode::Write:
+		{
+			memcpy(data, list.data, List_SizeOf(list));
+			for (u32 i = 0; i < list.length; i++)
+				Serialize(list[i], stream);
+
+			list.capacity = list.length;
+			list.data     = nullptr;
+			break;
+		}
+	}
+}
+
+template<typename T>
 void
 Serialize(Slice<T>& slice, ByteStream& stream)
 {
@@ -287,13 +336,16 @@ Serialize(Slice<T>& slice, ByteStream& stream)
 		case ByteStreamMode::Write:
 		{
 			for (u32 i = 0; i < slice.length; i++)
-			{
 				data[i] = slice[i];
-				Serialize(slice[i], stream);
-			}
 
+			slice.data   = data;
 			slice.stride = sizeof(T);
-			slice.data   = nullptr;
+
+			for (u32 i = 0; i < slice.length; i++)
+				Serialize(slice[i], stream);
+
+			// DEBUG: Easier to inspect
+			//slice.data   = nullptr;
 			break;
 		}
 	}
@@ -325,17 +377,20 @@ Serialize(StringSlice& string, ByteStream& stream)
 }
 
 void
-Serialize(Message::Plugins& plugins, ByteStream& stream)
-{
-	Serialize(plugins.header, stream);
-	Serialize(plugins.plugins, stream);
-}
-
-void
 Serialize(Message::Connect& connect, ByteStream& stream)
 {
 	Serialize(connect.header, stream);
 	Serialize(connect.version, stream);
+}
+
+void
+Serialize(Message::Plugins& plugins, ByteStream& stream)
+{
+	Serialize(plugins.header, stream);
+	Serialize(plugins.sensorPlugins, stream);
+	Serialize(plugins.sensorPluginRefs, stream);
+	Serialize(plugins.widgetPlugins, stream);
+	Serialize(plugins.widgetPluginRefs, stream);
 }
 
 void
@@ -346,8 +401,26 @@ Serialize(PluginInfo& pluginInfo, ByteStream& stream)
 	Serialize(pluginInfo.version, stream);
 }
 
+void
+Serialize(Message::Sensors& sensors, ByteStream& stream)
+{
+	Serialize(sensors.header, stream);
+	Serialize(sensors.sensorPluginRefs, stream);
+	Serialize(sensors.sensors, stream);
+}
+
+void
+Serialize(Sensor& sensor, ByteStream& stream)
+{
+	Serialize(sensor.name, stream);
+	Serialize(sensor.identifier, stream);
+	Serialize(sensor.string, stream);
+	Serialize(sensor.value, stream);
+	Serialize(sensor.minValue, stream);
+	Serialize(sensor.maxValue, stream);
+}
+
 // TODO: Why do we get a duplicate set of messages when closing the GUI?
 // TODO: Ensure pipe reconnects when closing and opening the GUI
 // TODO: Ensure pipe reconnects when closing and opening the sim
 // TODO: Code gen the actual Serialize functions
-// TODO: Refactor the success case out of switch statements
