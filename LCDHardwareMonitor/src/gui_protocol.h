@@ -59,41 +59,30 @@ struct ByteStream
 	Bytes          bytes;
 };
 
-// TODO: Use function overloading so we don't have to do this
-template<typename T>
-using SerializeItemFn = void(T&, ByteStream&);
+// NOTE: There's one small gotcha with this serialization approach. We use
+// Serialize(T&, ByteStream&) to support a pattern where you simply call Serialize for every member
+// of your type and it will serialize properly as long as overloads exist for types that aren't
+// blittable (e.g. contain pointers). Unfortunately, this function signature will match anything
+// so if a necessary overload is missing we'll serialize the data anyway and it will fail somewhere
+// on the receivers side when they try to dereference a pointer that came from the sender.
 
 template<typename T>
-void Slice_Serialize(Slice<T>&, ByteStream&, SerializeItemFn<T>*);
+void Serialize(T*&&, ByteStream&);
 
 template<typename T>
-void
-Primitive_Serialize(T& primitive, ByteStream& stream)
-{
-	switch (stream.mode)
-	{
-		default: Assert(false); break;
+void Serialize(T*&, ByteStream&);
 
-		case ByteStreamMode::Size:
-			break;
+template<typename T>
+void Serialize(T&, ByteStream&);
 
-		case ByteStreamMode::Read:
-			break;
+template<typename T>
+void Serialize(Slice<T>&, ByteStream&);
 
-		case ByteStreamMode::Write:
-		{
-			T* dst = (T*) &stream.bytes[stream.cursor];
-			*dst = primitive;
-			break;
-		}
-	}
-	stream.cursor += sizeof(T);
-}
+void Serialize(StringSlice&, ByteStream&);
 
-void String_Serialize(StringSlice&, ByteStream&);
-void Plugins_Serialize(Message::Plugins&, ByteStream&);
-void Connect_Serialize(Message::Connect&, ByteStream&);
-void PluginInfo_Serialize(PluginInfo&, ByteStream&);
+void Serialize(Message::Plugins&, ByteStream&);
+void Serialize(Message::Connect&, ByteStream&);
+void Serialize(PluginInfo&, ByteStream&);
 
 void
 IncrementMessage(u32* currentMessageId)
@@ -120,21 +109,8 @@ SendMessage(Pipe* pipe, T& message, u32* currentMessageId)
 	ByteStream stream = {};
 	defer { List_Free(stream.bytes); };
 	{
-		// TODO: Use function overloading so we don't have to do this
-		SerializeItemFn<T>* serializeItem = nullptr;
-		switch (T::Id)
-		{
-			default: Assert(false); break;
-
-			// TODO: Janky as fuck
-			case Connect::Id: serializeItem = (SerializeItemFn<T>*) Connect_Serialize; break;
-			case Plugins::Id: serializeItem = (SerializeItemFn<T>*) Plugins_Serialize; break;
-		}
-
-		// TODO: Consider something like a Pointer_Serialize
 		stream.mode = ByteStreamMode::Size;
-		Primitive_Serialize(message, stream);
-		serializeItem(message, stream);
+		Serialize(&message, stream);
 
 		b32 success = List_Reserve(stream.bytes, stream.cursor);
 		LOG_IF(!success, return false,
@@ -146,10 +122,7 @@ SendMessage(Pipe* pipe, T& message, u32* currentMessageId)
 
 		stream.mode   = ByteStreamMode::Write;
 		stream.cursor = 0;
-		Primitive_Serialize(message, stream);
-		// TODO: Janky as fuck
-		T* messageCopy = (T*) &stream.bytes[0];
-		serializeItem(*messageCopy, stream);
+		Serialize(&message, stream);
 
 		Assert(stream.cursor == stream.bytes.length);
 	}
@@ -213,16 +186,14 @@ ReceiveMessage(Pipe* pipe, Bytes& bytes, u32* currentMessageId)
 				case Connect::Id:
 				{
 					Connect* connect = (Connect*) &bytes[0];
-					Primitive_Serialize(*connect, stream);
-					Connect_Serialize(*connect, stream);
+					Serialize(connect, stream);
 					break;
 				}
 
 				case Plugins::Id:
 				{
 					Plugins* plugins = (Plugins*) &bytes[0];
-					Primitive_Serialize(*plugins, stream);
-					Plugins_Serialize(*plugins, stream);
+					Serialize(plugins, stream);
 					break;
 				}
 			}
@@ -242,9 +213,58 @@ ReceiveMessage(Pipe* pipe, Bytes& bytes, u32* currentMessageId)
 	return PipeResult::Success;
 }
 
+// TODO: This is a bit lame
+template<typename T>
+void Serialize(T*&& rpointer, ByteStream& stream)
+{
+	T* pointer = rpointer;
+	Serialize(pointer, stream);
+}
+
+template<typename T>
+void Serialize(T*& pointer, ByteStream& stream)
+{
+	switch (stream.mode)
+	{
+		default: Assert(false); break;
+
+		case ByteStreamMode::Size:
+			break;
+
+		case ByteStreamMode::Read:
+		{
+			// Point to the data appended to the stream
+			T* data = (T*) &stream.bytes[stream.cursor];
+			pointer = data;
+			break;
+		}
+
+		case ByteStreamMode::Write:
+		{
+			// Copy the data into the stream
+			T* data = (T*) &stream.bytes[stream.cursor];
+			*data = *pointer;
+			pointer = data;
+			break;
+		}
+	}
+
+	stream.cursor += sizeof(T);
+	Serialize(*pointer, stream);
+}
+
 template<typename T>
 void
-Slice_Serialize(Slice<T>& slice, ByteStream& stream, SerializeItemFn<T>* serializeItem)
+Serialize(T& value, ByteStream& stream)
+{
+	// No-op
+	UNUSED(value);
+	UNUSED(stream);
+}
+
+template<typename T>
+void
+Serialize(Slice<T>& slice, ByteStream& stream)
 {
 	T* data = (T*) &stream.bytes[stream.cursor];
 	stream.cursor += List_SizeOf(slice);
@@ -255,13 +275,13 @@ Slice_Serialize(Slice<T>& slice, ByteStream& stream, SerializeItemFn<T>* seriali
 
 		case ByteStreamMode::Size:
 			for (u32 i = 0; i < slice.length; i++)
-				serializeItem(slice[i], stream);
+				Serialize(slice[i], stream);
 			break;
 
 		case ByteStreamMode::Read:
 			slice.data = data;
 			for (u32 i = 0; i < slice.length; i++)
-				serializeItem(slice[i], stream);
+				Serialize(slice[i], stream);
 			break;
 
 		case ByteStreamMode::Write:
@@ -269,7 +289,7 @@ Slice_Serialize(Slice<T>& slice, ByteStream& stream, SerializeItemFn<T>* seriali
 			for (u32 i = 0; i < slice.length; i++)
 			{
 				data[i] = slice[i];
-				serializeItem(slice[i], stream);
+				Serialize(slice[i], stream);
 			}
 
 			slice.stride = sizeof(T);
@@ -280,56 +300,54 @@ Slice_Serialize(Slice<T>& slice, ByteStream& stream, SerializeItemFn<T>* seriali
 }
 
 void
-String_Serialize(StringSlice& string, ByteStream& stream)
+Serialize(StringSlice& string, ByteStream& stream)
 {
+	c8* data = (c8*) &stream.bytes[stream.cursor];
+	stream.cursor += List_SizeOf(string);
+
 	switch (stream.mode)
 	{
 		default: Assert(false); break;
 
 		case ByteStreamMode::Size:
-			stream.cursor += List_SizeOf(string);
 			break;
 
 		case ByteStreamMode::Read:
-			string.data = (c8*) &stream.bytes[stream.cursor];
-			stream.cursor += List_SizeOf(string);
+			string.data = data;
 			break;
 
 		case ByteStreamMode::Write:
 			Assert(string.stride == 1);
-			c8* dst = (c8*) &stream.bytes[stream.cursor];
-			memcpy(dst, string.data, string.length);
-			stream.cursor += List_SizeOf(string);
+			memcpy(data, string.data, string.length);
+			string.data = nullptr;
 			break;
 	}
 }
 
 void
-Plugins_Serialize(Message::Plugins& plugins, ByteStream& stream)
+Serialize(Message::Plugins& plugins, ByteStream& stream)
 {
-	//Primitive_Serialize(plugins.header, stream);
-	Slice_Serialize(plugins.plugins, stream, PluginInfo_Serialize);
+	Serialize(plugins.header, stream);
+	Serialize(plugins.plugins, stream);
 }
 
 void
-Connect_Serialize(Message::Connect& connect, ByteStream& stream)
+Serialize(Message::Connect& connect, ByteStream& stream)
 {
-	UNUSED(connect);
-	UNUSED(stream);
-	//Primitive_Serialize(connect.header, stream);
-	//Primitive_Serialize(connect.version, stream);
+	Serialize(connect.header, stream);
+	Serialize(connect.version, stream);
 }
 
 void
-PluginInfo_Serialize(PluginInfo& pluginInfo, ByteStream& stream)
+Serialize(PluginInfo& pluginInfo, ByteStream& stream)
 {
-	String_Serialize(pluginInfo.name, stream);
-	String_Serialize(pluginInfo.author, stream);
-	//Primitive_Serialize(pluginInfo.version, stream);
+	Serialize(pluginInfo.name, stream);
+	Serialize(pluginInfo.author, stream);
+	Serialize(pluginInfo.version, stream);
 }
 
 // TODO: Why do we get a duplicate set of messages when closing the GUI?
 // TODO: Ensure pipe reconnects when closing and opening the GUI
 // TODO: Ensure pipe reconnects when closing and opening the sim
-// TODO: Code gen the actual serialize functions
+// TODO: Code gen the actual Serialize functions
 // TODO: Refactor the success case out of switch statements
