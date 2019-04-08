@@ -1,5 +1,4 @@
 GUI Cleanup
-	Reverse Serialize parameter order
 	gui_protocol should be an hpp
 	Nasty bug where connections don't happen if the sim opens first
 	Fix warnings

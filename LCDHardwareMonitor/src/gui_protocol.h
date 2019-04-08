@@ -65,34 +65,34 @@ struct ByteStream
 };
 
 // NOTE: There's one small gotcha with this serialization approach. We use
-// Serialize(T&, ByteStream&) to support a pattern where you simply call Serialize for every member
+// Serialize(ByteStream&, T&) to support a pattern where you simply call Serialize for every member
 // of your type and it will serialize properly as long as overloads exist for types that aren't
 // blittable (e.g. contain pointers). Unfortunately, this function signature will match anything
 // so if a necessary overload is missing we'll serialize the data anyway and it will fail somewhere
 // on the receivers side when they try to dereference a pointer that came from the sender.
 
 template<typename T>
-void Serialize(T*&&, ByteStream&);
+void Serialize(ByteStream&, T*&&);
 
 template<typename T>
-void Serialize(T*&, ByteStream&);
+void Serialize(ByteStream&, T*&&);
 
 template<typename T>
-void Serialize(T&, ByteStream&);
+void Serialize(ByteStream&, T&);
 
 template<typename T>
-void Serialize(List<T>&, ByteStream&);
+void Serialize(ByteStream&, List<T>&);
 
 template<typename T>
-void Serialize(Slice<T>&, ByteStream&);
+void Serialize(ByteStream&, Slice<T>&);
 
-void Serialize(StringSlice&, ByteStream&);
+void Serialize(ByteStream&, StringSlice&);
 
-void Serialize(Message::Plugins&, ByteStream&);
-void Serialize(Message::Connect&, ByteStream&);
-void Serialize(Message::Sensors&, ByteStream&);
-void Serialize(PluginInfo&, ByteStream&);
-void Serialize(Sensor&, ByteStream&);
+void Serialize(ByteStream&, Message::Plugins&);
+void Serialize(ByteStream&, Message::Connect&);
+void Serialize(ByteStream&, Message::Sensors&);
+void Serialize(ByteStream&, PluginInfo&);
+void Serialize(ByteStream&, Sensor&);
 
 void
 IncrementMessage(u32* currentMessageId)
@@ -120,7 +120,7 @@ SendMessage(Pipe* pipe, T& message, u32* currentMessageId)
 	defer { List_Free(stream.bytes); };
 	{
 		stream.mode = ByteStreamMode::Size;
-		Serialize(&message, stream);
+		Serialize(stream, &message);
 
 		b32 success = List_Reserve(stream.bytes, stream.cursor);
 		LOG_IF(!success, return false,
@@ -132,7 +132,7 @@ SendMessage(Pipe* pipe, T& message, u32* currentMessageId)
 
 		stream.mode   = ByteStreamMode::Write;
 		stream.cursor = 0;
-		Serialize(&message, stream);
+		Serialize(stream, &message);
 
 		Assert(stream.cursor == stream.bytes.length);
 	}
@@ -205,21 +205,21 @@ ReceiveMessage(Pipe* pipe, Bytes& bytes, u32* currentMessageId)
 		case Connect::Id:
 		{
 			Connect* connect = (Connect*) &bytes[0];
-			Serialize(connect, stream);
+			Serialize(stream, connect);
 			break;
 		}
 
 		case Plugins::Id:
 		{
 			Plugins* plugins = (Plugins*) &bytes[0];
-			Serialize(plugins, stream);
+			Serialize(stream, plugins);
 			break;
 		}
 
 		case Sensors::Id:
 		{
 			Sensors* sensors = (Sensors*) &bytes[0];
-			Serialize(sensors, stream);
+			Serialize(stream, sensors);
 			break;
 		}
 	}
@@ -230,14 +230,14 @@ ReceiveMessage(Pipe* pipe, Bytes& bytes, u32* currentMessageId)
 
 // TODO: This is a bit lame
 template<typename T>
-void Serialize(T*&& rpointer, ByteStream& stream)
+void Serialize(ByteStream& stream, T*&& rpointer)
 {
 	T* pointer = rpointer;
-	Serialize(pointer, stream);
+	Serialize(stream, pointer);
 }
 
 template<typename T>
-void Serialize(T*& pointer, ByteStream& stream)
+void Serialize(ByteStream& stream, T*& pointer)
 {
 	switch (stream.mode)
 	{
@@ -265,12 +265,12 @@ void Serialize(T*& pointer, ByteStream& stream)
 	}
 
 	stream.cursor += sizeof(T);
-	Serialize(*pointer, stream);
+	Serialize(stream, *pointer);
 }
 
 template<typename T>
 void
-Serialize(T& value, ByteStream& stream)
+Serialize(ByteStream& stream, T& value)
 {
 	// No-op
 	UNUSED(value);
@@ -278,7 +278,7 @@ Serialize(T& value, ByteStream& stream)
 }
 
 template<typename T>
-void Serialize(List<T>& list, ByteStream& stream)
+void Serialize(ByteStream& stream, List<T>& list)
 {
 	T* data = (T*) &stream.bytes[stream.cursor];
 	stream.cursor += List_SizeOf(list);
@@ -289,20 +289,20 @@ void Serialize(List<T>& list, ByteStream& stream)
 
 		case ByteStreamMode::Size:
 			for (u32 i = 0; i < list.length; i++)
-				Serialize(list[i], stream);
+				Serialize(stream, list[i]);
 			break;
 
 		case ByteStreamMode::Read:
 			list.data = data;
 			for (u32 i = 0; i < list.length; i++)
-				Serialize(list[i], stream);
+				Serialize(stream, list[i]);
 			break;
 
 		case ByteStreamMode::Write:
 		{
 			memcpy(data, list.data, List_SizeOf(list));
 			for (u32 i = 0; i < list.length; i++)
-				Serialize(list[i], stream);
+				Serialize(stream, list[i]);
 
 			list.capacity = list.length;
 			list.data     = nullptr;
@@ -313,7 +313,7 @@ void Serialize(List<T>& list, ByteStream& stream)
 
 template<typename T>
 void
-Serialize(Slice<T>& slice, ByteStream& stream)
+Serialize(ByteStream& stream, Slice<T>& slice)
 {
 	T* data = (T*) &stream.bytes[stream.cursor];
 	stream.cursor += List_SizeOf(slice);
@@ -324,13 +324,13 @@ Serialize(Slice<T>& slice, ByteStream& stream)
 
 		case ByteStreamMode::Size:
 			for (u32 i = 0; i < slice.length; i++)
-				Serialize(slice[i], stream);
+				Serialize(stream, slice[i]);
 			break;
 
 		case ByteStreamMode::Read:
 			slice.data = data;
 			for (u32 i = 0; i < slice.length; i++)
-				Serialize(slice[i], stream);
+				Serialize(stream, slice[i]);
 			break;
 
 		case ByteStreamMode::Write:
@@ -342,7 +342,7 @@ Serialize(Slice<T>& slice, ByteStream& stream)
 			slice.stride = sizeof(T);
 
 			for (u32 i = 0; i < slice.length; i++)
-				Serialize(slice[i], stream);
+				Serialize(stream, slice[i]);
 
 			// DEBUG: Easier to inspect
 			//slice.data   = nullptr;
@@ -352,7 +352,7 @@ Serialize(Slice<T>& slice, ByteStream& stream)
 }
 
 void
-Serialize(StringSlice& string, ByteStream& stream)
+Serialize(ByteStream& stream, StringSlice& string)
 {
 	c8* data = (c8*) &stream.bytes[stream.cursor];
 	stream.cursor += List_SizeOf(string);
@@ -377,47 +377,47 @@ Serialize(StringSlice& string, ByteStream& stream)
 }
 
 void
-Serialize(Message::Connect& connect, ByteStream& stream)
+Serialize(ByteStream& stream, Message::Connect& connect)
 {
-	Serialize(connect.header, stream);
-	Serialize(connect.version, stream);
+	Serialize(stream, connect.header);
+	Serialize(stream, connect.version);
 }
 
 void
-Serialize(Message::Plugins& plugins, ByteStream& stream)
+Serialize(ByteStream& stream, Message::Plugins& plugins)
 {
-	Serialize(plugins.header, stream);
-	Serialize(plugins.sensorPlugins, stream);
-	Serialize(plugins.sensorPluginRefs, stream);
-	Serialize(plugins.widgetPlugins, stream);
-	Serialize(plugins.widgetPluginRefs, stream);
+	Serialize(stream, plugins.header);
+	Serialize(stream, plugins.sensorPlugins);
+	Serialize(stream, plugins.sensorPluginRefs);
+	Serialize(stream, plugins.widgetPlugins);
+	Serialize(stream, plugins.widgetPluginRefs);
 }
 
 void
-Serialize(PluginInfo& pluginInfo, ByteStream& stream)
+Serialize(ByteStream& stream, PluginInfo& pluginInfo)
 {
-	Serialize(pluginInfo.name, stream);
-	Serialize(pluginInfo.author, stream);
-	Serialize(pluginInfo.version, stream);
+	Serialize(stream, pluginInfo.name);
+	Serialize(stream, pluginInfo.author);
+	Serialize(stream, pluginInfo.version);
 }
 
 void
-Serialize(Message::Sensors& sensors, ByteStream& stream)
+Serialize(ByteStream& stream, Message::Sensors& sensors)
 {
-	Serialize(sensors.header, stream);
-	Serialize(sensors.sensorPluginRefs, stream);
-	Serialize(sensors.sensors, stream);
+	Serialize(stream, sensors.header);
+	Serialize(stream, sensors.sensorPluginRefs);
+	Serialize(stream, sensors.sensors);
 }
 
 void
-Serialize(Sensor& sensor, ByteStream& stream)
+Serialize(ByteStream& stream, Sensor& sensor)
 {
-	Serialize(sensor.name, stream);
-	Serialize(sensor.identifier, stream);
-	Serialize(sensor.string, stream);
-	Serialize(sensor.value, stream);
-	Serialize(sensor.minValue, stream);
-	Serialize(sensor.maxValue, stream);
+	Serialize(stream, sensor.name);
+	Serialize(stream, sensor.identifier);
+	Serialize(stream, sensor.string);
+	Serialize(stream, sensor.value);
+	Serialize(stream, sensor.minValue);
+	Serialize(stream, sensor.maxValue);
 }
 
 // TODO: Why do we get a duplicate set of messages when closing the GUI?
