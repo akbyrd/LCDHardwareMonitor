@@ -75,7 +75,7 @@ template<typename T>
 void Serialize(ByteStream&, T*&&);
 
 template<typename T>
-void Serialize(ByteStream&, T*&&);
+void Serialize(ByteStream&, T*&);
 
 template<typename T>
 void Serialize(ByteStream&, T&);
@@ -230,14 +230,16 @@ ReceiveMessage(Pipe* pipe, Bytes& bytes, u32* currentMessageId)
 
 // TODO: This is a bit lame
 template<typename T>
-void Serialize(ByteStream& stream, T*&& rpointer)
+void
+Serialize(ByteStream& stream, T*&& rpointer)
 {
 	T* pointer = rpointer;
 	Serialize(stream, pointer);
 }
 
 template<typename T>
-void Serialize(ByteStream& stream, T*& pointer)
+void
+Serialize(ByteStream& stream, T*& pointer)
 {
 	switch (stream.mode)
 	{
@@ -278,7 +280,8 @@ Serialize(ByteStream& stream, T& value)
 }
 
 template<typename T>
-void Serialize(ByteStream& stream, List<T>& list)
+void
+Serialize(ByteStream& stream, List<T>& list)
 {
 	T* data = (T*) &stream.bytes[stream.cursor];
 	stream.cursor += List_SizeOf(list);
