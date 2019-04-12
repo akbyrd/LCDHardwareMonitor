@@ -84,9 +84,8 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 	LOG_IF(!success, return -1, Severity::Fatal, "Failed to initialize the renderer");
 	DEFER_TEARDOWN { Renderer_Teardown(&rendererState); };
 
-	success = Renderer_CreateSharedD3D9RenderTexture(&rendererState);
+	success = Renderer_CreateRenderTextureSharedHandle(&rendererState);
 	LOG_IF(!success, return -1, Severity::Fatal, "Failed to create a shared render texture");
-	DEFER_TEARDOWN { Renderer_DestroySharedD3D9RenderTarget(&rendererState); };
 
 
 	// Simulation
@@ -104,6 +103,7 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 	// Debug
 	PreviewWindow_Initialize(&previewState, &simulationState, hInstance, nullptr);
 	auto previewGuard = guard { PreviewWindow_Teardown(&previewState); };
+	//previewGuard.dismiss = true;
 	success = RegisterHotKey(nullptr, togglePreviewWindowID, MOD_NOREPEAT, VK_F1);
 	LOG_LAST_ERROR_IF(!success, IGNORE, Severity::Warning, "Failed to register hotkeys");
 

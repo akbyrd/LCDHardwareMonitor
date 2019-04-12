@@ -21,6 +21,9 @@ Debugging
 	DebugDataBindingConverter : IValueConverter { Debug.Break }
 	https://spin.atomicobject.com/2013/12/11/wpf-data-binding-debug/
 
+DirectX Stuff
+	http://jmorrill.hjtcentral.com/Home/tabid/428/EntryId/438/How-to-get-access-to-WPF-s-internal-Direct3D-guts.aspx
+
 Questions / To Do
 	Read the Data Binding Overview
 	What is a DependencyProperty?

@@ -22,11 +22,17 @@
 #pragma warning(pop)
 
 #include "platform_win32.hpp"
+#include "renderer_d3d9.hpp"
 
 struct State
 {
-	Pipe pipe;
-	u32  activeMessageId;
+	Pipe                pipe;
+	u32                 activeMessageId;
+
+	IDirect3D9Ex*       d3d9;
+	IDirect3DDevice9Ex* d3d9Device;
+	IDirect3DTexture9*  d3d9RenderTexture;
+	IDirect3DSurface9*  d3d9RenderSurface0;
 };
 static State s = {};
 
@@ -45,8 +51,8 @@ ToSystemString(StringSlice cstring)
 
 public value struct GUIInterop abstract sealed
 {
-	static b32
-	Initialize()
+	static bool
+	Initialize(System::IntPtr hwnd)
 	{
 		using namespace Message;
 
@@ -54,11 +60,14 @@ public value struct GUIInterop abstract sealed
 		LOG_IF(result == PipeResult::UnexpectedFailure, return false,
 			Severity::Error, "Failed to create pipe for GUI communication");
 
+		b32 success = D3D9_Initialize((HWND) (void*) hwnd, &s.d3d9, &s.d3d9Device);
+		if (!success) return false;
+
 		s.activeMessageId = Connect::Id;
 		return true;
 	}
 
-	static b32
+	static bool
 	Update(SimulationState^ simState)
 	{
 		using namespace Message;
@@ -83,6 +92,17 @@ public value struct GUIInterop abstract sealed
 					{
 						Connect* connect = (Connect*) bytes.data;
 						simState->Version = connect->version;
+
+						b32 success = D3D9_CreateSharedSurface(
+							s.d3d9Device,
+							&s.d3d9RenderTexture,
+							&s.d3d9RenderSurface0,
+							(HANDLE) connect->renderSurface,
+							connect->renderSize
+						);
+						if (!success) return false;
+
+						simState->RenderSurface = (System::IntPtr) s.d3d9RenderSurface0;
 						break;
 					}
 
@@ -156,6 +176,13 @@ public value struct GUIInterop abstract sealed
 	static void
 	Teardown()
 	{
+		D3D9_Teardown(
+			s.d3d9,
+			s.d3d9Device,
+			s.d3d9RenderTexture,
+			s.d3d9RenderSurface0
+		);
+
 		// TODO: Is there anything sane we can do with failures?
 		Platform_DisconnectPipe(&s.pipe);
 

@@ -8,14 +8,13 @@ struct SimulationState
 	Pipe               guiPipe;
 	u32                guiActiveMessageId;
 
-	v2u    renderSize;
-	v3     cameraPos;
-	Matrix view;
-	Matrix proj;
-	// TODO: Remove this when simulation talks to the renderer directly
-	Matrix vp;
-	u64    startTime;
-	r32    currentTime;
+	v2u                renderSize;
+	v3                 cameraPos;
+	Matrix             view;
+	Matrix             proj;
+	Matrix             vp; // TODO: Remove this when simulation talks to the renderer directly
+	u64                startTime;
+	r32                currentTime;
 };
 
 struct PluginContext
@@ -781,7 +780,10 @@ Simulation_Update(SimulationState* s)
 			case Connect::Id:
 			{
 				Connect connect = {};
-				connect.version = LHMVersion;
+				connect.version       = LHMVersion;
+				connect.renderSurface = (size) Renderer_GetSharedRenderSurface(s->renderer);
+				connect.renderSize.x  = s->renderSize.x;
+				connect.renderSize.y  = s->renderSize.y;
 
 				b32 success = SendMessage(&s->guiPipe, connect, &s->guiActiveMessageId);
 				if (!success) return false;

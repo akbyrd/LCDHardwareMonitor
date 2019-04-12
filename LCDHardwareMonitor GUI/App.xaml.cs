@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Windows;
+using System.Windows.Interop;
 using System.Windows.Threading;
 
 namespace LCDHardwareMonitor
@@ -9,30 +11,49 @@ namespace LCDHardwareMonitor
         public SimulationState SimulationState { get; private set; } = new SimulationState();
 
         DispatcherTimer timer;
+        bool activated;
 
-        public App()
+        App()
         {
-            // TODO: Handle failure
-            GUIInterop.Initialize();
+            Activated += OnActivate;
+            Exit += OnExit;
+        }
+
+        void OnActivate(object sender, EventArgs e)
+        {
+            if (activated) return;
+            activated = true;
+
+            IntPtr hwnd = new WindowInteropHelper(MainWindow).EnsureHandle();
+            bool success = GUIInterop.Initialize(hwnd);
+            if (!success)
+            {
+                Debugger.Break();
+                Application.Current.Shutdown();
+            }
 
             // TODO: Is it possible to get the animation rate or max refresh rate for the interval?
             timer = new DispatcherTimer();
             timer.Interval = TimeSpan.FromSeconds(1.0 / 60.0);
-            timer.Tick += Tick;
+            timer.Tick += OnTick;
             timer.Start();
 
             // TODO: Launch the simulation if necessary
         }
 
-        ~App()
+        void OnExit(object sender, ExitEventArgs e)
         {
             GUIInterop.Teardown();
         }
 
-        public void Tick(object sender, EventArgs e)
+        void OnTick(object sender, EventArgs e)
         {
-            // TODO: Handle failure
-            GUIInterop.Update(SimulationState);
+            bool success = GUIInterop.Update(SimulationState);
+            if (!success)
+            {
+                Debugger.Break();
+                Application.Current.Shutdown();
+            }
         }
     }
 }

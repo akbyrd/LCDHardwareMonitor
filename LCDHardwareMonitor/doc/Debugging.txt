@@ -11,6 +11,16 @@ Visual Studio Graphics Debugging
 		VsgDbgBeginCapture();
 		VsgDbgUnInit();
 
+C++ and C#
+	Defaults:
+		C++ projects are have Project Properties > Debugging > Debugging Type set to Mixed
+		C# projects have Project Properties > Debug > Enable native code debugging set to false
+	I think Auto for C++ projects ends up resolving to Native.
+	You can step through to C# with Mixed and put breakpoints on either side, which is awesome.
+	If native code debugging is enabled for C# project then C# exceptions show up as native
+	exceptions. They're just an exception code and an address. You can't tell which type of
+	exception they are.
+
 
 // Matrix Math
 {

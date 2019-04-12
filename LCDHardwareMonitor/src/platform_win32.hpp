@@ -83,6 +83,7 @@ LogFormatMessage(u32 messageID, Severity severity, Location location, c8* messag
 	);
 	if (uResult == 0)
 	{
+		// TODO: Try to print the last error once
 		Platform_Print("FormatMessageA failed. Remaining message:\n\t");
 		Platform_Log(severity, location, message);
 		return;
@@ -297,7 +298,7 @@ struct PipeImpl
 	//OVERLAPPED read;
 };
 
-static inline b32
+inline b32
 IsValidHandle(HANDLE handle)
 {
 	// NOTE: Some Win32 functions return nullptr and some return INVALID_HANDLE_VALUE on failure.

@@ -100,13 +100,15 @@
       <AdditionalIncludeDirectories>$(ProjectDir)include;$(SolutionDir)LCDHardwareMonitor\src;$(SolutionDir)LCDHardwareMonitor API</AdditionalIncludeDirectories>
       <SDLCheck>true</SDLCheck>
       <AdditionalOptions>/std:c++14 %(AdditionalOptions)</AdditionalOptions>
+      <PreprocessorDefinitions>DEBUG;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
-    <Link>
-      <AdditionalDependencies />
-    </Link>
+    <Link />
     <PostBuildEvent>
       <Command>"..\build\Deploy.bat" "$(OutDir)" "GUI"</Command>
     </PostBuildEvent>
+    <Link>
+      <AdditionalDependencies />
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -115,13 +117,15 @@
       <AdditionalIncludeDirectories>$(ProjectDir)include;$(SolutionDir)LCDHardwareMonitor\src;$(SolutionDir)LCDHardwareMonitor API</AdditionalIncludeDirectories>
       <SDLCheck>true</SDLCheck>
       <AdditionalOptions>/std:c++14 %(AdditionalOptions)</AdditionalOptions>
+      <PreprocessorDefinitions>DEBUG;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
-    <Link>
-      <AdditionalDependencies />
-    </Link>
+    <Link />
     <PostBuildEvent>
       <Command>"..\build\Deploy.bat" "$(OutDir)" "GUI"</Command>
     </PostBuildEvent>
+    <Link>
+      <AdditionalDependencies />
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -134,9 +138,9 @@
       <AdditionalOptions>/std:c++14 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies />
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <AdditionalDependencies />
     </Link>
     <PostBuildEvent>
       <Command>"..\build\Deploy.bat" "$(OutDir)" "GUI"</Command>
@@ -153,9 +157,9 @@
       <AdditionalOptions>/std:c++14 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies />
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <AdditionalDependencies />
     </Link>
     <PostBuildEvent>
       <Command>"..\build\Deploy.bat" "$(OutDir)" "GUI"</Command>

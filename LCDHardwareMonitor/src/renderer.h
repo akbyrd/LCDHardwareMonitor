@@ -49,3 +49,4 @@ Material              Renderer_CreateMaterial               (RendererState*, Mes
 ConstantBufferUpdate* Renderer_PushConstantBufferUpdate     (RendererState*);
 DrawCall*             Renderer_PushDrawCall                 (RendererState*);
 b32                   Renderer_Render                       (RendererState*);
+void*                 Renderer_GetSharedRenderSurface       (RendererState*);

@@ -17,7 +17,9 @@ namespace Message
 		static constexpr u32 Id = IdOf<Connect>();
 		Header header;
 
-		u32 version;
+		u32  version;
+		size renderSurface;
+		v2u  renderSize;
 	};
 
 	struct Plugins
@@ -112,6 +114,8 @@ template <typename T>
 b32
 SendMessage(Pipe* pipe, T& message, u32* currentMessageId)
 {
+	// TODO: We re-build the message buffer. Maybe we should try to connect first
+
 	Assert(T::Id == *currentMessageId);
 	using namespace Message;
 
@@ -145,6 +149,7 @@ SendMessage(Pipe* pipe, T& message, u32* currentMessageId)
 			default: Assert(false); break;
 
 			case PipeResult::Success:
+				IncrementMessage(currentMessageId);
 				break;
 
 			case PipeResult::TransientFailure:
@@ -156,7 +161,6 @@ SendMessage(Pipe* pipe, T& message, u32* currentMessageId)
 		}
 	}
 
-	IncrementMessage(currentMessageId);
 	return true;
 }
 
@@ -384,6 +388,8 @@ Serialize(ByteStream& stream, Message::Connect& connect)
 {
 	Serialize(stream, connect.header);
 	Serialize(stream, connect.version);
+	Serialize(stream, connect.renderSurface);
+	Serialize(stream, connect.renderSize);
 }
 
 void

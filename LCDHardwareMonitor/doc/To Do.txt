@@ -1,18 +1,16 @@
 GUI Cleanup
-	Nasty bug where connections don't happen if the sim opens first
 	Fix warnings
 
 	Implement state machine restarts
 	winmain cleanup
+	Consider defining DEBUG in source
 	Use namespaces or something so we don't need _CLR on type names
+	Maaaaybe it's worth merging gui_types back into gui_protocol to avoid the extra project
 
 
 Next steps
 	Shouldn't be allowed to fail once past init. update should just handle it
 	Decide on passing args by pointer or reference
-	Compile time printf replacement
-	Text rendering
-	Settings
 	Users probably need to be able to create custom UI for plugin settings
 	Ensure we're handling CloseHandle failures correctly
 	Implement update rate control
@@ -75,6 +73,7 @@ Back Burner
 	Re-use memory when formatting
 	Use an arena for logging
 	Figure out what happens when memory allocations fail
+	Compile time printf replacement
 
 
 

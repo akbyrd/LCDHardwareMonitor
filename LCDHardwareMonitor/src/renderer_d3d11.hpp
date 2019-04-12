@@ -4,7 +4,6 @@
 // TODO: Handle unloading assets (will require reference counting, I think)
 
 #pragma comment(lib, "D3D11.lib")
-#pragma comment(lib, "D3D9.lib")
 #pragma comment(lib, "DXGI.lib")
 #pragma comment(lib, "d3dcompiler.lib")
 
@@ -20,7 +19,6 @@
 	#include <dxgi1_3.h>
 #endif
 
-#include <d3d9.h>
 #include <d3d11.h>
 #include <d3dcompiler.h>
 #include "DirectXMath.h"
@@ -99,6 +97,7 @@ struct RendererState
 	ComPtr<ID3D11Texture2D>        d3dRenderTexture;
 	ComPtr<ID3D11RenderTargetView> d3dRenderTargetView;
 	ComPtr<ID3D11DepthStencilView> d3dDepthBufferView;
+	HANDLE                         d3dRenderTextureSharedHandle;
 
 	ComPtr<ID3D11RasterizerState>  d3dRasterizerStateSolid;
 	ComPtr<ID3D11RasterizerState>  d3dRasterizerStateWireframe;
@@ -106,23 +105,18 @@ struct RendererState
 	ComPtr<ID3D11Buffer>           d3dVertexBuffer;
 	ComPtr<ID3D11Buffer>           d3dIndexBuffer;
 
-	ComPtr<IDirect3D9Ex>           d3d9;
-	ComPtr<IDirect3DDevice9Ex>     d3d9Device;
-	ComPtr<IDirect3DTexture9>      d3d9RenderTexture;
-	ComPtr<IDirect3DSurface9>      d3d9RenderSurface0;
+	v2u                            renderSize;
+	DXGI_FORMAT                    renderFormat;
+	u32                            multisampleCount;
+	u32                            qualityLevelCount;
+	b32                            isWireframeEnabled;
 
-	v2u         renderSize;
-	DXGI_FORMAT renderFormat;
-	u32         multisampleCount;
-	u32         qualityLevelCount;
-	b32         isWireframeEnabled;
-
-	List<VertexShaderData> vertexShaders;
-	List<PixelShaderData>  pixelShaders;
-	List<MeshData>         meshes;
-	List<Vertex>           vertexBuffer;
-	List<u32>              indexBuffer;
-	List<RenderCommand>    commandList;
+	List<VertexShaderData>         vertexShaders;
+	List<PixelShaderData>          pixelShaders;
+	List<MeshData>                 meshes;
+	List<Vertex>                   vertexBuffer;
+	List<u32>                      indexBuffer;
+	List<RenderCommand>            commandList;
 };
 
 template<typename T>
@@ -865,7 +859,7 @@ Renderer_UpdateConstantBuffer(RendererState* s, ConstantBuffer* cBuf, void* data
 b32
 Renderer_Render(RendererState* s)
 {
-	s->d3dContext->ClearRenderTargetView(s->d3dRenderTargetView.Get(), DirectX::Colors::Black);
+	s->d3dContext->ClearRenderTargetView(s->d3dRenderTargetView.Get(), DirectX::Colors::Red);
 	s->d3dContext->ClearDepthStencilView(s->d3dDepthBufferView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
 
 	VertexShader lastVS = VertexShader::Null;
@@ -964,40 +958,15 @@ Renderer_Render(RendererState* s)
 	}
 	List_Clear(s->commandList);
 
-	// TODO: Why is this here again? I think it's for the WPF app
-	//s->d3dContext->Flush();
+	s->d3dContext->Flush();
 
 	return true;
 }
 
-static b32
-Renderer_CreateSharedD3D9RenderTexture(RendererState* s)
+b32
+Renderer_CreateRenderTextureSharedHandle(RendererState* s)
 {
 	HRESULT hr;
-
-	// Device
-	hr = Direct3DCreate9Ex(D3D_SDK_VERSION, &s->d3d9);
-	LOG_HRESULT_IF_FAILED(hr, return false,
-		Severity::Error, "Failed to initialize D3D9");
-
-	D3DPRESENT_PARAMETERS presentParams = {};
-	presentParams.Windowed             = true;
-	presentParams.SwapEffect           = D3DSWAPEFFECT_DISCARD;
-	presentParams.hDeviceWindow        = nullptr;
-	presentParams.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
-
-	hr = s->d3d9->CreateDeviceEx(
-		D3DADAPTER_DEFAULT,
-		D3DDEVTYPE_HAL,
-		GetDesktopWindow(), // TODO: Ensure this is ok
-		D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED | D3DCREATE_FPU_PRESERVE,
-		&presentParams,
-		nullptr,
-		&s->d3d9Device
-	);
-	LOG_HRESULT_IF_FAILED(hr, return false,
-		Severity::Error, "Failed to create D3D9 device");
-
 
 	// Shared surface
 	ComPtr<IDXGIResource> dxgiRenderTexture;
@@ -1005,39 +974,15 @@ Renderer_CreateSharedD3D9RenderTexture(RendererState* s)
 	LOG_HRESULT_IF_FAILED(hr, return false,
 		Severity::Error, "Failed to get DXGI render texture");
 
-	HANDLE renderTextureSharedHandle;
-	hr = dxgiRenderTexture->GetSharedHandle(&renderTextureSharedHandle);
+	hr = dxgiRenderTexture->GetSharedHandle(&s->d3dRenderTextureSharedHandle);
 	LOG_HRESULT_IF_FAILED(hr, return false,
 		Severity::Error, "Failed to get DXGI render texture handle");
-
-	Assert(s->renderFormat == DXGI_FORMAT_B8G8R8A8_UNORM);
-	hr = s->d3d9Device->CreateTexture(
-		s->renderSize.x,
-		s->renderSize.y,
-		1,
-		D3DUSAGE_RENDERTARGET,
-		D3DFMT_A8R8G8B8,
-		D3DPOOL_DEFAULT,
-		&s->d3d9RenderTexture,
-		&renderTextureSharedHandle
-	);
-	LOG_HRESULT_IF_FAILED(hr, return false,
-		Severity::Error, "Failed to create D3D9 render texture");
-
-	hr = s->d3d9RenderTexture->GetSurfaceLevel(0, &s->d3d9RenderSurface0);
-	LOG_HRESULT_IF_FAILED(hr, return false,
-		Severity::Error, "Failed to get D3D9 render surface");
-
-	//SetBackBuffer(D3DResourceType::IDirect3DSurface9, IntPtr(pSurface));
 
 	return true;
 }
 
-static void
-Renderer_DestroySharedD3D9RenderTarget(RendererState* s)
+void*
+Renderer_GetSharedRenderSurface(RendererState* s)
 {
-	s->d3d9              .Reset();
-	s->d3d9Device        .Reset();
-	s->d3d9RenderTexture .Reset();
-	s->d3d9RenderSurface0.Reset();
+	return s->d3dRenderTextureSharedHandle;
 }
