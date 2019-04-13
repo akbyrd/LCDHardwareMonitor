@@ -114,8 +114,6 @@ template <typename T>
 b32
 SendMessage(Pipe* pipe, T& message, u32* currentMessageId)
 {
-	// TODO: We re-build the message buffer. Maybe we should try to connect first
-
 	Assert(T::Id == *currentMessageId);
 	using namespace Message;
 
@@ -164,7 +162,7 @@ SendMessage(Pipe* pipe, T& message, u32* currentMessageId)
 	return true;
 }
 
-PipeResult
+b32
 ReceiveMessage(Pipe* pipe, Bytes& bytes, u32* currentMessageId)
 {
 	using namespace Message;
@@ -179,23 +177,26 @@ ReceiveMessage(Pipe* pipe, Bytes& bytes, u32* currentMessageId)
 
 		case PipeResult::TransientFailure:
 			// Ignore failures, retry next frame
-			return PipeResult::TransientFailure;
+			return true;
 
 		case PipeResult::UnexpectedFailure:
-			return PipeResult::UnexpectedFailure;
+			return false;
 	}
 
-	if (bytes.length == 0) return PipeResult::TransientFailure;
+	if (bytes.length == 0) return true;
 
-	LOG_IF(bytes.length < sizeof(Header), return PipeResult::TransientFailure,
+	LOG_IF(bytes.length < sizeof(Header), return true,
 		Severity::Warning, "Corrupted message received");
 
 	Header* header = (Header*) bytes.data;
 
-	LOG_IF(*currentMessageId != header->id, return PipeResult::TransientFailure,
-		Severity::Warning, "Unexpected message received");
+	if (currentMessageId)
+	{
+		LOG_IF(*currentMessageId != header->id, return true,
+			Severity::Warning, "Unexpected message received");
+	}
 
-	LOG_IF(bytes.length != header->size, return PipeResult::TransientFailure,
+	LOG_IF(bytes.length != header->size, return true,
 		Severity::Warning, "Incorrectly sized message received");
 
 	ByteStream stream = {};
@@ -228,8 +229,9 @@ ReceiveMessage(Pipe* pipe, Bytes& bytes, u32* currentMessageId)
 		}
 	}
 
-	IncrementMessage(currentMessageId);
-	return PipeResult::Success;
+	if (currentMessageId)
+		IncrementMessage(currentMessageId);
+	return true;
 }
 
 // TODO: This is a bit lame

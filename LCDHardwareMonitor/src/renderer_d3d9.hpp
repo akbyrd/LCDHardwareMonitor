@@ -49,14 +49,10 @@ D3D9_Initialize(
 void
 D3D9_Teardown(
 	IDirect3D9Ex*       d3d9,
-	IDirect3DDevice9Ex* d3d9Device,
-	IDirect3DTexture9*  d3d9RenderTexture,
-	IDirect3DSurface9*  d3d9RenderSurface0)
+	IDirect3DDevice9Ex* d3d9Device)
 {
-	d3d9              ->Release();
-	d3d9Device        ->Release();
-	d3d9RenderTexture ->Release();
-	d3d9RenderSurface0->Release();
+	d3d9      ->Release();
+	d3d9Device->Release();
 }
 
 b32
@@ -87,4 +83,22 @@ D3D9_CreateSharedSurface(
 		Severity::Error, "Failed to get D3D9 render surface");
 
 	return true;
+}
+
+void
+D3D9_DestroySharedSurface(
+	IDirect3DTexture9** d3d9RenderTexture,
+	IDirect3DSurface9** d3d9RenderSurface0)
+{
+	if (*d3d9RenderTexture)
+	{
+		(*d3d9RenderTexture)->Release();
+		d3d9RenderTexture = nullptr;
+	}
+
+	if (*d3d9RenderSurface0)
+	{
+		(*d3d9RenderSurface0)->Release();
+		d3d9RenderSurface0 = nullptr;
+	}
 }

@@ -24,7 +24,7 @@ struct State
 	IDirect3DTexture9*  d3d9RenderTexture;
 	IDirect3DSurface9*  d3d9RenderSurface0;
 };
-static State s = {};
+static State state = {};
 
 #pragma managed
 
@@ -44,6 +44,9 @@ public value struct GUIInterop abstract sealed
 	static bool
 	Initialize(System::IntPtr hwnd)
 	{
+		// DEBUG: Needed for the Watch window
+		State& s = state;
+
 		using namespace Message;
 
 		PipeResult result = Platform_CreatePipeClient("LCDHardwareMonitor GUI Pipe", &s.pipe);
@@ -60,17 +63,20 @@ public value struct GUIInterop abstract sealed
 	static bool
 	Update(SimulationState^ simState)
 	{
+		// DEBUG: Needed for the Watch window
+		State& s = state;
+
 		using namespace Message;
 
-		Bytes bytes = {};
-		defer { List_Free(bytes); };
-
-		PipeResult result = ReceiveMessage(&s.pipe, bytes, &s.activeMessageId);
-		switch (result)
+		// Receive messages
 		{
-			default: Assert(false); break;
+			b32 success;
 
-			case PipeResult::Success:
+			Bytes bytes = {};
+			defer { List_Free(bytes); };
+
+			success = ReceiveMessage(&s.pipe, bytes, &s.activeMessageId);
+			if (success && bytes.length != 0)
 			{
 				Header* header = (Header*) bytes.data;
 				switch (header->id)
@@ -83,7 +89,7 @@ public value struct GUIInterop abstract sealed
 						Connect* connect = (Connect*) bytes.data;
 						simState->Version = connect->version;
 
-						b32 success = D3D9_CreateSharedSurface(
+						success = D3D9_CreateSharedSurface(
 							s.d3d9Device,
 							&s.d3d9RenderTexture,
 							&s.d3d9RenderSurface0,
@@ -147,17 +153,22 @@ public value struct GUIInterop abstract sealed
 						break;
 					}
 				}
-				break;
 			}
+		}
 
-			case PipeResult::TransientFailure:
-				// Ignore failures, retry next frame
-				break;
+		// Reset on disconnects
+		{
+			if (s.pipe.state == PipeState::Disconnecting
+			 || s.pipe.state == PipeState::Disconnected)
+			{
+				if (simState->RenderSurface != System::IntPtr::Zero)
+				{
+					D3D9_DestroySharedSurface(&s.d3d9RenderTexture, &s.d3d9RenderSurface0);
+					simState->RenderSurface = System::IntPtr::Zero;
 
-			case PipeResult::UnexpectedFailure:
-				// TODO: Reset pipe connection?
-				LOG(Severity::Error, "Failed to receive GUI message");
-				return false;
+					s.activeMessageId = Connect::Id;
+				}
+			}
 		}
 
 		return true;
@@ -166,12 +177,11 @@ public value struct GUIInterop abstract sealed
 	static void
 	Teardown()
 	{
-		D3D9_Teardown(
-			s.d3d9,
-			s.d3d9Device,
-			s.d3d9RenderTexture,
-			s.d3d9RenderSurface0
-		);
+		// DEBUG: Needed for the Watch window
+		State& s = state;
+
+		D3D9_DestroySharedSurface(&s.d3d9RenderTexture, &s.d3d9RenderSurface0);
+		D3D9_Teardown(s.d3d9, s.d3d9Device);
 
 		// TODO: Is there anything sane we can do with failures?
 		Platform_DisconnectPipe(&s.pipe);

@@ -473,8 +473,13 @@ HandleGUIResult(SimulationState* s, b32 success)
 		else
 		{
 			LOG(Severity::Error, "Too many GUI operations have failed. Giving up.");
+
 			s->guiActiveMessageId = Null::Id;
 			s->guiFailure = true;
+
+			PipeResult result = Platform_DisconnectPipe(&s->guiPipe);
+			LOG_IF(result != PipeResult::Success, IGNORE,
+				Severity::Error, "Failed to disconnect GUI pipe");
 		}
 	}
 }
@@ -796,12 +801,15 @@ Simulation_Update(SimulationState* s)
 		}
 	}
 
+	// TODO: We re-build the message buffer every update when trying there are messages to send. This
+	// will end up happening indefinitely when there's no gui to connect to (PipeState::Connecting)
+
 	// GUI Communication
+	if (!s->guiFailure)
 	{
 		using namespace Message;
 
 		// Send messages
-		b32 success = true;
 		switch (s->guiActiveMessageId)
 		{
 			default: Assert(false); break;
@@ -815,7 +823,8 @@ Simulation_Update(SimulationState* s)
 				connect.renderSize.x  = s->renderSize.x;
 				connect.renderSize.y  = s->renderSize.y;
 
-				success = SendMessage(&s->guiPipe, connect, &s->guiActiveMessageId);
+				b32 success = SendMessage(&s->guiPipe, connect, &s->guiActiveMessageId);
+				HandleGUIResult(s, success);
 				break;
 			}
 
@@ -829,7 +838,8 @@ Simulation_Update(SimulationState* s)
 				plugins.widgetPluginRefs = List_MemberSlice(s->widgetPlugins, &WidgetPlugin::ref);
 				plugins.widgetPlugins    = List_MemberSlice(s->widgetPlugins, &WidgetPlugin::info);
 
-				success = SendMessage(&s->guiPipe, plugins, &s->guiActiveMessageId);
+				b32 success = SendMessage(&s->guiPipe, plugins, &s->guiActiveMessageId);
+				HandleGUIResult(s, success);
 				break;
 			}
 
@@ -839,18 +849,33 @@ Simulation_Update(SimulationState* s)
 				sensors.sensorPluginRefs = List_MemberSlice(s->sensorPlugins, &SensorPlugin::ref);
 				sensors.sensors          = List_MemberSlice(s->sensorPlugins, &SensorPlugin::sensors);
 
-				success = SendMessage(&s->guiPipe, sensors, &s->guiActiveMessageId);
+				b32 success = SendMessage(&s->guiPipe, sensors, &s->guiActiveMessageId);
+				HandleGUIResult(s, success);
 				break;
 			}
 		}
-		if (s->guiActiveMessageId != Null::Id)
-			HandleGUIResult(s, success);
 
-		// Disconnect on errors
-		if (s->guiFailure && s->guiPipe.state != PipeState::Disconnected)
+		// Receive messages
 		{
-			PipeResult result = Platform_DisconnectPipe(&s->guiPipe);
-			HandleGUIResult(s, result != PipeResult::UnexpectedFailure);
+			// NOTE: This read also ensures we'll detect pipe disconnects. Otherwise when we have no
+			// messages to send we'll chug along thinking the pipe is still connected indefinintely
+			// and never allow reconnections.
+
+			Bytes bytes = {};
+			defer { List_Free(bytes); };
+
+			b32 success = ReceiveMessage(&s->guiPipe, bytes, nullptr);
+			HandleGUIResult(s, success);
+		}
+
+		// Reset on disconnects
+		{
+			if (s->guiPipe.state == PipeState::Disconnecting
+			 || s->guiPipe.state == PipeState::Disconnected)
+			 {
+				 if (s->guiActiveMessageId != Connect::Id)
+					s->guiActiveMessageId = Connect::Id;
+			 }
 		}
 	}
 

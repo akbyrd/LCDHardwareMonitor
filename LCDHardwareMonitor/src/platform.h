@@ -64,10 +64,7 @@ PipeResult Platform_CreatePipeClient  (StringSlice name, Pipe*);
 void       Platform_DestroyPipe       (Pipe*);
 PipeResult Platform_DisconnectPipe    (Pipe*);
 PipeResult Platform_ConnectPipe       (Pipe*);
-
-template<typename T>
-PipeResult Platform_WritePipe         (Pipe*, T& data);
-PipeResult Platform_WritePipe         (Pipe*, ByteSlice bytes);
+PipeResult Platform_WritePipe         (Pipe*, Bytes bytes);
 PipeResult Platform_ReadPipe          (Pipe*, Bytes& bytes);
 
 #define LOCATION { __FILE__, __LINE__, __FUNCTION__ }

@@ -320,7 +320,10 @@ IsValidHandle(HANDLE handle)
 PipeResult
 Platform_DisconnectPipeServer(Pipe* pipe)
 {
-	switch (pipe->state)
+	PipeState state = pipe->state;
+	pipe->state = PipeState::Disconnecting;
+
+	switch (state)
 	{
 		default: Assert(false); break;
 
@@ -355,7 +358,10 @@ Platform_DisconnectPipeServer(Pipe* pipe)
 PipeResult
 Platform_DisconnectPipeClient(Pipe* pipe)
 {
-	switch (pipe->state)
+	PipeState state = pipe->state;
+	pipe->state = PipeState::Disconnecting;
+
+	switch (state)
 	{
 		default: Assert(false); break;
 
@@ -461,7 +467,6 @@ Platform_ConnectPipeServer(Pipe* pipe)
 					// Pipe is being closed
 					case ERROR_NO_DATA:
 					{
-						pipe->state = PipeState::Disconnecting;
 						PipeResult result = Platform_DisconnectPipe(pipe);
 						if (result != PipeResult::Success) return result;
 						return PipeResult::TransientFailure;
@@ -705,20 +710,7 @@ Platform_DestroyPipe(Pipe* pipe)
 	*pipe = {};
 }
 
-template<typename T>
-PipeResult
-Platform_WritePipe(Pipe* pipe, T& data)
-{
-	// TODO: Need to do something about the Bytes vs ByteSlice issues
-	//ByteSlice bytes = ByteSlice_FromObject(&data);
-	//return Platform_WritePipe(pipe, bytes);
-	Bytes bytes = {};
-	bytes.length   = sizeof(T);
-	bytes.capacity = sizeof(T);
-	bytes.data     = (u8*) &data;
-	return Platform_WritePipe(pipe, bytes);
-}
-
+// TODO: This should be able to take a slice
 PipeResult
 Platform_WritePipe(Pipe* pipe, Bytes bytes)
 {
@@ -748,7 +740,6 @@ Platform_WritePipe(Pipe* pipe, Bytes bytes)
 		{
 			// The pipe is being closed
 			case ERROR_NO_DATA:
-				pipe->state = PipeState::Disconnecting;
 				result = Platform_DisconnectPipe(pipe);
 				if (result != PipeResult::Success) return result;
 				return PipeResult::TransientFailure;
@@ -783,7 +774,7 @@ Platform_ReadPipe(Pipe* pipe, Bytes& bytes)
 	result = Platform_ConnectPipe(pipe);
 	if (result != PipeResult::Success) return result;
 
-	u32 available;
+	u32 available = 0;
 	success = PeekNamedPipe(
 		pipe->impl->handle,
 		nullptr,
@@ -803,7 +794,6 @@ Platform_ReadPipe(Pipe* pipe, Bytes& bytes)
 			case ERROR_PIPE_NOT_CONNECTED:
 			case ERROR_NO_DATA:
 				Assert(available == 0);
-				pipe->state = PipeState::Disconnecting;
 				result = Platform_DisconnectPipe(pipe);
 				if (result != PipeResult::Success) return result;
 				return PipeResult::Success;

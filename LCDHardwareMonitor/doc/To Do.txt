@@ -1,5 +1,5 @@
 GUI Cleanup
-	Implement state machine restarts
+	Don't prepare messages to send when in the connecting state
 	Consider defining DEBUG in source
 	Use namespaces or something so we don't need _CLR on type names
 	Maaaaybe it's worth merging gui_types back into gui_protocol to avoid the extra project
@@ -10,6 +10,7 @@ Next steps
 	Users probably need to be able to create custom UI for plugin settings
 	Ensure we're handling CloseHandle failures correctly
 	Implement update rate control
+		* How should this interact with the rate at which we send gui messages?
 		1) SetTimer: Must set system timer frequency
 		2) Multimedia timers: Accurate. Appears to set system timer frequency
 		3) Waitable timers
