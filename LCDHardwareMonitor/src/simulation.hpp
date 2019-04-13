@@ -5,8 +5,6 @@ struct SimulationState
 
 	List<SensorPlugin> sensorPlugins;
 	List<WidgetPlugin> widgetPlugins;
-	Pipe               guiPipe;
-	u32                guiActiveMessageId;
 
 	v2u                renderSize;
 	v3                 cameraPos;
@@ -15,6 +13,11 @@ struct SimulationState
 	Matrix             vp; // TODO: Remove this when simulation talks to the renderer directly
 	u64                startTime;
 	r32                currentTime;
+
+	Pipe               guiPipe;
+	u32                guiActiveMessageId;
+	u32                guiFailureCount;
+	b32                guiFailure;
 };
 
 struct PluginContext
@@ -451,6 +454,31 @@ UnloadWidgetPlugin(SimulationState* s, WidgetPlugin* widgetPlugin)
 	return true;
 }
 
+static void
+HandleGUIResult(SimulationState* s, b32 success)
+{
+	using namespace Message;
+
+	if (success)
+	{
+		s->guiFailureCount = 0;
+	}
+	else
+	{
+		s->guiFailureCount++;
+		if (s->guiFailureCount < 3)
+		{
+			LOG(Severity::Error, "A GUI operation failed. Retrying...");
+		}
+		else
+		{
+			LOG(Severity::Error, "Too many GUI operations have failed. Giving up.");
+			s->guiActiveMessageId = Null::Id;
+			s->guiFailure = true;
+		}
+	}
+}
+
 b32
 Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, RendererState* renderer)
 {
@@ -685,7 +713,7 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 	return true;
 }
 
-b32
+void
 Simulation_Update(SimulationState* s)
 {
 	s->currentTime = Platform_GetElapsedSeconds(s->startTime);
@@ -772,6 +800,8 @@ Simulation_Update(SimulationState* s)
 	{
 		using namespace Message;
 
+		// Send messages
+		b32 success = true;
 		switch (s->guiActiveMessageId)
 		{
 			default: Assert(false); break;
@@ -785,8 +815,7 @@ Simulation_Update(SimulationState* s)
 				connect.renderSize.x  = s->renderSize.x;
 				connect.renderSize.y  = s->renderSize.y;
 
-				b32 success = SendMessage(&s->guiPipe, connect, &s->guiActiveMessageId);
-				if (!success) return false;
+				success = SendMessage(&s->guiPipe, connect, &s->guiActiveMessageId);
 				break;
 			}
 
@@ -800,8 +829,7 @@ Simulation_Update(SimulationState* s)
 				plugins.widgetPluginRefs = List_MemberSlice(s->widgetPlugins, &WidgetPlugin::ref);
 				plugins.widgetPlugins    = List_MemberSlice(s->widgetPlugins, &WidgetPlugin::info);
 
-				b32 success = SendMessage(&s->guiPipe, plugins, &s->guiActiveMessageId);
-				if (!success) return false;
+				success = SendMessage(&s->guiPipe, plugins, &s->guiActiveMessageId);
 				break;
 			}
 
@@ -811,10 +839,18 @@ Simulation_Update(SimulationState* s)
 				sensors.sensorPluginRefs = List_MemberSlice(s->sensorPlugins, &SensorPlugin::ref);
 				sensors.sensors          = List_MemberSlice(s->sensorPlugins, &SensorPlugin::sensors);
 
-				b32 success = SendMessage(&s->guiPipe, sensors, &s->guiActiveMessageId);
-				if (!success) return false;
+				success = SendMessage(&s->guiPipe, sensors, &s->guiActiveMessageId);
 				break;
 			}
+		}
+		if (s->guiActiveMessageId != Null::Id)
+			HandleGUIResult(s, success);
+
+		// Disconnect on errors
+		if (s->guiFailure && s->guiPipe.state != PipeState::Disconnected)
+		{
+			PipeResult result = Platform_DisconnectPipe(&s->guiPipe);
+			HandleGUIResult(s, result != PipeResult::UnexpectedFailure);
 		}
 	}
 
@@ -837,8 +873,6 @@ Simulation_Update(SimulationState* s)
 		PushConstantBufferUpdate(&context2, material, ShaderStage::Vertex, 0, &wvp);
 		PushDrawCall(&context2, material);
 	}
-
-	return true;
 }
 
 void

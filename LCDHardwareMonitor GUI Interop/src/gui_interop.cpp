@@ -11,16 +11,6 @@
 #include "plugin_shared.h"
 #include "gui_protocol.hpp"
 
-// Fuck you, Microsoft
-#pragma warning(push, 0)
-#pragma push_macro("IGNORE")
-#undef IGNORE
-#define VC_EXTRALEAN
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-#pragma pop_macro("IGNORE")
-#pragma warning(pop)
-
 #include "platform_win32.hpp"
 #include "renderer_d3d9.hpp"
 

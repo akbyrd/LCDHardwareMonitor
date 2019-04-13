@@ -7,16 +7,6 @@
 #include "gui_protocol.hpp"
 #include "simulation.hpp"
 
-// Fuck you, Microsoft
-#pragma warning(push, 0)
-#pragma push_macro("IGNORE")
-#undef IGNORE
-#define VC_EXTRALEAN
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-#pragma pop_macro("IGNORE")
-#pragma warning(pop)
-
 #include "platform_win32.hpp"
 #include "pluginloader_win32.hpp"
 #include "renderer_d3d11.hpp"
@@ -26,6 +16,7 @@
 // the simulation.
 // TODO: Support x86 and x64
 // TODO: Reduce link dependencies
+// TODO: Need a proper shutdown implementation (clean vs error)
 
 static const i32 togglePreviewWindowID = 0;
 
@@ -165,9 +156,7 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 		}
 
 		// Tick
-		// TODO: Need a proper shutdown implementation (clean vs error)
-		b32 success = Simulation_Update(&simulationState);
-		if (!success) return -1;
+		Simulation_Update(&simulationState);
 
 		Renderer_Render(&rendererState);
 		// BUG: Looks like it's possible to get WM_PREVIEWWINDOWCLOSED without WM_QUIT
