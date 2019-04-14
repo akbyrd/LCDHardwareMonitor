@@ -92,9 +92,13 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 
 
 	// Debug
-	PreviewWindow_Initialize(&previewState, &simulationState, hInstance, nullptr);
 	auto previewGuard = guard { PreviewWindow_Teardown(&previewState); };
-	//previewGuard.dismiss = true;
+	#if false
+	PreviewWindow_Initialize(&previewState, &simulationState, hInstance, nullptr);
+	#else
+	previewGuard.dismiss = true;
+	#endif
+
 	success = RegisterHotKey(nullptr, togglePreviewWindowID, MOD_NOREPEAT, VK_F1);
 	LOG_LAST_ERROR_IF(!success, IGNORE, Severity::Warning, "Failed to register hotkeys");
 

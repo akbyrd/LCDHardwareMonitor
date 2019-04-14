@@ -65,6 +65,7 @@ D3D9_CreateSharedSurface(
 {
 	HRESULT hr;
 
+	// TODO: Send multisampling from the simulation
 	hr = d3d9Device->CreateTexture(
 		renderSize.x,
 		renderSize.y,
@@ -93,12 +94,12 @@ D3D9_DestroySharedSurface(
 	if (*d3d9RenderTexture)
 	{
 		(*d3d9RenderTexture)->Release();
-		d3d9RenderTexture = nullptr;
+		*d3d9RenderTexture = nullptr;
 	}
 
 	if (*d3d9RenderSurface0)
 	{
 		(*d3d9RenderSurface0)->Release();
-		d3d9RenderSurface0 = nullptr;
+		*d3d9RenderSurface0 = nullptr;
 	}
 }
