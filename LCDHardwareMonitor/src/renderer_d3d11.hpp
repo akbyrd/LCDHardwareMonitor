@@ -258,6 +258,15 @@ Renderer_Initialize(RendererState* s, v2u renderSize)
 		hr = dxgiInfoQueue->SetBreakOnSeverity(DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE_SEVERITY_CORRUPTION, true);
 		LOG_HRESULT_IF_FAILED(hr, IGNORE,
 			Severity::Warning, "Failed to set DXGI break on corruption");
+
+		// Ignore warning for not using a flip-mode swap chain
+		DXGI_INFO_QUEUE_MESSAGE_ID ids[] = { 294 };
+		DXGI_INFO_QUEUE_FILTER filter = {};
+		filter.DenyList.NumIDs  = ArrayLength(ids);
+		filter.DenyList.pIDList = ids;
+		hr = dxgiInfoQueue->PushStorageFilter(DXGI_DEBUG_DXGI, &filter);
+		LOG_HRESULT_IF_FAILED(hr, IGNORE,
+			Severity::Warning, "Failed to set DXGI warning filter");
 		#endif
 	}
 
