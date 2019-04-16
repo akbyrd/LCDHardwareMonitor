@@ -22,8 +22,8 @@ Bytes_WriteObject(Bytes& bytes, u32 offset, T& object)
 	if (!List_Reserve(bytes, offset + sizeof(T)))
 		return false;
 
-	T* dest = (T*) (bytes.data + offset);
-	*dest = object;
+	T* dst = (T*) (bytes.data + offset);
+	*dst = object;
 	bytes.length = Max(bytes.length, offset + sizeof(T));
 
 	return true;
@@ -33,17 +33,13 @@ template<typename T>
 b32
 Bytes_FromObject(T* object, Bytes bytes)
 {
-	if (bytes.capacity == 0)
-	{
-		if (!List_Grow(bytes))
-			return false;
-	}
+	if (!List_Reserve(bytes, sizeof(T)))
+		return false;
 
+	T* dst = (T*) bytes.data;
+	*dst = *object;
 	bytes.length = sizeof(T);
-	bytes.stride = 1;
 
-	T* dest = List_Append(bytes);
-	*dest = *object;
 	return true;
 }
 

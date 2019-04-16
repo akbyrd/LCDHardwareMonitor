@@ -12,6 +12,8 @@
 
 // TODO: To provide synchronization, use event queries or lock the texture.
 // https://docs.microsoft.com/en-us/windows/desktop/direct3darticles/surface-sharing-between-windows-graphics-apis
+// Currently, the GUI will occasionally see the render target after clear but before rendering. The
+// issue can be exaggerated by clearing with a bright color.
 
 b32
 D3D9_Initialize(

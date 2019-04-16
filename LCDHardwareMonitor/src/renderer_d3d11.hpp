@@ -868,7 +868,7 @@ Renderer_UpdateConstantBuffer(RendererState* s, ConstantBuffer* cBuf, void* data
 b32
 Renderer_Render(RendererState* s)
 {
-	s->d3dContext->ClearRenderTargetView(s->d3dRenderTargetView.Get(), DirectX::Colors::Red);
+	s->d3dContext->ClearRenderTargetView(s->d3dRenderTargetView.Get(), DirectX::Colors::Black);
 	s->d3dContext->ClearDepthStencilView(s->d3dDepthBufferView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
 
 	VertexShader lastVS = VertexShader::Null;
