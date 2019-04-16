@@ -17,7 +17,7 @@
 struct State
 {
 	Pipe                pipe;
-	u32                 activeMessageId;
+	u32                 messageIndex;
 
 	IDirect3D9Ex*       d3d9;
 	IDirect3DDevice9Ex* d3d9Device;
@@ -56,7 +56,6 @@ public value struct GUIInterop abstract sealed
 		b32 success = D3D9_Initialize((HWND) (void*) hwnd, &s.d3d9, &s.d3d9Device);
 		if (!success) return false;
 
-		s.activeMessageId = Connect::Id;
 		return true;
 	}
 
@@ -68,90 +67,110 @@ public value struct GUIInterop abstract sealed
 
 		using namespace Message;
 
+		// TODO: Decide on the code structure for this. Feels bad right now
+		// TODO: Loop
 		// Receive messages
+		for (u32 _i = 0; _i < 1; _i++)
 		{
-			b32 success;
-
 			Bytes bytes = {};
 			defer { List_Free(bytes); };
 
-			success = ReceiveMessage(&s.pipe, bytes, &s.activeMessageId);
-			if (success && bytes.length != 0)
+			PipeResult result = Platform_ReadPipe(&s.pipe, bytes);
+			if (result == PipeResult::UnexpectedFailure) return false;
+			if (result == PipeResult::TransientFailure) break;
+			if (bytes.length == 0) break;
+
+			// TODO: Need to handle these errors more intelligently
+			LOG_IF(bytes.length < sizeof(Header), break,
+				Severity::Warning, "Corrupted message received");
+
+			Header* header = (Header*) bytes.data;
+
+			LOG_IF(bytes.length != header->size, break,
+				Severity::Warning, "Incorrectly sized message received");
+
+			LOG_IF(header->index != s.messageIndex, break,
+				Severity::Warning, "Unexpected message received");
+			s.messageIndex++;
+
+			switch (header->id)
 			{
-				Header* header = (Header*) bytes.data;
-				switch (header->id)
+				default: Assert(false); break;
+				case Null::Id: break;
+
+				case Connect::Id:
 				{
-					default: Assert(false); break;
-					case Null::Id: break;
+					DeserializeMessage<Connect>(bytes);
 
-					case Connect::Id:
+					Connect* connect = (Connect*) bytes.data;
+					simState->Version = connect->version;
+
+					b32 success = D3D9_CreateSharedSurface(
+						s.d3d9Device,
+						&s.d3d9RenderTexture,
+						&s.d3d9RenderSurface0,
+						(HANDLE) connect->renderSurface,
+						connect->renderSize
+					);
+					if (!success) return false;
+
+					simState->RenderSurface = (System::IntPtr) s.d3d9RenderSurface0;
+					break;
+				}
+
+				case Plugins::Id:
+				{
+					DeserializeMessage<Plugins>(bytes);
+
+					Plugins* plugins = (Plugins*) bytes.data;
+					for (u32 i = 0; i < plugins->sensorPlugins.length; i++)
 					{
-						Connect* connect = (Connect*) bytes.data;
-						simState->Version = connect->version;
+						PluginInfo pluginInfo = plugins->sensorPlugins[i];
 
-						success = D3D9_CreateSharedSurface(
-							s.d3d9Device,
-							&s.d3d9RenderTexture,
-							&s.d3d9RenderSurface0,
-							(HANDLE) connect->renderSurface,
-							connect->renderSize
-						);
-						if (!success) return false;
-
-						simState->RenderSurface = (System::IntPtr) s.d3d9RenderSurface0;
-						break;
+						PluginInfo_CLR pluginInfo_clr = {};
+						pluginInfo_clr.Name    = ToSystemString(pluginInfo.name);
+						pluginInfo_clr.Kind    = PluginKind_CLR::Sensor;
+						pluginInfo_clr.Author  = ToSystemString(pluginInfo.author);
+						pluginInfo_clr.Version = pluginInfo.version;
+						simState->Plugins->Add(pluginInfo_clr);
 					}
-
-					case Plugins::Id:
+					for (u32 i = 0; i < plugins->widgetPlugins.length; i++)
 					{
-						Plugins* plugins = (Plugins*) bytes.data;
-						for (u32 i = 0; i < plugins->sensorPlugins.length; i++)
-						{
-							PluginInfo pluginInfo = plugins->sensorPlugins[i];
+						PluginInfo pluginInfo = plugins->widgetPlugins[i];
 
-							PluginInfo_CLR pluginInfo_clr = {};
-							pluginInfo_clr.Name    = ToSystemString(pluginInfo.name);
-							pluginInfo_clr.Kind    = PluginKind_CLR::Sensor;
-							pluginInfo_clr.Author  = ToSystemString(pluginInfo.author);
-							pluginInfo_clr.Version = pluginInfo.version;
-							simState->Plugins->Add(pluginInfo_clr);
-						}
-						for (u32 i = 0; i < plugins->widgetPlugins.length; i++)
-						{
-							PluginInfo pluginInfo = plugins->widgetPlugins[i];
-
-							PluginInfo_CLR pluginInfo_clr = {};
-							pluginInfo_clr.Name    = ToSystemString(pluginInfo.name);
-							pluginInfo_clr.Kind    = PluginKind_CLR::Widget;
-							pluginInfo_clr.Author  = ToSystemString(pluginInfo.author);
-							pluginInfo_clr.Version = pluginInfo.version;
-							simState->Plugins->Add(pluginInfo_clr);
-						}
-						break;
+						PluginInfo_CLR pluginInfo_clr = {};
+						pluginInfo_clr.Name    = ToSystemString(pluginInfo.name);
+						pluginInfo_clr.Kind    = PluginKind_CLR::Widget;
+						pluginInfo_clr.Author  = ToSystemString(pluginInfo.author);
+						pluginInfo_clr.Version = pluginInfo.version;
+						simState->Plugins->Add(pluginInfo_clr);
 					}
+					break;
+				}
 
-					case Sensors::Id:
+				case Sensors::Id:
+				{
+					DeserializeMessage<Sensors>(bytes);
+
+					Sensors* sensors = (Sensors*) bytes.data;
+					for (u32 i = 0; i < sensors->sensors.length; i++)
 					{
-						Sensors* sensors = (Sensors*) bytes.data;
-						for (u32 i = 0; i < sensors->sensors.length; i++)
+						List<Sensor> sensors2 = sensors->sensors[i];
+						for (u32 j = 0; j < sensors2.length; j++)
 						{
-							List<Sensor> sensors2 = sensors->sensors[i];
-							for (u32 j = 0; j < sensors2.length; j++)
-							{
-								Sensor sensor = sensors2[j];
+							Sensor sensor = sensors2[j];
 
-								Sensor_CLR sensor_clr = {};
-								sensor_clr.Name       = ToSystemString(sensor.name);
-								sensor_clr.Identifier = ToSystemString(sensor.identifier);
-								sensor_clr.String     = ToSystemString(sensor.string);
-								sensor_clr.Value      = sensor.value;
-								sensor_clr.MinValue   = sensor.minValue;
-								sensor_clr.MaxValue   = sensor.maxValue;
-								simState->Sensors->Add(sensor_clr);
-							}
+							Sensor_CLR sensor_clr = {};
+							sensor_clr.Name       = ToSystemString(sensor.name);
+							sensor_clr.Identifier = ToSystemString(sensor.identifier);
+							sensor_clr.String     = ToSystemString(sensor.string);
+							sensor_clr.Value      = sensor.value;
+							sensor_clr.MinValue   = sensor.minValue;
+							sensor_clr.MaxValue   = sensor.maxValue;
+							simState->Sensors->Add(sensor_clr);
 						}
-						break;
 					}
+					break;
 				}
 			}
 		}
@@ -166,7 +185,7 @@ public value struct GUIInterop abstract sealed
 					D3D9_DestroySharedSurface(&s.d3d9RenderTexture, &s.d3d9RenderSurface0);
 					simState->RenderSurface = System::IntPtr::Zero;
 
-					s.activeMessageId = Connect::Id;
+					s.messageIndex = 0;
 				}
 			}
 		}

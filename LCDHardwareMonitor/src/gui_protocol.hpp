@@ -3,6 +3,7 @@ namespace Message
 	struct Header
 	{
 		u32 id;
+		u32 index;
 		u32 size;
 	};
 
@@ -42,13 +43,6 @@ namespace Message
 		Slice<SensorPluginRef> sensorPluginRefs;
 		Slice<List<Sensor>>    sensors;
 	};
-};
-
-u32 messageOrder[] = {
-	Message::Connect::Id,
-	Message::Plugins::Id,
-	Message::Sensors::Id,
-	Message::Null::Id,
 };
 
 enum ByteStreamMode
@@ -96,142 +90,49 @@ void Serialize(ByteStream&, Message::Sensors&);
 void Serialize(ByteStream&, PluginInfo&);
 void Serialize(ByteStream&, Sensor&);
 
-void
-IncrementMessage(u32* currentMessageId)
-{
-	for (u32 i = 0; i < ArrayLength(messageOrder); i++)
-	{
-		if (messageOrder[i] == *currentMessageId)
-		{
-			*currentMessageId = messageOrder[i + 1];
-			return;
-		}
-	}
-	Assert(false);
-}
-
 template <typename T>
 b32
-SendMessage(Pipe* pipe, T& message, u32* currentMessageId)
+SerializeMessage(T& message, Bytes& bytes, u32 messageIndex)
 {
-	Assert(T::Id == *currentMessageId);
 	using namespace Message;
 
-	// Build the buffer
 	ByteStream stream = {};
 	defer { List_Free(stream.bytes); };
-	{
-		stream.mode = ByteStreamMode::Size;
-		Serialize(stream, &message);
 
-		b32 success = List_Reserve(stream.bytes, stream.cursor);
-		LOG_IF(!success, return false,
-			Severity::Fatal, "Failed to allocate GUI message");
-		stream.bytes.length = stream.cursor;
+	stream.mode = ByteStreamMode::Size;
+	Serialize(stream, &message);
 
-		message.header.id   = T::Id;
-		message.header.size = stream.bytes.length;
+	b32 success = List_Reserve(stream.bytes, stream.cursor);
+	LOG_IF(!success, return false,
+		Severity::Fatal, "Failed to allocate GUI message");
+	stream.bytes.length = stream.cursor;
 
-		stream.mode   = ByteStreamMode::Write;
-		stream.cursor = 0;
-		Serialize(stream, &message);
+	message.header.id    = T::Id;
+	message.header.index = messageIndex;
+	message.header.size  = stream.bytes.length;
 
-		Assert(stream.cursor == stream.bytes.length);
-	}
+	stream.mode   = ByteStreamMode::Write;
+	stream.cursor = 0;
+	Serialize(stream, &message);
 
-	// Ship it off
-	{
-		PipeResult result = Platform_WritePipe(pipe, stream.bytes);
-		switch (result)
-		{
-			default: Assert(false); break;
+	Assert(stream.cursor == stream.bytes.length);
 
-			case PipeResult::Success:
-				IncrementMessage(currentMessageId);
-				break;
-
-			case PipeResult::TransientFailure:
-				// Ignore failures, retry next frame
-				break;
-
-			case PipeResult::UnexpectedFailure:
-				return false;
-		}
-	}
-
+	bytes = stream.bytes;
+	stream.bytes = {};
 	return true;
 }
 
-b32
-ReceiveMessage(Pipe* pipe, Bytes& bytes, u32* currentMessageId)
+template <typename T>
+void
+DeserializeMessage(Bytes& bytes)
 {
 	using namespace Message;
-
-	PipeResult result = Platform_ReadPipe(pipe, bytes);
-	switch (result)
-	{
-		default: Assert(false); break;
-
-		case PipeResult::Success:
-			break;
-
-		case PipeResult::TransientFailure:
-			// Ignore failures, retry next frame
-			return true;
-
-		case PipeResult::UnexpectedFailure:
-			return false;
-	}
-
-	if (bytes.length == 0) return true;
-
-	LOG_IF(bytes.length < sizeof(Header), return true,
-		Severity::Warning, "Corrupted message received");
-
-	Header* header = (Header*) bytes.data;
-
-	if (currentMessageId)
-	{
-		LOG_IF(*currentMessageId != header->id, return true,
-			Severity::Warning, "Unexpected message received");
-	}
-
-	LOG_IF(bytes.length != header->size, return true,
-		Severity::Warning, "Incorrectly sized message received");
 
 	ByteStream stream = {};
 	stream.mode  = ByteStreamMode::Read;
 	stream.bytes = bytes;
 
-	switch (header->id)
-	{
-		default: Assert(false); break;
-
-		case Connect::Id:
-		{
-			Connect* connect = (Connect*) &bytes[0];
-			Serialize(stream, connect);
-			break;
-		}
-
-		case Plugins::Id:
-		{
-			Plugins* plugins = (Plugins*) &bytes[0];
-			Serialize(stream, plugins);
-			break;
-		}
-
-		case Sensors::Id:
-		{
-			Sensors* sensors = (Sensors*) &bytes[0];
-			Serialize(stream, sensors);
-			break;
-		}
-	}
-
-	if (currentMessageId)
-		IncrementMessage(currentMessageId);
-	return true;
+	Serialize(stream, (T*) &bytes[0]);
 }
 
 // TODO: This is a bit lame
@@ -432,6 +333,4 @@ Serialize(ByteStream& stream, Sensor& sensor)
 }
 
 // TODO: Why do we get a duplicate set of messages when closing the GUI?
-// TODO: Ensure pipe reconnects when closing and opening the GUI
-// TODO: Ensure pipe reconnects when closing and opening the sim
 // TODO: Code gen the actual Serialize functions

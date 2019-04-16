@@ -1,11 +1,21 @@
-GUI Cleanup
-	Don't prepare messages to send when in the connecting state
+Current
+	GUI Info
+		Plugins present (and their loaded state)
+		Widgets (added and removed)
+		Sensors (added and removed)
+		Profiling data
+	GUI Control
+		Open/Close simulation
+		Load/Unload plugins
+		Provide input
+		Add/Remove widgets
+		Configure widgets
+		Configure global settings (update rate)
+
+Stuff
 	Consider defining DEBUG in source
 	Use namespaces or something so we don't need _CLR on type names
-	Maaaaybe it's worth merging gui_types back into gui_protocol to avoid the extra project
-
-
-Next steps
+	Maaaaybe it's worth merging gui_types back into gui_interop to avoid the extra project
 	Decide on passing args by pointer or reference
 	Users probably need to be able to create custom UI for plugin settings
 	Ensure we're handling CloseHandle failures correctly
