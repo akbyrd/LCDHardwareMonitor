@@ -9,23 +9,19 @@ namespace Message
 
 	struct Null
 	{
-		static constexpr u32 Id = 0;
 		Header header;
 	};
 
 	struct Connect
 	{
-		static constexpr u32 Id = IdOf<Connect>();
 		Header header;
-
-		u32  version;
-		size renderSurface;
-		v2u  renderSize;
+		u32    version;
+		size   renderSurface;
+		v2u    renderSize;
 	};
 
 	struct Plugins
 	{
-		static constexpr u32 Id = IdOf<Plugins>();
 		Header header;
 
 		Slice<SensorPluginRef> sensorPluginRefs;
@@ -37,15 +33,16 @@ namespace Message
 
 	struct Sensors
 	{
-		static constexpr u32 Id = IdOf<Sensors>();
-		Header header;
-
+		Header                 header;
 		Slice<SensorPluginRef> sensorPluginRefs;
 		Slice<List<Sensor>>    sensors;
 	};
 };
 
-enum ByteStreamMode
+template <>
+constexpr u32 IdOf<Message::Null> = 0;
+
+enum struct ByteStreamMode
 {
 	Null,
 	Size,
@@ -107,7 +104,7 @@ SerializeMessage(T& message, Bytes& bytes, u32 messageIndex)
 		Severity::Fatal, "Failed to allocate GUI message");
 	stream.bytes.length = stream.cursor;
 
-	message.header.id    = T::Id;
+	message.header.id    = IdOf<T>;
 	message.header.index = messageIndex;
 	message.header.size  = stream.bytes.length;
 
@@ -326,10 +323,8 @@ Serialize(ByteStream& stream, Sensor& sensor)
 {
 	Serialize(stream, sensor.name);
 	Serialize(stream, sensor.identifier);
-	Serialize(stream, sensor.string);
+	Serialize(stream, sensor.format);
 	Serialize(stream, sensor.value);
-	Serialize(stream, sensor.minValue);
-	Serialize(stream, sensor.maxValue);
 }
 
 // TODO: Why do we get a duplicate set of messages when closing the GUI?

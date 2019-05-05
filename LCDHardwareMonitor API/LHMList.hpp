@@ -67,8 +67,8 @@ struct Slice
 	Slice(const T(&arr)[Length]) { length = Length;      stride = sizeof(T); data = (T*) arr; }
 
 	using RefT = ListRef<T>;
-	inline T& operator[] (RefT r) { return *((T*) &((u8*) data)[stride*(r.index - 1)]); }
-	inline T& operator[] (u32 i)  { return *((T*) &((u8*) data)[stride*i]); }
+	inline T& operator[] (RefT r) { return (T&) ((u8*) data)[stride*(r.index - 1)]; }
+	inline T& operator[] (u32 i)  { return (T&) ((u8*) data)[stride*i]; }
 };
 
 template<typename T>

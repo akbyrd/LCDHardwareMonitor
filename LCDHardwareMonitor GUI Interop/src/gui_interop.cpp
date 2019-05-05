@@ -96,9 +96,9 @@ public value struct GUIInterop abstract sealed
 			switch (header->id)
 			{
 				default: Assert(false); break;
-				case Null::Id: break;
+				case IdOf<Null>: break;
 
-				case Connect::Id:
+				case IdOf<Connect>:
 				{
 					DeserializeMessage<Connect>(bytes);
 
@@ -118,7 +118,7 @@ public value struct GUIInterop abstract sealed
 					break;
 				}
 
-				case Plugins::Id:
+				case IdOf<PluginsAdded>:
 				{
 					DeserializeMessage<Plugins>(bytes);
 
@@ -148,7 +148,7 @@ public value struct GUIInterop abstract sealed
 					break;
 				}
 
-				case Sensors::Id:
+				case IdOf<SensorsAdded>:
 				{
 					DeserializeMessage<Sensors>(bytes);
 

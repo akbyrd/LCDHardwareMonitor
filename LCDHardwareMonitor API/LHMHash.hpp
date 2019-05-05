@@ -24,10 +24,13 @@ constexpr u32 Adler32(const char (&data)[N])
 	return Adler32(data, N);
 }
 
-template <class T>
-constexpr u32 IdOf()
+template <typename T>
+constexpr u32 _IdOf()
 {
 	return Adler32(__FUNCTION_FULL_NAME__);
 }
+
+template <class T>
+constexpr u32 IdOf = _IdOf<T>();
 
 #endif

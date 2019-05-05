@@ -24,7 +24,7 @@
     <Expand>
       <IndexListItems>
         <Size>length</Size>
-        <ValueNode>data[$i * stride]</ValueNode>
+        <ValueNode>($T1&amp;) ((u8*) data)[stride*$i]</ValueNode>
       </IndexListItems>
     </Expand>
   </Type>
