@@ -20,23 +20,54 @@ namespace Message
 		v2u    renderSize;
 	};
 
-	struct Plugins
+	struct PluginsAdded
 	{
-		Header header;
-
-		Slice<SensorPluginRef> sensorPluginRefs;
-		Slice<PluginInfo>      sensorPlugins;
-
-		Slice<WidgetPluginRef> widgetPluginRefs;
-		Slice<PluginInfo>      widgetPlugins;
+		Header               header;
+		PluginKind           kind;
+		Slice<ListRef<void>> refs;
+		Slice<PluginInfo>    infos;
 	};
 
-	struct Sensors
+	#if false
+	struct PluginsRemoved
+	{
+		Header               header;
+		PluginKind           kind;
+		Slice<ListRef<void>> refs;
+	};
+	#endif
+
+	struct SensorsAdded
 	{
 		Header                 header;
-		Slice<SensorPluginRef> sensorPluginRefs;
+		Slice<SensorPluginRef> pluginRefs;
 		Slice<List<Sensor>>    sensors;
 	};
+
+	#if false
+	struct SensorsRemoved
+	{
+		Header           header;
+		SensorPluginRef  pluginRef;
+		Slice<SensorRef> refs;
+	};
+	#endif
+
+	struct WidgetDescsAdded
+	{
+		Header                   header;
+		Slice<WidgetPluginRef>   pluginRefs;
+		Slice<Slice<WidgetDesc>> descs;
+	};
+
+	#if false
+	struct WidgetDescsRemoved
+	{
+		Header                 header;
+		WidgetPluginRef        pluginRef;
+		Slice<WidgetDesc::Ref> refs;
+	};
+	#endif
 };
 
 template <>
@@ -81,15 +112,16 @@ void Serialize(ByteStream&, Slice<T>&);
 
 void Serialize(ByteStream&, StringSlice&);
 
-void Serialize(ByteStream&, Message::Plugins&);
 void Serialize(ByteStream&, Message::Connect&);
-void Serialize(ByteStream&, Message::Sensors&);
+void Serialize(ByteStream&, Message::PluginsAdded&);
+void Serialize(ByteStream&, Message::SensorsAdded&);
+void Serialize(ByteStream&, Message::WidgetDescsAdded&);
 void Serialize(ByteStream&, PluginInfo&);
 void Serialize(ByteStream&, Sensor&);
 
 template <typename T>
 b32
-SerializeMessage(T& message, Bytes& bytes, u32 messageIndex)
+SerializeMessage(Bytes& bytes, T& message, u32 messageIndex)
 {
 	using namespace Message;
 
@@ -293,13 +325,12 @@ Serialize(ByteStream& stream, Message::Connect& connect)
 }
 
 void
-Serialize(ByteStream& stream, Message::Plugins& plugins)
+Serialize(ByteStream& stream, Message::PluginsAdded& pluginsAdded)
 {
-	Serialize(stream, plugins.header);
-	Serialize(stream, plugins.sensorPlugins);
-	Serialize(stream, plugins.sensorPluginRefs);
-	Serialize(stream, plugins.widgetPlugins);
-	Serialize(stream, plugins.widgetPluginRefs);
+	Serialize(stream, pluginsAdded.header);
+	Serialize(stream, pluginsAdded.kind);
+	Serialize(stream, pluginsAdded.refs);
+	Serialize(stream, pluginsAdded.infos);
 }
 
 void
@@ -311,21 +342,44 @@ Serialize(ByteStream& stream, PluginInfo& pluginInfo)
 }
 
 void
-Serialize(ByteStream& stream, Message::Sensors& sensors)
+Serialize(ByteStream& stream, Message::SensorsAdded& sensorsAdded)
 {
-	Serialize(stream, sensors.header);
-	Serialize(stream, sensors.sensorPluginRefs);
-	Serialize(stream, sensors.sensors);
+	Serialize(stream, sensorsAdded.header);
+	Serialize(stream, sensorsAdded.pluginRefs);
+	Serialize(stream, sensorsAdded.sensors);
 }
 
 void
 Serialize(ByteStream& stream, Sensor& sensor)
 {
+	Serialize(stream, sensor.ref);
 	Serialize(stream, sensor.name);
 	Serialize(stream, sensor.identifier);
 	Serialize(stream, sensor.format);
 	Serialize(stream, sensor.value);
 }
 
-// TODO: Why do we get a duplicate set of messages when closing the GUI?
+void
+Serialize(ByteStream& stream, Message::WidgetDescsAdded& widgetDescsAdded)
+{
+	Serialize(stream, widgetDescsAdded.header);
+	Serialize(stream, widgetDescsAdded.pluginRefs);
+	Serialize(stream, widgetDescsAdded.descs);
+}
+
+void
+Serialize(ByteStream& stream, WidgetDesc& widgetDesc)
+{
+	Serialize(stream, widgetDesc.ref);
+	Serialize(stream, widgetDesc.name);
+	Serialize(stream, widgetDesc.userDataSize);
+	if (stream.mode == ByteStreamMode::Write)
+	{
+		widgetDesc.initialize = nullptr;
+		widgetDesc.update     = nullptr;
+		widgetDesc.teardown   = nullptr;
+	}
+}
+
 // TODO: Code gen the actual Serialize functions
+// TODO: Maybe we can catch missed fields by counting bytes from serialize calls?

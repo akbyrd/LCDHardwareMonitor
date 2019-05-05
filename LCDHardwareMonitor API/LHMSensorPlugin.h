@@ -1,34 +1,19 @@
 #ifndef LHM_SENSORPLUGIN
 #define LHM_SENSORPLUGIN
 
-struct Sensor;
-using SensorRefT = List<Sensor>::RefT;
-
 struct SensorPlugin;
-using SensorPluginRefT = List<SensorPlugin>::RefT;
+using SensorPluginRef = List<SensorPlugin>::RefT;
 
-struct SensorRef
-{
-	SensorPluginRefT plugin;
-	SensorRefT       sensor;
-
-	static const SensorRef Null;
-	operator b32() { return plugin && sensor; }
-};
-
-const SensorRef SensorRef::Null = {};
-inline b32 operator== (SensorRef lhs, SensorRef rhs) { return lhs.plugin == rhs.plugin && lhs == rhs.sensor; }
-inline b32 operator!= (SensorRef lhs, SensorRef rhs) { return lhs.plugin != rhs.plugin && lhs != rhs.sensor; }
+struct Sensor;
+using SensorRef = List<Sensor>::RefT;
 
 struct Sensor
 {
+	SensorRef   ref;
 	StringSlice name;
 	StringSlice identifier;
-	StringSlice string;
+	StringSlice format;
 	r32         value;
-	// TODO: Range struct?
-	r32         minValue;
-	r32         maxValue;
 
 	// TODO: Might want an integer Type field with a plugin provided to-string
 	// function.

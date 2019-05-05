@@ -23,9 +23,6 @@ struct PluginHeader
 	void*          userData;
 };
 
-struct SensorPlugin;
-using SensorPluginRef = List<SensorPlugin>::RefT;
-
 struct SensorPlugin
 {
 	SensorPluginRef       ref;
@@ -43,9 +40,6 @@ struct WidgetData
 	List<Widget> widgets;
 	Bytes        widgetsUserData;
 };
-
-struct WidgetPlugin;
-using WidgetPluginRef = List<WidgetPlugin>::RefT;
 
 struct WidgetPlugin
 {

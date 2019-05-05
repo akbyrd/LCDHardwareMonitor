@@ -48,7 +48,7 @@ CreateWidget(WidgetPlugin* widgetPlugin, WidgetData* widgetData)
 }
 
 static void
-RemoveSensorRefs(SimulationState* s, Slice<SensorRef> sensorRefs)
+RemoveSensorRefs(SimulationState* s, SensorPluginRef sensorPluginRef, Slice<SensorRef> sensorRefs)
 {
 	for (u32 i = 0; i < sensorRefs.length; i++)
 	{
@@ -63,8 +63,11 @@ RemoveSensorRefs(SimulationState* s, Slice<SensorRef> sensorRefs)
 				for (u32 l = 0; l < widgetData->widgets.length; l++)
 				{
 					Widget* widget = &widgetData->widgets[l];
-					if (widget->sensorRef == sensorRef)
-						widget->sensorRef = SensorRef::Null;
+					if (widget->sensorPluginRef == sensorPluginRef && widget->sensorRef == sensorRef)
+					{
+						widget->sensorPluginRef = SensorPluginRef::Null;
+						widget->sensorRef       = SensorRef::Null;
+					}
 				}
 			}
 		}
@@ -103,6 +106,12 @@ RegisterSensors(PluginContext* context, Slice<Sensor> sensors)
 
 	SensorPlugin* sensorPlugin = context->sensorPlugin;
 
+	for (u32 i = 0; i < sensors.length; i++)
+	{
+		Sensor* sensor = &sensors[i];
+		sensor->ref = { sensorPlugin->sensors.length + i };
+	}
+
 	b32 success = List_AppendRange(sensorPlugin->sensors, sensors);
 	LOG_IF(!success, return,
 		Severity::Error, "Failed to allocate space for %u Sensors '%s'",
@@ -126,19 +135,18 @@ UnregisterSensors(PluginContext* context, Slice<SensorRef> sensorRefs)
 		SensorRef sensorRef = sensorRefs[i];
 
 		b32 valid = true;
-		valid = valid && sensorRef.plugin != sensorPlugin->ref;
-		valid = valid && List_IsRefValid(sensorPlugin->sensors, sensorRef.sensor);
-		valid = valid && sensorPlugin->sensors[sensorRef.sensor].name.data != nullptr;
+		valid = valid && List_IsRefValid(sensorPlugin->sensors, sensorRef);
+		valid = valid && sensorPlugin->sensors[sensorRef].ref == sensorRef;
 		LOG_IF(!valid, return,
 			Severity::Error, "Sensor plugin gave a bad SensorRef '%s'", sensorPlugin->info.name);
 	}
 
-	RemoveSensorRefs(context->s, sensorRefs);
+	RemoveSensorRefs(context->s, sensorPlugin->ref, sensorRefs);
 
 	for (u32 i = 0; i < sensorRefs.length; i++)
 	{
 		SensorRef sensorRef = sensorRefs[i];
-		sensorPlugin->sensors[sensorRef.sensor] = {};
+		sensorPlugin->sensors[sensorRef] = {};
 	}
 
 	context->success = true;
@@ -160,6 +168,7 @@ RegisterWidgets(PluginContext* context, Slice<WidgetDesc> widgetDescs)
 	for (u32 i = 0; i < widgetDescs.length; i++)
 	{
 		WidgetDesc* widgetDesc = &widgetDescs[i];
+		widgetDesc->ref = { widgetPlugin->widgetDatas.length + i };
 
 		WidgetData widgetData = {};
 		widgetData.desc = *widgetDesc;
@@ -340,12 +349,10 @@ UnloadSensorPlugin(SimulationState* s, SensorPlugin* sensorPlugin)
 		sensorPlugin->functions.teardown(&context, api);
 	}
 
-	SensorRef sensorRef = {};
-	sensorRef.plugin = sensorPlugin->ref;
 	for (u32 i = 0; i < sensorPlugin->sensors.length; i++)
 	{
-		sensorRef.sensor = List_GetRef(sensorPlugin->sensors, i);
-		RemoveSensorRefs(s, sensorRef);
+		SensorRef sensorRef = List_GetRef(sensorPlugin->sensors, i);
+		RemoveSensorRefs(s, sensorPlugin->ref, sensorRef);
 	}
 
 	b32 success = PluginLoader_UnloadSensorPlugin(s->pluginLoader, sensorPlugin);
@@ -492,7 +499,7 @@ static void
 SendGUIMessage(SimulationState* s, T& message)
 {
 	Bytes bytes = {};
-	b32 success = SerializeMessage(message, bytes, s->guiMessageIndex);
+	b32 success = SerializeMessage(bytes, message, s->guiMessageIndex);
 	HandleGUIResult(s, success);
 	if (!success) return;
 
@@ -689,10 +696,10 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 		WidgetPlugin* filledBarPlugin = LoadWidgetPlugin(s, "Widget Plugins\\Filled Bar", "Widget Plugin - Filled Bar");
 		if (!filledBarPlugin) return false;
 
-		//u32 debugSensorIndices[] = { 6, 7, 8, 9, 32 }; // Desktop 2080 Ti
+		u32 debugSensorIndices[] = { 0, 1, 2, 3, 21 }; // Desktop 2080 Ti
 		//u32 debugSensorIndices[] = { 6, 7, 8, 9, 33 }; // Desktop 780 Tis
 		//u32 debugSensorIndices[] = { 0, 1, 2, 3, 12 }; // Laptop
-		u32 debugSensorIndices[] = { u32Max, u32Max, u32Max, u32Max, u32Max }; // Empty
+		//u32 debugSensorIndices[] = { u32Max, u32Max, u32Max, u32Max, u32Max }; // Empty
 		WidgetData* widgetData = &filledBarPlugin->widgetDatas[0];
 		for (u32 i = 0; i < ArrayLength(debugSensorIndices); i++)
 		{
@@ -701,8 +708,8 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 
 			widget->position         = ((v2) s->renderSize - v2{ 240, 12 }) / 2.0f;
 			widget->position.y      += ((i32) i - 2) * 15.0f;
-			widget->sensorRef.plugin = List_GetRef(s->sensorPlugins, 0);
-			widget->sensorRef.sensor = List_GetRef(s->sensorPlugins[0].sensors, debugSensorIndices[i]);
+			widget->sensorPluginRef  = List_GetRef(s->sensorPlugins, 0);
+			widget->sensorRef        = List_GetRef(s->sensorPlugins[0].sensors, debugSensorIndices[i]);
 
 			PluginContext context = {};
 			context.s            = s;
@@ -853,20 +860,40 @@ Simulation_Update(SimulationState* s)
 				}
 
 				{
-					Plugins plugins = {};
-					plugins.sensorPluginRefs = List_MemberSlice(s->sensorPlugins, &SensorPlugin::ref);
-					plugins.sensorPlugins    = List_MemberSlice(s->sensorPlugins, &SensorPlugin::info);
-
-					plugins.widgetPluginRefs = List_MemberSlice(s->widgetPlugins, &WidgetPlugin::ref);
-					plugins.widgetPlugins    = List_MemberSlice(s->widgetPlugins, &WidgetPlugin::info);
-					SendGUIMessage(s, plugins);
+					// TODO: C++17 can get rid of the cast by allowing a ListRef base class
+					PluginsAdded pluginsAdded = {};
+					pluginsAdded.kind  = PluginKind::Sensor;
+					pluginsAdded.refs  = List_MemberSlice(s->sensorPlugins, (ListRef<void> SensorPlugin::*) &SensorPlugin::ref);
+					pluginsAdded.infos = List_MemberSlice(s->sensorPlugins, &SensorPlugin::info);
+					SendGUIMessage(s, pluginsAdded);
 				}
 
 				{
-					Sensors sensors = {};
-					sensors.sensorPluginRefs = List_MemberSlice(s->sensorPlugins, &SensorPlugin::ref);
-					sensors.sensors          = List_MemberSlice(s->sensorPlugins, &SensorPlugin::sensors);
-					SendGUIMessage(s, sensors);
+					PluginsAdded pluginsAdded = {};
+					pluginsAdded.kind  = PluginKind::Widget;
+					pluginsAdded.refs  = List_MemberSlice(s->widgetPlugins, (ListRef<void> WidgetPlugin::*) &WidgetPlugin::ref);
+					pluginsAdded.infos = List_MemberSlice(s->widgetPlugins, &WidgetPlugin::info);
+					SendGUIMessage(s, pluginsAdded);
+				}
+
+				{
+					SensorsAdded sensorsAdded = {};
+					sensorsAdded.pluginRefs = List_MemberSlice(s->sensorPlugins, &SensorPlugin::ref);
+					sensorsAdded.sensors    = List_MemberSlice(s->sensorPlugins, &SensorPlugin::sensors);
+					SendGUIMessage(s, sensorsAdded);
+				}
+
+				{
+					// TODO: Can we serialize all widget plugins in one go?
+					for (u32 i = 0; i < s->widgetPlugins.length; i++)
+					{
+						WidgetPlugin* widgetPlugin = &s->widgetPlugins[i];
+
+						WidgetDescsAdded widgetDescsAdded = {};
+						widgetDescsAdded.pluginRefs = widgetPlugin->ref;
+						widgetDescsAdded.descs      = List_MemberSlice(widgetPlugin->widgetDatas, &WidgetData::desc);
+						SendGUIMessage(s, widgetDescsAdded);
+					}
 				}
 			}
 		}
@@ -891,6 +918,7 @@ Simulation_Update(SimulationState* s)
 
 		// Receive
 		{
+			// TODO: Implement a CheckConnection function
 			// NOTE: This read also ensures we'll detect pipe disconnects. Otherwise when we have no
 			// messages to send we'll chug along thinking the pipe is still connected indefinintely
 			// and never allow reconnections.

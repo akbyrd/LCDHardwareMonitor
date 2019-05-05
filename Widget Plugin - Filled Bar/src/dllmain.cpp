@@ -49,7 +49,7 @@ UpdateBarWidgets(PluginContext* context, WidgetInstanceAPI::Update api)
 		// Update
 		if (widget->sensorRef)
 		{
-			Sensor* sensor = &api.sensors[widget->sensorRef.sensor];
+			Sensor* sensor = &api.sensors[widget->sensorRef];
 			float value = sensor->value / 100.0f;
 			barWidget->psPerObject.fillAmount = Lerp(barWidget->psPerObject.fillAmount, value, 0.10f);
 		}
@@ -99,8 +99,13 @@ UpdateBarWidgets(PluginContext* context, WidgetInstanceAPI::Update api)
 static b32
 Initialize(PluginContext* context, WidgetPluginAPI::Initialize api)
 {
+	// TODO: Shouldn't have to do this on the user side
+	String name = {};
+	b32 success = String_Format(name, "Filled Bar");
+	if (!success) return false;
+
 	WidgetDesc widgetDesc = {};
-	widgetDesc.name         = "Filled Bar";
+	widgetDesc.name         = name;
 	widgetDesc.userDataSize = sizeof(BarWidget);
 	widgetDesc.initialize   = &InitializeBarWidgets;
 	widgetDesc.update       = &UpdateBarWidgets;

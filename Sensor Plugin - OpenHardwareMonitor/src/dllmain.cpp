@@ -108,7 +108,7 @@ public ref struct State : ISensorPlugin, ISensorInitialize, ISensorUpdate, ISens
 				Sensor sensor = {};
 				sensor.name       = ToStringSlice(ohmSensor->Name);
 				sensor.identifier = ToStringSlice(ohmSensor->Identifier->ToString());
-				sensor.string     = ToStringSlice(value);
+				sensor.format     = ToStringSlice(value);
 				api.RegisterSensors(context, sensor);
 			}
 
@@ -171,7 +171,7 @@ public ref struct State : ISensorPlugin, ISensorInitialize, ISensorUpdate, ISens
 
 			Marshal::FreeHGlobal((IntPtr) sensor->name.data);
 			Marshal::FreeHGlobal((IntPtr) sensor->identifier.data);
-			Marshal::FreeHGlobal((IntPtr) sensor->string.data);
+			Marshal::FreeHGlobal((IntPtr) sensor->format.data);
 
 			*sensor = {};
 		}

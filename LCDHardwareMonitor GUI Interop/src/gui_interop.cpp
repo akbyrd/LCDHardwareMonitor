@@ -35,8 +35,25 @@ ToSystemString(StringSlice cstring)
 	LOG_IF((i32) cstring.length < 0, IGNORE,
 		Severity::Warning, "Native string truncated");
 
-	System::String^ result = gcnew System::String(cstring.data, 0, (i32) cstring.length);
+	// TODO: Remove this
+	u32 length = cstring.length;
+	while (length > 0 && cstring[length - 1] == '\0')
+		length--;
+
+	System::String^ result = gcnew System::String(cstring.data, 0, (i32) length);
 	return result;
+}
+
+PluginKind_CLR
+ToPluginKind(PluginKind kind)
+{
+	switch (kind)
+	{
+		default: Assert(false);  return PluginKind_CLR::Null;
+		case PluginKind::Null:   return PluginKind_CLR::Null;
+		case PluginKind::Sensor: return PluginKind_CLR::Sensor;
+		case PluginKind::Widget: return PluginKind_CLR::Widget;
+	}
 }
 
 public value struct GUIInterop abstract sealed
@@ -120,29 +137,17 @@ public value struct GUIInterop abstract sealed
 
 				case IdOf<PluginsAdded>:
 				{
-					DeserializeMessage<Plugins>(bytes);
+					DeserializeMessage<PluginsAdded>(bytes);
+					PluginsAdded* pluginsAdded = (PluginsAdded*) &bytes[0];
 
-					Plugins* plugins = (Plugins*) bytes.data;
-					for (u32 i = 0; i < plugins->sensorPlugins.length; i++)
+					for (u32 i = 0; i < pluginsAdded->infos.length; i++)
 					{
-						PluginInfo pluginInfo = plugins->sensorPlugins[i];
-
 						PluginInfo_CLR pluginInfo_clr = {};
-						pluginInfo_clr.Name    = ToSystemString(pluginInfo.name);
-						pluginInfo_clr.Kind    = PluginKind_CLR::Sensor;
-						pluginInfo_clr.Author  = ToSystemString(pluginInfo.author);
-						pluginInfo_clr.Version = pluginInfo.version;
-						simState->Plugins->Add(pluginInfo_clr);
-					}
-					for (u32 i = 0; i < plugins->widgetPlugins.length; i++)
-					{
-						PluginInfo pluginInfo = plugins->widgetPlugins[i];
-
-						PluginInfo_CLR pluginInfo_clr = {};
-						pluginInfo_clr.Name    = ToSystemString(pluginInfo.name);
-						pluginInfo_clr.Kind    = PluginKind_CLR::Widget;
-						pluginInfo_clr.Author  = ToSystemString(pluginInfo.author);
-						pluginInfo_clr.Version = pluginInfo.version;
+						pluginInfo_clr.Ref     = pluginsAdded->refs[i].index;
+						pluginInfo_clr.Name    = ToSystemString(pluginsAdded->infos[i].name);
+						pluginInfo_clr.Kind    = ToPluginKind(pluginsAdded->kind);
+						pluginInfo_clr.Author  = ToSystemString(pluginsAdded->infos[i].author);
+						pluginInfo_clr.Version = pluginsAdded->infos[i].version;
 						simState->Plugins->Add(pluginInfo_clr);
 					}
 					break;
@@ -150,24 +155,46 @@ public value struct GUIInterop abstract sealed
 
 				case IdOf<SensorsAdded>:
 				{
-					DeserializeMessage<Sensors>(bytes);
+					DeserializeMessage<SensorsAdded>(bytes);
 
-					Sensors* sensors = (Sensors*) bytes.data;
-					for (u32 i = 0; i < sensors->sensors.length; i++)
+					SensorsAdded* sensorsAdded = (SensorsAdded*) bytes.data;
+					for (u32 i = 0; i < sensorsAdded->sensors.length; i++)
 					{
-						List<Sensor> sensors2 = sensors->sensors[i];
-						for (u32 j = 0; j < sensors2.length; j++)
+						List<Sensor> sensors = sensorsAdded->sensors[i];
+						for (u32 j = 0; j < sensors.length; j++)
 						{
-							Sensor sensor = sensors2[j];
+							Sensor* sensor = &sensors[j];
 
 							Sensor_CLR sensor_clr = {};
-							sensor_clr.Name       = ToSystemString(sensor.name);
-							sensor_clr.Identifier = ToSystemString(sensor.identifier);
-							sensor_clr.String     = ToSystemString(sensor.string);
-							sensor_clr.Value      = sensor.value;
-							sensor_clr.MinValue   = sensor.minValue;
-							sensor_clr.MaxValue   = sensor.maxValue;
+							sensor_clr.PluginRef  = sensorsAdded->pluginRefs[i].index;
+							sensor_clr.Ref        = sensor->ref.index;
+							sensor_clr.Name       = ToSystemString(sensor->name);
+							sensor_clr.Identifier = ToSystemString(sensor->identifier);
+							sensor_clr.Format     = ToSystemString(sensor->format);
+							sensor_clr.Value      = sensor->value;
 							simState->Sensors->Add(sensor_clr);
+						}
+					}
+					break;
+				}
+
+				case IdOf<WidgetDescsAdded>:
+				{
+					DeserializeMessage<WidgetDescsAdded>(bytes);
+
+					WidgetDescsAdded* widgetDescsAdded = (WidgetDescsAdded*) bytes.data;
+					for (u32 i = 0; i < widgetDescsAdded->descs.length; i++)
+					{
+						Slice<WidgetDesc> widgetDescs = widgetDescsAdded->descs[i];
+						for (u32 j = 0; j < widgetDescs.length; j++)
+						{
+							WidgetDesc* desc = &widgetDescs[j];
+
+							WidgetDesc_CLR widgetDesc_clr = {};
+							widgetDesc_clr.PluginRef  = widgetDescsAdded->pluginRefs[i].index;
+							widgetDesc_clr.Ref        = desc->ref.index;
+							widgetDesc_clr.Name       = ToSystemString(desc->name);
+							simState->WidgetDescs->Add(widgetDesc_clr);
 						}
 					}
 					break;

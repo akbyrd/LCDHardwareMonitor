@@ -1,4 +1,6 @@
 Current
+	Fix StringSlice trailing zero
+
 	GUI Info
 		Plugins present (and their loaded state)
 		Widgets (added and removed)
@@ -11,6 +13,10 @@ Current
 		Add/Remove widgets
 		Configure widgets
 		Configure global settings (update rate)
+	GUI Architecture
+		Would it be better to share sim memory with the GUI directly as read only? No transferring of
+		data. GUI sends simple 'requests' for state changes. Still have to do something for WPF to
+		pick up data changes. And WPF needs copies of e.g. strings
 
 Stuff
 	Consider defining DEBUG in source

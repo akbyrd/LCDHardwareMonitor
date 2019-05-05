@@ -1,14 +1,18 @@
 #ifndef LHM_WIDGETPLUGIN
 #define LHM_WIDGETPLUGIN
 
+struct WidgetPlugin;
+using WidgetPluginRef = List<WidgetPlugin>::RefT;
+
 struct Widget
 {
-	v2        position;
-	//v2        scale;
-	v2        pivot;
-	r32       depth;
-	SensorRef sensorRef;
-	//u8        data[1];
+	v2              position;
+	//v2              scale;
+	v2              pivot;
+	r32             depth;
+	SensorPluginRef sensorPluginRef;
+	SensorRef       sensorRef;
+	//u8              data[1];
 };
 
 struct WidgetInstanceAPI
@@ -48,13 +52,17 @@ struct WidgetInstanceAPI
 	};
 };
 
+struct WidgetDesc;
+using WidgetDescRef = List<WidgetDesc>::RefT;
+
 struct WidgetDesc
 {
 	using InitializeFn = b32 (PluginContext*, WidgetInstanceAPI::Initialize);
 	using UpdateFn     = void(PluginContext*, WidgetInstanceAPI::Update);
 	using TeardownFn   = void(PluginContext*, WidgetInstanceAPI::Teardown);
 
-	c8*           name;
+	WidgetDescRef ref;
+	String        name;
 	u32           userDataSize;
 	InitializeFn* initialize;
 	UpdateFn*     update;

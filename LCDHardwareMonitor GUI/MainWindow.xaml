@@ -59,6 +59,16 @@
 
     <!-- LCD Designer -->
     <TabItem Header="LCD Designer">
+      <TabItem.Resources>
+        <Style BasedOn="{StaticResource MetroLabel}"
+               TargetType="{x:Type Label}">
+          <Style.Setters>
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="FontWeight" Value="Light" />
+            <Setter Property="Foreground" Value="Gray" />
+          </Style.Setters>
+        </Style>
+      </TabItem.Resources>
       <Grid>
         <Grid.ColumnDefinitions>
           <ColumnDefinition MinWidth="320" />
@@ -66,40 +76,109 @@
           <ColumnDefinition MinWidth="320" />
         </Grid.ColumnDefinitions>
 
-        <Border Grid.Column="0"
-                VerticalAlignment="Stretch" HorizontalAlignment="Stretch"
-                BorderBrush="#3F3F46" BorderThickness="1">
-          <Image Stretch="None">
-            <Image.Source>
-              <pc:D3DImage x:Name="LCDPreviewTexture"/>
-            </Image.Source>
-          </Image>
-        </Border>
+        <!-- Left Side -->
+        <Grid Grid.Column="0">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="20" />
+            <RowDefinition Height="*" />
+          </Grid.RowDefinitions>
 
-        <DataGrid Grid.Column="2"
-                  VerticalAlignment="Stretch" HorizontalAlignment="Stretch"
-                  BorderBrush="#3F3F46" BorderThickness="1"
-                  ItemsSource="{Binding Sensors}"
-                  AutoGenerateColumns="false">
-        <DataGrid.Columns>
-          <DataGridTextColumn Binding="{Binding Name}"
-                              Header="Name"
-                              Width="*"
-                              IsReadOnly="true" />
-          <DataGridTextColumn Binding="{Binding Identifier}"
-                              Header="Identifier"
-                              Width="*"
-                              IsReadOnly="true" />
-          <DataGridTextColumn Binding="{Binding String}"
-                              Header="String"
-                              Width="*"
-                              IsReadOnly="true" />
-          <DataGridTextColumn Binding="{Binding Value}"
-                              Header="Value"
-                              Width="*"
-                              IsReadOnly="true" />
-        </DataGrid.Columns>
-      </DataGrid>
+          <!-- LCD Preview -->
+          <StackPanel Grid.Row="0">
+            <Label Content="LCD Preview" />
+            <Image Stretch="None">
+              <Image.Source>
+                <pc:D3DImage x:Name="LCDPreviewTexture" />
+              </Image.Source>
+            </Image>
+          </StackPanel>
+          
+          <!-- Widget Settings -->
+          <Grid Grid.Row="2">
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            
+            <Label Grid.Row="0"
+                   Content="Widget Settings" />
+
+            <Border Grid.Row="1"
+                    BorderBrush="#333333" BorderThickness="1" />
+          </Grid>
+        </Grid>
+        
+        
+        <!-- Right Side -->
+        <!-- Widgets and Sensors -->
+        <mah:MetroAnimatedTabControl Grid.Column="2">
+
+          <!-- TabItem Styling -->
+          <mah:MetroAnimatedTabControl.ItemContainerStyle>
+            <Style BasedOn="{StaticResource MetroTabItem}"
+                   TargetType="{x:Type TabItem}">
+              <Style.Setters>
+                <Setter Property="Padding" Value="6, -6, 6, 2" />
+                <Setter Property="mah:ControlsHelper.HeaderFontSize" Value="16" />
+                <Setter Property="mah:ControlsHelper.HeaderFontWeight" Value="Light" />
+                <Setter Property="mah:ControlsHelper.ContentCharacterCasing" Value="Lower" />
+              </Style.Setters>
+            </Style>
+          </mah:MetroAnimatedTabControl.ItemContainerStyle>
+
+          <!-- Widgets -->
+          <TabItem Header="Widgets">
+            <DataGrid Grid.Column="2"
+                    VerticalAlignment="Stretch" HorizontalAlignment="Stretch"
+                    BorderBrush="#333333" BorderThickness="1"
+                    ItemsSource="{Binding WidgetDescs}"
+                    AutoGenerateColumns="false">
+              <DataGrid.Columns>
+                <DataGridTextColumn Binding="{Binding Ref}"
+                                Header="Ref"
+                                Width="*"
+                                IsReadOnly="true" />
+                <DataGridTextColumn Binding="{Binding Name}"
+                                Header="Name"
+                                Width="*"
+                                IsReadOnly="true" />
+                </DataGrid.Columns>
+            </DataGrid>
+          </TabItem>
+
+          <!-- Sensors -->
+          <TabItem Header="Sensors">
+            <DataGrid Grid.Column="2"
+                    VerticalAlignment="Stretch" HorizontalAlignment="Stretch"
+                    BorderBrush="#333333" BorderThickness="1"
+                    ItemsSource="{Binding Sensors}"
+                    AutoGenerateColumns="false">
+              <DataGrid.Columns>
+                <DataGridTextColumn Binding="{Binding Ref}"
+                                Header="Ref"
+                                Width="*"
+                                IsReadOnly="true" />
+                <DataGridTextColumn Binding="{Binding Name}"
+                                Header="Name"
+                                Width="*"
+                                IsReadOnly="true" />
+                <DataGridTextColumn Binding="{Binding Identifier}"
+                                Header="Identifier"
+                                Width="*"
+                                IsReadOnly="true" />
+                <DataGridTextColumn Binding="{Binding Format}"
+                                Header="Format"
+                                Width="*"
+                                IsReadOnly="true" />
+                <DataGridTextColumn Binding="{Binding Value}"
+                                Header="Value"
+                                Width="*"
+                                IsReadOnly="true" />
+              </DataGrid.Columns>
+            </DataGrid>
+          </TabItem>
+        </mah:MetroAnimatedTabControl>
       </Grid>
     </TabItem>
 
@@ -113,7 +192,7 @@
       <!--
       <ListView ItemsSource="{Binding Plugins}"
                 DisplayMemberPath="name"
-                BorderBrush="#3F3F46" BorderThickness="1">
+                BorderBrush="#333333" BorderThickness="1">
         <ListView.View>
           <GridView>
             <GridViewColumn DisplayMemberBinding="{Binding name}"
@@ -153,7 +232,7 @@
 
     <!-- Settings -->
     <TabItem Header="Settings">
-      <Label BorderBrush="#3F3F46" BorderThickness="1" Content="Settings" />
+      <Label BorderBrush="#333333" BorderThickness="1" Content="Settings" />
     </TabItem>
   </mah:MetroAnimatedTabControl>
 
