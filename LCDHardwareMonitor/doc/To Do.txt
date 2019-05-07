@@ -2,12 +2,8 @@ Current
 	Fix StringSlice trailing zero
 	Looks like you can bind to fields if the context is a property?
 	I think pipes want to be no-wait
+	Fix the repaint delay when opening GUI
 
-	GUI Info
-		Plugins present (and their loaded state)
-		Widgets (added and removed)
-		Sensors (added and removed)
-		Profiling data
 	GUI Control
 		Open/Close simulation
 		Load/Unload plugins
@@ -15,15 +11,9 @@ Current
 		Add/Remove widgets
 		Configure widgets
 		Configure global settings (update rate)
-	GUI Architecture
-		Would it be better to share sim memory with the GUI directly as read only? No transferring of
-		data. GUI sends simple 'requests' for state changes. Still have to do something for WPF to
-		pick up data changes. And WPF needs copies of e.g. strings
 
 Stuff
-	Consider defining DEBUG in source
 	Use namespaces or something so we don't need _CLR on type names
-	Maaaaybe it's worth merging gui_types back into gui_interop to avoid the extra project
 	Decide on passing args by pointer or reference
 	Users probably need to be able to create custom UI for plugin settings
 	Ensure we're handling CloseHandle failures correctly
@@ -53,13 +43,6 @@ Design Pass
 		like everything else?)
 	Do we need to support people using objects in plugins (e.g do we need to give dtors an
 		opportunity to run?)
-	Consider *requiring* Update (and potentially other functions) for plugins. Does it make sense
-		to have a Widget plugin that never draws anything (drawing happens in Update)? Or a Sensor
-		that never updates sensors values (I don't think we want to encourage out-of-band updaing
-		from a plugin). For Initialize, what's a WidgetPlugin that doesn't add WidgetDescs?
-		SensorPlugins don't need Initialize though. If you have a plugin to monitor fan speeds but
-		have no fans, it seems fine to provide no Sensors. Ok, but it still should have the
-		opportunity to look, right?
 	Asset loading might be slow. Do we need to do it on a background thread?
 
 
@@ -89,15 +72,9 @@ Back Burner
 	Use an arena for logging
 	Figure out what happens when memory allocations fail
 	Compile time printf replacement
-
-
-
-Sensor Plugins
-	Should report the list of available sensors during initialization
-	Should be able to enable and disable sensors
-		Should this be 'on demand' or as a list of requests as part of the update?
-	Update should refresh the value of all *enabled* sensors
-		How much do we care about the data being memory coherent?
+	We don't support XP. Don't allow running on it.
+	Decide on static or dynamic linking to e.g. the CRT. Bundle redistributables if dynamically
+		linking.
 
 
 
@@ -108,7 +85,6 @@ Refactoring
 	Try out range based for loops
 	Ensure Platform function naming is uniform
 	Decide on 'plugin loader' naming on both sides of the managed boundary
-	Decide on in-struct initializers or not. Unify things.
 
 
 
@@ -119,7 +95,7 @@ Error Handling
 	Might have to allocate for the formatting, so check if strings are dynamic and free them
 	Maybe change functions to return a Result<T> with operator b32(), context string, etc
 	Goal: only a single print occurs during an error, but it may be multiple lines
-	The top level handler is the one who knowis if something is a warning or an error, not the inner
+	The top level handler is the one who knows if something is a warning or an error, not the inner
 		most handler. LoadFile can't know if it's loading a cache file or a critical resource.
 	Implement a Result<T> that can hold a return value or error information
 	I'm sure there are places where we're going to end up in a partially initialized state when
@@ -127,13 +103,14 @@ Error Handling
 
 
 
+Settings
+	Enable/disable sensors
+	Enable/disable widgets
+
+
+
 Plugins
-	Version the API so it can change without breaking existing plugins.
-	Enforce the constraint that you may *ONLY* access application provided
-		services during scope of the function to which the services were passed.
-		Basically, don't save a reference and access services from a separate
-		thread. This could be detected with a 'shim' of some sort (accessor
-		function?)
+	Sensors need a stable id across runs.
 	Write a tutorial for creating plugins. Warn about loader lock. Warn about
 		using version/strong name for dependencies so you don't end up with the
 		wrong one because the name matched.
@@ -148,9 +125,3 @@ Plugins
 		but the program is not elevated. This in turn means we are less likely
 		to crash from loading that assumes elevation and break, and we don't have
 		to ship with elevation enabled by default.
-
-
-
-Architecture
-	Decide on static or dynamic linking to e.g. the CRT. Bundle redistributables
-		if dynamically linking.

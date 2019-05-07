@@ -141,52 +141,48 @@
 
           <!-- Widgets -->
           <TabItem Header="Widgets">
-            <DataGrid Grid.Column="2"
-                    VerticalAlignment="Stretch" HorizontalAlignment="Stretch"
-                    BorderBrush="#333333" BorderThickness="1"
-                    ItemsSource="{Binding WidgetDescs}"
-                    AutoGenerateColumns="false">
+            <DataGrid BorderBrush="#333333" BorderThickness="1"
+                      ItemsSource="{Binding WidgetDescs}"
+                      AutoGenerateColumns="false">
               <DataGrid.Columns>
                 <DataGridTextColumn Binding="{Binding Ref}"
-                                Header="Ref"
-                                Width="42"
-                                IsReadOnly="true" />
+                                    Header="Ref"
+                                    Width="42"
+                                    IsReadOnly="true" />
                 <DataGridTextColumn Binding="{Binding Name}"
-                                Header="Name"
-                                Width="*"
-                                IsReadOnly="true" />
+                                    Header="Name"
+                                    Width="*"
+                                    IsReadOnly="true" />
                 </DataGrid.Columns>
             </DataGrid>
           </TabItem>
 
           <!-- Sensors -->
           <TabItem Header="Sensors">
-            <DataGrid Grid.Column="2"
-                    VerticalAlignment="Stretch" HorizontalAlignment="Stretch"
-                    BorderBrush="#333333" BorderThickness="1"
-                    ItemsSource="{Binding Sensors}"
-                    AutoGenerateColumns="false">
+            <DataGrid BorderBrush="#333333" BorderThickness="1"
+                      ItemsSource="{Binding Sensors}"
+                      AutoGenerateColumns="false">
               <DataGrid.Columns>
                 <DataGridTextColumn Binding="{Binding Ref}"
-                                Header="Ref"
-                                Width="42"
-                                IsReadOnly="true" />
+                                    Header="Ref"
+                                    Width="42"
+                                    IsReadOnly="true" />
                 <DataGridTextColumn Binding="{Binding Name}"
-                                Header="Name"
-                                Width="*"
-                                IsReadOnly="true" />
+                                    Header="Name"
+                                    Width="*"
+                                    IsReadOnly="true" />
                 <DataGridTextColumn Binding="{Binding Identifier}"
-                                Header="Identifier"
-                                Width="*"
-                                IsReadOnly="true" />
+                                    Header="Identifier"
+                                    Width="*"
+                                    IsReadOnly="true" />
                 <DataGridTextColumn Binding="{Binding Format}"
-                                Header="Format"
-                                Width="*"
-                                IsReadOnly="true" />
+                                    Header="Format"
+                                    Width="*"
+                                    IsReadOnly="true" />
                 <DataGridTextColumn Binding="{Binding Value}"
-                                Header="Value"
-                                Width="*"
-                                IsReadOnly="true" />
+                                    Header="Value"
+                                    Width="*"
+                                    IsReadOnly="true" />
               </DataGrid.Columns>
             </DataGrid>
           </TabItem>
@@ -251,6 +247,7 @@
 </mah:MetroWindow>
 
 <!-- TODO: Is there a way to grab the current TabItem style without having to specify the mah style directly? -->
+<!-- TODO: DataGrid looks like shit and is super laggy -->
 
 <!-- TODO: Nitpicky things -->
 <!-- TODO: Disable multi-line wrapping on tab control -->

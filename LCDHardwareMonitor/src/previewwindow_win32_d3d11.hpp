@@ -5,20 +5,20 @@ const u32 WM_PREVIEWWINDOWCLOSED = WM_USER + 0;
 
 struct PreviewWindowState
 {
-	HWND                    hwnd                  = nullptr;
-	void*                   mainFiber             = nullptr;
-	HINSTANCE               hInstance             = nullptr;
-	ComPtr<IDXGISwapChain>  swapChain             = nullptr;
-	ComPtr<ID3D11Texture2D> backBuffer            = nullptr;
-	v2u                     renderSize            = {};
-	v2u                     nonClientSize         = {};
-	u16                     zoomFactor            = 1;
-	i16                     mouseWheelAccumulator = 0;
-	SimulationState*        simulationState       = nullptr;
-	b32                     mouseLook             = false;
-	v2i                     mousePosStart         = {};
-	v2                      cameraRotStart        = {};
-	v2                      cameraRot             = {};
+	HWND                    hwnd;
+	void*                   mainFiber;
+	HINSTANCE               hInstance;
+	ComPtr<IDXGISwapChain>  swapChain;
+	ComPtr<ID3D11Texture2D> backBuffer;
+	v2u                     renderSize;
+	v2u                     nonClientSize;
+	u16                     zoomFactor;
+	i16                     mouseWheelAccumulator;
+	SimulationState*        simulationState;
+	b32                     mouseLook;
+	v2i                     mousePosStart;
+	v2                      cameraRotStart;
+	v2                      cameraRot;
 };
 
 b32
@@ -26,6 +26,7 @@ PreviewWindow_Initialize(PreviewWindowState* s, SimulationState* simulationState
 {
 	s->mainFiber       = mainFiber;
 	s->hInstance       = hInstance;
+	s->zoomFactor      = 1;
 	s->simulationState = simulationState;
 	RendererState* rendererState = s->simulationState->renderer;
 

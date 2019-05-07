@@ -20,6 +20,12 @@
 
 	#define EXPORT extern "C" __declspec(dllexport)
 	#define __FUNCTION_FULL_NAME__ __FUNCSIG__
+
+	#if _DEBUG
+		#define DEBUG 1
+	#else
+		#define DEBUG 0
+	#endif
 #endif
 
 #if __cplusplus_cli

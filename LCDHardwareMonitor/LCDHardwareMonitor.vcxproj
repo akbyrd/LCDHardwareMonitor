@@ -91,7 +91,6 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <AdditionalOptions>/std:c++14 %(AdditionalOptions)</AdditionalOptions>
-      <PreprocessorDefinitions>DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(ProjectDir)include;$(SolutionDir)LCDHardwareMonitor API</AdditionalIncludeDirectories>
     </ClCompile>
     <PostBuildEvent>
@@ -108,7 +107,6 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <AdditionalOptions>/std:c++14 %(AdditionalOptions)</AdditionalOptions>
-      <PreprocessorDefinitions>DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(ProjectDir)include;$(SolutionDir)LCDHardwareMonitor API</AdditionalIncludeDirectories>
     </ClCompile>
     <PostBuildEvent>

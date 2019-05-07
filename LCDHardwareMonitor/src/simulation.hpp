@@ -11,7 +11,7 @@ struct SimulationState
 	Matrix             view;
 	Matrix             proj;
 	Matrix             vp; // TODO: Remove this when simulation talks to the renderer directly
-	u64                startTime;
+	i64                startTime;
 	r32                currentTime;
 
 	b32                guiConnected;
@@ -389,7 +389,6 @@ LoadWidgetPlugin(SimulationState* s, c8* directory, c8* fileName)
 	// TODO: try/catch?
 	if (widgetPlugin->functions.initialize)
 	{
-		// TODO: Hoist these parameters up
 		PluginContext context = {};
 		context.s            = s;
 		context.widgetPlugin = widgetPlugin;
@@ -824,16 +823,6 @@ Simulation_Update(SimulationState* s)
 			}
 		}
 	}
-
-	// TODO: Should probably break these up into PluginAdded, SensorAdded, & WidgetAdded. Reuse those
-	// functions for the initial blast below
-
-	// TODO: Rewrite gui communication
-	// 1) Messages must be serialized immediately and stored. Otherwise the state may change
-	//    and subsequent attempts to build the message will serialize different data
-	// 2) "Active message id" will become a 'message index'
-	// 3) Might need to stick 'QueueGUIMessage' calls next to state changes
-	// 4) Serialize guiMessageIndex into the message
 
 	// GUI Communication
 	if (!s->guiFailure)
