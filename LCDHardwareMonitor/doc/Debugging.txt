@@ -20,6 +20,14 @@ C++ and C#
 	If native code debugging is enabled for C# project then C# exceptions show up as native
 	exceptions. They're just an exception code and an address. You can't tell which type of
 	exception they are.
+	Natvis doesn't fully work in mixed mode. Specifically, Slice<T>. Casting using the template
+	parameter is at least one failure point. Might be better in 2017.
+
+Message Ids
+	2044204232 Connect
+	3957528242 PluginsAdded
+	3968079549 SensorsAdded
+	1277892646 WidgetDescsAdded
 
 
 // Matrix Math

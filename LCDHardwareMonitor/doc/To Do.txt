@@ -1,5 +1,7 @@
 Current
 	Fix StringSlice trailing zero
+	Looks like you can bind to fields if the context is a property?
+	I think pipes want to be no-wait
 
 	GUI Info
 		Plugins present (and their loaded state)

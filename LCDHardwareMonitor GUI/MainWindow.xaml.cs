@@ -8,27 +8,27 @@ using System.Windows.Media;
 
 namespace LCDHardwareMonitor
 {
-    public partial class MainWindow : MetroWindow
-    {
-        public MainWindow()
-        {
-            InitializeComponent();
-            CompositionTarget.Rendering += CompositionTarget_Rendering;
-        }
+	public partial class MainWindow : MetroWindow
+	{
+		public MainWindow()
+		{
+			InitializeComponent();
+			CompositionTarget.Rendering += CompositionTarget_Rendering;
+		}
 
-        private void CompositionTarget_Rendering(object sender, EventArgs e)
-        {
-            App app = (App) Application.Current;
+		private void CompositionTarget_Rendering(object sender, EventArgs e)
+		{
+			App app = (App) Application.Current;
 
-            LCDPreviewTexture.Lock();
-            LCDPreviewTexture.SetBackBuffer(D3DResourceType.IDirect3DSurface9, app.SimulationState.RenderSurface, true);
+			LCDPreviewTexture.Lock();
+			LCDPreviewTexture.SetBackBuffer(D3DResourceType.IDirect3DSurface9, app.SimulationState.RenderSurface, true);
 
-            if (app.SimulationState.RenderSurface != IntPtr.Zero)
-                LCDPreviewTexture.AddDirtyRect(new Int32Rect(0, 0, LCDPreviewTexture.PixelWidth, LCDPreviewTexture.PixelHeight));
+			if (app.SimulationState.RenderSurface != IntPtr.Zero)
+				LCDPreviewTexture.AddDirtyRect(new Int32Rect(0, 0, LCDPreviewTexture.PixelWidth, LCDPreviewTexture.PixelHeight));
 
-            LCDPreviewTexture.Unlock();
-        }
-    }
+			LCDPreviewTexture.Unlock();
+		}
+	}
 
 	public class VisibilityConverter : IValueConverter
 	{
