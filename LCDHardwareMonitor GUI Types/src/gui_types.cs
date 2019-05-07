@@ -1,7 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Runtime.CompilerServices;
 
 public enum PluginKind_CLR
 {
@@ -36,6 +36,14 @@ public struct WidgetDesc_CLR
 	public string Name      { get; set; }
 }
 
+public enum GUIMessage
+{
+	Null,
+	LaunchSim,
+	CloseSim,
+	KillSim,
+}
+
 public class SimulationState : INotifyPropertyChanged
 {
 	public uint                                 Version       { get; set; }
@@ -45,6 +53,7 @@ public class SimulationState : INotifyPropertyChanged
 	public ObservableCollection<WidgetDesc_CLR> WidgetDescs   { get; } = new ObservableCollection<WidgetDesc_CLR>();
 
 	// UI Helpers
+	public bool IsSimulationRunning   { get; set; }
 	public bool IsSimulationConnected { get; set; }
 
 	public event PropertyChangedEventHandler PropertyChanged;
@@ -53,6 +62,9 @@ public class SimulationState : INotifyPropertyChanged
 		if (PropertyChanged != null)
 			PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
 	}
+
+	// Messages
+	public List<GUIMessage> messages = new List<GUIMessage>();
 }
 
 // TODO: Is there any way to use native types directly?

@@ -20,6 +20,9 @@
         <Setter Property="Margin" Value="0, 0, 1, 1" />
       </Style.Setters>
     </Style>
+
+    <lhm:VisibilityConverter x:Key="vc" />
+    <lhm:VisibilityConverter x:Key="ivc" Invert="true "/>
   </mah:MetroWindow.Resources>
 
 
@@ -88,10 +91,6 @@
 
           <!-- LCD Preview -->
           <StackPanel Grid.Row="0">
-            <StackPanel.Resources>
-              <lhm:VisibilityConverter x:Key="vc" />
-              <lhm:VisibilityConverter x:Key="ivc" Invert="true "/>
-            </StackPanel.Resources>
             <Label Content="LCD Preview" />
             <Image Visibility="{Binding IsSimulationConnected, Converter={StaticResource vc}}"
                    Stretch="None">
@@ -214,7 +213,8 @@
       </ListView>
       -->
 
-      <DataGrid ItemsSource="{Binding Plugins}"
+      <DataGrid BorderBrush="#333333" BorderThickness="1"
+                ItemsSource="{Binding Plugins}"
                 AutoGenerateColumns="false">
         <DataGrid.Columns>
           <DataGridTextColumn Binding="{Binding Name}"
@@ -240,7 +240,30 @@
 
     <!-- Settings -->
     <TabItem Header="Settings">
-      <Label BorderBrush="#333333" BorderThickness="1" Content="Settings" />
+      <TabItem.Resources>
+        <ResourceDictionary>
+          <ResourceDictionary.MergedDictionaries>
+            <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/FlatButton.xaml" />
+          </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+      </TabItem.Resources>
+
+      <!-- TODO: Gray the button while processing -->
+      <!-- TODO: Use a dropdown button -->
+      <Border BorderBrush="#333333" BorderThickness="1">
+        <StackPanel HorizontalAlignment="Left">
+          <StackPanel Orientation="Horizontal">
+            <Label Content="Simulation Running:" />
+            <Label Content="{Binding IsSimulationRunning}" />
+            <Button Click="LaunchSim_Click"
+                    Content="Launch"
+                    Visibility="{Binding IsSimulationRunning, Converter={StaticResource ivc}}" />
+            <Button Click="CloseSim_Click"
+                    Content="Kill"
+                    Visibility="{Binding IsSimulationRunning, Converter={StaticResource vc}}" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
     </TabItem>
   </mah:MetroAnimatedTabControl>
 
