@@ -87,133 +87,156 @@ public value struct GUIInterop abstract sealed
 		// TODO: Decide on the code structure for this. Feels bad right now
 		// TODO: Loop
 		// Receive messages
-		for (u32 _i = 0; _i < 1; _i++)
+		Bytes bytes = {};
+		defer { List_Free(bytes); };
+
+		PipeResult result = Platform_ReadPipe(&s.pipe, bytes);
+		if (result == PipeResult::UnexpectedFailure) return false;
+		if (result == PipeResult::TransientFailure) return true;
+
+		// Synthesize a disconnect
 		{
-			Bytes bytes = {};
-			defer { List_Free(bytes); };
+			b32 noMessage        = bytes.length == 0;
+			b32 simConnected     = simState->IsSimulationConnected;
+			b32 pipeDisconnected = s.pipe.state == PipeState::Disconnecting
+				                  || s.pipe.state == PipeState::Disconnected;
 
-			PipeResult result = Platform_ReadPipe(&s.pipe, bytes);
-			if (result == PipeResult::UnexpectedFailure) return false;
-			if (result == PipeResult::TransientFailure) break;
-			if (bytes.length == 0) break;
-
-			// TODO: Need to handle these errors more intelligently
-			LOG_IF(bytes.length < sizeof(Header), break,
-				Severity::Warning, "Corrupted message received");
-
-			Header* header = (Header*) bytes.data;
-
-			LOG_IF(bytes.length != header->size, break,
-				Severity::Warning, "Incorrectly sized message received");
-
-			LOG_IF(header->index != s.messageIndex, break,
-				Severity::Warning, "Unexpected message received");
-			s.messageIndex++;
-
-			switch (header->id)
+			if (noMessage && simConnected && pipeDisconnected)
 			{
-				default: Assert(false); break;
-				case IdOf<Null>: break;
+				// TODO: Should do this without allocating. Maybe with a ByteSlice?
+				b32 success = List_Reserve(bytes, sizeof(Disconnect));
+				LOG_IF(!success, return false,
+					Severity::Fatal, "Failed to disconnect from simulation");
+				bytes.length = sizeof(Disconnect);
 
-				case IdOf<Connect>:
-				{
-					DeserializeMessage<Connect>(bytes);
+				Disconnect* disconnect = (Disconnect*) bytes.data;
+				*disconnect = {};
 
-					Connect* connect = (Connect*) bytes.data;
-					simState->Version = connect->version;
-
-					b32 success = D3D9_CreateSharedSurface(
-						s.d3d9Device,
-						&s.d3d9RenderTexture,
-						&s.d3d9RenderSurface0,
-						(HANDLE) connect->renderSurface,
-						connect->renderSize
-					);
-					if (!success) return false;
-
-					simState->RenderSurface = (System::IntPtr) s.d3d9RenderSurface0;
-					break;
-				}
-
-				case IdOf<PluginsAdded>:
-				{
-					DeserializeMessage<PluginsAdded>(bytes);
-					PluginsAdded* pluginsAdded = (PluginsAdded*) &bytes[0];
-
-					for (u32 i = 0; i < pluginsAdded->infos.length; i++)
-					{
-						PluginInfo_CLR pluginInfo_clr = {};
-						pluginInfo_clr.Ref     = pluginsAdded->refs[i].index;
-						pluginInfo_clr.Name    = ToSystemString(pluginsAdded->infos[i].name);
-						pluginInfo_clr.Kind    = ToPluginKind(pluginsAdded->kind);
-						pluginInfo_clr.Author  = ToSystemString(pluginsAdded->infos[i].author);
-						pluginInfo_clr.Version = pluginsAdded->infos[i].version;
-						simState->Plugins->Add(pluginInfo_clr);
-					}
-					break;
-				}
-
-				case IdOf<SensorsAdded>:
-				{
-					DeserializeMessage<SensorsAdded>(bytes);
-
-					SensorsAdded* sensorsAdded = (SensorsAdded*) bytes.data;
-					for (u32 i = 0; i < sensorsAdded->sensors.length; i++)
-					{
-						List<Sensor> sensors = sensorsAdded->sensors[i];
-						for (u32 j = 0; j < sensors.length; j++)
-						{
-							Sensor* sensor = &sensors[j];
-
-							Sensor_CLR sensor_clr = {};
-							sensor_clr.PluginRef  = sensorsAdded->pluginRefs[i].index;
-							sensor_clr.Ref        = sensor->ref.index;
-							sensor_clr.Name       = ToSystemString(sensor->name);
-							sensor_clr.Identifier = ToSystemString(sensor->identifier);
-							sensor_clr.Format     = ToSystemString(sensor->format);
-							sensor_clr.Value      = sensor->value;
-							simState->Sensors->Add(sensor_clr);
-						}
-					}
-					break;
-				}
-
-				case IdOf<WidgetDescsAdded>:
-				{
-					DeserializeMessage<WidgetDescsAdded>(bytes);
-
-					WidgetDescsAdded* widgetDescsAdded = (WidgetDescsAdded*) bytes.data;
-					for (u32 i = 0; i < widgetDescsAdded->descs.length; i++)
-					{
-						Slice<WidgetDesc> widgetDescs = widgetDescsAdded->descs[i];
-						for (u32 j = 0; j < widgetDescs.length; j++)
-						{
-							WidgetDesc* desc = &widgetDescs[j];
-
-							WidgetDesc_CLR widgetDesc_clr = {};
-							widgetDesc_clr.PluginRef  = widgetDescsAdded->pluginRefs[i].index;
-							widgetDesc_clr.Ref        = desc->ref.index;
-							widgetDesc_clr.Name       = ToSystemString(desc->name);
-							simState->WidgetDescs->Add(widgetDesc_clr);
-						}
-					}
-					break;
-				}
+				disconnect->header.id    = IdOf<Disconnect>;
+				disconnect->header.index = s.messageIndex;
+				disconnect->header.size  = sizeof(Disconnect);
 			}
 		}
 
-		// Reset on disconnects
-		{
-			if (s.pipe.state == PipeState::Disconnecting
-			 || s.pipe.state == PipeState::Disconnected)
-			{
-				if (simState->RenderSurface != System::IntPtr::Zero)
-				{
-					D3D9_DestroySharedSurface(&s.d3d9RenderTexture, &s.d3d9RenderSurface0);
-					simState->RenderSurface = System::IntPtr::Zero;
+		if (bytes.length == 0) return true;
 
-					s.messageIndex = 0;
+		// TODO: Need to handle these errors more intelligently
+		LOG_IF(bytes.length < sizeof(Header), return false,
+			Severity::Warning, "Corrupted message received");
+
+		Header* header = (Header*) bytes.data;
+
+		LOG_IF(bytes.length != header->size, return false,
+			Severity::Warning, "Incorrectly sized message received");
+
+		LOG_IF(header->index != s.messageIndex, return false,
+			Severity::Warning, "Unexpected message received");
+		s.messageIndex++;
+
+		switch (header->id)
+		{
+			default: Assert(false); break;
+			case IdOf<Null>: break;
+
+			case IdOf<Connect>:
+			{
+				DeserializeMessage<Connect>(bytes);
+
+				Connect* connect = (Connect*) bytes.data;
+				simState->Version = connect->version;
+
+				b32 success = D3D9_CreateSharedSurface(
+					s.d3d9Device,
+					&s.d3d9RenderTexture,
+					&s.d3d9RenderSurface0,
+					(HANDLE) connect->renderSurface,
+					connect->renderSize
+				);
+				if (!success) return false;
+
+				simState->RenderSurface = (System::IntPtr) s.d3d9RenderSurface0;
+				simState->IsSimulationConnected = true;
+				simState->NotifyPropertyChanged("");
+				break;
+			}
+
+			case IdOf<Disconnect>:
+			{
+				D3D9_DestroySharedSurface(&s.d3d9RenderTexture, &s.d3d9RenderSurface0);
+				simState->RenderSurface = System::IntPtr::Zero;
+				simState->Plugins->Clear();
+				simState->Sensors->Clear();
+				simState->WidgetDescs->Clear();
+				simState->IsSimulationConnected = false;
+				simState->NotifyPropertyChanged("");
+
+				s.messageIndex = 0;
+				break;
+			}
+
+			case IdOf<PluginsAdded>:
+			{
+				DeserializeMessage<PluginsAdded>(bytes);
+				PluginsAdded* pluginsAdded = (PluginsAdded*) &bytes[0];
+
+				for (u32 i = 0; i < pluginsAdded->infos.length; i++)
+				{
+					PluginInfo_CLR pluginInfo_clr = {};
+					pluginInfo_clr.Ref     = pluginsAdded->refs[i].index;
+					pluginInfo_clr.Name    = ToSystemString(pluginsAdded->infos[i].name);
+					pluginInfo_clr.Kind    = ToPluginKind(pluginsAdded->kind);
+					pluginInfo_clr.Author  = ToSystemString(pluginsAdded->infos[i].author);
+					pluginInfo_clr.Version = pluginsAdded->infos[i].version;
+					simState->Plugins->Add(pluginInfo_clr);
 				}
+				break;
+			}
+
+			case IdOf<SensorsAdded>:
+			{
+				DeserializeMessage<SensorsAdded>(bytes);
+
+				SensorsAdded* sensorsAdded = (SensorsAdded*) bytes.data;
+				for (u32 i = 0; i < sensorsAdded->sensors.length; i++)
+				{
+					List<Sensor> sensors = sensorsAdded->sensors[i];
+					for (u32 j = 0; j < sensors.length; j++)
+					{
+						Sensor* sensor = &sensors[j];
+
+						Sensor_CLR sensor_clr = {};
+						sensor_clr.PluginRef  = sensorsAdded->pluginRefs[i].index;
+						sensor_clr.Ref        = sensor->ref.index;
+						sensor_clr.Name       = ToSystemString(sensor->name);
+						sensor_clr.Identifier = ToSystemString(sensor->identifier);
+						sensor_clr.Format     = ToSystemString(sensor->format);
+						sensor_clr.Value      = sensor->value;
+						simState->Sensors->Add(sensor_clr);
+					}
+				}
+				break;
+			}
+
+			case IdOf<WidgetDescsAdded>:
+			{
+				DeserializeMessage<WidgetDescsAdded>(bytes);
+
+				WidgetDescsAdded* widgetDescsAdded = (WidgetDescsAdded*) bytes.data;
+				for (u32 i = 0; i < widgetDescsAdded->descs.length; i++)
+				{
+					Slice<WidgetDesc> widgetDescs = widgetDescsAdded->descs[i];
+					for (u32 j = 0; j < widgetDescs.length; j++)
+					{
+						WidgetDesc* desc = &widgetDescs[j];
+
+						WidgetDesc_CLR widgetDesc_clr = {};
+						widgetDesc_clr.PluginRef  = widgetDescsAdded->pluginRefs[i].index;
+						widgetDesc_clr.Ref        = desc->ref.index;
+						widgetDesc_clr.Name       = ToSystemString(desc->name);
+						simState->WidgetDescs->Add(widgetDesc_clr);
+					}
+				}
+				break;
 			}
 		}
 
@@ -229,8 +252,10 @@ public value struct GUIInterop abstract sealed
 		D3D9_DestroySharedSurface(&s.d3d9RenderTexture, &s.d3d9RenderSurface0);
 		D3D9_Teardown(s.d3d9, s.d3d9Device);
 
-		// TODO: Is there anything sane we can do with failures?
-		Platform_DisconnectPipe(&s.pipe);
+		PipeResult result = Platform_FlushPipe(&s.pipe);
+		LOG_IF(result == PipeResult::UnexpectedFailure, IGNORE,
+			Severity::Error, "Failed to flush GUI communication pipe");
+		Platform_DestroyPipe(&s.pipe);
 
 		s = {};
 	}

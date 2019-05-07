@@ -305,7 +305,6 @@ struct PipeImpl
 	String     fullName;
 	HANDLE     handle;
 	OVERLAPPED connect;
-	//OVERLAPPED read;
 };
 
 inline b32
@@ -691,16 +690,6 @@ Platform_CreatePipeClient(StringSlice name, Pipe* pipe)
 void
 Platform_DestroyPipe(Pipe* pipe)
 {
-	// TODO: Implement (use state?)
-	#if false
-	if (IsValidHandle(pipe->impl->handle))
-	{
-		// TODO: Handle failure?
-		FlushFileBuffers(pipe->impl->handle);
-		DisconnectNamedPipe(pipe->impl->handle);
-	}
-	#endif
-
 	List_Free(pipe->name);
 	List_Free(pipe->impl->fullName);
 	// TODO: Handle failure?
@@ -839,5 +828,17 @@ Platform_ReadPipe(Pipe* pipe, Bytes& bytes)
 		Severity::Fatal, "Read wrong amount of data from pipe '%s'", pipe->name.data);
 
 	bytes.length = read;
+	return PipeResult::Success;
+}
+
+PipeResult
+Platform_FlushPipe(Pipe* pipe)
+{
+	if (!IsValidHandle(pipe->impl->handle)) return PipeResult::TransientFailure;
+
+	b32 success = FlushFileBuffers(pipe->impl->handle);
+	LOG_LAST_ERROR_IF(!success, return PipeResult::UnexpectedFailure,
+		Severity::Error, "Failed to flush pipe '%s'", pipe->name.data);
+
 	return PipeResult::Success;
 }

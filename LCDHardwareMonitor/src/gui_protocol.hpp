@@ -20,6 +20,11 @@ namespace Message
 		v2u    renderSize;
 	};
 
+	struct Disconnect
+	{
+		Header header;
+	};
+
 	struct PluginsAdded
 	{
 		Header               header;

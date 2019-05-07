@@ -62,10 +62,11 @@ r32        Platform_GetElapsedSeconds (u64 startTicks);
 PipeResult Platform_CreatePipeServer  (StringSlice name, Pipe*);
 PipeResult Platform_CreatePipeClient  (StringSlice name, Pipe*);
 void       Platform_DestroyPipe       (Pipe*);
-PipeResult Platform_DisconnectPipe    (Pipe*);
 PipeResult Platform_ConnectPipe       (Pipe*);
+PipeResult Platform_DisconnectPipe    (Pipe*);
 PipeResult Platform_WritePipe         (Pipe*, Bytes bytes);
 PipeResult Platform_ReadPipe          (Pipe*, Bytes& bytes);
+PipeResult Platform_FlushPipe         (Pipe*);
 
 #define LOCATION { __FILE__, __LINE__, __FUNCTION__ }
 #define LOG(severity, format, ...) Platform_Log(severity, LOCATION, format, __VA_ARGS__)

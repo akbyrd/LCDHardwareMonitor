@@ -898,6 +898,7 @@ Simulation_Update(SimulationState* s)
 			}
 		}
 
+		// TODO: Flush this buffer on guiFailure
 		// TODO: Probably don't want to let this buffer build up in high traffic scenarios
 		// Send
 		for (; s->guiQueueIndex < s->guiQueue.length; s->guiQueueIndex++)
@@ -971,12 +972,32 @@ Simulation_Teardown(SimulationState* s)
 	// do this for testing, but it's unnecessary work in the normal teardown
 	// case.
 
+	if (s->guiConnected)
+	{
+		using namespace Message;
+
+		Disconnect disconnect = {};
+		disconnect.header.id    = IdOf<Disconnect>;
+		disconnect.header.index = s->guiMessageIndex - (s->guiQueue.length - s->guiQueueIndex);
+		disconnect.header.size  = sizeof(Disconnect);
+
+		Bytes bytes = {};
+		bytes.length   = sizeof(Disconnect);
+		bytes.capacity = bytes.length;
+		bytes.data     = (u8*) &disconnect;
+
+		PipeResult result = Platform_WritePipe(&s->guiPipe, bytes);
+		LOG_IF(result != PipeResult::Success, IGNORE,
+				Severity::Error, "Failed to send GUI disconnect signal");
+	}
+
 	for (u32 i = 0; i < s->guiQueue.capacity; i++)
 		List_Free(s->guiQueue[i]);
 	List_Free(s->guiQueue);
 
-	// TODO: Is there anything sane we can do with failures?
-	Platform_DisconnectPipe(&s->guiPipe);
+	PipeResult result = Platform_FlushPipe(&s->guiPipe);
+	LOG_IF(result == PipeResult::UnexpectedFailure, IGNORE,
+		Severity::Error, "Failed to flush GUI communication pipe");
 	Platform_DestroyPipe(&s->guiPipe);
 
 	for (u32 i = 0; i < s->widgetPlugins.length; i++)

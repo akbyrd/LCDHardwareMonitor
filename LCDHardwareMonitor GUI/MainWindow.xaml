@@ -3,11 +3,13 @@
                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                  xmlns:pc="clr-namespace:System.Windows.Interop;assembly=PresentationCore"
                  xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
+                 xmlns:lhm="clr-namespace:LCDHardwareMonitor"
                  Height="450" Width="800"
                  WindowStartupLocation="CenterScreen"
                  TitlebarHeight="24"
                  ResizeMode="CanResizeWithGrip" ResizeBorderThickness="0, 0, 10, 10"
                  WindowTitleBrush="Transparent" NonActiveWindowTitleBrush="Transparent"
+                 MinHeight="450" MinWidth="512"
                  DataContext="{Binding Path=SimulationState, Source={x:Static Application.Current}}">
 
   <!-- Resize Grip Style -->
@@ -86,12 +88,22 @@
 
           <!-- LCD Preview -->
           <StackPanel Grid.Row="0">
+            <StackPanel.Resources>
+              <lhm:VisibilityConverter x:Key="vc" />
+              <lhm:VisibilityConverter x:Key="ivc" Invert="true "/>
+            </StackPanel.Resources>
             <Label Content="LCD Preview" />
-            <Image Stretch="None">
+            <Image Visibility="{Binding IsSimulationConnected, Converter={StaticResource vc}}"
+                   Stretch="None">
               <Image.Source>
                 <pc:D3DImage x:Name="LCDPreviewTexture" />
               </Image.Source>
             </Image>
+            <Label Visibility="{Binding IsSimulationConnected, Converter={StaticResource ivc}}"
+                   HorizontalContentAlignment="Center"
+                   VerticalContentAlignment="Center"
+                   Height="240" Width="320" Background="#33AA0000"
+                   Content="Preview is not available" />
           </StackPanel>
           
           <!-- Widget Settings -->
@@ -137,7 +149,7 @@
               <DataGrid.Columns>
                 <DataGridTextColumn Binding="{Binding Ref}"
                                 Header="Ref"
-                                Width="*"
+                                Width="42"
                                 IsReadOnly="true" />
                 <DataGridTextColumn Binding="{Binding Name}"
                                 Header="Name"
@@ -157,7 +169,7 @@
               <DataGrid.Columns>
                 <DataGridTextColumn Binding="{Binding Ref}"
                                 Header="Ref"
-                                Width="*"
+                                Width="42"
                                 IsReadOnly="true" />
                 <DataGridTextColumn Binding="{Binding Name}"
                                 Header="Name"
