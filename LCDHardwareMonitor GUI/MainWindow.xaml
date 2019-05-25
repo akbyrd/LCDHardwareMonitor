@@ -1,10 +1,10 @@
-<mah:MetroWindow x:Class="LCDHardwareMonitor.MainWindow"
+<mah:MetroWindow x:Class="LCDHardwareMonitor.GUI.MainWindow"
                  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                  xmlns:pc="clr-namespace:System.Windows.Interop;assembly=PresentationCore"
                  xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
-                 xmlns:lhm="clr-namespace:LCDHardwareMonitor"
-                 xmlns:lhmt="clr-namespace:LCDHardwareMonitor;assembly=LCDHardwareMonitor.GUI.Types"
+                 xmlns:lhm="clr-namespace:LCDHardwareMonitor.GUI"
+                 xmlns:lhmt="clr-namespace:LCDHardwareMonitor.GUI;assembly=LCDHardwareMonitor.GUI.Types"
                  Height="450" Width="800"
                  WindowStartupLocation="CenterScreen"
                  TitlebarHeight="24"
@@ -247,16 +247,16 @@
                 <!-- TODO: Add states for Loading and Unloading so we can disable the button while waiting. Same for the load/kill process button -->
 
                 <DataTemplate.Triggers>
-                  <DataTrigger Binding="{Binding LoadState}" Value="{x:Static lhmt:PluginLoadState_CLR.Null}">
+                  <DataTrigger Binding="{Binding LoadState}" Value="{x:Static lhmt:PluginLoadState.Null}">
                     <Setter TargetName="btn" Property="IsEnabled" Value="false"/>
                   </DataTrigger>
-                  <DataTrigger Binding="{Binding LoadState}" Value="{x:Static lhmt:PluginLoadState_CLR.Loaded}">
+                  <DataTrigger Binding="{Binding LoadState}" Value="{x:Static lhmt:PluginLoadState.Loaded}">
                     <Setter TargetName="btn" Property="Content" Value="Unload"/>
                   </DataTrigger>
-                  <DataTrigger Binding="{Binding LoadState}" Value="{x:Static lhmt:PluginLoadState_CLR.Unloaded}">
+                  <DataTrigger Binding="{Binding LoadState}" Value="{x:Static lhmt:PluginLoadState.Unloaded}">
                     <Setter TargetName="btn" Property="Content" Value="Load"/>
                   </DataTrigger>
-                  <DataTrigger Binding="{Binding LoadState}" Value="{x:Static lhmt:PluginLoadState_CLR.Broken}">
+                  <DataTrigger Binding="{Binding LoadState}" Value="{x:Static lhmt:PluginLoadState.Broken}">
                     <Setter TargetName="btn" Property="IsEnabled" Value="false"/>
                   </DataTrigger>
                 </DataTemplate.Triggers>

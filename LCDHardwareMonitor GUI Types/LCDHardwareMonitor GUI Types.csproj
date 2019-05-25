@@ -7,7 +7,7 @@
     <ProjectGuid>{2B164CDE-859B-4767-A810-EE42EDCFA64B}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>LCDHardwareMonitor</RootNamespace>
+    <RootNamespace>LCDHardwareMonitor.GUI</RootNamespace>
     <AssemblyName>LCDHardwareMonitor.GUI.Types</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>

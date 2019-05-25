@@ -3,16 +3,16 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 
-namespace LCDHardwareMonitor
+namespace LCDHardwareMonitor.GUI
 {
-	public enum PluginKind_CLR
+	public enum PluginKind
 	{
 		Null,
 		Sensor,
 		Widget,
 	}
 
-	public enum PluginLoadState_CLR
+	public enum PluginLoadState
 	{
 		Null,
 		Loaded,
@@ -20,18 +20,18 @@ namespace LCDHardwareMonitor
 		Broken,
 	}
 
-	public struct PluginInfo_CLR
+	public struct PluginInfo
 	{
-		public uint           Ref     { get; set; }
-		public string         Name    { get; set; }
-		public PluginKind_CLR Kind    { get; set; }
-		public string         Author  { get; set; }
-		public uint           Version { get; set; }
+		public uint       Ref     { get; set; }
+		public string     Name    { get; set; }
+		public PluginKind Kind    { get; set; }
+		public string     Author  { get; set; }
+		public uint       Version { get; set; }
 
-		public PluginLoadState_CLR LoadState { get; set; } // TODO: Probably belongs in another struct
+		public PluginLoadState LoadState { get; set; } // TODO: Probably belongs in another struct
 	}
 
-	public struct Sensor_CLR
+	public struct Sensor
 	{
 		public uint   PluginRef  { get; set; }
 		public uint   Ref        { get; set; }
@@ -41,7 +41,7 @@ namespace LCDHardwareMonitor
 		public float  Value      { get; set; }
 	}
 
-	public struct WidgetDesc_CLR
+	public struct WidgetDesc
 	{
 		public uint   PluginRef { get; set; }
 		public uint   Ref       { get; set; }
@@ -69,18 +69,18 @@ namespace LCDHardwareMonitor
 
 	public struct SetPluginLoadStates
 	{
-		public PluginKind_CLR      kind;
-		public uint                ref_;
-		public PluginLoadState_CLR loadState;
+		public PluginKind      kind;
+		public uint            ref_;
+		public PluginLoadState loadState;
 	};
 
 	public class SimulationState : INotifyPropertyChanged
 	{
-		public uint                                 Version       { get; set; }
-		public IntPtr                               RenderSurface { get; set; }
-		public ObservableCollection<PluginInfo_CLR> Plugins       { get; set; } = new ObservableCollection<PluginInfo_CLR>();
-		public ObservableCollection<Sensor_CLR>     Sensors       { get; set; } = new ObservableCollection<Sensor_CLR>();
-		public ObservableCollection<WidgetDesc_CLR> WidgetDescs   { get; set; } = new ObservableCollection<WidgetDesc_CLR>();
+		public uint                             Version       { get; set; }
+		public IntPtr                           RenderSurface { get; set; }
+		public ObservableCollection<PluginInfo> Plugins       { get; set; } = new ObservableCollection<PluginInfo>();
+		public ObservableCollection<Sensor>     Sensors       { get; set; } = new ObservableCollection<Sensor>();
+		public ObservableCollection<WidgetDesc> WidgetDescs   { get; set; } = new ObservableCollection<WidgetDesc>();
 
 		// UI Helpers
 		public bool IsSimulationRunning   { get; set; }

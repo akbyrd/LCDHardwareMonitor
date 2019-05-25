@@ -28,6 +28,7 @@ static State state = {};
 
 #pragma managed
 using namespace LCDHardwareMonitor;
+namespace GUI = LCDHardwareMonitor::GUI;
 
 System::String^
 ToSystemString(StringSlice cstring)
@@ -44,15 +45,15 @@ ToSystemString(StringSlice cstring)
 	return result;
 }
 
-PluginKind_CLR
+GUI::PluginKind
 ToPluginKind(PluginKind kind)
 {
 	switch (kind)
 	{
-		default: Assert(false);  return PluginKind_CLR::Null;
-		case PluginKind::Null:   return PluginKind_CLR::Null;
-		case PluginKind::Sensor: return PluginKind_CLR::Sensor;
-		case PluginKind::Widget: return PluginKind_CLR::Widget;
+		default: Assert(false);  return GUI::PluginKind::Null;
+		case PluginKind::Null:   return GUI::PluginKind::Null;
+		case PluginKind::Sensor: return GUI::PluginKind::Sensor;
+		case PluginKind::Widget: return GUI::PluginKind::Widget;
 	}
 }
 
@@ -77,7 +78,7 @@ public value struct GUIInterop abstract sealed
 	}
 
 	static bool
-	Update(SimulationState^ simState)
+	Update(GUI::SimulationState^ simState)
 	{
 		// DEBUG: Needed for the Watch window
 		State& s = state;
@@ -183,13 +184,13 @@ public value struct GUIInterop abstract sealed
 
 				for (u32 i = 0; i < pluginsAdded->infos.length; i++)
 				{
-					PluginInfo_CLR pluginInfo_clr = {};
-					pluginInfo_clr.Ref     = pluginsAdded->refs[i].index;
-					pluginInfo_clr.Name    = ToSystemString(pluginsAdded->infos[i].name);
-					pluginInfo_clr.Kind    = ToPluginKind(pluginsAdded->kind);
-					pluginInfo_clr.Author  = ToSystemString(pluginsAdded->infos[i].author);
-					pluginInfo_clr.Version = pluginsAdded->infos[i].version;
-					simState->Plugins->Add(pluginInfo_clr);
+					GUI::PluginInfo mPluginInfo = {};
+					mPluginInfo.Ref     = pluginsAdded->refs[i].index;
+					mPluginInfo.Name    = ToSystemString(pluginsAdded->infos[i].name);
+					mPluginInfo.Kind    = ToPluginKind(pluginsAdded->kind);
+					mPluginInfo.Author  = ToSystemString(pluginsAdded->infos[i].author);
+					mPluginInfo.Version = pluginsAdded->infos[i].version;
+					simState->Plugins->Add(mPluginInfo);
 				}
 				break;
 			}
@@ -204,10 +205,10 @@ public value struct GUIInterop abstract sealed
 				{
 					for (u32 j = 0; j < (u32) simState->Plugins->Count; j++)
 					{
-						PluginInfo_CLR p = simState->Plugins[(i32) j];
+						GUI::PluginInfo p = simState->Plugins[(i32) j];
 						if ((PluginKind) p.Kind == statesChanged->kind && p.Ref == statesChanged->refs[i].index)
 						{
-							p.LoadState = (PluginLoadState_CLR) statesChanged->loadStates[i];
+							p.LoadState = (GUI::PluginLoadState) statesChanged->loadStates[i];
 							simState->Plugins[(i32) j] = p;
 						}
 					}
@@ -229,14 +230,14 @@ public value struct GUIInterop abstract sealed
 					{
 						Sensor* sensor = &sensors[j];
 
-						Sensor_CLR sensor_clr = {};
-						sensor_clr.PluginRef  = sensorsAdded->pluginRefs[i].index;
-						sensor_clr.Ref        = sensor->ref.index;
-						sensor_clr.Name       = ToSystemString(sensor->name);
-						sensor_clr.Identifier = ToSystemString(sensor->identifier);
-						sensor_clr.Format     = ToSystemString(sensor->format);
-						sensor_clr.Value      = sensor->value;
-						simState->Sensors->Add(sensor_clr);
+						GUI::Sensor mSensor = {};
+						mSensor.PluginRef  = sensorsAdded->pluginRefs[i].index;
+						mSensor.Ref        = sensor->ref.index;
+						mSensor.Name       = ToSystemString(sensor->name);
+						mSensor.Identifier = ToSystemString(sensor->identifier);
+						mSensor.Format     = ToSystemString(sensor->format);
+						mSensor.Value      = sensor->value;
+						simState->Sensors->Add(mSensor);
 					}
 				}
 				break;
@@ -254,11 +255,11 @@ public value struct GUIInterop abstract sealed
 					{
 						WidgetDesc* desc = &widgetDescs[j];
 
-						WidgetDesc_CLR widgetDesc_clr = {};
-						widgetDesc_clr.PluginRef = widgetDescsAdded->pluginRefs[i].index;
-						widgetDesc_clr.Ref       = desc->ref.index;
-						widgetDesc_clr.Name      = ToSystemString(desc->name);
-						simState->WidgetDescs->Add(widgetDesc_clr);
+						GUI::WidgetDesc mWidgetDesc = {};
+						mWidgetDesc.PluginRef = widgetDescsAdded->pluginRefs[i].index;
+						mWidgetDesc.Ref       = desc->ref.index;
+						mWidgetDesc.Name      = ToSystemString(desc->name);
+						simState->WidgetDescs->Add(mWidgetDesc);
 					}
 				}
 				break;

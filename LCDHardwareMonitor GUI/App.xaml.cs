@@ -4,7 +4,7 @@ using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Threading;
 
-namespace LCDHardwareMonitor
+namespace LCDHardwareMonitor.GUI
 {
 	public partial class App : Application
 	{

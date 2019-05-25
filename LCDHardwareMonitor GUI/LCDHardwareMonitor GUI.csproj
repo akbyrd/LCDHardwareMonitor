@@ -6,7 +6,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{5ECF7D2F-1DD5-4E32-A973-018FCBD33380}</ProjectGuid>
     <OutputType>WinExe</OutputType>
-    <RootNamespace>LCDHardwareMonitor</RootNamespace>
+    <RootNamespace>LCDHardwareMonitor.GUI</RootNamespace>
     <AssemblyName>LCDHardwareMonitor.GUI</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>

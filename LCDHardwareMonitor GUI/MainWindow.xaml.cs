@@ -8,7 +8,7 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 
-namespace LCDHardwareMonitor
+namespace LCDHardwareMonitor.GUI
 {
 	public partial class MainWindow : MetroWindow
 	{
@@ -48,22 +48,22 @@ namespace LCDHardwareMonitor
 		private void LoadPlugin_Click(object sender, RoutedEventArgs e)
 		{
 			Button button = (Button) sender;
-			PluginInfo_CLR item = (PluginInfo_CLR) button.DataContext;
+			PluginInfo item = (PluginInfo) button.DataContext;
 
-			PluginLoadState_CLR requestState;
+			PluginLoadState requestState;
 			switch (item.LoadState)
 			{
 				default:
-				case PluginLoadState_CLR.Null:
-				case PluginLoadState_CLR.Broken:
+				case PluginLoadState.Null:
+				case PluginLoadState.Broken:
 					return;
 
-				case PluginLoadState_CLR.Loaded:
-					requestState = PluginLoadState_CLR.Unloaded;
+				case PluginLoadState.Loaded:
+					requestState = PluginLoadState.Unloaded;
 					break;
 
-				case PluginLoadState_CLR.Unloaded:
-					requestState = PluginLoadState_CLR.Loaded;
+				case PluginLoadState.Unloaded:
+					requestState = PluginLoadState.Loaded;
 					break;
 			}
 
