@@ -226,7 +226,7 @@ LoadFile(c8* path, u32 padding = 0)
 		{
 			String cwd = GetWorkingDirectory();
 			defer { List_Free(cwd); };
-			LOG_LAST_ERROR(Severity::Warning, "Failed to create file handle '%s'; CWD: '%s'", path, cwd);
+			LOG_LAST_ERROR(Severity::Warning, "Failed to create file handle '%s'; CWD: '%s'", path, cwd.data);
 			return result;
 		}
 

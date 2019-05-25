@@ -146,7 +146,7 @@ DetectPluginLanguage(PluginHeader* pluginHeader)
 	{
 		String cwd = GetWorkingDirectory();
 		defer { List_Free(cwd); };
-		LOG_LAST_ERROR(Severity::Error, "Failed to open plugin file '%s'; CWD: '%s'", pluginPath, cwd);
+		LOG_LAST_ERROR(Severity::Error, "Failed to open plugin file '%s'; CWD: '%s'", pluginPath.data, cwd.data);
 		return false;
 	}
 
@@ -301,14 +301,14 @@ PluginLoader_UnloadSensorPlugin(PluginLoaderState* s, SensorPlugin* sensorPlugin
 		case PluginLanguage::Native:
 			success = FreeLibrary((HMODULE) pluginHeader->userData);
 			LOG_IF(!success, break,
-				Severity::Error, "Failed to unload unmanaged Sensor plugin '%s'", sensorPlugin->info.name);
+				Severity::Error, "Failed to unload unmanaged Sensor plugin '%s'", sensorPlugin->info.name.data);
 			pluginHeader->userData = nullptr;
 			break;
 
 		case PluginLanguage::Managed:
 			success = s->lhmPluginLoader->UnloadSensorPlugin(sensorPlugin);
 			LOG_IF(!success, IGNORE,
-				Severity::Error, "Failed to unload managed Sensor plugin '%s'", sensorPlugin->info.name);
+				Severity::Error, "Failed to unload managed Sensor plugin '%s'", sensorPlugin->info.name.data);
 			break;
 	}
 	if (!success) return false;
@@ -401,14 +401,14 @@ PluginLoader_UnloadWidgetPlugin(PluginLoaderState* s, WidgetPlugin* widgetPlugin
 		case PluginLanguage::Native:
 			success = FreeLibrary((HMODULE) pluginHeader->userData);
 			LOG_IF(!success, break,
-				Severity::Error, "Failed to unload unmanaged Widget plugin '%s'", widgetPlugin->info.name);
+				Severity::Error, "Failed to unload unmanaged Widget plugin '%s'", widgetPlugin->info.name.data);
 			pluginHeader->userData = nullptr;
 			break;
 
 		case PluginLanguage::Managed:
 			success = s->lhmPluginLoader->UnloadWidgetPlugin(widgetPlugin);
 			LOG_IF(!success, IGNORE,
-				Severity::Error, "Failed to unload managed Widget plugin '%s'", widgetPlugin->info.name);
+				Severity::Error, "Failed to unload managed Widget plugin '%s'", widgetPlugin->info.name.data);
 			break;
 	}
 	if (!success) return false;

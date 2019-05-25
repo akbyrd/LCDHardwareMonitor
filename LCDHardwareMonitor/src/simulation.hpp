@@ -41,7 +41,7 @@ CreateWidget(WidgetPlugin* widgetPlugin, WidgetData* widgetData)
 	b32 success = List_Reserve(widgetData->widgetsUserData, widgetData->desc.userDataSize);
 	LOG_IF(!success, return nullptr,
 		Severity::Error, "Failed to allocate space for %u bytes of Widget user data '%s'",
-		widgetData->desc.userDataSize, widgetPlugin->info.name);
+		widgetData->desc.userDataSize, widgetPlugin->info.name.data);
 	widgetData->widgetsUserData.length += widgetData->desc.userDataSize;
 
 	return widget;
@@ -115,7 +115,7 @@ RegisterSensors(PluginContext* context, Slice<Sensor> sensors)
 	b32 success = List_AppendRange(sensorPlugin->sensors, sensors);
 	LOG_IF(!success, return,
 		Severity::Error, "Failed to allocate space for %u Sensors '%s'",
-		sensors.length, context->sensorPlugin->info.name);
+		sensors.length, context->sensorPlugin->info.name.data);
 
 	// TODO: Re-use empty slots in the list (from removes)
 
@@ -138,7 +138,7 @@ UnregisterSensors(PluginContext* context, Slice<SensorRef> sensorRefs)
 		valid = valid && List_IsRefValid(sensorPlugin->sensors, sensorRef);
 		valid = valid && sensorPlugin->sensors[sensorRef].ref == sensorRef;
 		LOG_IF(!valid, return,
-			Severity::Error, "Sensor plugin gave a bad SensorRef '%s'", sensorPlugin->info.name);
+			Severity::Error, "Sensor plugin gave a bad SensorRef '%s'", sensorPlugin->info.name.data);
 	}
 
 	RemoveSensorRefs(context->s, sensorPlugin->ref, sensorRefs);
@@ -180,7 +180,7 @@ RegisterWidgets(PluginContext* context, Slice<WidgetDesc> widgetDescs)
 		success = List_Reserve(widgetData.widgetsUserData, 8 * widgetDesc->userDataSize);
 		LOG_IF(!success, return,
 			Severity::Error, "Failed to allocate space for Widget user data list. %u bytes each '%s'",
-			widgetDesc->userDataSize, widgetPlugin->info.name);
+			widgetDesc->userDataSize, widgetPlugin->info.name.data);
 
 		WidgetData* widgetData2 = List_Append(widgetPlugin->widgetDatas, widgetData);
 		LOG_IF(!widgetData2, return,
@@ -224,7 +224,7 @@ LoadPixelShader(PluginContext* context, c8* relPath, Slice<u32> cBufSizes)
 
 	PixelShader ps = Renderer_LoadPixelShader(context->s->renderer, psName, path.data, cBufSizes);
 	LOG_IF(!ps, return PixelShader::Null,
-		Severity::Error, "Failed to load pixel shader '%s'", path);
+		Severity::Error, "Failed to load pixel shader '%s'", path.data);
 
 	context->success = true;
 	return ps;
@@ -325,7 +325,7 @@ LoadSensorPlugin(SimulationState* s, c8* directory, c8* fileName)
 		success = sensorPlugin->functions.initialize(&context, api);
 		success &= context.success;
 		LOG_IF(!success, return nullptr,
-			Severity::Error, "Failed to initialize Sensor plugin '%s'", sensorPlugin->info.name);
+			Severity::Error, "Failed to initialize Sensor plugin '%s'", sensorPlugin->info.name.data);
 	}
 
 	pluginGuard.dismiss = true;
@@ -360,7 +360,7 @@ UnloadSensorPlugin(SimulationState* s, SensorPlugin* sensorPlugin)
 	b32 success = PluginLoader_UnloadSensorPlugin(s->pluginLoader, sensorPlugin);
 	List_Free(sensorPlugin->sensors);
 	LOG_IF(!success, return false,
-		Severity::Error, "Failed to unload Sensor plugin '%s'", sensorPlugin->info.name);
+		Severity::Error, "Failed to unload Sensor plugin '%s'", sensorPlugin->info.name.data);
 
 	// TODO: Add and remove plugin infos based on directory contents instead of
 	// loaded state.
@@ -457,7 +457,7 @@ UnloadWidgetPlugin(SimulationState* s, WidgetPlugin* widgetPlugin)
 
 	b32 success = PluginLoader_UnloadWidgetPlugin(s->pluginLoader, widgetPlugin);
 	LOG_IF(!success, return false,
-		Severity::Error, "Failed to unload Widget plugin '%s'", widgetPlugin->info.name);
+		Severity::Error, "Failed to unload Widget plugin '%s'", widgetPlugin->info.name.data);
 
 	// TODO: Add and remove plugin infos based on directory contents instead
 	// of loaded state.
