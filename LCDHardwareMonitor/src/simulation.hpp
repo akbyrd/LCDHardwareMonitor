@@ -556,7 +556,7 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 				{ VertexAttributeSemantic::TexCoord, VertexAttributeFormat::v2 },
 			};
 
-			VertexShader vs = Renderer_LoadVertexShader(s->renderer, "Default", "Shaders/Vertex Shader - WVP.cso", vsAttributes, sizeof(Matrix));
+			VertexShader vs = Renderer_LoadVertexShader(s->renderer, "Default", "Shaders/WVP.vs.cso", vsAttributes, sizeof(Matrix));
 			LOG_IF(!vs, return false,
 				Severity::Error, "Failed to load built-in wvp vertex shader");
 			Assert(vs == StandardVertexShader::WVP);
@@ -566,12 +566,12 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 		{
 			PixelShader ps;
 
-			ps = Renderer_LoadPixelShader(s->renderer, "Default", "Shaders/Pixel Shader - Vertex Colored.cso", {});
+			ps = Renderer_LoadPixelShader(s->renderer, "Default", "Shaders/Vertex Colored.ps.cso", {});
 			LOG_IF(!ps, return false,
 				Severity::Error, "Failed to load built-in vertex colored pixel shader");
 			Assert(ps == StandardPixelShader::VertexColored);
 
-			ps = Renderer_LoadPixelShader(s->renderer, "Default", "Shaders/Pixel Shader - Debug Coordinates.cso", {});
+			ps = Renderer_LoadPixelShader(s->renderer, "Default", "Shaders/Debug Coordinates.ps.cso", {});
 			LOG_IF(!ps, return false,
 				Severity::Error, "Failed to load built-in vertex colored pixel shader");
 			Assert(ps == StandardPixelShader::DebugCoordinates);

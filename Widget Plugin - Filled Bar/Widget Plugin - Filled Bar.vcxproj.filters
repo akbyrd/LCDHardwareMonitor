@@ -15,9 +15,9 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="res\Pixel Shader - Filled Bar.hlsl" />
+    <FxCompile Include="res\Filled Bar.ps" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\Pixel Shader - Filled Bar.h" />
+    <ClInclude Include="src\Filled Bar.ps.h" />
   </ItemGroup>
 </Project>

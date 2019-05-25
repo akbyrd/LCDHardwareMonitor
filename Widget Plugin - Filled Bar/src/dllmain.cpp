@@ -1,6 +1,6 @@
 #include "LHMAPI.h"
-#include "Vertex Shader - WVP.h"
-#include "Pixel Shader - Filled Bar.h"
+#include "WVP.vs.h"
+#include "Filled Bar.ps.h"
 
 struct BarWidget
 {
@@ -115,7 +115,7 @@ Initialize(PluginContext* context, WidgetPluginAPI::Initialize api)
 		{ sizeof(PSInitialize) },
 		{ sizeof(PSPerObject)  }
 	};
-	PixelShader ps = api.LoadPixelShader(context, "Pixel Shader - Filled Bar.cso", cBufSizes);
+	PixelShader ps = api.LoadPixelShader(context, "Filled Bar.ps.cso", cBufSizes);
 
 	filledBarMat = api.CreateMaterial(context, StandardMesh::Quad, StandardVertexShader::WVP, ps);
 	return true;

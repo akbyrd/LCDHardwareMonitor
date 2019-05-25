@@ -49,13 +49,13 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="res\Pixel Shader - Vertex Colored.hlsl">
+    <FxCompile Include="res\Debug Coordinates.ps" />
+    <FxCompile Include="res\Vertex Colored.ps">
       <Filter>Resources</Filter>
     </FxCompile>
-    <FxCompile Include="res\Vertex Shader - WVP.hlsl">
+    <FxCompile Include="res\WVP.vs">
       <Filter>Resources</Filter>
     </FxCompile>
-    <FxCompile Include="res\Pixel Shader - Debug Coordinates.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main_win32.cpp">
