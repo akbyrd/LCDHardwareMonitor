@@ -1,9 +1,10 @@
-﻿<mah:MetroWindow x:Class="LCDHardwareMonitor.MainWindow"
+<mah:MetroWindow x:Class="LCDHardwareMonitor.MainWindow"
                  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                  xmlns:pc="clr-namespace:System.Windows.Interop;assembly=PresentationCore"
                  xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
                  xmlns:lhm="clr-namespace:LCDHardwareMonitor"
+                 xmlns:lhmt="clr-namespace:LCDHardwareMonitor;assembly=LCDHardwareMonitor.GUI.Types"
                  Height="450" Width="800"
                  WindowStartupLocation="CenterScreen"
                  TitlebarHeight="24"
@@ -33,10 +34,10 @@
         <Style BasedOn="{StaticResource LightMetroWindowButtonStyle}"
                TargetType="{x:Type Button}">
           <Style.Triggers>
-            <Trigger Property="IsMouseOver" Value="True">
+            <Trigger Property="IsMouseOver" Value="true">
               <Setter Property="Background" Value="#FFE81123" />
             </Trigger>
-            <Trigger Property="IsPressed" Value="True">
+            <Trigger Property="IsPressed" Value="true">
               <Setter Property="Background" Value="#FFF1707A" />
             </Trigger>
           </Style.Triggers>
@@ -104,14 +105,14 @@
                    Height="240" Width="320" Background="#33AA0000"
                    Content="Preview is not available" />
           </StackPanel>
-          
+
           <!-- Widget Settings -->
           <Grid Grid.Row="2">
             <Grid.RowDefinitions>
               <RowDefinition Height="Auto" />
               <RowDefinition Height="*" />
             </Grid.RowDefinitions>
-            
+
             <Label Grid.Row="0"
                    Content="Widget Settings" />
 
@@ -119,8 +120,8 @@
                     BorderBrush="#333333" BorderThickness="1" />
           </Grid>
         </Grid>
-        
-        
+
+
         <!-- Right Side -->
         <!-- Widgets and Sensors -->
         <mah:MetroAnimatedTabControl Grid.Column="2">
@@ -215,24 +216,54 @@
 
       <DataGrid BorderBrush="#333333" BorderThickness="1"
                 ItemsSource="{Binding Plugins}"
+                CanUserAddRows="false" CanUserDeleteRows="false"
                 AutoGenerateColumns="false">
         <DataGrid.Columns>
-          <DataGridTextColumn Binding="{Binding Name}"
-                              Header="Name"
+          <DataGridTextColumn Header="Name" Binding="{Binding Name}"
                               Width="*"
                               IsReadOnly="true" />
-          <DataGridTextColumn Binding="{Binding Kind}"
-                              Header="Kind"
+          <DataGridTextColumn Header="Kind" Binding="{Binding Kind}"
                               Width="*"
                               IsReadOnly="true" />
-          <DataGridTextColumn Binding="{Binding Author}"
-                              Header="Author"
+          <DataGridTextColumn Header="Author" Binding="{Binding Author}"
                               Width="*"
                               IsReadOnly="true" />
-          <DataGridTextColumn Binding="{Binding Version}"
-                              Header="Version"
+          <DataGridTextColumn Header="Version" Binding="{Binding Version}"
                               Width="*"
                               IsReadOnly="true" />
+          <DataGridTextColumn Header="Load State" Binding="{Binding LoadState}"
+                              Width="*"
+                              IsReadOnly="true" />
+
+          <DataGridTemplateColumn Width="SizeToCells"
+                                  IsReadOnly="true">
+
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate>
+                <Button x:Name="btn" Content="Load" Click="LoadPlugin_Click" />
+
+                <!-- TODO: Ensure IsEnabled resets -->
+                <!-- TODO: Ensure this updates when plugin state changes -->
+                <!-- TODO: Add states for Loading and Unloading so we can disable the button while waiting. Same for the load/kill process button -->
+
+                <DataTemplate.Triggers>
+                  <DataTrigger Binding="{Binding LoadState}" Value="{x:Static lhmt:PluginLoadState_CLR.Null}">
+                    <Setter TargetName="btn" Property="IsEnabled" Value="false"/>
+                  </DataTrigger>
+                  <DataTrigger Binding="{Binding LoadState}" Value="{x:Static lhmt:PluginLoadState_CLR.Loaded}">
+                    <Setter TargetName="btn" Property="Content" Value="Unload"/>
+                  </DataTrigger>
+                  <DataTrigger Binding="{Binding LoadState}" Value="{x:Static lhmt:PluginLoadState_CLR.Unloaded}">
+                    <Setter TargetName="btn" Property="Content" Value="Load"/>
+                  </DataTrigger>
+                  <DataTrigger Binding="{Binding LoadState}" Value="{x:Static lhmt:PluginLoadState_CLR.Broken}">
+                    <Setter TargetName="btn" Property="IsEnabled" Value="false"/>
+                  </DataTrigger>
+                </DataTemplate.Triggers>
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
+
         </DataGrid.Columns>
       </DataGrid>
     </TabItem>

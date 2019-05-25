@@ -221,9 +221,11 @@ ValidatePluginInfo(PluginInfo* pluginInfo)
 b32
 PluginLoader_LoadSensorPlugin(PluginLoaderState* s, SensorPlugin* sensorPlugin)
 {
-	b32 success = false;
+	b32 success;
 
 	PluginHeader* pluginHeader = &sensorPlugin->header;
+	auto pluginGuard = guard { pluginHeader->loadState = PluginLoadState::Broken; };
+
 	success = DetectPluginLanguage(pluginHeader);
 	if (!success) return false;
 
@@ -277,7 +279,8 @@ PluginLoader_LoadSensorPlugin(PluginLoaderState* s, SensorPlugin* sensorPlugin)
 	LOG_IF(!success, return false,
 		Severity::Error, "Sensor plugin provided invalid info '%s'", pluginHeader->fileName);
 
-	pluginHeader->isLoaded = true;
+	pluginGuard.dismiss = true;
+	pluginHeader->loadState = PluginLoadState::Loaded;
 	return true;
 }
 
@@ -287,6 +290,8 @@ PluginLoader_UnloadSensorPlugin(PluginLoaderState* s, SensorPlugin* sensorPlugin
 	b32 success = false;
 
 	PluginHeader* pluginHeader = &sensorPlugin->header;
+	auto pluginGuard = guard { pluginHeader->loadState = PluginLoadState::Broken; };
+
 	switch (pluginHeader->language)
 	{
 		case PluginLanguage::Null:
@@ -308,16 +313,19 @@ PluginLoader_UnloadSensorPlugin(PluginLoaderState* s, SensorPlugin* sensorPlugin
 	}
 	if (!success) return false;
 
-	pluginHeader->isLoaded = false;
+	pluginGuard.dismiss = true;
+	pluginHeader->loadState = PluginLoadState::Unloaded;
 	return true;
 }
 
 b32
 PluginLoader_LoadWidgetPlugin(PluginLoaderState* s, WidgetPlugin* widgetPlugin)
 {
-	b32 success = false;
+	b32 success;
 
 	PluginHeader* pluginHeader = &widgetPlugin->header;
+	auto pluginGuard = guard { pluginHeader->loadState = PluginLoadState::Broken; };
+
 	success = DetectPluginLanguage(pluginHeader);
 	if (!success) return false;
 
@@ -371,7 +379,8 @@ PluginLoader_LoadWidgetPlugin(PluginLoaderState* s, WidgetPlugin* widgetPlugin)
 	LOG_IF(!success, return false,
 		Severity::Error, "Widget plugin provided invalid info '%s'", pluginHeader->fileName);
 
-	pluginHeader->isLoaded = true;
+	pluginGuard.dismiss = true;
+	pluginHeader->loadState = PluginLoadState::Loaded;
 	return true;
 }
 
@@ -381,6 +390,8 @@ PluginLoader_UnloadWidgetPlugin(PluginLoaderState* s, WidgetPlugin* widgetPlugin
 	b32 success = false;
 
 	PluginHeader* pluginHeader = &widgetPlugin->header;
+	auto pluginGuard = guard { pluginHeader->loadState = PluginLoadState::Broken; };
+
 	switch (pluginHeader->language)
 	{
 		case PluginLanguage::Null:
@@ -402,6 +413,7 @@ PluginLoader_UnloadWidgetPlugin(PluginLoaderState* s, WidgetPlugin* widgetPlugin
 	}
 	if (!success) return false;
 
-	pluginHeader->isLoaded = false;
+	pluginGuard.dismiss = true;
+	pluginHeader->loadState = PluginLoadState::Unloaded;
 	return true;
 }

@@ -3,9 +3,9 @@ Current
 	Looks like you can bind to fields if the context is a property?
 	I think pipes want to be no-wait
 	Fix the repaint delay when opening GUI
+	How does GUI send messages?
 
 	GUI Control
-		Open/Close simulation
 		Load/Unload plugins
 		Provide input
 		Add/Remove widgets

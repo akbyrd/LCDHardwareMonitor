@@ -27,8 +27,8 @@ struct State
 static State state = {};
 
 #pragma managed
+using namespace LCDHardwareMonitor;
 
-// TODO: Can this be implemented as an extension method to System::String?
 System::String^
 ToSystemString(StringSlice cstring)
 {
@@ -82,58 +82,60 @@ public value struct GUIInterop abstract sealed
 		// DEBUG: Needed for the Watch window
 		State& s = state;
 
-		using namespace Message;
-
-		// TODO: Decide on the code structure for this. Feels bad right now
-		// TODO: Loop
-		// Receive messages
-		Bytes bytes = {};
-		defer { List_Free(bytes); };
-
-		PipeResult result = Platform_ReadPipe(&s.pipe, bytes);
-		if (result == PipeResult::UnexpectedFailure) return false;
-		if (result == PipeResult::TransientFailure) return true;
-
-		// Synthesize a disconnect
+		// Receive
 		{
-			b32 noMessage        = bytes.length == 0;
-			b32 simConnected     = simState->IsSimulationConnected;
-			b32 pipeDisconnected = s.pipe.state == PipeState::Disconnecting
-				                  || s.pipe.state == PipeState::Disconnected;
+			using namespace Message;
 
-			if (noMessage && simConnected && pipeDisconnected)
+			// TODO: Decide on the code structure for this. Feels bad right now
+			// TODO: Loop
+			// Receive messages
+			Bytes bytes = {};
+			defer { List_Free(bytes); };
+
+			PipeResult result = Platform_ReadPipe(&s.pipe, bytes);
+			if (result == PipeResult::UnexpectedFailure) return false;
+			if (result == PipeResult::TransientFailure) return true;
+
+			// Synthesize a disconnect
 			{
-				// TODO: Should do this without allocating. Maybe with a ByteSlice?
-				b32 success = List_Reserve(bytes, sizeof(Disconnect));
-				LOG_IF(!success, return false,
-					Severity::Fatal, "Failed to disconnect from simulation");
-				bytes.length = sizeof(Disconnect);
+				b32 noMessage        = bytes.length == 0;
+				b32 simConnected     = simState->IsSimulationConnected;
+				b32 pipeDisconnected = s.pipe.state == PipeState::Disconnecting
+				                    || s.pipe.state == PipeState::Disconnected;
 
-				Disconnect* disconnect = (Disconnect*) bytes.data;
-				*disconnect = {};
+				if (noMessage && simConnected && pipeDisconnected)
+				{
+					// TODO: Should do this without allocating. Maybe with a ByteSlice?
+					b32 success = List_Reserve(bytes, sizeof(Disconnect));
+					LOG_IF(!success, return false,
+						Severity::Fatal, "Failed to disconnect from simulation");
+					bytes.length = sizeof(Disconnect);
 
-				disconnect->header.id    = IdOf<Disconnect>;
-				disconnect->header.index = s.messageIndex;
-				disconnect->header.size  = sizeof(Disconnect);
+					Disconnect* disconnect = (Disconnect*) bytes.data;
+					*disconnect = {};
+
+					disconnect->header.id    = IdOf<Disconnect>;
+					disconnect->header.index = s.messageIndex;
+					disconnect->header.size  = sizeof(Disconnect);
+				}
 			}
-		}
 
-		if (bytes.length == 0) return true;
+			if (bytes.length == 0) return true;
 
-		// TODO: Need to handle these errors more intelligently
-		LOG_IF(bytes.length < sizeof(Header), return false,
-			Severity::Warning, "Corrupted message received");
+			// TODO: Need to handle these errors more intelligently
+			LOG_IF(bytes.length < sizeof(Header), return false,
+				Severity::Warning, "Corrupted message received");
 
-		Header* header = (Header*) bytes.data;
+			Header* header = (Header*) bytes.data;
 
-		LOG_IF(bytes.length != header->size, return false,
-			Severity::Warning, "Incorrectly sized message received");
+			LOG_IF(bytes.length != header->size, return false,
+				Severity::Warning, "Incorrectly sized message received");
 
-		LOG_IF(header->index != s.messageIndex, return false,
-			Severity::Warning, "Unexpected message received");
-		s.messageIndex++;
+			LOG_IF(header->index != s.messageIndex, return false,
+				Severity::Warning, "Unexpected message received");
+			s.messageIndex++;
 
-		switch (header->id)
+			switch (header->id)
 		{
 			default: Assert(false); break;
 			case IdOf<Null>: break;
@@ -192,6 +194,29 @@ public value struct GUIInterop abstract sealed
 				break;
 			}
 
+			case IdOf<PluginStatesChanged>:
+			{
+				#if true
+				DeserializeMessage<PluginStatesChanged>(bytes);
+				PluginStatesChanged* statesChanged = (PluginStatesChanged*) &bytes[0];
+
+				for (u32 i = 0; i < statesChanged->refs.length; i++)
+				{
+					for (u32 j = 0; j < (u32) simState->Plugins->Count; j++)
+					{
+						PluginInfo_CLR p = simState->Plugins[(i32) j];
+						if ((PluginKind) p.Kind == statesChanged->kind && p.Ref == statesChanged->refs[i].index)
+						{
+							p.LoadState = (PluginLoadState_CLR) statesChanged->loadStates[i];
+							simState->Plugins[(i32) j] = p;
+						}
+					}
+				}
+				simState->NotifyPropertyChanged("");
+				#endif
+				break;
+			}
+
 			case IdOf<SensorsAdded>:
 			{
 				DeserializeMessage<SensorsAdded>(bytes);
@@ -230,13 +255,22 @@ public value struct GUIInterop abstract sealed
 						WidgetDesc* desc = &widgetDescs[j];
 
 						WidgetDesc_CLR widgetDesc_clr = {};
-						widgetDesc_clr.PluginRef  = widgetDescsAdded->pluginRefs[i].index;
-						widgetDesc_clr.Ref        = desc->ref.index;
-						widgetDesc_clr.Name       = ToSystemString(desc->name);
+						widgetDesc_clr.PluginRef = widgetDescsAdded->pluginRefs[i].index;
+						widgetDesc_clr.Ref       = desc->ref.index;
+						widgetDesc_clr.Name      = ToSystemString(desc->name);
 						simState->WidgetDescs->Add(widgetDesc_clr);
 					}
 				}
 				break;
+			}
+		}
+		}
+
+		// Send
+		{
+			for (u32 i = 0; i < (u32) simState->Messages->Count; i++)
+			{
+				// TODO: Implement
 			}
 		}
 

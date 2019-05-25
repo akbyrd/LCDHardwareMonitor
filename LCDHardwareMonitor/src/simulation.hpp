@@ -296,6 +296,8 @@ LoadSensorPlugin(SimulationState* s, c8* directory, c8* fileName)
 	LOG_IF(!sensorPlugin, return nullptr,
 		Severity::Error, "Failed to allocate Sensor plugin");
 
+	auto pluginGuard = guard { sensorPlugin->header.loadState = PluginLoadState::Broken; };
+
 	sensorPlugin->ref              = List_GetLastRef(s->sensorPlugins);
 	sensorPlugin->header.fileName  = fileName;
 	sensorPlugin->header.directory = directory;
@@ -326,14 +328,14 @@ LoadSensorPlugin(SimulationState* s, c8* directory, c8* fileName)
 			Severity::Error, "Failed to initialize Sensor plugin '%s'", sensorPlugin->info.name);
 	}
 
-	sensorPlugin->header.isWorking = true;
+	pluginGuard.dismiss = true;
 	return sensorPlugin;
 }
 
 static b32
 UnloadSensorPlugin(SimulationState* s, SensorPlugin* sensorPlugin)
 {
-	auto pluginGuard = guard { sensorPlugin->header.isWorking = false; };
+	auto pluginGuard = guard { sensorPlugin->header.loadState = PluginLoadState::Broken; };
 
 	// TODO: try/catch?
 	if (sensorPlugin->functions.teardown)
@@ -374,6 +376,8 @@ LoadWidgetPlugin(SimulationState* s, c8* directory, c8* fileName)
 	b32 success;
 
 	WidgetPlugin* widgetPlugin = List_Append(s->widgetPlugins);
+	auto pluginGuard = guard { widgetPlugin->header.loadState = PluginLoadState::Broken; };
+
 	LOG_IF(!widgetPlugin, return nullptr,
 		Severity::Error, "Failed to allocate WidgetPlugin");
 
@@ -412,14 +416,14 @@ LoadWidgetPlugin(SimulationState* s, c8* directory, c8* fileName)
 		}
 	}
 
-	widgetPlugin->header.isWorking = true;
+	pluginGuard.dismiss = true;
 	return widgetPlugin;
 }
 
 static b32
 UnloadWidgetPlugin(SimulationState* s, WidgetPlugin* widgetPlugin)
 {
-	auto pluginGuard = guard { widgetPlugin->header.isWorking = false; };
+	auto pluginGuard = guard { widgetPlugin->header.loadState = PluginLoadState::Broken; };
 
 	PluginContext context = {};
 	context.s            = s;
@@ -855,6 +859,12 @@ Simulation_Update(SimulationState* s)
 					pluginsAdded.refs  = List_MemberSlice(s->sensorPlugins, (ListRef<void> SensorPlugin::*) &SensorPlugin::ref);
 					pluginsAdded.infos = List_MemberSlice(s->sensorPlugins, &SensorPlugin::info);
 					SendGUIMessage(s, pluginsAdded);
+
+					PluginStatesChanged statesChanged = {};
+					statesChanged.kind       = PluginKind::Sensor;
+					statesChanged.refs       = List_MemberSlice(s->sensorPlugins, (ListRef<void> SensorPlugin::*) &SensorPlugin::ref);
+					statesChanged.loadStates = List_MemberSlice(s->sensorPlugins, &SensorPlugin::header, &PluginHeader::loadState);
+					SendGUIMessage(s, statesChanged);
 				}
 
 				{
@@ -863,6 +873,12 @@ Simulation_Update(SimulationState* s)
 					pluginsAdded.refs  = List_MemberSlice(s->widgetPlugins, (ListRef<void> WidgetPlugin::*) &WidgetPlugin::ref);
 					pluginsAdded.infos = List_MemberSlice(s->widgetPlugins, &WidgetPlugin::info);
 					SendGUIMessage(s, pluginsAdded);
+
+					PluginStatesChanged statesChanged = {};
+					statesChanged.kind       = PluginKind::Widget;
+					statesChanged.refs       = List_MemberSlice(s->widgetPlugins, (ListRef<void> WidgetPlugin::*) &WidgetPlugin::ref);
+					statesChanged.loadStates = List_MemberSlice(s->widgetPlugins, &WidgetPlugin::header, &PluginHeader::loadState);
+					SendGUIMessage(s, statesChanged);
 				}
 
 				{

@@ -12,6 +12,7 @@ namespace Message
 		Header header;
 	};
 
+	// Sim -> GUI
 	struct Connect
 	{
 		Header header;
@@ -31,6 +32,14 @@ namespace Message
 		PluginKind           kind;
 		Slice<ListRef<void>> refs;
 		Slice<PluginInfo>    infos;
+	};
+
+	struct PluginStatesChanged
+	{
+		Header                 header;
+		PluginKind             kind;
+		Slice<ListRef<void>>   refs;
+		Slice<PluginLoadState> loadStates;
 	};
 
 	#if false
@@ -73,6 +82,15 @@ namespace Message
 		Slice<WidgetDesc::Ref> refs;
 	};
 	#endif
+
+	// GUI -> Sim
+	struct SetPluginLoadStates
+	{
+		Header                 header;
+		PluginKind             kind;
+		Slice<ListRef<void>>   refs;
+		Slice<PluginLoadState> loadStates;
+	};
 };
 
 template <>
@@ -119,6 +137,8 @@ void Serialize(ByteStream&, StringSlice&);
 
 void Serialize(ByteStream&, Message::Connect&);
 void Serialize(ByteStream&, Message::PluginsAdded&);
+void Serialize(ByteStream&, Message::PluginStatesChanged&);
+void Serialize(ByteStream&, Message::SetPluginLoadStates&);
 void Serialize(ByteStream&, Message::SensorsAdded&);
 void Serialize(ByteStream&, Message::WidgetDescsAdded&);
 void Serialize(ByteStream&, PluginInfo&);
@@ -336,6 +356,24 @@ Serialize(ByteStream& stream, Message::PluginsAdded& pluginsAdded)
 	Serialize(stream, pluginsAdded.kind);
 	Serialize(stream, pluginsAdded.refs);
 	Serialize(stream, pluginsAdded.infos);
+}
+
+void
+Serialize(ByteStream& stream, Message::PluginStatesChanged& statesChanged)
+{
+	Serialize(stream, statesChanged.header);
+	Serialize(stream, statesChanged.kind);
+	Serialize(stream, statesChanged.refs);
+	Serialize(stream, statesChanged.loadStates);
+}
+
+void
+Serialize(ByteStream& stream, Message::SetPluginLoadStates& pluginloadStates)
+{
+	Serialize(stream, pluginloadStates.header);
+	Serialize(stream, pluginloadStates.kind);
+	Serialize(stream, pluginloadStates.refs);
+	Serialize(stream, pluginloadStates.loadStates);
 }
 
 void

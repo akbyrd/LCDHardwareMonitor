@@ -12,15 +12,22 @@ enum struct PluginLanguage
 	Managed,
 };
 
+enum struct PluginLoadState
+{
+	Null,
+	Loaded,
+	Unloaded,
+	Broken,
+};
+
 struct PluginHeader
 {
-	b32            isLoaded;
-	b32            isWorking;
-	c8*            fileName;
-	c8*            directory;
-	PluginKind     kind;
-	PluginLanguage language;
-	void*          userData;
+	PluginLoadState loadState;
+	c8*             fileName;
+	c8*             directory;
+	PluginKind      kind;
+	PluginLanguage  language;
+	void*           userData;
 };
 
 struct SensorPlugin

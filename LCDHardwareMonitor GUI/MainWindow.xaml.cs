@@ -1,7 +1,8 @@
-﻿using MahApps.Metro.Controls;
+using MahApps.Metro.Controls;
 using System;
 using System.Globalization;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Interop;
@@ -23,27 +24,56 @@ namespace LCDHardwareMonitor
 
 		private void CompositionTarget_Rendering(object sender, EventArgs e)
 		{
-			App app = (App) Application.Current;
-
 			LCDPreviewTexture.Lock();
-			LCDPreviewTexture.SetBackBuffer(D3DResourceType.IDirect3DSurface9, app.SimulationState.RenderSurface, true);
+			LCDPreviewTexture.SetBackBuffer(D3DResourceType.IDirect3DSurface9, simState.RenderSurface, true);
 
-			if (app.SimulationState.RenderSurface != IntPtr.Zero)
+			if (simState.RenderSurface != IntPtr.Zero)
 				LCDPreviewTexture.AddDirtyRect(new Int32Rect(0, 0, LCDPreviewTexture.PixelWidth, LCDPreviewTexture.PixelHeight));
 
 			LCDPreviewTexture.Unlock();
 		}
 
-		// TODO: Push these requests in to a queue. Gray the button.
+		// TODO: Gray the button?
 		private void LaunchSim_Click(object sender, RoutedEventArgs e)
 		{
-			simState.messages.Add(GUIMessage.LaunchSim);
+			simState.Messages.Add(MessageType.LaunchSim);
 		}
 
 		private void CloseSim_Click(object sender, RoutedEventArgs e)
 		{
 			bool kill = Keyboard.Modifiers.HasFlag(ModifierKeys.Control);
-			simState.messages.Add(kill ? GUIMessage.KillSim : GUIMessage.CloseSim);
+			simState.Messages.Add(kill ? MessageType.KillSim : MessageType.CloseSim);
+		}
+
+		private void LoadPlugin_Click(object sender, RoutedEventArgs e)
+		{
+			Button button = (Button) sender;
+			PluginInfo_CLR item = (PluginInfo_CLR) button.DataContext;
+
+			PluginLoadState_CLR requestState;
+			switch (item.LoadState)
+			{
+				default:
+				case PluginLoadState_CLR.Null:
+				case PluginLoadState_CLR.Broken:
+					return;
+
+				case PluginLoadState_CLR.Loaded:
+					requestState = PluginLoadState_CLR.Unloaded;
+					break;
+
+				case PluginLoadState_CLR.Unloaded:
+					requestState = PluginLoadState_CLR.Loaded;
+					break;
+			}
+
+			SetPluginLoadStates data = new SetPluginLoadStates();
+			data.kind      = item.Kind;
+			data.ref_      = item.Ref;
+			data.loadState = requestState;
+
+			Message_ request = new Message_(MessageType.SetPluginLoadState, data);
+			simState.Messages.Add(request);
 		}
 	}
 

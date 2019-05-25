@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Interop;
@@ -33,7 +33,7 @@ namespace LCDHardwareMonitor
 			}
 
 			// TODO: Is it possible to get the animation rate or max refresh rate for the interval?
-			timer = new DispatcherTimer();
+			timer = new DispatcherTimer(DispatcherPriority.Input);
 			timer.Interval = TimeSpan.FromSeconds(1.0 / 60.0);
 			timer.Tick += OnTick;
 			timer.Start();
@@ -54,29 +54,28 @@ namespace LCDHardwareMonitor
 				SimulationState.NotifyPropertyChanged("");
 			}
 
-			foreach (GUIMessage m in SimulationState.messages)
+			foreach (Message_ m in SimulationState.Messages)
 			{
-				switch (m)
+				switch (m.type)
 				{
-					case GUIMessage.LaunchSim:
+					case MessageType.LaunchSim:
 						if (processes.Length > 0) break;
 						Process.Start("LCDHardwareMonitor.exe");
 						break;
 
 					// TODO: Why doesn't this work?
 					// TODO: Send a pipe message
-					case GUIMessage.CloseSim:
+					case MessageType.CloseSim:
 						foreach (Process p in processes)
 							p.Close();
 						break;
 
-					case GUIMessage.KillSim:
+					case MessageType.KillSim:
 						foreach (Process p in processes)
 							p.Kill();
 						break;
 				}
 			}
-			SimulationState.messages.Clear();
 
 			bool success = GUIInterop.Update(SimulationState);
 			if (!success)
@@ -84,6 +83,8 @@ namespace LCDHardwareMonitor
 				Debugger.Break();
 				Shutdown();
 			}
+
+			SimulationState.Messages.Clear();
 		}
 	}
 }
