@@ -8,13 +8,14 @@ namespace LCDHardwareMonitor.GUI
 {
 	public partial class App : Application
 	{
-		public SimulationState SimulationState { get; private set; } = new SimulationState();
+		public SimulationState SimulationState { get; private set; }
 
 		DispatcherTimer timer;
 		bool activated;
 
 		App()
 		{
+			SimulationState = new SimulationState();
 			Activated += OnActivate;
 			Exit += OnExit;
 		}
@@ -25,7 +26,7 @@ namespace LCDHardwareMonitor.GUI
 			activated = true;
 
 			IntPtr hwnd = new WindowInteropHelper(MainWindow).EnsureHandle();
-			bool success = GUIInterop.Initialize(hwnd);
+			bool success = Interop.Initialize(hwnd);
 			if (!success)
 			{
 				Debugger.Break();
@@ -41,7 +42,7 @@ namespace LCDHardwareMonitor.GUI
 
 		void OnExit(object sender, ExitEventArgs e)
 		{
-			GUIInterop.Teardown();
+			Interop.Teardown();
 		}
 
 		void OnTick(object sender, EventArgs e)
@@ -77,7 +78,7 @@ namespace LCDHardwareMonitor.GUI
 				}
 			}
 
-			bool success = GUIInterop.Update(SimulationState);
+			bool success = Interop.Update(SimulationState);
 			if (!success)
 			{
 				Debugger.Break();

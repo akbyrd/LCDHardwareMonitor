@@ -27,9 +27,6 @@ struct State
 static State state = {};
 
 #pragma managed
-using namespace LCDHardwareMonitor;
-namespace GUI = LCDHardwareMonitor::GUI;
-
 System::String^
 ToSystemString(StringSlice cstring)
 {
@@ -45,253 +42,350 @@ ToSystemString(StringSlice cstring)
 	return result;
 }
 
-GUI::PluginKind
-ToPluginKind(PluginKind kind)
+// TODO: C++17
+namespace LCDHardwareMonitor { namespace GUI
 {
-	switch (kind)
+	//using namespace System;
+	//using namespace System::Collections::Generic;
+	using namespace System::Collections::ObjectModel;
+	using namespace System::ComponentModel;
+
+	public enum struct PluginKind
 	{
-		default: Assert(false);  return GUI::PluginKind::Null;
-		case PluginKind::Null:   return GUI::PluginKind::Null;
-		case PluginKind::Sensor: return GUI::PluginKind::Sensor;
-		case PluginKind::Widget: return GUI::PluginKind::Widget;
-	}
-}
+		Null,
+		Sensor,
+		Widget,
+	};
 
-public value struct GUIInterop abstract sealed
-{
-	static bool
-	Initialize(System::IntPtr hwnd)
+	public enum struct PluginLoadState
 	{
-		// DEBUG: Needed for the Watch window
-		State& s = state;
+		Null,
+		Loaded,
+		Unloaded,
+		Broken,
+	};
 
-		using namespace Message;
-
-		PipeResult result = Platform_CreatePipeClient("LCDHardwareMonitor GUI Pipe", &s.pipe);
-		LOG_IF(result == PipeResult::UnexpectedFailure, return false,
-			Severity::Error, "Failed to create pipe for GUI communication");
-
-		b32 success = D3D9_Initialize((HWND) (void*) hwnd, &s.d3d9, &s.d3d9Device);
-		if (!success) return false;
-
-		return true;
-	}
-
-	static bool
-	Update(GUI::SimulationState^ simState)
+	public value struct PluginInfo
 	{
-		// DEBUG: Needed for the Watch window
-		State& s = state;
+		property System::UInt32  Ref;
+		property System::String^ Name;
+		property PluginKind      Kind;
+		property System::String^ Author;
+		property System::UInt32  Version;
 
-		// Receive
+		property PluginLoadState LoadState; // TODO: Probably belongs in another struct
+	};
+
+	public value struct Sensor
+	{
+		property System::UInt32  PluginRef;
+		property System::UInt32  Ref;
+		property System::String^ Name;
+		property System::String^ Identifier;
+		property System::String^ Format;
+		property System::Single  Value;
+	};
+
+	public value struct WidgetDesc
+	{
+		property System::UInt32  PluginRef;
+		property System::UInt32  Ref;
+		property System::String^ Name;
+	};
+
+	public enum struct MessageType
+	{
+		Null,
+		LaunchSim,
+		CloseSim,
+		KillSim,
+		SetPluginLoadState,
+	};
+
+	public value struct Message_
+	{
+		Message_(MessageType _type) { type = _type; data = nullptr; }
+		Message_(MessageType _type, System::Object^ _data) { type = _type; data = _data; }
+		static operator Message_ (MessageType type) { return Message_(type);  }
+
+		MessageType     type;
+		System::Object^ data;
+	};
+
+	public ref class SimulationState : INotifyPropertyChanged
+	{
+	public:
+		property System::UInt32                    Version;
+		property System::IntPtr                    RenderSurface;
+		property ObservableCollection<PluginInfo>^ Plugins;
+		property ObservableCollection<Sensor>^     Sensors;
+		property ObservableCollection<WidgetDesc>^ WidgetDescs;
+
+		// UI Helpers
+		property bool IsSimulationRunning;
+		property bool IsSimulationConnected;
+
+		// Messages
+		System::Collections::Generic::List<Message_>^ Messages;
+
+		// Cruft
+		SimulationState()
 		{
+			Plugins     = gcnew ObservableCollection<PluginInfo>();
+			Sensors     = gcnew ObservableCollection<Sensor>();
+			WidgetDescs = gcnew ObservableCollection<WidgetDesc>();
+			Messages    = gcnew System::Collections::Generic::List<Message_>();
+		}
+
+		virtual event PropertyChangedEventHandler^ PropertyChanged;
+		void NotifyPropertyChanged(System::String^ propertyName)
+		{
+			// TODO: Is this safe without the null check?
+			PropertyChanged(this, gcnew PropertyChangedEventArgs(propertyName));
+		}
+	};
+
+	public value struct SetPluginLoadStates
+	{
+		PluginKind      kind;
+		System::UInt32  ref_;
+		PluginLoadState loadState;
+	};
+
+	public value struct Interop abstract sealed
+	{
+		static bool
+		Initialize(System::IntPtr hwnd)
+		{
+			// DEBUG: Needed for the Watch window
+			State& s = state;
+
 			using namespace Message;
 
-			// TODO: Decide on the code structure for this. Feels bad right now
-			// TODO: Loop
-			// Receive messages
-			Bytes bytes = {};
-			defer { List_Free(bytes); };
+			PipeResult result = Platform_CreatePipeClient("LCDHardwareMonitor GUI Pipe", &s.pipe);
+			LOG_IF(result == PipeResult::UnexpectedFailure, return false,
+				Severity::Error, "Failed to create pipe for GUI communication");
 
-			PipeResult result = Platform_ReadPipe(&s.pipe, bytes);
-			if (result == PipeResult::UnexpectedFailure) return false;
-			if (result == PipeResult::TransientFailure) return true;
+			b32 success = D3D9_Initialize((HWND) (void*) hwnd, &s.d3d9, &s.d3d9Device);
+			if (!success) return false;
 
-			// Synthesize a disconnect
-			{
-				b32 noMessage        = bytes.length == 0;
-				b32 simConnected     = simState->IsSimulationConnected;
-				b32 pipeDisconnected = s.pipe.state == PipeState::Disconnecting
-				                    || s.pipe.state == PipeState::Disconnected;
+			return true;
+		}
 
-				if (noMessage && simConnected && pipeDisconnected)
-				{
-					// TODO: Should do this without allocating. Maybe with a ByteSlice?
-					b32 success = List_Reserve(bytes, sizeof(Disconnect));
-					LOG_IF(!success, return false,
-						Severity::Fatal, "Failed to disconnect from simulation");
-					bytes.length = sizeof(Disconnect);
-
-					Disconnect* disconnect = (Disconnect*) bytes.data;
-					*disconnect = {};
-
-					disconnect->header.id    = IdOf<Disconnect>;
-					disconnect->header.index = s.messageIndex;
-					disconnect->header.size  = sizeof(Disconnect);
-				}
-			}
-
-			if (bytes.length == 0) return true;
-
-			// TODO: Need to handle these errors more intelligently
-			LOG_IF(bytes.length < sizeof(Header), return false,
-				Severity::Warning, "Corrupted message received");
-
-			Header* header = (Header*) bytes.data;
-
-			LOG_IF(bytes.length != header->size, return false,
-				Severity::Warning, "Incorrectly sized message received");
-
-			LOG_IF(header->index != s.messageIndex, return false,
-				Severity::Warning, "Unexpected message received");
-			s.messageIndex++;
-
-			switch (header->id)
+		static bool
+		Update(GUI::SimulationState^ simState)
 		{
-			default: Assert(false); break;
-			case IdOf<Null>: break;
+			// DEBUG: Needed for the Watch window
+			State& s = state;
 
-			case IdOf<Connect>:
+			// Receive
 			{
-				DeserializeMessage<Connect>(bytes);
+				using namespace Message;
 
-				Connect* connect = (Connect*) bytes.data;
-				simState->Version = connect->version;
+				// TODO: Decide on the code structure for this. Feels bad right now
+				// TODO: Loop
+				// Receive messages
+				Bytes bytes = {};
+				defer { List_Free(bytes); };
 
-				b32 success = D3D9_CreateSharedSurface(
-					s.d3d9Device,
-					&s.d3d9RenderTexture,
-					&s.d3d9RenderSurface0,
-					(HANDLE) connect->renderSurface,
-					connect->renderSize
-				);
-				if (!success) return false;
+				PipeResult result = Platform_ReadPipe(&s.pipe, bytes);
+				if (result == PipeResult::UnexpectedFailure) return false;
+				if (result == PipeResult::TransientFailure) return true;
 
-				simState->RenderSurface = (System::IntPtr) s.d3d9RenderSurface0;
-				simState->IsSimulationConnected = true;
-				simState->NotifyPropertyChanged("");
-				break;
-			}
-
-			case IdOf<Disconnect>:
-			{
-				D3D9_DestroySharedSurface(&s.d3d9RenderTexture, &s.d3d9RenderSurface0);
-				simState->RenderSurface = System::IntPtr::Zero;
-				simState->Plugins->Clear();
-				simState->Sensors->Clear();
-				simState->WidgetDescs->Clear();
-				simState->IsSimulationConnected = false;
-				simState->NotifyPropertyChanged("");
-
-				s.messageIndex = 0;
-				break;
-			}
-
-			case IdOf<PluginsAdded>:
-			{
-				DeserializeMessage<PluginsAdded>(bytes);
-				PluginsAdded* pluginsAdded = (PluginsAdded*) &bytes[0];
-
-				for (u32 i = 0; i < pluginsAdded->infos.length; i++)
+				// Synthesize a disconnect
 				{
-					GUI::PluginInfo mPluginInfo = {};
-					mPluginInfo.Ref     = pluginsAdded->refs[i].index;
-					mPluginInfo.Name    = ToSystemString(pluginsAdded->infos[i].name);
-					mPluginInfo.Kind    = ToPluginKind(pluginsAdded->kind);
-					mPluginInfo.Author  = ToSystemString(pluginsAdded->infos[i].author);
-					mPluginInfo.Version = pluginsAdded->infos[i].version;
-					simState->Plugins->Add(mPluginInfo);
-				}
-				break;
-			}
+					b32 noMessage        = bytes.length == 0;
+					b32 simConnected     = simState->IsSimulationConnected;
+					b32 pipeDisconnected = s.pipe.state == PipeState::Disconnecting
+					                    || s.pipe.state == PipeState::Disconnected;
 
-			case IdOf<PluginStatesChanged>:
-			{
-				#if true
-				DeserializeMessage<PluginStatesChanged>(bytes);
-				PluginStatesChanged* statesChanged = (PluginStatesChanged*) &bytes[0];
-
-				for (u32 i = 0; i < statesChanged->refs.length; i++)
-				{
-					for (u32 j = 0; j < (u32) simState->Plugins->Count; j++)
+					if (noMessage && simConnected && pipeDisconnected)
 					{
-						GUI::PluginInfo p = simState->Plugins[(i32) j];
-						if ((PluginKind) p.Kind == statesChanged->kind && p.Ref == statesChanged->refs[i].index)
+						// TODO: Should do this without allocating. Maybe with a ByteSlice?
+						b32 success = List_Reserve(bytes, sizeof(Disconnect));
+						LOG_IF(!success, return false,
+							Severity::Fatal, "Failed to disconnect from simulation");
+						bytes.length = sizeof(Disconnect);
+
+						Disconnect* disconnect = (Disconnect*) bytes.data;
+						*disconnect = {};
+
+						disconnect->header.id    = IdOf<Disconnect>;
+						disconnect->header.index = s.messageIndex;
+						disconnect->header.size  = sizeof(Disconnect);
+					}
+				}
+
+				if (bytes.length == 0) return true;
+
+				// TODO: Need to handle these errors more intelligently
+				LOG_IF(bytes.length < sizeof(Header), return false,
+					Severity::Warning, "Corrupted message received");
+
+				Header* header = (Header*) bytes.data;
+
+				LOG_IF(bytes.length != header->size, return false,
+					Severity::Warning, "Incorrectly sized message received");
+
+				LOG_IF(header->index != s.messageIndex, return false,
+					Severity::Warning, "Unexpected message received");
+				s.messageIndex++;
+
+				switch (header->id)
+			{
+				default: Assert(false); break;
+				case IdOf<Null>: break;
+
+				case IdOf<Connect>:
+				{
+					DeserializeMessage<Connect>(bytes);
+
+					Connect* connect = (Connect*) bytes.data;
+					simState->Version = connect->version;
+
+					b32 success = D3D9_CreateSharedSurface(
+						s.d3d9Device,
+						&s.d3d9RenderTexture,
+						&s.d3d9RenderSurface0,
+						(HANDLE) connect->renderSurface,
+						connect->renderSize
+					);
+					if (!success) return false;
+
+					simState->RenderSurface = (System::IntPtr) s.d3d9RenderSurface0;
+					simState->IsSimulationConnected = true;
+					simState->NotifyPropertyChanged("");
+					break;
+				}
+
+				case IdOf<Disconnect>:
+				{
+					D3D9_DestroySharedSurface(&s.d3d9RenderTexture, &s.d3d9RenderSurface0);
+					simState->RenderSurface = System::IntPtr::Zero;
+					simState->Plugins->Clear();
+					simState->Sensors->Clear();
+					simState->WidgetDescs->Clear();
+					simState->IsSimulationConnected = false;
+					simState->NotifyPropertyChanged("");
+
+					s.messageIndex = 0;
+					break;
+				}
+
+				case IdOf<PluginsAdded>:
+				{
+					DeserializeMessage<PluginsAdded>(bytes);
+					PluginsAdded* pluginsAdded = (PluginsAdded*) &bytes[0];
+
+					for (u32 i = 0; i < pluginsAdded->infos.length; i++)
+					{
+						GUI::PluginInfo mPluginInfo = {};
+						mPluginInfo.Ref     = pluginsAdded->refs[i].index;
+						mPluginInfo.Name    = ToSystemString(pluginsAdded->infos[i].name);
+						mPluginInfo.Kind    = (GUI::PluginKind) pluginsAdded->kind;
+						mPluginInfo.Author  = ToSystemString(pluginsAdded->infos[i].author);
+						mPluginInfo.Version = pluginsAdded->infos[i].version;
+						simState->Plugins->Add(mPluginInfo);
+					}
+					break;
+				}
+
+				case IdOf<PluginStatesChanged>:
+				{
+					DeserializeMessage<PluginStatesChanged>(bytes);
+					PluginStatesChanged* statesChanged = (PluginStatesChanged*) &bytes[0];
+
+					for (u32 i = 0; i < statesChanged->refs.length; i++)
+					{
+						for (u32 j = 0; j < (u32) simState->Plugins->Count; j++)
 						{
-							p.LoadState = (GUI::PluginLoadState) statesChanged->loadStates[i];
-							simState->Plugins[(i32) j] = p;
+							GUI::PluginInfo p = simState->Plugins[(i32) j];
+							if ((::PluginKind) p.Kind == statesChanged->kind && p.Ref == statesChanged->refs[i].index)
+							{
+								p.LoadState = (GUI::PluginLoadState) statesChanged->loadStates[i];
+								simState->Plugins[(i32) j] = p;
+							}
 						}
 					}
+					simState->NotifyPropertyChanged("");
+					break;
 				}
-				simState->NotifyPropertyChanged("");
-				#endif
-				break;
-			}
 
-			case IdOf<SensorsAdded>:
-			{
-				DeserializeMessage<SensorsAdded>(bytes);
-
-				SensorsAdded* sensorsAdded = (SensorsAdded*) bytes.data;
-				for (u32 i = 0; i < sensorsAdded->sensors.length; i++)
+				case IdOf<SensorsAdded>:
 				{
-					List<Sensor> sensors = sensorsAdded->sensors[i];
-					for (u32 j = 0; j < sensors.length; j++)
+					DeserializeMessage<SensorsAdded>(bytes);
+
+					SensorsAdded* sensorsAdded = (SensorsAdded*) bytes.data;
+					for (u32 i = 0; i < sensorsAdded->sensors.length; i++)
 					{
-						Sensor* sensor = &sensors[j];
+						List<::Sensor> sensors = sensorsAdded->sensors[i];
+						for (u32 j = 0; j < sensors.length; j++)
+						{
+							::Sensor* sensor = &sensors[j];
 
-						GUI::Sensor mSensor = {};
-						mSensor.PluginRef  = sensorsAdded->pluginRefs[i].index;
-						mSensor.Ref        = sensor->ref.index;
-						mSensor.Name       = ToSystemString(sensor->name);
-						mSensor.Identifier = ToSystemString(sensor->identifier);
-						mSensor.Format     = ToSystemString(sensor->format);
-						mSensor.Value      = sensor->value;
-						simState->Sensors->Add(mSensor);
+							GUI::Sensor mSensor = {};
+							mSensor.PluginRef  = sensorsAdded->pluginRefs[i].index;
+							mSensor.Ref        = sensor->ref.index;
+							mSensor.Name       = ToSystemString(sensor->name);
+							mSensor.Identifier = ToSystemString(sensor->identifier);
+							mSensor.Format     = ToSystemString(sensor->format);
+							mSensor.Value      = sensor->value;
+							simState->Sensors->Add(mSensor);
+						}
 					}
+					break;
 				}
-				break;
-			}
 
-			case IdOf<WidgetDescsAdded>:
-			{
-				DeserializeMessage<WidgetDescsAdded>(bytes);
-
-				WidgetDescsAdded* widgetDescsAdded = (WidgetDescsAdded*) bytes.data;
-				for (u32 i = 0; i < widgetDescsAdded->descs.length; i++)
+				case IdOf<WidgetDescsAdded>:
 				{
-					Slice<WidgetDesc> widgetDescs = widgetDescsAdded->descs[i];
-					for (u32 j = 0; j < widgetDescs.length; j++)
+					DeserializeMessage<WidgetDescsAdded>(bytes);
+
+					WidgetDescsAdded* widgetDescsAdded = (WidgetDescsAdded*) bytes.data;
+					for (u32 i = 0; i < widgetDescsAdded->descs.length; i++)
 					{
-						WidgetDesc* desc = &widgetDescs[j];
+						Slice<::WidgetDesc> widgetDescs = widgetDescsAdded->descs[i];
+						for (u32 j = 0; j < widgetDescs.length; j++)
+						{
+							::WidgetDesc* desc = &widgetDescs[j];
 
-						GUI::WidgetDesc mWidgetDesc = {};
-						mWidgetDesc.PluginRef = widgetDescsAdded->pluginRefs[i].index;
-						mWidgetDesc.Ref       = desc->ref.index;
-						mWidgetDesc.Name      = ToSystemString(desc->name);
-						simState->WidgetDescs->Add(mWidgetDesc);
+							GUI::WidgetDesc mWidgetDesc = {};
+							mWidgetDesc.PluginRef = widgetDescsAdded->pluginRefs[i].index;
+							mWidgetDesc.Ref       = desc->ref.index;
+							mWidgetDesc.Name      = ToSystemString(desc->name);
+							simState->WidgetDescs->Add(mWidgetDesc);
+						}
 					}
+					break;
 				}
-				break;
 			}
-		}
+			}
+
+			// Send
+			{
+				for (u32 i = 0; i < (u32) simState->Messages->Count; i++)
+				{
+					// TODO: Implement
+				}
+			}
+
+			return true;
 		}
 
-		// Send
+		static void
+		Teardown()
 		{
-			for (u32 i = 0; i < (u32) simState->Messages->Count; i++)
-			{
-				// TODO: Implement
-			}
+			// DEBUG: Needed for the Watch window
+			State& s = state;
+
+			D3D9_DestroySharedSurface(&s.d3d9RenderTexture, &s.d3d9RenderSurface0);
+			D3D9_Teardown(s.d3d9, s.d3d9Device);
+
+			PipeResult result = Platform_FlushPipe(&s.pipe);
+			LOG_IF(result == PipeResult::UnexpectedFailure, IGNORE,
+				Severity::Error, "Failed to flush GUI communication pipe");
+			Platform_DestroyPipe(&s.pipe);
+
+			s = {};
 		}
-
-		return true;
-	}
-
-	static void
-	Teardown()
-	{
-		// DEBUG: Needed for the Watch window
-		State& s = state;
-
-		D3D9_DestroySharedSurface(&s.d3d9RenderTexture, &s.d3d9RenderSurface0);
-		D3D9_Teardown(s.d3d9, s.d3d9Device);
-
-		PipeResult result = Platform_FlushPipe(&s.pipe);
-		LOG_IF(result == PipeResult::UnexpectedFailure, IGNORE,
-			Severity::Error, "Failed to flush GUI communication pipe");
-		Platform_DestroyPipe(&s.pipe);
-
-		s = {};
-	}
-};
+	};
+}}

@@ -4,7 +4,7 @@
                  xmlns:pc="clr-namespace:System.Windows.Interop;assembly=PresentationCore"
                  xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
                  xmlns:lhm="clr-namespace:LCDHardwareMonitor.GUI"
-                 xmlns:lhmt="clr-namespace:LCDHardwareMonitor.GUI;assembly=LCDHardwareMonitor.GUI.Types"
+                 xmlns:lhmi="clr-namespace:LCDHardwareMonitor.GUI;assembly=LCDHardwareMonitor.GUI.Interop"
                  Height="450" Width="800"
                  WindowStartupLocation="CenterScreen"
                  TitlebarHeight="24"
@@ -247,16 +247,16 @@
                 <!-- TODO: Add states for Loading and Unloading so we can disable the button while waiting. Same for the load/kill process button -->
 
                 <DataTemplate.Triggers>
-                  <DataTrigger Binding="{Binding LoadState}" Value="{x:Static lhmt:PluginLoadState.Null}">
+                  <DataTrigger Binding="{Binding LoadState}" Value="{x:Static lhmi:PluginLoadState.Null}">
                     <Setter TargetName="btn" Property="IsEnabled" Value="false"/>
                   </DataTrigger>
-                  <DataTrigger Binding="{Binding LoadState}" Value="{x:Static lhmt:PluginLoadState.Loaded}">
+                  <DataTrigger Binding="{Binding LoadState}" Value="{x:Static lhmi:PluginLoadState.Loaded}">
                     <Setter TargetName="btn" Property="Content" Value="Unload"/>
                   </DataTrigger>
-                  <DataTrigger Binding="{Binding LoadState}" Value="{x:Static lhmt:PluginLoadState.Unloaded}">
+                  <DataTrigger Binding="{Binding LoadState}" Value="{x:Static lhmi:PluginLoadState.Unloaded}">
                     <Setter TargetName="btn" Property="Content" Value="Load"/>
                   </DataTrigger>
-                  <DataTrigger Binding="{Binding LoadState}" Value="{x:Static lhmt:PluginLoadState.Broken}">
+                  <DataTrigger Binding="{Binding LoadState}" Value="{x:Static lhmi:PluginLoadState.Broken}">
                     <Setter TargetName="btn" Property="IsEnabled" Value="false"/>
                   </DataTrigger>
                 </DataTemplate.Triggers>
