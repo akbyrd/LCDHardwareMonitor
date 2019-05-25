@@ -91,7 +91,7 @@ namespace Message
 		Slice<ListRef<void>>   refs;
 		Slice<PluginLoadState> loadStates;
 	};
-};
+}
 
 template <>
 constexpr u32 IdOf<Message::Null> = 0;

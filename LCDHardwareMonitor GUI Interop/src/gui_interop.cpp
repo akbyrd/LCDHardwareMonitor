@@ -27,28 +27,13 @@ struct State
 static State state = {};
 
 #pragma managed
-System::String^
-ToSystemString(StringSlice cstring)
-{
-	LOG_IF((i32) cstring.length < 0, IGNORE,
-		Severity::Warning, "Native string truncated");
-
-	// TODO: Remove this
-	u32 length = cstring.length;
-	while (length > 0 && cstring[length - 1] == '\0')
-		length--;
-
-	System::String^ result = gcnew System::String(cstring.data, 0, (i32) length);
-	return result;
-}
-
 // TODO: C++17
 namespace LCDHardwareMonitor { namespace GUI
 {
-	//using namespace System;
-	//using namespace System::Collections::Generic;
+	using namespace System;
 	using namespace System::Collections::ObjectModel;
 	using namespace System::ComponentModel;
+	using mString = System::String;
 
 	public enum struct PluginKind
 	{
@@ -65,32 +50,33 @@ namespace LCDHardwareMonitor { namespace GUI
 		Broken,
 	};
 
+	// TODO: Can we use native primitives?
 	public value struct PluginInfo
 	{
-		property System::UInt32  Ref;
-		property System::String^ Name;
-		property PluginKind      Kind;
-		property System::String^ Author;
-		property System::UInt32  Version;
+		property UInt32     Ref;
+		property mString^   Name;
+		property PluginKind Kind;
+		property mString^   Author;
+		property UInt32     Version;
 
 		property PluginLoadState LoadState; // TODO: Probably belongs in another struct
 	};
 
 	public value struct Sensor
 	{
-		property System::UInt32  PluginRef;
-		property System::UInt32  Ref;
-		property System::String^ Name;
-		property System::String^ Identifier;
-		property System::String^ Format;
-		property System::Single  Value;
+		property UInt32   PluginRef;
+		property UInt32   Ref;
+		property mString^ Name;
+		property mString^ Identifier;
+		property mString^ Format;
+		property Single   Value;
 	};
 
 	public value struct WidgetDesc
 	{
-		property System::UInt32  PluginRef;
-		property System::UInt32  Ref;
-		property System::String^ Name;
+		property UInt32   PluginRef;
+		property UInt32   Ref;
+		property mString^ Name;
 	};
 
 	public enum struct MessageType
@@ -102,21 +88,21 @@ namespace LCDHardwareMonitor { namespace GUI
 		SetPluginLoadState,
 	};
 
-	public value struct Message_
+	public value struct Message
 	{
-		Message_(MessageType _type) { type = _type; data = nullptr; }
-		Message_(MessageType _type, System::Object^ _data) { type = _type; data = _data; }
-		static operator Message_ (MessageType type) { return Message_(type);  }
+		Message(MessageType _type) { type = _type; data = nullptr; }
+		Message(MessageType _type, Object^ _data) { type = _type; data = _data; }
+		static operator Message (MessageType type) { return Message(type);  }
 
 		MessageType     type;
-		System::Object^ data;
+		Object^ data;
 	};
 
 	public ref class SimulationState : INotifyPropertyChanged
 	{
 	public:
-		property System::UInt32                    Version;
-		property System::IntPtr                    RenderSurface;
+		property UInt32                    Version;
+		property IntPtr                    RenderSurface;
 		property ObservableCollection<PluginInfo>^ Plugins;
 		property ObservableCollection<Sensor>^     Sensors;
 		property ObservableCollection<WidgetDesc>^ WidgetDescs;
@@ -126,7 +112,7 @@ namespace LCDHardwareMonitor { namespace GUI
 		property bool IsSimulationConnected;
 
 		// Messages
-		System::Collections::Generic::List<Message_>^ Messages;
+		System::Collections::Generic::List<Message>^ Messages;
 
 		// Cruft
 		SimulationState()
@@ -134,11 +120,11 @@ namespace LCDHardwareMonitor { namespace GUI
 			Plugins     = gcnew ObservableCollection<PluginInfo>();
 			Sensors     = gcnew ObservableCollection<Sensor>();
 			WidgetDescs = gcnew ObservableCollection<WidgetDesc>();
-			Messages    = gcnew System::Collections::Generic::List<Message_>();
+			Messages    = gcnew System::Collections::Generic::List<Message>();
 		}
 
 		virtual event PropertyChangedEventHandler^ PropertyChanged;
-		void NotifyPropertyChanged(System::String^ propertyName)
+		void NotifyPropertyChanged(mString^ propertyName)
 		{
 			// TODO: Is this safe without the null check?
 			PropertyChanged(this, gcnew PropertyChangedEventArgs(propertyName));
@@ -148,14 +134,30 @@ namespace LCDHardwareMonitor { namespace GUI
 	public value struct SetPluginLoadStates
 	{
 		PluginKind      kind;
-		System::UInt32  ref_;
+		UInt32  ref_;
 		PluginLoadState loadState;
 	};
+
+	// TODO: Unify name and namespace
+	mString^
+	ToManagedString(StringSlice cstring)
+	{
+		LOG_IF((i32) cstring.length < 0, IGNORE,
+			Severity::Warning, "Native string truncated");
+
+		// TODO: Remove this
+		u32 length = cstring.length;
+		while (length > 0 && cstring[length - 1] == '\0')
+			length--;
+
+		mString^ result = gcnew mString(cstring.data, 0, (i32) length);
+		return result;
+	}
 
 	public value struct Interop abstract sealed
 	{
 		static bool
-		Initialize(System::IntPtr hwnd)
+		Initialize(IntPtr hwnd)
 		{
 			// DEBUG: Needed for the Watch window
 			State& s = state;
@@ -252,7 +254,7 @@ namespace LCDHardwareMonitor { namespace GUI
 					);
 					if (!success) return false;
 
-					simState->RenderSurface = (System::IntPtr) s.d3d9RenderSurface0;
+					simState->RenderSurface = (IntPtr) s.d3d9RenderSurface0;
 					simState->IsSimulationConnected = true;
 					simState->NotifyPropertyChanged("");
 					break;
@@ -261,7 +263,7 @@ namespace LCDHardwareMonitor { namespace GUI
 				case IdOf<Disconnect>:
 				{
 					D3D9_DestroySharedSurface(&s.d3d9RenderTexture, &s.d3d9RenderSurface0);
-					simState->RenderSurface = System::IntPtr::Zero;
+					simState->RenderSurface = IntPtr::Zero;
 					simState->Plugins->Clear();
 					simState->Sensors->Clear();
 					simState->WidgetDescs->Clear();
@@ -281,9 +283,9 @@ namespace LCDHardwareMonitor { namespace GUI
 					{
 						GUI::PluginInfo mPluginInfo = {};
 						mPluginInfo.Ref     = pluginsAdded->refs[i].index;
-						mPluginInfo.Name    = ToSystemString(pluginsAdded->infos[i].name);
+						mPluginInfo.Name    = ToManagedString(pluginsAdded->infos[i].name);
 						mPluginInfo.Kind    = (GUI::PluginKind) pluginsAdded->kind;
-						mPluginInfo.Author  = ToSystemString(pluginsAdded->infos[i].author);
+						mPluginInfo.Author  = ToManagedString(pluginsAdded->infos[i].author);
 						mPluginInfo.Version = pluginsAdded->infos[i].version;
 						simState->Plugins->Add(mPluginInfo);
 					}
@@ -326,9 +328,9 @@ namespace LCDHardwareMonitor { namespace GUI
 							GUI::Sensor mSensor = {};
 							mSensor.PluginRef  = sensorsAdded->pluginRefs[i].index;
 							mSensor.Ref        = sensor->ref.index;
-							mSensor.Name       = ToSystemString(sensor->name);
-							mSensor.Identifier = ToSystemString(sensor->identifier);
-							mSensor.Format     = ToSystemString(sensor->format);
+							mSensor.Name       = ToManagedString(sensor->name);
+							mSensor.Identifier = ToManagedString(sensor->identifier);
+							mSensor.Format     = ToManagedString(sensor->format);
 							mSensor.Value      = sensor->value;
 							simState->Sensors->Add(mSensor);
 						}
@@ -351,7 +353,7 @@ namespace LCDHardwareMonitor { namespace GUI
 							GUI::WidgetDesc mWidgetDesc = {};
 							mWidgetDesc.PluginRef = widgetDescsAdded->pluginRefs[i].index;
 							mWidgetDesc.Ref       = desc->ref.index;
-							mWidgetDesc.Name      = ToSystemString(desc->name);
+							mWidgetDesc.Name      = ToManagedString(desc->name);
 							simState->WidgetDescs->Add(mWidgetDesc);
 						}
 					}

@@ -11,8 +11,7 @@
 using namespace System;
 using namespace System::Reflection;
 using namespace System::Runtime::InteropServices;
-
-using SString = System::String;
+using mString = System::String;
 
 // NOTE: Cross domain function calls average 200ns with the delegate pattern.
 // Try playing with security settings if optimizing this
@@ -150,8 +149,8 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	b32
 	LoadPlugin(PluginHeader* pluginHeader)
 	{
-		auto name      = gcnew SString(pluginHeader->fileName);
-		auto directory = gcnew SString(pluginHeader->directory);
+		auto name      = gcnew mString(pluginHeader->fileName);
+		auto directory = gcnew mString(pluginHeader->directory);
 
 		// NOTE: LHMAppDomainManager is going to get loaded into each new
 		// AppDomain so we need to let ApplicationBase get inherited from the
@@ -192,8 +191,8 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	LoadAssemblyAndInstantiateType(c8* _fileName, T% instance)
 	{
 		// NOTE: T^ and T^% map back to plain T
-		SString^ typeName = T::typeid->FullName;
-		SString^ fileName = gcnew SString(_fileName);
+		mString^ typeName = T::typeid->FullName;
+		mString^ fileName = gcnew mString(_fileName);
 
 		auto assembly = Assembly::Load(fileName);
 		for each (Type^ type in assembly->GetExportedTypes())
@@ -229,8 +228,9 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 		sensorPluginCLR.pluginInstance->GetPluginInfo(&sensorPlugin->info);
 
 		// DEBUG: Remove me (just for fast loading)
-		//return true;
-
+		#if true
+		#pragma message("warning: Sensor plugin init temporarily disabled for faster loading")
+		#else
 		auto iInitialize = dynamic_cast<ISensorInitialize^>(sensorPluginCLR.pluginInstance);
 		if (iInitialize)
 		{
@@ -251,6 +251,7 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 			sensorPluginCLR.teardownDelegate = gcnew SensorPlugin_CLR::TeardownDelegate(iTeardown, &ISensorTeardown::Teardown);
 			sensorPlugin->functions.teardown = (SensorPluginFunctions::TeardownFn*) (void*) Marshal::GetFunctionPointerForDelegate(sensorPluginCLR.teardownDelegate);
 		}
+		#endif
 
 		return true;
 	}

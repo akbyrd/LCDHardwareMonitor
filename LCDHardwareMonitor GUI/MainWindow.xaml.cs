@@ -72,7 +72,7 @@ namespace LCDHardwareMonitor.GUI
 			data.ref_      = item.Ref;
 			data.loadState = requestState;
 
-			Message_ request = new Message_(MessageType.SetPluginLoadState, data);
+			Message request = new Message(MessageType.SetPluginLoadState, data);
 			simState.Messages.Add(request);
 		}
 	}

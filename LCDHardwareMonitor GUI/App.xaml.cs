@@ -55,7 +55,7 @@ namespace LCDHardwareMonitor.GUI
 				SimulationState.NotifyPropertyChanged("");
 			}
 
-			foreach (Message_ m in SimulationState.Messages)
+			foreach (Message m in SimulationState.Messages)
 			{
 				switch (m.type)
 				{
