@@ -77,7 +77,7 @@ PluginLoader_Initialize(PluginLoaderState* s)
 		LOG_HRESULT_IF_FAILED(hr, return false,
 			Severity::Fatal, "Failed to CLR control interface");
 
-		hr = clrControl->SetAppDomainManagerType(L"LCDHardwareMonitor PluginLoader CLR", L"LHMPluginLoader");
+		hr = clrControl->SetAppDomainManagerType(L"LCDHardwareMonitor.PluginLoader.CLR", L"LHMPluginLoader");
 		LOG_HRESULT_IF_FAILED(hr, return false,
 			Severity::Fatal, "Failed to set CLR AppDomain manager");
 
@@ -129,7 +129,7 @@ DetectPluginLanguage(PluginHeader* pluginHeader)
 	String pluginPath = {};
 	defer { List_Free(pluginPath); };
 
-	b32 success = String_Format(pluginPath, "%s\\%s.dll", pluginHeader->directory, pluginHeader->fileName);
+	b32 success = String_Format(pluginPath, "%s\\%s", pluginHeader->directory, pluginHeader->fileName);
 	if (!success) return false;
 
 	HANDLE pluginFile = CreateFileA(

@@ -9,6 +9,7 @@
 #pragma make_public(WidgetPlugin)
 
 using namespace System;
+using namespace System::IO;
 using namespace System::Reflection;
 using namespace System::Runtime::InteropServices;
 using mString = System::String;
@@ -192,7 +193,7 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	{
 		// NOTE: T^ and T^% map back to plain T
 		mString^ typeName = T::typeid->FullName;
-		mString^ fileName = gcnew mString(_fileName);
+		mString^ fileName = Path::GetFileNameWithoutExtension(gcnew mString(_fileName));
 
 		auto assembly = Assembly::Load(fileName);
 		for each (Type^ type in assembly->GetExportedTypes())

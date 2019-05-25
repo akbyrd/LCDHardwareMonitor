@@ -192,13 +192,15 @@ GetWorkingDirectory()
 	LOG_IF(!success, return result,
 		Severity::Warning, "Failed to allocate working directory");
 
-	u32 written = GetCurrentDirectoryA(length + 1, result.data);
+	u32 written = GetCurrentDirectoryA(length, result.data);
 	LOG_LAST_ERROR_IF(!written, return result,
 		Severity::Warning, "Failed to get working directory");
-	LOG_IF(written != length, return result,
+
+	// NOTE: length includes null terminator, written does not
+	LOG_IF((written + 1) != length, return result,
 		Severity::Warning, "Working directory length does not match expected");
 
-	result.length = length + 1;
+	result.length = length;
 	return result;
 }
 
