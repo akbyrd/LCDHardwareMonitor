@@ -20,11 +20,14 @@
 //   Grow returns false.
 //   Append returns a nullptr instead of a pointer to the new slot.
 
-template<typename T>
-struct ListRef
+struct ListRefBase
 {
 	u32 index;
+};
 
+template<typename T>
+struct ListRef : ListRefBase
+{
 	static const ListRef<T> Null;
 	operator b32() { return *this != Null; }
 };
@@ -57,14 +60,15 @@ struct Slice
 	u32 stride;
 	T*  data;
 
-	// TODO: I'm not sure these const versions are valid (would accept an rvalue and keep a pointer to it)
-	// TODO: I wish we could use actual operators for these conversions, rather than constructors.
-	Slice()                      { length = 0;           stride = sizeof(T); data = nullptr; }
-	Slice(u32 _length, T* _data) { length = _length;     stride = sizeof(T); data = _data; }
-	Slice(const T& element)      { length = 1;           stride = sizeof(T); data = (T*) &element; }
-	Slice(List<T>& list)         { length = list.length; stride = sizeof(T); data = list.data; }
-	template<u32 Length>
-	Slice(const T(&arr)[Length]) { length = Length;      stride = sizeof(T); data = (T*) arr; }
+	                                 Slice()                                   { length = 0;            stride = sizeof(T);    data = nullptr;         }
+	template<typename U>             Slice(u32 _length, U* _data)              { length = _length;      stride = sizeof(U);    data = _data;           }
+	template<typename U>             Slice(u32 _length, u32 _stride, U* _data) { length = _length;      stride = _stride;      data = _data;           }
+	template<typename U>             Slice(const List<U>& list)                { length = list.length;  stride = sizeof(U);    data = list.data;       }
+	template<typename U>             Slice(const Slice<U>& slice)              { length = slice.length; stride = slice.stride; data = slice.data;      }
+	template<typename U>             Slice(const U& element)                   { length = 1;            stride = sizeof(U);    data = (U*) &element;   }
+	template<typename U, u32 Length> Slice(const U(&arr)[Length])              { length = Length;       stride = sizeof(U);    data = (U*) arr;        }
+
+	operator Slice<Slice<T>>() { return { 1, sizeof(Slice<T>), this }; }
 
 	using RefT = ListRef<T>;
 	inline T& operator[] (RefT r) { return (T&) ((u8*) data)[stride*(r.index - 1)]; }

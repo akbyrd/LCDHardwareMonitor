@@ -28,26 +28,26 @@ namespace Message
 
 	struct PluginsAdded
 	{
-		Header               header;
-		PluginKind           kind;
-		Slice<ListRef<void>> refs;
-		Slice<PluginInfo>    infos;
+		Header             header;
+		PluginKind         kind;
+		Slice<ListRefBase> refs;
+		Slice<PluginInfo>  infos;
 	};
 
 	struct PluginStatesChanged
 	{
 		Header                 header;
 		PluginKind             kind;
-		Slice<ListRef<void>>   refs;
+		Slice<ListRefBase>     refs;
 		Slice<PluginLoadState> loadStates;
 	};
 
 	#if false
 	struct PluginsRemoved
 	{
-		Header               header;
-		PluginKind           kind;
-		Slice<ListRef<void>> refs;
+		Header             header;
+		PluginKind         kind;
+		Slice<ListRefBase> refs;
 	};
 	#endif
 
@@ -88,7 +88,7 @@ namespace Message
 	{
 		Header                 header;
 		PluginKind             kind;
-		Slice<ListRef<void>>   refs;
+		Slice<ListRefBase>     refs;
 		Slice<PluginLoadState> loadStates;
 	};
 }

@@ -853,16 +853,16 @@ Simulation_Update(SimulationState* s)
 				}
 
 				{
-					// TODO: C++17 can get rid of the cast by allowing a ListRef base class
+					// TODO: Send PluginHeader along with PluginInfo
 					PluginsAdded pluginsAdded = {};
 					pluginsAdded.kind  = PluginKind::Sensor;
-					pluginsAdded.refs  = List_MemberSlice(s->sensorPlugins, (ListRef<void> SensorPlugin::*) &SensorPlugin::ref);
+					pluginsAdded.refs  = List_MemberSlice(s->sensorPlugins, &SensorPlugin::ref);
 					pluginsAdded.infos = List_MemberSlice(s->sensorPlugins, &SensorPlugin::info);
 					SendGUIMessage(s, pluginsAdded);
 
 					PluginStatesChanged statesChanged = {};
 					statesChanged.kind       = PluginKind::Sensor;
-					statesChanged.refs       = List_MemberSlice(s->sensorPlugins, (ListRef<void> SensorPlugin::*) &SensorPlugin::ref);
+					statesChanged.refs       = List_MemberSlice(s->sensorPlugins, &SensorPlugin::ref);
 					statesChanged.loadStates = List_MemberSlice(s->sensorPlugins, &SensorPlugin::header, &PluginHeader::loadState);
 					SendGUIMessage(s, statesChanged);
 				}
@@ -870,13 +870,13 @@ Simulation_Update(SimulationState* s)
 				{
 					PluginsAdded pluginsAdded = {};
 					pluginsAdded.kind  = PluginKind::Widget;
-					pluginsAdded.refs  = List_MemberSlice(s->widgetPlugins, (ListRef<void> WidgetPlugin::*) &WidgetPlugin::ref);
+					pluginsAdded.refs  = List_MemberSlice(s->widgetPlugins, &WidgetPlugin::ref);
 					pluginsAdded.infos = List_MemberSlice(s->widgetPlugins, &WidgetPlugin::info);
 					SendGUIMessage(s, pluginsAdded);
 
 					PluginStatesChanged statesChanged = {};
 					statesChanged.kind       = PluginKind::Widget;
-					statesChanged.refs       = List_MemberSlice(s->widgetPlugins, (ListRef<void> WidgetPlugin::*) &WidgetPlugin::ref);
+					statesChanged.refs       = List_MemberSlice(s->widgetPlugins, &WidgetPlugin::ref);
 					statesChanged.loadStates = List_MemberSlice(s->widgetPlugins, &WidgetPlugin::header, &PluginHeader::loadState);
 					SendGUIMessage(s, statesChanged);
 				}
@@ -889,14 +889,17 @@ Simulation_Update(SimulationState* s)
 				}
 
 				{
-					// TODO: Can we serialize all widget plugins in one go?
 					for (u32 i = 0; i < s->widgetPlugins.length; i++)
 					{
 						WidgetPlugin* widgetPlugin = &s->widgetPlugins[i];
 
+						// NOTE: It's surprisingly tricky to send a Slice<Slice<T>> when it's backed by
+						// a set of List<T>. The inner slices are temporaries and need to be stored.
+						Slice<WidgetDesc> descs = List_MemberSlice(widgetPlugin->widgetDatas, &WidgetData::desc);
+
 						WidgetDescsAdded widgetDescsAdded = {};
 						widgetDescsAdded.pluginRefs = widgetPlugin->ref;
-						widgetDescsAdded.descs      = List_MemberSlice(widgetPlugin->widgetDatas, &WidgetData::desc);
+						widgetDescsAdded.descs      = descs;
 						SendGUIMessage(s, widgetDescsAdded);
 					}
 				}

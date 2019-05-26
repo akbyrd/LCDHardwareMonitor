@@ -27,8 +27,7 @@ struct State
 static State state = {};
 
 #pragma managed
-// TODO: C++17
-namespace LCDHardwareMonitor { namespace GUI
+namespace LCDHardwareMonitor::GUI
 {
 	using namespace System;
 	using namespace System::Collections::ObjectModel;
@@ -320,7 +319,7 @@ namespace LCDHardwareMonitor { namespace GUI
 					SensorsAdded* sensorsAdded = (SensorsAdded*) bytes.data;
 					for (u32 i = 0; i < sensorsAdded->sensors.length; i++)
 					{
-						List<::Sensor> sensors = sensorsAdded->sensors[i];
+						Slice<::Sensor> sensors = sensorsAdded->sensors[i];
 						for (u32 j = 0; j < sensors.length; j++)
 						{
 							::Sensor* sensor = &sensors[j];
@@ -390,4 +389,4 @@ namespace LCDHardwareMonitor { namespace GUI
 			s = {};
 		}
 	};
-}}
+}
