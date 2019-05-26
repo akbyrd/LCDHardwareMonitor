@@ -926,11 +926,14 @@ Simulation_Update(SimulationState* s)
 		}
 
 		// Receive
+		for (u32 i = 0; i < 1; i++)
 		{
 			// TODO: Implement a CheckConnection function
 			// NOTE: This read also ensures we'll detect pipe disconnects. Otherwise when we have no
 			// messages to send we'll chug along thinking the pipe is still connected indefinintely
 			// and never allow reconnections.
+
+			using namespace Message;
 
 			Bytes bytes = {};
 			defer { List_Free(bytes); };
@@ -938,6 +941,32 @@ Simulation_Update(SimulationState* s)
 			// TODO: Loop, deserialize
 			PipeResult result = Platform_ReadPipe(&s->guiPipe, bytes);
 			HandleGUIResult(s, result != PipeResult::UnexpectedFailure);
+			if (result != PipeResult::Success) continue;
+
+			if (bytes.length == 0) continue;
+
+			// TODO: Possible failures in Update. Uh-oh.
+			LOG_IF(bytes.length < sizeof(Header), return /*false*/,
+				Severity::Warning, "Corrupted message received");
+
+			Header* header = (Header*) bytes.data;
+
+			LOG_IF(bytes.length != header->size, return /*false*/,
+				Severity::Warning, "Incorrectly sized message received");
+
+			LOG_IF(header->index != s->guiMessageIndex, return /*false*/,
+				Severity::Warning, "Unexpected message received");
+			s->guiMessageIndex++;
+
+			switch (header->id)
+			{
+				default: Assert(false); break;
+				case IdOf<Null>: break;
+
+				case IdOf<CloseSimulation>:
+					Platform_RequestQuit();
+					break;
+			}
 		}
 
 		// Reset on disconnects

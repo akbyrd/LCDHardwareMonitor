@@ -290,7 +290,7 @@
                     Content="Launch"
                     Visibility="{Binding IsSimulationRunning, Converter={StaticResource ivc}}" />
             <Button Click="CloseSim_Click"
-                    Content="Kill"
+                    Content="Close"
                     Visibility="{Binding IsSimulationRunning, Converter={StaticResource vc}}" />
           </StackPanel>
         </StackPanel>

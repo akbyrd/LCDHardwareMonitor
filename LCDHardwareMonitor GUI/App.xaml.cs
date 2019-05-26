@@ -65,7 +65,6 @@ namespace LCDHardwareMonitor.GUI
 						break;
 
 					// TODO: Why doesn't this work?
-					// TODO: Send a pipe message
 					case MessageType.CloseSim:
 						foreach (Process p in processes)
 							p.Close();

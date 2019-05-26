@@ -300,6 +300,12 @@ Platform_GetElapsedSeconds(i64 startTicks)
 	return Platform_TicksToSeconds(elapsedTicks);
 }
 
+void
+Platform_RequestQuit()
+{
+	PostQuitMessage(0);
+}
+
 struct PipeImpl
 {
 	String     fullName;

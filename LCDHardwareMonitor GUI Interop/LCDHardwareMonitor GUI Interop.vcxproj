@@ -109,9 +109,7 @@
     <PostBuildEvent>
       <Command>"..\build\Deploy.bat" "$(OutDir)" "GUI"</Command>
     </PostBuildEvent>
-    <Link>
-      <AdditionalDependencies />
-    </Link>
+    <Link />
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -125,9 +123,7 @@
     <PostBuildEvent>
       <Command>"..\build\Deploy.bat" "$(OutDir)" "GUI"</Command>
     </PostBuildEvent>
-    <Link>
-      <AdditionalDependencies />
-    </Link>
+    <Link />
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -142,7 +138,6 @@
     <Link>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <AdditionalDependencies />
     </Link>
     <PostBuildEvent>
       <Command>"..\build\Deploy.bat" "$(OutDir)" "GUI"</Command>
@@ -161,7 +156,6 @@
     <Link>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <AdditionalDependencies />
     </Link>
     <PostBuildEvent>
       <Command>"..\build\Deploy.bat" "$(OutDir)" "GUI"</Command>

@@ -58,6 +58,7 @@ String     Platform_LoadFileString    (c8* path);
 i64        Platform_GetTicks          ();
 r32        Platform_TicksToSeconds    (i64 ticks);
 r32        Platform_GetElapsedSeconds (i64 startTicks);
+void       Platform_RequestQuit       ();
 
 PipeResult Platform_CreatePipeServer  (StringSlice name, Pipe*);
 PipeResult Platform_CreatePipeClient  (StringSlice name, Pipe*);

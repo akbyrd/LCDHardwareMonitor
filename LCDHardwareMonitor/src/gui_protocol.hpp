@@ -84,6 +84,11 @@ namespace Message
 	#endif
 
 	// GUI -> Sim
+	struct CloseSimulation
+	{
+		Header header;
+	};
+
 	struct SetPluginLoadStates
 	{
 		Header                 header;
@@ -135,7 +140,7 @@ void Serialize(ByteStream&, Slice<T>&);
 
 void Serialize(ByteStream&, StringSlice&);
 
-void Serialize(ByteStream&, Message::Connect&);
+// TODO: Try adding an assert to catch when a field is missing from a serialize function
 void Serialize(ByteStream&, Message::PluginsAdded&);
 void Serialize(ByteStream&, Message::PluginStatesChanged&);
 void Serialize(ByteStream&, Message::SetPluginLoadStates&);
@@ -186,7 +191,7 @@ DeserializeMessage(Bytes& bytes)
 	stream.mode  = ByteStreamMode::Read;
 	stream.bytes = bytes;
 
-	Serialize(stream, (T*) &bytes[0]);
+	Serialize(stream, (T*) bytes.data);
 }
 
 // TODO: This is a bit lame
@@ -338,15 +343,6 @@ Serialize(ByteStream& stream, StringSlice& string)
 			string.data = nullptr;
 			break;
 	}
-}
-
-void
-Serialize(ByteStream& stream, Message::Connect& connect)
-{
-	Serialize(stream, connect.header);
-	Serialize(stream, connect.version);
-	Serialize(stream, connect.renderSurface);
-	Serialize(stream, connect.renderSize);
 }
 
 void

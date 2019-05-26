@@ -1,5 +1,6 @@
 using MahApps.Metro.Controls;
 using System;
+using System.Diagnostics;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
@@ -53,8 +54,8 @@ namespace LCDHardwareMonitor.GUI
 			PluginLoadState requestState;
 			switch (item.LoadState)
 			{
-				default:
-				case PluginLoadState.Null:
+				default: Debug.Assert(false); return;
+
 				case PluginLoadState.Broken:
 					return;
 
