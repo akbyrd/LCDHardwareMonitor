@@ -16,35 +16,32 @@
     <StartAction>Project</StartAction>
     <StartArguments>
     </StartArguments>
-    <StartWorkingDirectory>
-    </StartWorkingDirectory>
-    <StartProgram>$(SolutionDir)run\GUI\LCDHardwareMonitor GUI.exe</StartProgram>
+    <StartWorkingDirectory>..\..\..\..\run</StartWorkingDirectory>
+    <StartProgram>
+    </StartProgram>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <EnableUnmanagedDebugging>true</EnableUnmanagedDebugging>
-    <StartAction>Program</StartAction>
+    <StartAction>Project</StartAction>
     <StartArguments>
     </StartArguments>
-    <StartWorkingDirectory>
-    </StartWorkingDirectory>
+    <StartWorkingDirectory>..\..\..\..\run</StartWorkingDirectory>
     <StartProgram>$(SolutionDir)run\GUI\LCDHardwareMonitor GUI.exe</StartProgram>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
     <EnableUnmanagedDebugging>true</EnableUnmanagedDebugging>
-    <StartAction>Program</StartAction>
+    <StartAction>Project</StartAction>
     <StartArguments>
     </StartArguments>
-    <StartWorkingDirectory>
-    </StartWorkingDirectory>
+    <StartWorkingDirectory>..\..\..\..\run</StartWorkingDirectory>
     <StartProgram>$(SolutionDir)run\GUI\LCDHardwareMonitor GUI.exe</StartProgram>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
     <EnableUnmanagedDebugging>true</EnableUnmanagedDebugging>
-    <StartAction>Program</StartAction>
+    <StartAction>Project</StartAction>
     <StartArguments>
     </StartArguments>
-    <StartWorkingDirectory>
-    </StartWorkingDirectory>
+    <StartWorkingDirectory>..\..\..\..\run</StartWorkingDirectory>
     <StartProgram>$(SolutionDir)run\GUI\LCDHardwareMonitor GUI.exe</StartProgram>
   </PropertyGroup>
 </Project>
