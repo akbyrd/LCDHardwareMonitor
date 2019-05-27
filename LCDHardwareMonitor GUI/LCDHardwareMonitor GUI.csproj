@@ -157,4 +157,7 @@
 "$(SolutionDir)\build\Deploy.bat" "$(OutDir)" "GUI"
 POPD</PostBuildEvent>
   </PropertyGroup>
+  <Target Name="CleanBetter" AfterTargets="Clean">
+    <RemoveDir Directories="$(TargetDir)" />
+  </Target>
 </Project>
