@@ -32,6 +32,7 @@ namespace LCDHardwareMonitor::GUI
 	using namespace System;
 	using namespace System::Collections::ObjectModel;
 	using namespace System::ComponentModel;
+	using namespace System::Diagnostics;
 	using mString = System::String;
 
 	public enum struct PluginKind
@@ -78,12 +79,21 @@ namespace LCDHardwareMonitor::GUI
 		property mString^ Name;
 	};
 
+	public enum struct ProcessState
+	{
+		Null,
+		Launching,
+		Launched,
+		Terminating,
+		Terminated,
+	};
+
 	public enum struct MessageType
 	{
 		Null,
 		LaunchSim,
-		CloseSim,
-		KillSim,
+		TerminateSim,
+		ForceTerminateSim,
 		SetPluginLoadState,
 	};
 
@@ -107,8 +117,9 @@ namespace LCDHardwareMonitor::GUI
 		property ObservableCollection<WidgetDesc>^ WidgetDescs;
 
 		// UI Helpers
-		property bool IsSimulationRunning;
-		property bool IsSimulationConnected;
+		property bool         IsSimulationConnected;
+		property ProcessState ProcessState;
+		property Stopwatch^   ProcessStateTimer;
 
 		// Messages
 		System::Collections::Generic::List<Message>^ Messages;
@@ -116,10 +127,11 @@ namespace LCDHardwareMonitor::GUI
 		// Cruft
 		SimulationState()
 		{
-			Plugins     = gcnew ObservableCollection<PluginInfo>();
-			Sensors     = gcnew ObservableCollection<Sensor>();
-			WidgetDescs = gcnew ObservableCollection<WidgetDesc>();
-			Messages    = gcnew System::Collections::Generic::List<Message>();
+			Plugins           = gcnew ObservableCollection<PluginInfo>();
+			Sensors           = gcnew ObservableCollection<Sensor>();
+			WidgetDescs       = gcnew ObservableCollection<WidgetDesc>();
+			Messages          = gcnew System::Collections::Generic::List<Message>();
+			ProcessStateTimer = gcnew Stopwatch();
 		}
 
 		virtual event PropertyChangedEventHandler^ PropertyChanged;
@@ -378,13 +390,13 @@ namespace LCDHardwareMonitor::GUI
 						default: Assert(false); break;
 
 						case MessageType::LaunchSim:
-						case MessageType::KillSim:
+						case MessageType::ForceTerminateSim:
 							// Handled in App
 							continue;
 
-						case MessageType::CloseSim:
+						case MessageType::TerminateSim:
 						{
-							CloseSimulation nMessage = {};
+							TerminateSimulation nMessage = {};
 
 							// TODO: I don't think messageIndex makes sense in the send+recv world. Maybe
 							// there needs to be separate indices for each operation?

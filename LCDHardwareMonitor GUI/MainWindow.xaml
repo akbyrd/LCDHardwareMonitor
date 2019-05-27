@@ -279,19 +279,40 @@
         </ResourceDictionary>
       </TabItem.Resources>
 
-      <!-- TODO: Gray the button while processing -->
-      <!-- TODO: Use a dropdown button -->
+      <!-- TODO: Use fixed width so things jump around less -->
       <Border BorderBrush="#333333" BorderThickness="1">
         <StackPanel HorizontalAlignment="Left">
           <StackPanel Orientation="Horizontal">
-            <Label Content="Simulation Running:" />
-            <Label Content="{Binding IsSimulationRunning}" />
-            <Button Click="LaunchSim_Click"
-                    Content="Launch"
-                    Visibility="{Binding IsSimulationRunning, Converter={StaticResource ivc}}" />
-            <Button Click="CloseSim_Click"
-                    Content="Close"
-                    Visibility="{Binding IsSimulationRunning, Converter={StaticResource vc}}" />
+            <Label Content="Simulation Process:" />
+            <Label Content="{Binding ProcessState}" />
+            <Button Margin="5,0,5,0"
+                    Click="LaunchSim_Click">
+              <Button.Style>
+                <Style TargetType="Button" BasedOn="{StaticResource MetroFlatButton}">
+                    <Style.Triggers>
+                    <DataTrigger Binding="{Binding ProcessState}" Value="{x:Static lhmi:ProcessState.Launching}">
+                      <Setter Property="IsEnabled" Value="false"/>
+                      <Setter Property="Content" Value="Launch"/>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding ProcessState}" Value="{x:Static lhmi:ProcessState.Launched}">
+                      <Setter Property="IsEnabled" Value="true"/>
+                      <Setter Property="Content" Value="Terminate"/>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding ProcessState}" Value="{x:Static lhmi:ProcessState.Terminating}">
+                      <Setter Property="IsEnabled" Value="false"/>
+                      <Setter Property="Content" Value="Terminate"/>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding ProcessState}" Value="{x:Static lhmi:ProcessState.Terminated}">
+                      <Setter Property="IsEnabled" Value="true"/>
+                      <Setter Property="Content" Value="Launch"/>
+                    </DataTrigger>
+                  </Style.Triggers>
+                </Style>
+              </Button.Style>
+            </Button>
+            <Button Margin="5,0,5,0"
+                    Click="ForceTerminateSim_Click"
+                    Content="Force Terminate"/>
           </StackPanel>
         </StackPanel>
       </Border>

@@ -34,16 +34,25 @@ namespace LCDHardwareMonitor.GUI
 			LCDPreviewTexture.Unlock();
 		}
 
-		// TODO: Gray the button?
 		private void LaunchSim_Click(object sender, RoutedEventArgs e)
 		{
-			simState.Messages.Add(MessageType.LaunchSim);
+			switch (simState.ProcessState)
+			{
+				default: Debug.Assert(false); break;
+
+				case ProcessState.Terminated:
+					simState.Messages.Add(MessageType.LaunchSim);
+					break;
+
+				case ProcessState.Launched:
+					simState.Messages.Add(MessageType.TerminateSim);
+					break;
+			}
 		}
 
-		private void CloseSim_Click(object sender, RoutedEventArgs e)
+		private void ForceTerminateSim_Click(object sender, RoutedEventArgs e)
 		{
-			bool kill = Keyboard.Modifiers.HasFlag(ModifierKeys.Control);
-			simState.Messages.Add(kill ? MessageType.KillSim : MessageType.CloseSim);
+			simState.Messages.Add(MessageType.ForceTerminateSim);
 		}
 
 		private void LoadPlugin_Click(object sender, RoutedEventArgs e)

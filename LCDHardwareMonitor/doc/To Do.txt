@@ -1,5 +1,5 @@
 Current
-	Implement stateful GUI requests (disable buttons)
+	Fix spam clicking Launch/Terminate
 	Share message send/recv code between sim and gui
 
 	Fix StringSlice trailing zero

@@ -84,7 +84,7 @@ namespace Message
 	#endif
 
 	// GUI -> Sim
-	struct CloseSimulation
+	struct TerminateSimulation
 	{
 		Header header;
 	};

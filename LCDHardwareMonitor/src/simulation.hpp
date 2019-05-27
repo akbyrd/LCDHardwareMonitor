@@ -963,7 +963,7 @@ Simulation_Update(SimulationState* s)
 				default: Assert(false); break;
 				case IdOf<Null>: break;
 
-				case IdOf<CloseSimulation>:
+				case IdOf<TerminateSimulation>:
 					Platform_RequestQuit();
 					break;
 			}
