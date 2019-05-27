@@ -16,7 +16,8 @@ struct SimulationState
 
 	b32                guiConnected;
 	Pipe               guiPipe;
-	u32                guiMessageIndex;
+	u32                guiSendMsgIndex;
+	u32                guiRecvMsgIndex;
 	List<Bytes>        guiQueue;
 	u32                guiQueueIndex;
 	b32                guiFailure;
@@ -502,7 +503,7 @@ static void
 SendGUIMessage(SimulationState* s, T& message)
 {
 	Bytes bytes = {};
-	b32 success = SerializeMessage(bytes, message, s->guiMessageIndex);
+	b32 success = SerializeMessage(bytes, message, s->guiSendMsgIndex);
 	HandleGUIResult(s, success);
 	if (!success) return;
 
@@ -510,7 +511,7 @@ SendGUIMessage(SimulationState* s, T& message)
 	HandleGUIResult(s, result != nullptr);
 	if (result == nullptr) return;
 
-	s->guiMessageIndex++;
+	s->guiSendMsgIndex++;
 }
 
 b32
@@ -954,9 +955,9 @@ Simulation_Update(SimulationState* s)
 			LOG_IF(bytes.length != header->size, return /*false*/,
 				Severity::Warning, "Incorrectly sized message received");
 
-			LOG_IF(header->index != s->guiMessageIndex, return /*false*/,
+			LOG_IF(header->index != s->guiRecvMsgIndex, return /*false*/,
 				Severity::Warning, "Unexpected message received");
-			s->guiMessageIndex++;
+			s->guiRecvMsgIndex++;
 
 			switch (header->id)
 			{
@@ -975,7 +976,8 @@ Simulation_Update(SimulationState* s)
 			 || s->guiPipe.state == PipeState::Disconnected)
 			{
 				s->guiConnected = false;
-				s->guiMessageIndex = 0;
+				s->guiSendMsgIndex = 0;
+				s->guiRecvMsgIndex = 0;
 			}
 		}
 	}
@@ -1015,7 +1017,7 @@ Simulation_Teardown(SimulationState* s)
 
 		Disconnect disconnect = {};
 		disconnect.header.id    = IdOf<Disconnect>;
-		disconnect.header.index = s->guiMessageIndex - (s->guiQueue.length - s->guiQueueIndex);
+		disconnect.header.index = s->guiSendMsgIndex - (s->guiQueue.length - s->guiQueueIndex);
 		disconnect.header.size  = sizeof(Disconnect);
 
 		Bytes bytes = {};

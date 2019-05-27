@@ -1,7 +1,4 @@
 Current
-	Fix spam clicking Launch/Terminate
-	Share message send/recv code between sim and gui
-
 	Fix StringSlice trailing zero
 	I think pipes want to be no-wait
 

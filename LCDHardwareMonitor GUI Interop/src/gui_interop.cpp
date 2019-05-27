@@ -17,7 +17,8 @@
 struct State
 {
 	Pipe                pipe;
-	u32                 messageIndex;
+	u32                 sendMsgIndex;
+	u32                 recvMsgIndex;
 
 	IDirect3D9Ex*       d3d9;
 	IDirect3DDevice9Ex* d3d9Device;
@@ -225,7 +226,7 @@ namespace LCDHardwareMonitor::GUI
 						*disconnect = {};
 
 						disconnect->header.id    = IdOf<Disconnect>;
-						disconnect->header.index = s.messageIndex;
+						disconnect->header.index = s.recvMsgIndex;
 						disconnect->header.size  = sizeof(Disconnect);
 					}
 				}
@@ -242,9 +243,9 @@ namespace LCDHardwareMonitor::GUI
 				LOG_IF(bytes.length != header->size, return false,
 					Severity::Warning, "Incorrectly sized message received");
 
-				LOG_IF(header->index != s.messageIndex, return false,
+				LOG_IF(header->index != s.recvMsgIndex, return false,
 					Severity::Warning, "Unexpected message received");
-				s.messageIndex++;
+				s.recvMsgIndex++;
 
 				switch (header->id)
 				{
@@ -283,7 +284,8 @@ namespace LCDHardwareMonitor::GUI
 						simState->IsSimulationConnected = false;
 						simState->NotifyPropertyChanged("");
 
-						s.messageIndex = 0;
+						s.sendMsgIndex = 0;
+						s.recvMsgIndex = 0;
 						// TODO: Will need to handle 'pending' states.
 						simState->Messages->Clear();
 						break;
@@ -398,10 +400,8 @@ namespace LCDHardwareMonitor::GUI
 						{
 							TerminateSimulation nMessage = {};
 
-							// TODO: I don't think messageIndex makes sense in the send+recv world. Maybe
-							// there needs to be separate indices for each operation?
 							Bytes bytes = {};
-							SerializeMessage(bytes, nMessage, s.messageIndex);
+							SerializeMessage(bytes, nMessage, s.sendMsgIndex);
 							Platform_WritePipe(&s.pipe, bytes);
 							break;
 						}
@@ -410,7 +410,7 @@ namespace LCDHardwareMonitor::GUI
 							// TODO: Implement
 							continue;
 					}
-					s.messageIndex++;
+					s.sendMsgIndex++;
 				}
 			}
 
