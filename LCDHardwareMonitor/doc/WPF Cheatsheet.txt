@@ -27,3 +27,10 @@ DirectX Stuff
 Questions / To Do
 	Read the Data Binding Overview
 	What is a DependencyProperty?
+
+Reading Notes
+	OneTime bindings might be sufficient for many cases
+	How should changes propagate to the UI? Implicit based on data charges or explicit calls to update bindings?
+	How should projects be structured to implement data in c#?
+	When binding to a view, the slash ("/") character in a Path value designates the current item of the view.
+	when a singleton object is bound to a collection view, it automatically binds to the CurrentItem of the view.
