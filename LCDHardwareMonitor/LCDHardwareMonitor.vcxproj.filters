@@ -38,9 +38,6 @@
     <ClInclude Include="src\pluginloader_win32.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\pluginheader.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\plugin_shared.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -49,11 +46,13 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="res\Debug Coordinates.ps" />
     <FxCompile Include="res\Vertex Colored.ps">
       <Filter>Resources</Filter>
     </FxCompile>
     <FxCompile Include="res\WVP.vs">
+      <Filter>Resources</Filter>
+    </FxCompile>
+    <FxCompile Include="res\Debug Coordinates.ps">
       <Filter>Resources</Filter>
     </FxCompile>
   </ItemGroup>

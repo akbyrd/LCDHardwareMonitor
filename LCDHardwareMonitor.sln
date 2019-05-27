@@ -23,9 +23,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "LCDHardwareMonitor API", "L
 		LCDHardwareMonitor API\LHMList.hpp = LCDHardwareMonitor API\LHMList.hpp
 		LCDHardwareMonitor API\LHMMath.hpp = LCDHardwareMonitor API\LHMMath.hpp
 		LCDHardwareMonitor API\LHMPlugin.h = LCDHardwareMonitor API\LHMPlugin.h
-		LCDHardwareMonitor API\LHMPluginInfo.h = LCDHardwareMonitor API\LHMPluginInfo.h
 		LCDHardwareMonitor API\LHMRenderer.h = LCDHardwareMonitor API\LHMRenderer.h
-		LCDHardwareMonitor API\LHMSensor.h = LCDHardwareMonitor API\LHMSensor.h
 		LCDHardwareMonitor API\LHMSensorPlugin.h = LCDHardwareMonitor API\LHMSensorPlugin.h
 		LCDHardwareMonitor API\LHMSlice.hpp = LCDHardwareMonitor API\LHMSlice.hpp
 		LCDHardwareMonitor API\LHMString.hpp = LCDHardwareMonitor API\LHMString.hpp
@@ -52,6 +50,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build Scripts", "Build Scri
 		build\Deploy.bat = build\Deploy.bat
 		build\GenTLB.bat = build\GenTLB.bat
 		build\ignored.txt = build\ignored.txt
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{93AE6C14-C253-4259-B426-1784014EBBB1}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+		.gitignore = .gitignore
+		README.md = README.md
 	EndProjectSection
 EndProject
 Global
