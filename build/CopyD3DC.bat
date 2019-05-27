@@ -14,9 +14,8 @@ ECHO  **** Copy successful
 goto Exit
 
 :Abort
-  ECHO  **** WARNING - Copy failed
-  EXIT /B 1
+	ECHO  **** WARNING - Copy failed
+	EXIT /B 1
 
 :Exit
-  EXIT /B 0
-
+	EXIT /B 0

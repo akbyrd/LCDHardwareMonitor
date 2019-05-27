@@ -15,17 +15,17 @@ SET DEPENDENCY_DIR=..\LCDHardwareMonitor API CLR\%OUT_DIR%
 ECHO  **** Generating TLB
 
 tlbexp /nologo ^
-  "%TARGET_FILE_NO_EXT%.dll" ^
-  /out:"%TARGET_FILE_NO_EXT%.tlb" ^
-  /asmpath:"%DEPENDENCY_DIR%." > NUL
+	"%TARGET_FILE_NO_EXT%.dll" ^
+	/out:"%TARGET_FILE_NO_EXT%.tlb" ^
+	/asmpath:"%DEPENDENCY_DIR%." > NUL
 IF ERRORLEVEL 1 GOTO Abort
 
 ECHO  **** Generation successful
 goto Exit
 
 :Abort
-  ECHO  **** WARNING - Generation failed
-  EXIT /B 1
+	ECHO  **** WARNING - Generation failed
+	EXIT /B 1
 
 :Exit
-  EXIT /B 0
+	EXIT /B 0

@@ -1,323 +1,349 @@
-<mah:MetroWindow x:Class="LCDHardwareMonitor.GUI.MainWindow"
-                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                 xmlns:pc="clr-namespace:System.Windows.Interop;assembly=PresentationCore"
-                 xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
-                 xmlns:lhm="clr-namespace:LCDHardwareMonitor.GUI"
-                 xmlns:lhmi="clr-namespace:LCDHardwareMonitor.GUI;assembly=LCDHardwareMonitor.GUI.Interop"
-                 Height="450" Width="800"
-                 WindowStartupLocation="CenterScreen"
-                 TitlebarHeight="24"
-                 ResizeMode="CanResizeWithGrip" ResizeBorderThickness="0, 0, 10, 10"
-                 WindowTitleBrush="Transparent" NonActiveWindowTitleBrush="Transparent"
-                 MinHeight="450" MinWidth="512"
-                 DataContext="{Binding Path=SimulationState, Source={x:Static Application.Current}}">
+<mah:MetroWindow
+	x:Class="LCDHardwareMonitor.GUI.MainWindow"
+	xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+	xmlns:pc="clr-namespace:System.Windows.Interop;assembly=PresentationCore"
+	xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
+	xmlns:lhm="clr-namespace:LCDHardwareMonitor.GUI"
+	xmlns:lhmi="clr-namespace:LCDHardwareMonitor.GUI;assembly=LCDHardwareMonitor.GUI.Interop"
+	Height="450" Width="800"
+	WindowStartupLocation="CenterScreen"
+	TitlebarHeight="24"
+	ResizeMode="CanResizeWithGrip" ResizeBorderThickness="0, 0, 10, 10"
+	WindowTitleBrush="Transparent" NonActiveWindowTitleBrush="Transparent"
+	MinHeight="450" MinWidth="512"
+	DataContext="{Binding Path=SimulationState, Source={x:Static Application.Current}}">
 
-  <!-- Resize Grip Style -->
-  <mah:MetroWindow.Resources>
-    <Style TargetType="{x:Type ResizeGrip}">
-      <Style.Setters>
-        <Setter Property="Opacity" Value="0.25" />
-        <Setter Property="Margin" Value="0, 0, 1, 1" />
-      </Style.Setters>
-    </Style>
+	<!-- Resize Grip Style -->
+	<mah:MetroWindow.Resources>
+		<Style TargetType="{x:Type ResizeGrip}">
+			<Style.Setters>
+				<Setter Property="Opacity" Value="0.25" />
+				<Setter Property="Margin" Value="0, 0, 1, 1" />
+			</Style.Setters>
+		</Style>
 
-    <lhm:VisibilityConverter x:Key="vc" />
-    <lhm:VisibilityConverter x:Key="ivc" Invert="true "/>
-  </mah:MetroWindow.Resources>
-
-
-  <!-- Close Button Style -->
-  <mah:MetroWindow.WindowButtonCommands>
-    <mah:WindowButtonCommands>
-      <mah:WindowButtonCommands.LightCloseButtonStyle>
-        <Style BasedOn="{StaticResource LightMetroWindowButtonStyle}"
-               TargetType="{x:Type Button}">
-          <Style.Triggers>
-            <Trigger Property="IsMouseOver" Value="true">
-              <Setter Property="Background" Value="#FFE81123" />
-            </Trigger>
-            <Trigger Property="IsPressed" Value="true">
-              <Setter Property="Background" Value="#FFF1707A" />
-            </Trigger>
-          </Style.Triggers>
-        </Style>
-      </mah:WindowButtonCommands.LightCloseButtonStyle>
-    </mah:WindowButtonCommands>
-  </mah:MetroWindow.WindowButtonCommands>
+		<lhm:VisibilityConverter x:Key="vc" />
+		<lhm:VisibilityConverter x:Key="ivc" Invert="true "/>
+	</mah:MetroWindow.Resources>
 
 
-  <!-- Content -->
-  <mah:MetroAnimatedTabControl Margin="10, 0, 10, 10">
-    <!-- TabItem Styling -->
-    <mah:MetroAnimatedTabControl.ItemContainerStyle>
-      <Style BasedOn="{StaticResource MetroTabItem}"
-             TargetType="{x:Type TabItem}">
-        <Style.Setters>
-          <Setter Property="Padding" Value="6, -6, 6, 2" />
-          <Setter Property="mah:ControlsHelper.HeaderFontSize" Value="20" />
-          <Setter Property="mah:ControlsHelper.HeaderFontWeight" Value="Light" />
-          <Setter Property="mah:ControlsHelper.ContentCharacterCasing" Value="Lower" />
-        </Style.Setters>
-      </Style>
-    </mah:MetroAnimatedTabControl.ItemContainerStyle>
+	<!-- Close Button Style -->
+	<mah:MetroWindow.WindowButtonCommands>
+		<mah:WindowButtonCommands>
+			<mah:WindowButtonCommands.LightCloseButtonStyle>
+				<Style TargetType="{x:Type Button}" BasedOn="{StaticResource LightMetroWindowButtonStyle}">
+					<Style.Triggers>
+						<Trigger Property="IsMouseOver" Value="true">
+							<Setter Property="Background" Value="#FFE81123" />
+						</Trigger>
+						<Trigger Property="IsPressed" Value="true">
+							<Setter Property="Background" Value="#FFF1707A" />
+						</Trigger>
+					</Style.Triggers>
+				</Style>
+			</mah:WindowButtonCommands.LightCloseButtonStyle>
+		</mah:WindowButtonCommands>
+	</mah:MetroWindow.WindowButtonCommands>
 
 
-    <!-- LCD Designer -->
-    <TabItem Header="LCD Designer">
-      <TabItem.Resources>
-        <Style BasedOn="{StaticResource MetroLabel}"
-               TargetType="{x:Type Label}">
-          <Style.Setters>
-            <Setter Property="FontSize" Value="16" />
-            <Setter Property="FontWeight" Value="Light" />
-            <Setter Property="Foreground" Value="Gray" />
-          </Style.Setters>
-        </Style>
-      </TabItem.Resources>
-      <Grid>
-        <Grid.ColumnDefinitions>
-          <ColumnDefinition MinWidth="320" />
-          <ColumnDefinition Width="10" />
-          <ColumnDefinition MinWidth="320" />
-        </Grid.ColumnDefinitions>
-
-        <!-- Left Side -->
-        <Grid Grid.Column="0">
-          <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="20" />
-            <RowDefinition Height="*" />
-          </Grid.RowDefinitions>
-
-          <!-- LCD Preview -->
-          <StackPanel Grid.Row="0">
-            <Label Content="LCD Preview" />
-            <Image Visibility="{Binding IsSimulationConnected, Converter={StaticResource vc}}"
-                   Stretch="None">
-              <Image.Source>
-                <pc:D3DImage x:Name="LCDPreviewTexture" />
-              </Image.Source>
-            </Image>
-            <Label Visibility="{Binding IsSimulationConnected, Converter={StaticResource ivc}}"
-                   HorizontalContentAlignment="Center"
-                   VerticalContentAlignment="Center"
-                   Height="240" Width="320" Background="#33AA0000"
-                   Content="Preview is not available" />
-          </StackPanel>
-
-          <!-- Widget Settings -->
-          <Grid Grid.Row="2">
-            <Grid.RowDefinitions>
-              <RowDefinition Height="Auto" />
-              <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
-
-            <Label Grid.Row="0"
-                   Content="Widget Settings" />
-
-            <Border Grid.Row="1"
-                    BorderBrush="#333333" BorderThickness="1" />
-          </Grid>
-        </Grid>
+	<!-- Content -->
+	<mah:MetroAnimatedTabControl Margin="10, 0, 10, 10">
+		<!-- TabItem Styling -->
+		<mah:MetroAnimatedTabControl.ItemContainerStyle>
+			<Style TargetType="{x:Type TabItem}" BasedOn="{StaticResource MetroTabItem}">
+				<Style.Setters>
+					<Setter Property="Padding" Value="6, -6, 6, 2" />
+					<Setter Property="mah:ControlsHelper.HeaderFontSize" Value="20" />
+					<Setter Property="mah:ControlsHelper.HeaderFontWeight" Value="Light" />
+					<Setter Property="mah:ControlsHelper.ContentCharacterCasing" Value="Lower" />
+				</Style.Setters>
+			</Style>
+		</mah:MetroAnimatedTabControl.ItemContainerStyle>
 
 
-        <!-- Right Side -->
-        <!-- Widgets and Sensors -->
-        <mah:MetroAnimatedTabControl Grid.Column="2">
+		<!-- LCD Designer -->
+		<TabItem Header="LCD Designer">
+			<TabItem.Resources>
+				<Style TargetType="{x:Type Label}" BasedOn="{StaticResource MetroLabel}">
+					<Style.Setters>
+						<Setter Property="FontSize" Value="16" />
+						<Setter Property="FontWeight" Value="Light" />
+						<Setter Property="Foreground" Value="Gray" />
+					</Style.Setters>
+				</Style>
+			</TabItem.Resources>
+			<Grid>
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition MinWidth="320" />
+					<ColumnDefinition Width="10" />
+					<ColumnDefinition MinWidth="320" />
+				</Grid.ColumnDefinitions>
 
-          <!-- TabItem Styling -->
-          <mah:MetroAnimatedTabControl.ItemContainerStyle>
-            <Style BasedOn="{StaticResource MetroTabItem}"
-                   TargetType="{x:Type TabItem}">
-              <Style.Setters>
-                <Setter Property="Padding" Value="6, -6, 6, 2" />
-                <Setter Property="mah:ControlsHelper.HeaderFontSize" Value="16" />
-                <Setter Property="mah:ControlsHelper.HeaderFontWeight" Value="Light" />
-                <Setter Property="mah:ControlsHelper.ContentCharacterCasing" Value="Lower" />
-              </Style.Setters>
-            </Style>
-          </mah:MetroAnimatedTabControl.ItemContainerStyle>
+				<!-- Left Side -->
+				<Grid Grid.Column="0">
+					<Grid.RowDefinitions>
+						<RowDefinition Height="Auto" />
+						<RowDefinition Height="20" />
+						<RowDefinition Height="*" />
+					</Grid.RowDefinitions>
 
-          <!-- Widgets -->
-          <TabItem Header="Widgets">
-            <DataGrid BorderBrush="#333333" BorderThickness="1"
-                      ItemsSource="{Binding WidgetDescs}"
-                      AutoGenerateColumns="false">
-              <DataGrid.Columns>
-                <DataGridTextColumn Binding="{Binding Ref}"
-                                    Header="Ref"
-                                    Width="42"
-                                    IsReadOnly="true" />
-                <DataGridTextColumn Binding="{Binding Name}"
-                                    Header="Name"
-                                    Width="*"
-                                    IsReadOnly="true" />
-                </DataGrid.Columns>
-            </DataGrid>
-          </TabItem>
+					<!-- LCD Preview -->
+					<StackPanel Grid.Row="0">
+						<Label Content="LCD Preview" />
+						<Image
+							Visibility="{Binding IsSimulationConnected, Converter={StaticResource vc}}"
+							Stretch="None">
+							<Image.Source>
+								<pc:D3DImage x:Name="LCDPreviewTexture" />
+							</Image.Source>
+						</Image>
+						<Label
+							Visibility="{Binding IsSimulationConnected, Converter={StaticResource ivc}}"
+							HorizontalContentAlignment="Center"
+							VerticalContentAlignment="Center"
+							Height="240" Width="320" Background="#33AA0000"
+							Content="Preview is not available" />
+					</StackPanel>
 
-          <!-- Sensors -->
-          <TabItem Header="Sensors">
-            <DataGrid BorderBrush="#333333" BorderThickness="1"
-                      ItemsSource="{Binding Sensors}"
-                      AutoGenerateColumns="false">
-              <DataGrid.Columns>
-                <DataGridTextColumn Binding="{Binding Ref}"
-                                    Header="Ref"
-                                    Width="42"
-                                    IsReadOnly="true" />
-                <DataGridTextColumn Binding="{Binding Name}"
-                                    Header="Name"
-                                    Width="*"
-                                    IsReadOnly="true" />
-                <DataGridTextColumn Binding="{Binding Identifier}"
-                                    Header="Identifier"
-                                    Width="*"
-                                    IsReadOnly="true" />
-                <DataGridTextColumn Binding="{Binding Format}"
-                                    Header="Format"
-                                    Width="*"
-                                    IsReadOnly="true" />
-                <DataGridTextColumn Binding="{Binding Value}"
-                                    Header="Value"
-                                    Width="*"
-                                    IsReadOnly="true" />
-              </DataGrid.Columns>
-            </DataGrid>
-          </TabItem>
-        </mah:MetroAnimatedTabControl>
-      </Grid>
-    </TabItem>
+					<!-- Widget Settings -->
+					<Grid Grid.Row="2">
+						<Grid.RowDefinitions>
+							<RowDefinition Height="Auto" />
+							<RowDefinition Height="*" />
+						</Grid.RowDefinitions>
+
+						<Label
+							Grid.Row="0"
+							Content="Widget Settings" />
+
+						<Border
+							Grid.Row="1"
+							BorderBrush="#333333" BorderThickness="1" />
+					</Grid>
+				</Grid>
 
 
-    <!-- TODO: Implement * sizing
-        https://stackoverflow.com/questions/911243/wpf-extend-last-column-of-listviews-gridview
-        https://social.msdn.microsoft.com/Forums/vstudio/en-US/83bd7ab9-3407-461f-a0bc-69e04870075c/quotstarquot-size-of-a-listview-column?forum=wpf
-    -->
-    <!-- Plugins -->
-    <TabItem Header="Plugins">
-      <!--
-      <ListView ItemsSource="{Binding Plugins}"
-                DisplayMemberPath="name"
-                BorderBrush="#333333" BorderThickness="1">
-        <ListView.View>
-          <GridView>
-            <GridViewColumn DisplayMemberBinding="{Binding name}"
-                            Header="Name" />
-            <GridViewColumn DisplayMemberBinding="{Binding author}"
-                            Header="Author" />
-            <GridViewColumn DisplayMemberBinding="{Binding version}"
-                            Header="Version" />
-          </GridView>
-        </ListView.View>
-      </ListView>
-      -->
+				<!-- Right Side -->
+				<!-- Widgets and Sensors -->
+				<mah:MetroAnimatedTabControl Grid.Column="2">
 
-      <DataGrid BorderBrush="#333333" BorderThickness="1"
-                ItemsSource="{Binding Plugins}"
-                CanUserAddRows="false" CanUserDeleteRows="false"
-                AutoGenerateColumns="false">
-        <DataGrid.Columns>
-          <DataGridTextColumn Header="Name" Binding="{Binding Name}"
-                              Width="*"
-                              IsReadOnly="true" />
-          <DataGridTextColumn Header="Kind" Binding="{Binding Kind}"
-                              Width="*"
-                              IsReadOnly="true" />
-          <DataGridTextColumn Header="Author" Binding="{Binding Author}"
-                              Width="*"
-                              IsReadOnly="true" />
-          <DataGridTextColumn Header="Version" Binding="{Binding Version}"
-                              Width="*"
-                              IsReadOnly="true" />
-          <DataGridTextColumn Header="Load State" Binding="{Binding LoadState}"
-                              Width="*"
-                              IsReadOnly="true" />
+					<!-- TabItem Styling -->
+					<mah:MetroAnimatedTabControl.ItemContainerStyle>
+						<Style TargetType="{x:Type TabItem}" BasedOn="{StaticResource MetroTabItem}">
+							<Style.Setters>
+								<Setter Property="Padding" Value="6, -6, 6, 2" />
+								<Setter Property="mah:ControlsHelper.HeaderFontSize" Value="16" />
+								<Setter Property="mah:ControlsHelper.HeaderFontWeight" Value="Light" />
+								<Setter Property="mah:ControlsHelper.ContentCharacterCasing" Value="Lower" />
+							</Style.Setters>
+						</Style>
+					</mah:MetroAnimatedTabControl.ItemContainerStyle>
 
-          <DataGridTemplateColumn Width="SizeToCells"
-                                  IsReadOnly="true">
+					<!-- Widgets -->
+					<TabItem Header="Widgets">
+						<DataGrid
+							BorderBrush="#333333" BorderThickness="1"
+							ItemsSource="{Binding WidgetDescs}"
+							AutoGenerateColumns="false">
+							<DataGrid.Columns>
+								<DataGridTextColumn
+									Binding="{Binding Ref}"
+									Header="Ref"
+									Width="42"
+									IsReadOnly="true" />
+								<DataGridTextColumn
+									Binding="{Binding Name}"
+									Header="Name"
+									Width="*"
+									IsReadOnly="true" />
+							</DataGrid.Columns>
+						</DataGrid>
+					</TabItem>
 
-            <DataGridTemplateColumn.CellTemplate>
-              <DataTemplate>
-                <Button x:Name="btn" Content="Load" Click="LoadPlugin_Click" />
+					<!-- Sensors -->
+					<TabItem Header="Sensors">
+						<DataGrid
+							BorderBrush="#333333" BorderThickness="1"
+							ItemsSource="{Binding Sensors}"
+							AutoGenerateColumns="false">
+							<DataGrid.Columns>
+								<DataGridTextColumn
+									Binding="{Binding Ref}"
+									Header="Ref"
+									Width="42"
+									IsReadOnly="true" />
+								<DataGridTextColumn
+									Binding="{Binding Name}"
+									Header="Name"
+									Width="*"
+									IsReadOnly="true" />
+								<DataGridTextColumn
+									Binding="{Binding Identifier}"
+									Header="Identifier"
+									Width="*"
+									IsReadOnly="true" />
+								<DataGridTextColumn
+									Binding="{Binding Format}"
+									Header="Format"
+									Width="*"
+									IsReadOnly="true" />
+								<DataGridTextColumn
+									Binding="{Binding Value}"
+									Header="Value"
+									Width="*"
+									IsReadOnly="true" />
+							</DataGrid.Columns>
+						</DataGrid>
+					</TabItem>
+				</mah:MetroAnimatedTabControl>
+			</Grid>
+		</TabItem>
 
-                <!-- TODO: Ensure IsEnabled resets -->
-                <!-- TODO: Ensure this updates when plugin state changes -->
-                <!-- TODO: Add states for Loading and Unloading so we can disable the button while waiting. Same for the load/kill process button -->
 
-                <DataTemplate.Triggers>
-                  <DataTrigger Binding="{Binding LoadState}" Value="{x:Static lhmi:PluginLoadState.Null}">
-                    <Setter TargetName="btn" Property="IsEnabled" Value="false"/>
-                  </DataTrigger>
-                  <DataTrigger Binding="{Binding LoadState}" Value="{x:Static lhmi:PluginLoadState.Loaded}">
-                    <Setter TargetName="btn" Property="Content" Value="Unload"/>
-                  </DataTrigger>
-                  <DataTrigger Binding="{Binding LoadState}" Value="{x:Static lhmi:PluginLoadState.Unloaded}">
-                    <Setter TargetName="btn" Property="Content" Value="Load"/>
-                  </DataTrigger>
-                  <DataTrigger Binding="{Binding LoadState}" Value="{x:Static lhmi:PluginLoadState.Broken}">
-                    <Setter TargetName="btn" Property="IsEnabled" Value="false"/>
-                  </DataTrigger>
-                </DataTemplate.Triggers>
-              </DataTemplate>
-            </DataGridTemplateColumn.CellTemplate>
-          </DataGridTemplateColumn>
+		<!-- TODO: Implement * sizing
+			https://stackoverflow.com/questions/911243/wpf-extend-last-column-of-listviews-gridview
+			https://social.msdn.microsoft.com/Forums/vstudio/en-US/83bd7ab9-3407-461f-a0bc-69e04870075c/quotstarquot-size-of-a-listview-column?forum=wpf
+		-->
+		<!-- Plugins -->
+		<TabItem Header="Plugins">
+			<!--
+		<ListView
+			ItemsSource="{Binding Plugins}"
+			DisplayMemberPath="name"
+			BorderBrush="#333333" BorderThickness="1">
+			<ListView.View>
+				<GridView>
+				<GridViewColumn
+					DisplayMemberBinding="{Binding name}"
+					Header="Name" />
+				<GridViewColumn
+					DisplayMemberBinding="{Binding author}"
+					Header="Author" />
+				<GridViewColumn
+					DisplayMemberBinding="{Binding version}"
+					Header="Version" />
+				</GridView>
+			</ListView.View>
+		</ListView>
+		-->
 
-        </DataGrid.Columns>
-      </DataGrid>
-    </TabItem>
+			<DataGrid
+				BorderBrush="#333333" BorderThickness="1"
+				ItemsSource="{Binding Plugins}"
+				CanUserAddRows="false" CanUserDeleteRows="false"
+				AutoGenerateColumns="false">
+				<DataGrid.Columns>
+					<DataGridTextColumn
+						Header="Name" Binding="{Binding Name}"
+						Width="*"
+						IsReadOnly="true" />
+					<DataGridTextColumn
+						Header="Kind" Binding="{Binding Kind}"
+						Width="*"
+						IsReadOnly="true" />
+					<DataGridTextColumn
+						Header="Author" Binding="{Binding Author}"
+						Width="*"
+						IsReadOnly="true" />
+					<DataGridTextColumn
+						Header="Version" Binding="{Binding Version}"
+						Width="*"
+						IsReadOnly="true" />
+					<DataGridTextColumn
+						Header="Load State" Binding="{Binding LoadState}"
+						Width="*"
+						IsReadOnly="true" />
+
+					<DataGridTemplateColumn
+						Width="SizeToCells"
+						IsReadOnly="true">
+
+						<DataGridTemplateColumn.CellTemplate>
+							<DataTemplate>
+								<Button
+									x:Name="btn"
+									Content="Load"
+									Click="LoadPlugin_Click" />
+
+								<!-- TODO: Ensure IsEnabled resets -->
+								<!-- TODO: Ensure this updates when plugin state changes -->
+								<!-- TODO: Add states for Loading and Unloading so we can disable the button while waiting. Same for the load/kill process button -->
+
+								<DataTemplate.Triggers>
+									<DataTrigger Binding="{Binding LoadState}" Value="{x:Static lhmi:PluginLoadState.Null}">
+										<Setter TargetName="btn" Property="IsEnabled" Value="false"/>
+									</DataTrigger>
+									<DataTrigger Binding="{Binding LoadState}" Value="{x:Static lhmi:PluginLoadState.Loaded}">
+										<Setter TargetName="btn" Property="Content" Value="Unload"/>
+									</DataTrigger>
+									<DataTrigger Binding="{Binding LoadState}" Value="{x:Static lhmi:PluginLoadState.Unloaded}">
+										<Setter TargetName="btn" Property="Content" Value="Load"/>
+									</DataTrigger>
+									<DataTrigger Binding="{Binding LoadState}" Value="{x:Static lhmi:PluginLoadState.Broken}">
+										<Setter TargetName="btn" Property="IsEnabled" Value="false"/>
+									</DataTrigger>
+								</DataTemplate.Triggers>
+							</DataTemplate>
+						</DataGridTemplateColumn.CellTemplate>
+					</DataGridTemplateColumn>
+
+				</DataGrid.Columns>
+			</DataGrid>
+		</TabItem>
 
 
-    <!-- Settings -->
-    <TabItem Header="Settings">
-      <TabItem.Resources>
-        <ResourceDictionary>
-          <ResourceDictionary.MergedDictionaries>
-            <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/FlatButton.xaml" />
-          </ResourceDictionary.MergedDictionaries>
-        </ResourceDictionary>
-      </TabItem.Resources>
+		<!-- Settings -->
+		<TabItem Header="Settings">
+			<TabItem.Resources>
+				<ResourceDictionary>
+					<ResourceDictionary.MergedDictionaries>
+						<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/FlatButton.xaml" />
+					</ResourceDictionary.MergedDictionaries>
+				</ResourceDictionary>
+			</TabItem.Resources>
 
-      <!-- TODO: Use fixed width so things jump around less -->
-      <Border BorderBrush="#333333" BorderThickness="1">
-        <StackPanel HorizontalAlignment="Left">
-          <StackPanel Orientation="Horizontal">
-            <Label Content="Simulation Process:" />
-            <Label Content="{Binding ProcessState}" />
-            <Button Margin="5,0,5,0"
-                    Click="LaunchSim_Click">
-              <Button.Style>
-                <Style TargetType="Button" BasedOn="{StaticResource MetroFlatButton}">
-                    <Style.Triggers>
-                    <DataTrigger Binding="{Binding ProcessState}" Value="{x:Static lhmi:ProcessState.Launching}">
-                      <Setter Property="IsEnabled" Value="false"/>
-                      <Setter Property="Content" Value="Launch"/>
-                    </DataTrigger>
-                    <DataTrigger Binding="{Binding ProcessState}" Value="{x:Static lhmi:ProcessState.Launched}">
-                      <Setter Property="IsEnabled" Value="true"/>
-                      <Setter Property="Content" Value="Terminate"/>
-                    </DataTrigger>
-                    <DataTrigger Binding="{Binding ProcessState}" Value="{x:Static lhmi:ProcessState.Terminating}">
-                      <Setter Property="IsEnabled" Value="false"/>
-                      <Setter Property="Content" Value="Terminate"/>
-                    </DataTrigger>
-                    <DataTrigger Binding="{Binding ProcessState}" Value="{x:Static lhmi:ProcessState.Terminated}">
-                      <Setter Property="IsEnabled" Value="true"/>
-                      <Setter Property="Content" Value="Launch"/>
-                    </DataTrigger>
-                  </Style.Triggers>
-                </Style>
-              </Button.Style>
-            </Button>
-            <Button Margin="5,0,5,0"
-                    Click="ForceTerminateSim_Click"
-                    Content="Force Terminate"/>
-          </StackPanel>
-        </StackPanel>
-      </Border>
-    </TabItem>
-  </mah:MetroAnimatedTabControl>
+			<!-- TODO: Use fixed width so things jump around less -->
+			<Border BorderBrush="#333333" BorderThickness="1">
+				<StackPanel HorizontalAlignment="Left">
+					<StackPanel Orientation="Horizontal">
+						<Label Content="Simulation Process:" />
+						<Label Content="{Binding ProcessState}" />
+						<Button
+							Margin="5,0,5,0"
+							Click="LaunchSim_Click">
+							<Button.Style>
+								<Style TargetType="Button" BasedOn="{StaticResource MetroFlatButton}">
+									<Style.Triggers>
+										<DataTrigger Binding="{Binding ProcessState}" Value="{x:Static lhmi:ProcessState.Launching}">
+											<Setter Property="IsEnabled" Value="false"/>
+											<Setter Property="Content" Value="Launch"/>
+										</DataTrigger>
+										<DataTrigger Binding="{Binding ProcessState}" Value="{x:Static lhmi:ProcessState.Launched}">
+											<Setter Property="IsEnabled" Value="true"/>
+											<Setter Property="Content" Value="Terminate"/>
+										</DataTrigger>
+										<DataTrigger Binding="{Binding ProcessState}" Value="{x:Static lhmi:ProcessState.Terminating}">
+											<Setter Property="IsEnabled" Value="false"/>
+											<Setter Property="Content" Value="Terminate"/>
+										</DataTrigger>
+										<DataTrigger Binding="{Binding ProcessState}" Value="{x:Static lhmi:ProcessState.Terminated}">
+											<Setter Property="IsEnabled" Value="true"/>
+											<Setter Property="Content" Value="Launch"/>
+										</DataTrigger>
+									</Style.Triggers>
+								</Style>
+							</Button.Style>
+						</Button>
+						<Button
+							Margin="5,0,5,0"
+							Click="ForceTerminateSim_Click"
+							Content="Force Terminate"/>
+					</StackPanel>
+				</StackPanel>
+			</Border>
+		</TabItem>
+	</mah:MetroAnimatedTabControl>
 
 </mah:MetroWindow>
 

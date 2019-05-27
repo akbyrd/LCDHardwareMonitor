@@ -12,8 +12,8 @@ ECHO  **** Deployment successful
 GOTO Exit
 
 :Abort
-  ECHO  **** WARNING - Deployment failed
-  EXIT /B 1
+	ECHO  **** WARNING - Deployment failed
+	EXIT /B 1
 
 :Exit
-  EXIT /B 0
+	EXIT /B 0
