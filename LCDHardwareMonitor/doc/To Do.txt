@@ -1,15 +1,15 @@
-Current
-	Fix StringSlice trailing zero
-	I think pipes want to be no-wait
+Timed loop
 
-	GUI Control
-		Load/Unload plugins
-		Provide input
-		Add/Remove widgets
-		Configure widgets
-		Configure global settings (update rate)
+GUI Control
+	Load/Unload plugins
+	Provide input
+	Add/Remove widgets
+	Configure widgets
+	Configure global settings (update rate)
 
 Stuff
+	Fix StringSlice trailing zero
+	I think pipes want to be no-wait
 	Decide on passing args by pointer or reference
 	Users probably need to be able to create custom UI for plugin settings
 	Ensure we're handling CloseHandle failures correctly

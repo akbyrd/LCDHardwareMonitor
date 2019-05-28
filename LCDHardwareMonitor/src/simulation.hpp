@@ -14,14 +14,12 @@ struct SimulationState
 	i64                startTime;
 	r32                currentTime;
 
-	b32                guiConnected;
 	Pipe               guiPipe;
 	u32                guiSendMsgIndex;
 	u32                guiRecvMsgIndex;
 	List<Bytes>        guiQueue;
 	u32                guiQueueIndex;
 	b32                guiFailure;
-	u32                guiFailureCount;
 };
 
 struct PluginContext
@@ -286,6 +284,126 @@ PushDrawCall(PluginContext* context, Material material)
 	context->success = true;
 }
 
+// === GUI Messages ================================================================================
+
+// TODO: The error messages in here suck
+// TODO: This needs to return bool and abort on fail
+template <typename T>
+static void
+QueueGUIMessage(SimulationState* s, T& message)
+{
+	Bytes bytes = {};
+	b32 success = SerializeMessage(bytes, message, s->guiSendMsgIndex);
+	HandleMessageResult(&s->guiPipe, success, &s->guiFailure);
+	if (!success) return;
+
+	Bytes* result = List_Append(s->guiQueue, bytes);
+	HandleMessageResult(&s->guiPipe, result != nullptr, &s->guiFailure);
+	if (result == nullptr) return;
+
+	s->guiSendMsgIndex++;
+}
+
+static void
+OnConnect(SimulationState* s)
+{
+	using namespace Message;
+
+	{
+		Connect connect = {};
+		connect.version       = LHMVersion;
+		connect.renderSurface = (size) Renderer_GetSharedRenderSurface(s->renderer);
+		connect.renderSize.x  = s->renderSize.x;
+		connect.renderSize.y  = s->renderSize.y;
+		QueueGUIMessage(s, connect);
+	}
+
+	{
+		// TODO: Send PluginHeader along with PluginInfo
+		PluginsAdded pluginsAdded = {};
+		pluginsAdded.kind  = PluginKind::Sensor;
+		pluginsAdded.refs  = List_MemberSlice(s->sensorPlugins, &SensorPlugin::ref);
+		pluginsAdded.infos = List_MemberSlice(s->sensorPlugins, &SensorPlugin::info);
+		QueueGUIMessage(s, pluginsAdded);
+
+		PluginStatesChanged statesChanged = {};
+		statesChanged.kind       = PluginKind::Sensor;
+		statesChanged.refs       = List_MemberSlice(s->sensorPlugins, &SensorPlugin::ref);
+		statesChanged.loadStates = List_MemberSlice(s->sensorPlugins, &SensorPlugin::header, &PluginHeader::loadState);
+		QueueGUIMessage(s, statesChanged);
+	}
+
+	{
+		PluginsAdded pluginsAdded = {};
+		pluginsAdded.kind  = PluginKind::Widget;
+		pluginsAdded.refs  = List_MemberSlice(s->widgetPlugins, &WidgetPlugin::ref);
+		pluginsAdded.infos = List_MemberSlice(s->widgetPlugins, &WidgetPlugin::info);
+		QueueGUIMessage(s, pluginsAdded);
+
+		PluginStatesChanged statesChanged = {};
+		statesChanged.kind       = PluginKind::Widget;
+		statesChanged.refs       = List_MemberSlice(s->widgetPlugins, &WidgetPlugin::ref);
+		statesChanged.loadStates = List_MemberSlice(s->widgetPlugins, &WidgetPlugin::header, &PluginHeader::loadState);
+		QueueGUIMessage(s, statesChanged);
+	}
+
+	{
+		SensorsAdded sensorsAdded = {};
+		sensorsAdded.pluginRefs = List_MemberSlice(s->sensorPlugins, &SensorPlugin::ref);
+		sensorsAdded.sensors    = List_MemberSlice(s->sensorPlugins, &SensorPlugin::sensors);
+		QueueGUIMessage(s, sensorsAdded);
+	}
+
+	{
+		for (u32 i = 0; i < s->widgetPlugins.length; i++)
+		{
+			WidgetPlugin* widgetPlugin = &s->widgetPlugins[i];
+
+			// NOTE: It's surprisingly tricky to send a Slice<Slice<T>> when it's backed by
+			// a set of List<T>. The inner slices are temporaries and need to be stored.
+			Slice<WidgetDesc> descs = List_MemberSlice(widgetPlugin->widgetDatas, &WidgetData::desc);
+
+			WidgetDescsAdded widgetDescsAdded = {};
+			widgetDescsAdded.pluginRefs = widgetPlugin->ref;
+			widgetDescsAdded.descs      = descs;
+			QueueGUIMessage(s, widgetDescsAdded);
+		}
+	}
+}
+
+static void
+OnDisconnect(SimulationState* s)
+{
+	s->guiSendMsgIndex = 0;
+	s->guiRecvMsgIndex = 0;
+}
+
+static void
+OnTeardown(SimulationState* s)
+{
+	using namespace Message;
+	PipeResult result;
+
+	Disconnect disconnect = {};
+	disconnect.header.id    = IdOf<Disconnect>;
+	disconnect.header.index = s->guiSendMsgIndex - (s->guiQueue.length - s->guiQueueIndex);
+	disconnect.header.size  = sizeof(Disconnect);
+
+	Bytes bytes = {};
+	bytes.length   = sizeof(Disconnect);
+	bytes.capacity = bytes.length;
+	bytes.data     = (u8*) &disconnect;
+
+
+	result = Platform_WritePipe(&s->guiPipe, bytes);
+	LOG_IF(result != PipeResult::Success, IGNORE,
+		Severity::Error, "Failed to send GUI disconnect signal");
+
+	result = Platform_FlushPipe(&s->guiPipe);
+	LOG_IF(result == PipeResult::UnexpectedFailure, IGNORE,
+		Severity::Error, "Failed to flush GUI communication pipe");
+}
+
 // =================================================================================================
 
 static SensorPlugin*
@@ -466,52 +584,6 @@ UnloadWidgetPlugin(SimulationState* s, WidgetPlugin* widgetPlugin)
 
 	pluginGuard.dismiss = true;
 	return true;
-}
-
-static void
-HandleGUIResult(SimulationState* s, b32 success)
-{
-	using namespace Message;
-
-	if (success)
-	{
-		s->guiFailureCount = 0;
-	}
-	else
-	{
-		s->guiFailureCount++;
-		if (s->guiFailureCount < 3)
-		{
-			LOG(Severity::Error, "A GUI operation failed. Retrying...");
-		}
-		else
-		{
-			LOG(Severity::Error, "Too many GUI operations have failed. Giving up.");
-
-			s->guiFailure = true;
-
-			PipeResult result = Platform_DisconnectPipe(&s->guiPipe);
-			LOG_IF(result != PipeResult::Success, IGNORE,
-				Severity::Error, "Failed to disconnect GUI pipe");
-		}
-	}
-}
-
-// TODO: The error messages in here suck
-template <typename T>
-static void
-SendGUIMessage(SimulationState* s, T& message)
-{
-	Bytes bytes = {};
-	b32 success = SerializeMessage(bytes, message, s->guiSendMsgIndex);
-	HandleGUIResult(s, success);
-	if (!success) return;
-
-	Bytes* result = List_Append(s->guiQueue, bytes);
-	HandleGUIResult(s, result != nullptr);
-	if (result == nullptr) return;
-
-	s->guiSendMsgIndex++;
 }
 
 b32
@@ -832,90 +904,51 @@ Simulation_Update(SimulationState* s)
 	// GUI Communication
 	if (!s->guiFailure)
 	{
-		// Connect
-		if (!s->guiConnected)
+		Bytes bytes = {};
+		defer { List_Free(bytes); };
+
+		// Connection handling
 		{
-			PipeResult result = Platform_ConnectPipe(&s->guiPipe);
-			HandleGUIResult(s, result != PipeResult::UnexpectedFailure);
+			b32 wasConnected = s->guiPipe.state == PipeState::Connected;
+			b32 success = Platform_UpdatePipeConnection(&s->guiPipe);
+			HandleMessageResult(&s->guiPipe, success, &s->guiFailure);
 
-			// Blast the entire current state
-			if (s->guiPipe.state == PipeState::Connected)
+			if (success)
 			{
-				s->guiConnected = true;
-				using namespace Message;
-
-				{
-					Connect connect = {};
-					connect.version       = LHMVersion;
-					connect.renderSurface = (size) Renderer_GetSharedRenderSurface(s->renderer);
-					connect.renderSize.x  = s->renderSize.x;
-					connect.renderSize.y  = s->renderSize.y;
-					SendGUIMessage(s, connect);
-				}
-
-				{
-					// TODO: Send PluginHeader along with PluginInfo
-					PluginsAdded pluginsAdded = {};
-					pluginsAdded.kind  = PluginKind::Sensor;
-					pluginsAdded.refs  = List_MemberSlice(s->sensorPlugins, &SensorPlugin::ref);
-					pluginsAdded.infos = List_MemberSlice(s->sensorPlugins, &SensorPlugin::info);
-					SendGUIMessage(s, pluginsAdded);
-
-					PluginStatesChanged statesChanged = {};
-					statesChanged.kind       = PluginKind::Sensor;
-					statesChanged.refs       = List_MemberSlice(s->sensorPlugins, &SensorPlugin::ref);
-					statesChanged.loadStates = List_MemberSlice(s->sensorPlugins, &SensorPlugin::header, &PluginHeader::loadState);
-					SendGUIMessage(s, statesChanged);
-				}
-
-				{
-					PluginsAdded pluginsAdded = {};
-					pluginsAdded.kind  = PluginKind::Widget;
-					pluginsAdded.refs  = List_MemberSlice(s->widgetPlugins, &WidgetPlugin::ref);
-					pluginsAdded.infos = List_MemberSlice(s->widgetPlugins, &WidgetPlugin::info);
-					SendGUIMessage(s, pluginsAdded);
-
-					PluginStatesChanged statesChanged = {};
-					statesChanged.kind       = PluginKind::Widget;
-					statesChanged.refs       = List_MemberSlice(s->widgetPlugins, &WidgetPlugin::ref);
-					statesChanged.loadStates = List_MemberSlice(s->widgetPlugins, &WidgetPlugin::header, &PluginHeader::loadState);
-					SendGUIMessage(s, statesChanged);
-				}
-
-				{
-					SensorsAdded sensorsAdded = {};
-					sensorsAdded.pluginRefs = List_MemberSlice(s->sensorPlugins, &SensorPlugin::ref);
-					sensorsAdded.sensors    = List_MemberSlice(s->sensorPlugins, &SensorPlugin::sensors);
-					SendGUIMessage(s, sensorsAdded);
-				}
-
-				{
-					for (u32 i = 0; i < s->widgetPlugins.length; i++)
-					{
-						WidgetPlugin* widgetPlugin = &s->widgetPlugins[i];
-
-						// NOTE: It's surprisingly tricky to send a Slice<Slice<T>> when it's backed by
-						// a set of List<T>. The inner slices are temporaries and need to be stored.
-						Slice<WidgetDesc> descs = List_MemberSlice(widgetPlugin->widgetDatas, &WidgetData::desc);
-
-						WidgetDescsAdded widgetDescsAdded = {};
-						widgetDescsAdded.pluginRefs = widgetPlugin->ref;
-						widgetDescsAdded.descs      = descs;
-						SendGUIMessage(s, widgetDescsAdded);
-					}
-				}
+				b32 isConnected = s->guiPipe.state == PipeState::Connected;
+				if (isConnected && !wasConnected) OnConnect(s);
+				if (!isConnected && wasConnected) OnDisconnect(s);
 			}
 		}
 
-		// TODO: Flush this buffer on guiFailure
-		// TODO: Probably don't want to let this buffer build up in high traffic scenarios
+		// TODO: Loop
+		// Receive
+		while (s->guiPipe.state == PipeState::Connected)
+		{
+			using namespace Message;
+
+			PipeResult result = ReadMessage(&s->guiPipe, bytes, s->guiRecvMsgIndex, &s->guiFailure);
+			if (result != PipeResult::Success) break;
+			s->guiRecvMsgIndex++;
+
+			Header* header = (Header*) bytes.data;
+			switch (header->id)
+			{
+				default: Assert(false); break;
+
+				case IdOf<TerminateSimulation>:
+					Platform_RequestQuit();
+					break;
+			}
+		}
+
+		// TODO: Loop
 		// Send
 		for (; s->guiQueueIndex < s->guiQueue.length; s->guiQueueIndex++)
 		{
-			Bytes bytes = s->guiQueue[s->guiQueueIndex];
-			PipeResult result = Platform_WritePipe(&s->guiPipe, bytes);
-			HandleGUIResult(s, result != PipeResult::UnexpectedFailure);
-
+			Bytes writeBytes = s->guiQueue[s->guiQueueIndex];
+			PipeResult result = Platform_WritePipe(&s->guiPipe, writeBytes);
+			HandleMessageResult(&s->guiPipe, result, &s->guiFailure);
 			if (result != PipeResult::Success) break;
 		}
 		if (s->guiQueueIndex == s->guiQueue.length)
@@ -924,61 +957,6 @@ Simulation_Update(SimulationState* s)
 				s->guiQueue[i].length = 0;
 			s->guiQueue.length = 0;
 			s->guiQueueIndex = 0;
-		}
-
-		// Receive
-		for (u32 i = 0; i < 1; i++)
-		{
-			// TODO: Implement a CheckConnection function
-			// NOTE: This read also ensures we'll detect pipe disconnects. Otherwise when we have no
-			// messages to send we'll chug along thinking the pipe is still connected indefinintely
-			// and never allow reconnections.
-
-			using namespace Message;
-
-			Bytes bytes = {};
-			defer { List_Free(bytes); };
-
-			// TODO: Loop, deserialize
-			PipeResult result = Platform_ReadPipe(&s->guiPipe, bytes);
-			HandleGUIResult(s, result != PipeResult::UnexpectedFailure);
-			if (result != PipeResult::Success) continue;
-
-			if (bytes.length == 0) continue;
-
-			// TODO: Possible failures in Update. Uh-oh.
-			LOG_IF(bytes.length < sizeof(Header), return /*false*/,
-				Severity::Warning, "Corrupted message received");
-
-			Header* header = (Header*) bytes.data;
-
-			LOG_IF(bytes.length != header->size, return /*false*/,
-				Severity::Warning, "Incorrectly sized message received");
-
-			LOG_IF(header->index != s->guiRecvMsgIndex, return /*false*/,
-				Severity::Warning, "Unexpected message received");
-			s->guiRecvMsgIndex++;
-
-			switch (header->id)
-			{
-				default: Assert(false); break;
-				case IdOf<Null>: break;
-
-				case IdOf<TerminateSimulation>:
-					Platform_RequestQuit();
-					break;
-			}
-		}
-
-		// Reset on disconnects
-		{
-			if (s->guiPipe.state == PipeState::Disconnecting
-			 || s->guiPipe.state == PipeState::Disconnected)
-			{
-				s->guiConnected = false;
-				s->guiSendMsgIndex = 0;
-				s->guiRecvMsgIndex = 0;
-			}
 		}
 	}
 
@@ -1011,33 +989,13 @@ Simulation_Teardown(SimulationState* s)
 	// do this for testing, but it's unnecessary work in the normal teardown
 	// case.
 
-	if (s->guiConnected)
-	{
-		using namespace Message;
-
-		Disconnect disconnect = {};
-		disconnect.header.id    = IdOf<Disconnect>;
-		disconnect.header.index = s->guiSendMsgIndex - (s->guiQueue.length - s->guiQueueIndex);
-		disconnect.header.size  = sizeof(Disconnect);
-
-		Bytes bytes = {};
-		bytes.length   = sizeof(Disconnect);
-		bytes.capacity = bytes.length;
-		bytes.data     = (u8*) &disconnect;
-
-		PipeResult result = Platform_WritePipe(&s->guiPipe, bytes);
-		LOG_IF(result != PipeResult::Success, IGNORE,
-				Severity::Error, "Failed to send GUI disconnect signal");
-	}
+	if (s->guiPipe.state == PipeState::Connected)
+		OnTeardown(s);
+	Platform_DestroyPipe(&s->guiPipe);
 
 	for (u32 i = 0; i < s->guiQueue.capacity; i++)
 		List_Free(s->guiQueue[i]);
 	List_Free(s->guiQueue);
-
-	PipeResult result = Platform_FlushPipe(&s->guiPipe);
-	LOG_IF(result == PipeResult::UnexpectedFailure, IGNORE,
-		Severity::Error, "Failed to flush GUI communication pipe");
-	Platform_DestroyPipe(&s->guiPipe);
 
 	for (u32 i = 0; i < s->widgetPlugins.length; i++)
 		UnloadWidgetPlugin(s, &s->widgetPlugins[i]);

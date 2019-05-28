@@ -598,6 +598,45 @@ Platform_ConnectPipe(Pipe* pipe)
 		: Platform_ConnectPipeClient(pipe);
 }
 
+b32
+Platform_UpdatePipeConnection(Pipe* pipe)
+{
+	PipeResult result = Platform_ConnectPipe(pipe);
+	if (result == PipeResult::UnexpectedFailure) return false;
+	if (result == PipeResult::TransientFailure) return true;
+
+	u32 available = 0;
+	b32 success = PeekNamedPipe(
+		pipe->impl->handle,
+		nullptr,
+		0,
+		nullptr,
+		nullptr,
+		(DWORD*) &available
+	);
+	if (!success)
+	{
+		u32 error = GetLastError();
+		switch (error)
+		{
+			// Pipe has been closed
+			case ERROR_BROKEN_PIPE:
+			case ERROR_PIPE_NOT_CONNECTED:
+			case ERROR_NO_DATA:
+				Assert(available == 0);
+				result = Platform_DisconnectPipe(pipe);
+				if (result == PipeResult::UnexpectedFailure) return false;
+				return true;
+
+			default:
+				LOG_LAST_ERROR(Severity::Warning, "Failed to peek pipe '%s'", pipe->name.data);
+				return false;
+		}
+	}
+
+	return true;
+}
+
 PipeResult
 Platform_CreatePipeServer(StringSlice name, Pipe* pipe)
 {

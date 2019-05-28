@@ -150,7 +150,6 @@ namespace LCDHardwareMonitor::GUI
 		PluginLoadState loadState;
 	};
 
-	// TODO: Unify name and namespace
 	mString^
 	ToManagedString(StringSlice cstring)
 	{
@@ -192,65 +191,44 @@ namespace LCDHardwareMonitor::GUI
 			// DEBUG: Needed for the Watch window
 			State& s = state;
 
+			Bytes bytes = {};
+			defer { List_Free(bytes); };
+
+			// Connection handling
+			{
+				b32 wasConnected = s.pipe.state == PipeState::Connected;
+				b32 success = Platform_UpdatePipeConnection(&s.pipe);
+				if (!success) return false;
+
+				if (success)
+				{
+					b32 isConnected = s.pipe.state == PipeState::Connected;
+					if (!isConnected && wasConnected)
+					{
+						// Synthesize a disconnect
+						using namespace Message;
+						Disconnect disconnect = {};
+						b32 success = SerializeMessage(bytes, disconnect, s.recvMsgIndex);
+						if (!success) return false;
+					}
+				}
+			}
+
+			// TODO: Loop
 			// Receive
-			for (u32 h = 0; h < 1; h++)
+			while (s.pipe.state == PipeState::Connected)
 			{
 				using namespace Message;
 
-				// TODO: Decide on the code structure for this. Feels bad right now
-				// TODO: Loop
-				// Receive messages
-				Bytes bytes = {};
-				defer { List_Free(bytes); };
-
-				PipeResult result = Platform_ReadPipe(&s.pipe, bytes);
+				PipeResult result = ReadMessage(&s.pipe, bytes, s.recvMsgIndex, nullptr);
 				if (result == PipeResult::UnexpectedFailure) return false;
-				if (result == PipeResult::TransientFailure) continue;
-
-				// Synthesize a disconnect
-				{
-					b32 noMessage        = bytes.length == 0;
-					b32 simConnected     = simState->IsSimulationConnected;
-					b32 pipeDisconnected = s.pipe.state == PipeState::Disconnecting
-					                    || s.pipe.state == PipeState::Disconnected;
-
-					if (noMessage && simConnected && pipeDisconnected)
-					{
-						// TODO: Should do this without allocating. Maybe with a ByteSlice?
-						b32 success = List_Reserve(bytes, sizeof(Disconnect));
-						LOG_IF(!success, return false,
-							Severity::Fatal, "Failed to disconnect from simulation");
-						bytes.length = sizeof(Disconnect);
-
-						Disconnect* disconnect = (Disconnect*) bytes.data;
-						*disconnect = {};
-
-						disconnect->header.id    = IdOf<Disconnect>;
-						disconnect->header.index = s.recvMsgIndex;
-						disconnect->header.size  = sizeof(Disconnect);
-					}
-				}
-
-				if (bytes.length == 0) continue;
-
-				// TODO: Re-use this on the sim side!
-				// TODO: Need to handle these errors more intelligently
-				LOG_IF(bytes.length < sizeof(Header), return false,
-					Severity::Warning, "Corrupted message received");
-
-				Header* header = (Header*) bytes.data;
-
-				LOG_IF(bytes.length != header->size, return false,
-					Severity::Warning, "Incorrectly sized message received");
-
-				LOG_IF(header->index != s.recvMsgIndex, return false,
-					Severity::Warning, "Unexpected message received");
+				if (result == PipeResult::TransientFailure) break;
 				s.recvMsgIndex++;
 
+				Header* header = (Header*) bytes.data;
 				switch (header->id)
 				{
 					default: Assert(false); break;
-					case IdOf<Null>: break;
 
 					case IdOf<Connect>:
 					{
@@ -379,39 +357,38 @@ namespace LCDHardwareMonitor::GUI
 				}
 			}
 
+			// TODO: Loop
 			// Send
+			for (i32 i = 0; i < simState->Messages->Count; i++)
 			{
 				using namespace Message;
 
-				for (i32 i = 0; i < simState->Messages->Count; i++)
+				Message^ message = simState->Messages[i];
+				switch (message->type)
 				{
-					Message^ message = simState->Messages[i];
-					switch (message->type)
+					// TODO: I think I'd rather have the warnings
+					default: Assert(false); break;
+
+					case MessageType::LaunchSim:
+					case MessageType::ForceTerminateSim:
+						// Handled in App
+						continue;
+
+					case MessageType::TerminateSim:
 					{
-						// TODO: I think I'd rather have the warnings
-						default: Assert(false); break;
+						TerminateSimulation nMessage = {};
 
-						case MessageType::LaunchSim:
-						case MessageType::ForceTerminateSim:
-							// Handled in App
-							continue;
-
-						case MessageType::TerminateSim:
-						{
-							TerminateSimulation nMessage = {};
-
-							Bytes bytes = {};
-							SerializeMessage(bytes, nMessage, s.sendMsgIndex);
-							Platform_WritePipe(&s.pipe, bytes);
-							break;
-						}
-
-						case MessageType::SetPluginLoadState:
-							// TODO: Implement
-							continue;
+						Bytes writeBytes = {};
+						SerializeMessage(writeBytes, nMessage, s.sendMsgIndex);
+						Platform_WritePipe(&s.pipe, writeBytes);
+						break;
 					}
-					s.sendMsgIndex++;
+
+					case MessageType::SetPluginLoadState:
+						// TODO: Implement
+						continue;
 				}
+				s.sendMsgIndex++;
 			}
 
 			return true;

@@ -194,6 +194,55 @@ DeserializeMessage(Bytes& bytes)
 	Serialize(stream, (T*) bytes.data);
 }
 
+static PipeResult
+HandleMessageResult(Pipe* pipe, b32 success, b32* setOnFail)
+{
+	if (!success)
+	{
+		if (setOnFail)
+			*setOnFail = true;
+
+		PipeResult result = Platform_DisconnectPipe(pipe);
+		LOG_IF(result != PipeResult::Success, IGNORE,
+			Severity::Error, "Failed to disconnect GUI pipe");
+
+		return PipeResult::UnexpectedFailure;
+	}
+
+	return PipeResult::Success;
+}
+
+static PipeResult
+HandleMessageResult(Pipe* pipe, PipeResult result, b32* setOnFail)
+{
+	if (result == PipeResult::TransientFailure) return result;
+	return HandleMessageResult(pipe, result != PipeResult::UnexpectedFailure, setOnFail);
+}
+
+static PipeResult
+ReadMessage(Pipe* pipe, Bytes& bytes, u32 readIndex, b32* setOnFail)
+{
+	using namespace Message;
+
+	PipeResult result = Platform_ReadPipe(pipe, bytes);
+	HandleMessageResult(pipe, result, setOnFail);
+	if (result != PipeResult::Success) return result;
+	if (bytes.length == 0) return PipeResult::TransientFailure;
+
+	Header* header = (Header*) bytes.data;
+
+	LOG_IF(bytes.length < sizeof(Header), return HandleMessageResult(pipe, false, setOnFail),
+		Severity::Warning, "Corrupted message received");
+
+	LOG_IF(bytes.length != header->size, return HandleMessageResult(pipe, false, setOnFail),
+		Severity::Warning, "Incorrectly sized message received");
+
+	LOG_IF(header->index != readIndex, return HandleMessageResult(pipe, false, setOnFail),
+		Severity::Warning, "Unexpected message received");
+
+	return PipeResult::Success;
+}
+
 // TODO: This is a bit lame
 template<typename T>
 void
