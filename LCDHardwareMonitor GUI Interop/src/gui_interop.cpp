@@ -196,8 +196,10 @@ namespace LCDHardwareMonitor::GUI
 
 			// Connection handling
 			{
+				b32 success;
+
 				b32 wasConnected = s.pipe.state == PipeState::Connected;
-				b32 success = Platform_UpdatePipeConnection(&s.pipe);
+				success = Platform_UpdatePipeConnection(&s.pipe);
 				if (!success) return false;
 
 				if (success)
@@ -208,7 +210,7 @@ namespace LCDHardwareMonitor::GUI
 						// Synthesize a disconnect
 						using namespace Message;
 						Disconnect disconnect = {};
-						b32 success = SerializeMessage(bytes, disconnect, s.recvMsgIndex);
+						success = SerializeMessage(bytes, disconnect, s.recvMsgIndex);
 						if (!success) return false;
 					}
 				}

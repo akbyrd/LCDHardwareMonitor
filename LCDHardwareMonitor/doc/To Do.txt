@@ -1,4 +1,6 @@
+Unify send code (queue)
 Timed loop
+Remove auto-connect from Send/Receive?
 
 GUI Control
 	Load/Unload plugins

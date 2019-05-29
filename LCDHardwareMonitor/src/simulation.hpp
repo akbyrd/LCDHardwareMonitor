@@ -287,26 +287,33 @@ PushDrawCall(PluginContext* context, Material material)
 // === GUI Messages ================================================================================
 
 // TODO: The error messages in here suck
-// TODO: This needs to return bool and abort on fail
 template <typename T>
-static void
+static b32
 QueueGUIMessage(SimulationState* s, T& message)
 {
 	Bytes bytes = {};
+	auto cleanupGuard = guard { List_Free(bytes); };
+
 	b32 success = SerializeMessage(bytes, message, s->guiSendMsgIndex);
 	HandleMessageResult(&s->guiPipe, success, &s->guiFailure);
-	if (!success) return;
+	if (!success) return false;
 
 	Bytes* result = List_Append(s->guiQueue, bytes);
 	HandleMessageResult(&s->guiPipe, result != nullptr, &s->guiFailure);
-	if (result == nullptr) return;
+	if (result == nullptr) return false;
 
 	s->guiSendMsgIndex++;
+	cleanupGuard.dismiss = true;
+	return true;
 }
+
+// NOTE: None of these functions return error codes because the messaging system handles errors
+// internally. It will disconnect and stop attempting to send messages when a failure occurs.
 
 static void
 OnConnect(SimulationState* s)
 {
+	b32 success;
 	using namespace Message;
 
 	{
@@ -315,7 +322,8 @@ OnConnect(SimulationState* s)
 		connect.renderSurface = (size) Renderer_GetSharedRenderSurface(s->renderer);
 		connect.renderSize.x  = s->renderSize.x;
 		connect.renderSize.y  = s->renderSize.y;
-		QueueGUIMessage(s, connect);
+		success = QueueGUIMessage(s, connect);
+		if (!success) return;
 	}
 
 	{
@@ -324,13 +332,15 @@ OnConnect(SimulationState* s)
 		pluginsAdded.kind  = PluginKind::Sensor;
 		pluginsAdded.refs  = List_MemberSlice(s->sensorPlugins, &SensorPlugin::ref);
 		pluginsAdded.infos = List_MemberSlice(s->sensorPlugins, &SensorPlugin::info);
-		QueueGUIMessage(s, pluginsAdded);
+		success = QueueGUIMessage(s, pluginsAdded);
+		if (!success) return;
 
 		PluginStatesChanged statesChanged = {};
 		statesChanged.kind       = PluginKind::Sensor;
 		statesChanged.refs       = List_MemberSlice(s->sensorPlugins, &SensorPlugin::ref);
 		statesChanged.loadStates = List_MemberSlice(s->sensorPlugins, &SensorPlugin::header, &PluginHeader::loadState);
-		QueueGUIMessage(s, statesChanged);
+		success = QueueGUIMessage(s, statesChanged);
+		if (!success) return;
 	}
 
 	{
@@ -338,20 +348,23 @@ OnConnect(SimulationState* s)
 		pluginsAdded.kind  = PluginKind::Widget;
 		pluginsAdded.refs  = List_MemberSlice(s->widgetPlugins, &WidgetPlugin::ref);
 		pluginsAdded.infos = List_MemberSlice(s->widgetPlugins, &WidgetPlugin::info);
-		QueueGUIMessage(s, pluginsAdded);
+		success = QueueGUIMessage(s, pluginsAdded);
+		if (!success) return;
 
 		PluginStatesChanged statesChanged = {};
 		statesChanged.kind       = PluginKind::Widget;
 		statesChanged.refs       = List_MemberSlice(s->widgetPlugins, &WidgetPlugin::ref);
 		statesChanged.loadStates = List_MemberSlice(s->widgetPlugins, &WidgetPlugin::header, &PluginHeader::loadState);
-		QueueGUIMessage(s, statesChanged);
+		success = QueueGUIMessage(s, statesChanged);
+		if (!success) return;
 	}
 
 	{
 		SensorsAdded sensorsAdded = {};
 		sensorsAdded.pluginRefs = List_MemberSlice(s->sensorPlugins, &SensorPlugin::ref);
 		sensorsAdded.sensors    = List_MemberSlice(s->sensorPlugins, &SensorPlugin::sensors);
-		QueueGUIMessage(s, sensorsAdded);
+		success = QueueGUIMessage(s, sensorsAdded);
+		if (!success) return;
 	}
 
 	{
@@ -366,7 +379,8 @@ OnConnect(SimulationState* s)
 			WidgetDescsAdded widgetDescsAdded = {};
 			widgetDescsAdded.pluginRefs = widgetPlugin->ref;
 			widgetDescsAdded.descs      = descs;
-			QueueGUIMessage(s, widgetDescsAdded);
+			success = QueueGUIMessage(s, widgetDescsAdded);
+			if (!success) return;
 		}
 	}
 }
@@ -394,13 +408,12 @@ OnTeardown(SimulationState* s)
 	bytes.capacity = bytes.length;
 	bytes.data     = (u8*) &disconnect;
 
-
 	result = Platform_WritePipe(&s->guiPipe, bytes);
-	LOG_IF(result != PipeResult::Success, IGNORE,
+	LOG_IF(result != PipeResult::Success, return,
 		Severity::Error, "Failed to send GUI disconnect signal");
 
 	result = Platform_FlushPipe(&s->guiPipe);
-	LOG_IF(result == PipeResult::UnexpectedFailure, IGNORE,
+	LOG_IF(result == PipeResult::UnexpectedFailure, return,
 		Severity::Error, "Failed to flush GUI communication pipe");
 }
 
