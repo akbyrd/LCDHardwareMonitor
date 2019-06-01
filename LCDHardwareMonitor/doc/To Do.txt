@@ -1,6 +1,9 @@
-Unify send code (queue)
+Make a messages state struct
+Decide on passing args by pointer or reference
 Timed loop
-Remove auto-connect from Send/Receive?
+Remove auto-connect from Send/Receive? (any maybe auto-disconnect as well)
+Normalize GUI Message phrasing
+Add a proper OOM crash flow
 
 GUI Control
 	Load/Unload plugins
@@ -12,7 +15,6 @@ GUI Control
 Stuff
 	Fix StringSlice trailing zero
 	I think pipes want to be no-wait
-	Decide on passing args by pointer or reference
 	Users probably need to be able to create custom UI for plugin settings
 	Ensure we're handling CloseHandle failures correctly
 	Implement update rate control

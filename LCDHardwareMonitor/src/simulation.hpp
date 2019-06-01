@@ -15,8 +15,8 @@ struct SimulationState
 	r32                currentTime;
 
 	Pipe               guiPipe;
-	u32                guiSendMsgIndex;
-	u32                guiRecvMsgIndex;
+	u32                guiSendIndex;
+	u32                guiRecvIndex;
 	List<Bytes>        guiQueue;
 	u32                guiQueueIndex;
 	b32                guiFailure;
@@ -286,27 +286,6 @@ PushDrawCall(PluginContext* context, Material material)
 
 // === GUI Messages ================================================================================
 
-// TODO: The error messages in here suck
-template <typename T>
-static b32
-QueueGUIMessage(SimulationState* s, T& message)
-{
-	Bytes bytes = {};
-	auto cleanupGuard = guard { List_Free(bytes); };
-
-	b32 success = SerializeMessage(bytes, message, s->guiSendMsgIndex);
-	HandleMessageResult(&s->guiPipe, success, &s->guiFailure);
-	if (!success) return false;
-
-	Bytes* result = List_Append(s->guiQueue, bytes);
-	HandleMessageResult(&s->guiPipe, result != nullptr, &s->guiFailure);
-	if (result == nullptr) return false;
-
-	s->guiSendMsgIndex++;
-	cleanupGuard.dismiss = true;
-	return true;
-}
-
 // NOTE: None of these functions return error codes because the messaging system handles errors
 // internally. It will disconnect and stop attempting to send messages when a failure occurs.
 
@@ -322,7 +301,7 @@ OnConnect(SimulationState* s)
 		connect.renderSurface = (size) Renderer_GetSharedRenderSurface(s->renderer);
 		connect.renderSize.x  = s->renderSize.x;
 		connect.renderSize.y  = s->renderSize.y;
-		success = QueueGUIMessage(s, connect);
+		success = SerializeAndQueueMessage(&s->guiPipe, connect, s->guiQueue, &s->guiSendIndex, &s->guiFailure);
 		if (!success) return;
 	}
 
@@ -332,14 +311,14 @@ OnConnect(SimulationState* s)
 		pluginsAdded.kind  = PluginKind::Sensor;
 		pluginsAdded.refs  = List_MemberSlice(s->sensorPlugins, &SensorPlugin::ref);
 		pluginsAdded.infos = List_MemberSlice(s->sensorPlugins, &SensorPlugin::info);
-		success = QueueGUIMessage(s, pluginsAdded);
+		success = SerializeAndQueueMessage(&s->guiPipe, pluginsAdded, s->guiQueue, &s->guiSendIndex, &s->guiFailure);
 		if (!success) return;
 
 		PluginStatesChanged statesChanged = {};
 		statesChanged.kind       = PluginKind::Sensor;
 		statesChanged.refs       = List_MemberSlice(s->sensorPlugins, &SensorPlugin::ref);
 		statesChanged.loadStates = List_MemberSlice(s->sensorPlugins, &SensorPlugin::header, &PluginHeader::loadState);
-		success = QueueGUIMessage(s, statesChanged);
+		success = SerializeAndQueueMessage(&s->guiPipe, statesChanged, s->guiQueue, &s->guiSendIndex, &s->guiFailure);
 		if (!success) return;
 	}
 
@@ -348,14 +327,14 @@ OnConnect(SimulationState* s)
 		pluginsAdded.kind  = PluginKind::Widget;
 		pluginsAdded.refs  = List_MemberSlice(s->widgetPlugins, &WidgetPlugin::ref);
 		pluginsAdded.infos = List_MemberSlice(s->widgetPlugins, &WidgetPlugin::info);
-		success = QueueGUIMessage(s, pluginsAdded);
+		success = SerializeAndQueueMessage(&s->guiPipe, pluginsAdded, s->guiQueue, &s->guiSendIndex, &s->guiFailure);
 		if (!success) return;
 
 		PluginStatesChanged statesChanged = {};
 		statesChanged.kind       = PluginKind::Widget;
 		statesChanged.refs       = List_MemberSlice(s->widgetPlugins, &WidgetPlugin::ref);
 		statesChanged.loadStates = List_MemberSlice(s->widgetPlugins, &WidgetPlugin::header, &PluginHeader::loadState);
-		success = QueueGUIMessage(s, statesChanged);
+		success = SerializeAndQueueMessage(&s->guiPipe, statesChanged, s->guiQueue, &s->guiSendIndex, &s->guiFailure);
 		if (!success) return;
 	}
 
@@ -363,7 +342,7 @@ OnConnect(SimulationState* s)
 		SensorsAdded sensorsAdded = {};
 		sensorsAdded.pluginRefs = List_MemberSlice(s->sensorPlugins, &SensorPlugin::ref);
 		sensorsAdded.sensors    = List_MemberSlice(s->sensorPlugins, &SensorPlugin::sensors);
-		success = QueueGUIMessage(s, sensorsAdded);
+		success = SerializeAndQueueMessage(&s->guiPipe, sensorsAdded, s->guiQueue, &s->guiSendIndex, &s->guiFailure);
 		if (!success) return;
 	}
 
@@ -379,7 +358,7 @@ OnConnect(SimulationState* s)
 			WidgetDescsAdded widgetDescsAdded = {};
 			widgetDescsAdded.pluginRefs = widgetPlugin->ref;
 			widgetDescsAdded.descs      = descs;
-			success = QueueGUIMessage(s, widgetDescsAdded);
+			success = SerializeAndQueueMessage(&s->guiPipe, widgetDescsAdded, s->guiQueue, &s->guiSendIndex, &s->guiFailure);
 			if (!success) return;
 		}
 	}
@@ -388,8 +367,8 @@ OnConnect(SimulationState* s)
 static void
 OnDisconnect(SimulationState* s)
 {
-	s->guiSendMsgIndex = 0;
-	s->guiRecvMsgIndex = 0;
+	s->guiSendIndex = 0;
+	s->guiRecvIndex = 0;
 }
 
 static void
@@ -400,7 +379,7 @@ OnTeardown(SimulationState* s)
 
 	Disconnect disconnect = {};
 	disconnect.header.id    = IdOf<Disconnect>;
-	disconnect.header.index = s->guiSendMsgIndex - (s->guiQueue.length - s->guiQueueIndex);
+	disconnect.header.index = s->guiSendIndex - (s->guiQueue.length - s->guiQueueIndex);
 	disconnect.header.size  = sizeof(Disconnect);
 
 	Bytes bytes = {};
@@ -936,13 +915,13 @@ Simulation_Update(SimulationState* s)
 
 		// TODO: Loop
 		// Receive
-		while (s->guiPipe.state == PipeState::Connected)
+		PipeResult result = PipeResult::Success;
+		while (result == PipeResult::Success)
 		{
 			using namespace Message;
 
-			PipeResult result = ReadMessage(&s->guiPipe, bytes, s->guiRecvMsgIndex, &s->guiFailure);
+			result = ReceiveMessage(&s->guiPipe, bytes, &s->guiRecvIndex, &s->guiFailure);
 			if (result != PipeResult::Success) break;
-			s->guiRecvMsgIndex++;
 
 			Header* header = (Header*) bytes.data;
 			switch (header->id)
@@ -955,22 +934,14 @@ Simulation_Update(SimulationState* s)
 			}
 		}
 
+		// NOTE: The only reason sending uses a queue is so that we can time slice GUI communication.
+
 		// TODO: Loop
+		// TODO: Ring buffer
 		// Send
-		for (; s->guiQueueIndex < s->guiQueue.length; s->guiQueueIndex++)
-		{
-			Bytes writeBytes = s->guiQueue[s->guiQueueIndex];
-			PipeResult result = Platform_WritePipe(&s->guiPipe, writeBytes);
-			HandleMessageResult(&s->guiPipe, result, &s->guiFailure);
-			if (result != PipeResult::Success) break;
-		}
-		if (s->guiQueueIndex == s->guiQueue.length)
-		{
-			for (u32 i = 0; i < s->guiQueue.length; i++)
-				s->guiQueue[i].length = 0;
-			s->guiQueue.length = 0;
-			s->guiQueueIndex = 0;
-		}
+		result = PipeResult::Success;
+		while (result == PipeResult::Success)
+			result = SendMessage(&s->guiPipe, s->guiQueue, &s->guiQueueIndex, &s->guiFailure);
 	}
 
 	// DEBUG: Draw Coordinate System

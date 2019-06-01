@@ -163,7 +163,7 @@ SerializeMessage(Bytes& bytes, T& message, u32 messageIndex)
 
 	b32 success = List_Reserve(stream.bytes, stream.cursor);
 	LOG_IF(!success, return false,
-		Severity::Fatal, "Failed to allocate GUI message");
+		Severity::Fatal, "Failed to allocate message");
 	stream.bytes.length = stream.cursor;
 
 	message.header.id    = IdOf<T>;
@@ -194,7 +194,7 @@ DeserializeMessage(Bytes& bytes)
 	Serialize(stream, (T*) bytes.data);
 }
 
-static PipeResult
+b32
 HandleMessageResult(Pipe* pipe, b32 success, b32* setOnFail)
 {
 	if (!success)
@@ -205,41 +205,106 @@ HandleMessageResult(Pipe* pipe, b32 success, b32* setOnFail)
 		PipeResult result = Platform_DisconnectPipe(pipe);
 		LOG_IF(result != PipeResult::Success, IGNORE,
 			Severity::Error, "Failed to disconnect GUI pipe");
+	}
 
-		return PipeResult::UnexpectedFailure;
+	return success;
+}
+
+PipeResult
+HandleMessageResult(Pipe* pipe, PipeResult result, b32* setOnFail)
+{
+	switch (result)
+	{
+		default: Assert(false); break;
+
+		case PipeResult::Success: break;
+		case PipeResult::TransientFailure: break;
+
+		case PipeResult::UnexpectedFailure:
+			HandleMessageResult(pipe, false, setOnFail);
+			break;
+	}
+
+	return result;
+}
+
+b32
+QueueMessage(Bytes& bytes, List<Bytes>& queue, u32* sendIndex)
+{
+	Bytes* result = List_Append(queue, bytes);
+	LOG_IF(!result, return false,
+		Severity::Warning, "Failed to allocate message queue space");
+
+	sendIndex++;
+	return true;
+}
+
+// TODO: Maybe wrap params up in a struct
+template <typename T>
+b32
+SerializeAndQueueMessage(Pipe* pipe, T& message, List<Bytes>& queue, u32* sendIndex, b32* setOnFail)
+{
+	b32 success;
+
+	Bytes bytes = {};
+	auto cleanupGuard = guard { List_Free(bytes); };
+
+	success = SerializeMessage(bytes, message, *sendIndex);
+	LOG_IF(!success, return HandleMessageResult(pipe, false, setOnFail),
+		Severity::Fatal, "Failed to serialize message");
+
+	success = QueueMessage(bytes, queue, sendIndex);
+	LOG_IF(!success, return HandleMessageResult(pipe, false, setOnFail),
+		Severity::Warning, "Failed to queue message");
+
+	cleanupGuard.dismiss = true;
+	return true;
+}
+
+PipeResult
+SendMessage(Pipe* pipe, List<Bytes>& queue, u32* queueIndex, b32* setOnFail)
+{
+	// Nothing to send
+	if (*queueIndex == queue.length) return PipeResult::TransientFailure;
+
+	Bytes bytes = queue[*queueIndex];
+
+	PipeResult result = Platform_WritePipe(pipe, bytes);
+	if (result != PipeResult::Success) return HandleMessageResult(pipe, result, setOnFail);
+
+	(*queueIndex)++;
+	if (*queueIndex == queue.length)
+	{
+		for (u32 i = 0; i < queue.length; i++)
+			queue[i].length = 0;
+		queue.length = 0;
+		*queueIndex = 0;
 	}
 
 	return PipeResult::Success;
 }
 
-static PipeResult
-HandleMessageResult(Pipe* pipe, PipeResult result, b32* setOnFail)
-{
-	if (result == PipeResult::TransientFailure) return result;
-	return HandleMessageResult(pipe, result != PipeResult::UnexpectedFailure, setOnFail);
-}
-
-static PipeResult
-ReadMessage(Pipe* pipe, Bytes& bytes, u32 readIndex, b32* setOnFail)
+PipeResult
+ReceiveMessage(Pipe* pipe, Bytes& bytes, u32* recvIndex, b32* setOnFail)
 {
 	using namespace Message;
 
 	PipeResult result = Platform_ReadPipe(pipe, bytes);
-	HandleMessageResult(pipe, result, setOnFail);
-	if (result != PipeResult::Success) return result;
+	if (result != PipeResult::Success) return HandleMessageResult(pipe, result, setOnFail);
 	if (bytes.length == 0) return PipeResult::TransientFailure;
 
 	Header* header = (Header*) bytes.data;
 
-	LOG_IF(bytes.length < sizeof(Header), return HandleMessageResult(pipe, false, setOnFail),
+	LOG_IF(bytes.length < sizeof(Header), return HandleMessageResult(pipe, PipeResult::UnexpectedFailure, setOnFail),
 		Severity::Warning, "Corrupted message received");
 
-	LOG_IF(bytes.length != header->size, return HandleMessageResult(pipe, false, setOnFail),
+	LOG_IF(bytes.length != header->size, return HandleMessageResult(pipe, PipeResult::UnexpectedFailure, setOnFail),
 		Severity::Warning, "Incorrectly sized message received");
 
-	LOG_IF(header->index != readIndex, return HandleMessageResult(pipe, false, setOnFail),
+	LOG_IF(header->index != *recvIndex, return HandleMessageResult(pipe, PipeResult::UnexpectedFailure, setOnFail),
 		Severity::Warning, "Unexpected message received");
 
+	recvIndex++;
 	return PipeResult::Success;
 }
 

@@ -17,8 +17,10 @@
 struct State
 {
 	Pipe                pipe;
-	u32                 sendMsgIndex;
-	u32                 recvMsgIndex;
+	u32                 sendIndex;
+	u32                 recvIndex;
+	List<Bytes>         queue;
+	u32                 queueIndex;
 
 	IDirect3D9Ex*       d3d9;
 	IDirect3DDevice9Ex* d3d9Device;
@@ -210,7 +212,7 @@ namespace LCDHardwareMonitor::GUI
 						// Synthesize a disconnect
 						using namespace Message;
 						Disconnect disconnect = {};
-						success = SerializeMessage(bytes, disconnect, s.recvMsgIndex);
+						success = SerializeMessage(bytes, disconnect, s.recvIndex);
 						if (!success) return false;
 					}
 				}
@@ -218,14 +220,14 @@ namespace LCDHardwareMonitor::GUI
 
 			// TODO: Loop
 			// Receive
-			while (s.pipe.state == PipeState::Connected)
+			PipeResult result = PipeResult::Success;
+			while (result == PipeResult::Success)
 			{
 				using namespace Message;
 
-				PipeResult result = ReadMessage(&s.pipe, bytes, s.recvMsgIndex, nullptr);
+				result = ReceiveMessage(&s.pipe, bytes, &s.recvIndex, nullptr);
 				if (result == PipeResult::UnexpectedFailure) return false;
 				if (result == PipeResult::TransientFailure) break;
-				s.recvMsgIndex++;
 
 				Header* header = (Header*) bytes.data;
 				switch (header->id)
@@ -264,8 +266,8 @@ namespace LCDHardwareMonitor::GUI
 						simState->IsSimulationConnected = false;
 						simState->NotifyPropertyChanged("");
 
-						s.sendMsgIndex = 0;
-						s.recvMsgIndex = 0;
+						s.sendIndex = 0;
+						s.recvIndex = 0;
 						// TODO: Will need to handle 'pending' states.
 						simState->Messages->Clear();
 						break;
@@ -359,8 +361,8 @@ namespace LCDHardwareMonitor::GUI
 				}
 			}
 
-			// TODO: Loop
-			// Send
+			// TODO: Change this to On*() functions called directly from C#, similar to the sim side
+			// Construct messages
 			for (i32 i = 0; i < simState->Messages->Count; i++)
 			{
 				using namespace Message;
@@ -379,10 +381,8 @@ namespace LCDHardwareMonitor::GUI
 					case MessageType::TerminateSim:
 					{
 						TerminateSimulation nMessage = {};
-
-						Bytes writeBytes = {};
-						SerializeMessage(writeBytes, nMessage, s.sendMsgIndex);
-						Platform_WritePipe(&s.pipe, writeBytes);
+						b32 success = SerializeAndQueueMessage(&s.pipe, nMessage, s.queue, &s.sendIndex, nullptr);
+						if (!success) return false;
 						break;
 					}
 
@@ -390,8 +390,13 @@ namespace LCDHardwareMonitor::GUI
 						// TODO: Implement
 						continue;
 				}
-				s.sendMsgIndex++;
 			}
+
+			// TODO: Loop
+			// Send
+			result = PipeResult::Success;
+			while (result == PipeResult::Success)
+				result = SendMessage(&s.pipe, s.queue, &s.queueIndex, nullptr);
 
 			return true;
 		}
