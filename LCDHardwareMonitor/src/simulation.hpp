@@ -970,14 +970,9 @@ Simulation_Teardown(SimulationState* s)
 	// case.
 
 	ConnectionState* guiCon = &s->guiConnection;
-
 	if (guiCon->pipe.state == PipeState::Connected)
 		OnTeardown(guiCon);
-	Platform_DestroyPipe(&guiCon->pipe);
-
-	for (u32 i = 0; i < guiCon->queue.capacity; i++)
-		List_Free(guiCon->queue[i]);
-	List_Free(guiCon->queue);
+	Connection_Teardown(guiCon);
 
 	for (u32 i = 0; i < s->widgetPlugins.length; i++)
 		UnloadWidgetPlugin(s, &s->widgetPlugins[i]);

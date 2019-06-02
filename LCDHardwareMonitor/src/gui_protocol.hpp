@@ -126,6 +126,16 @@ struct ConnectionState
 	b32         failure;
 };
 
+void
+Connection_Teardown(ConnectionState* con)
+{
+	Platform_DestroyPipe(&con->pipe);
+
+	for (u32 i = 0; i < con->queue.capacity; i++)
+		List_Free(con->queue[i]);
+	List_Free(con->queue);
+}
+
 // NOTE: There's one small gotcha with this serialization approach. We use
 // Serialize(ByteStream&, T&) to support a pattern where you simply call Serialize for every member
 // of your type and it will serialize properly as long as overloads exist for types that aren't

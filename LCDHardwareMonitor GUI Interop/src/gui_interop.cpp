@@ -409,16 +409,7 @@ namespace LCDHardwareMonitor::GUI
 			D3D9_Teardown(s.d3d9, s.d3d9Device);
 
 			ConnectionState* simCon = &s.simConnection;
-
-			// TODO: OnTeardown
-			PipeResult result = Platform_FlushPipe(&simCon->pipe);
-			LOG_IF(result == PipeResult::UnexpectedFailure, IGNORE,
-				Severity::Error, "Failed to flush sim communication pipe");
-			Platform_DestroyPipe(&simCon->pipe);
-
-			for (u32 i = 0; i < simCon->queue.capacity; i++)
-				List_Free(simCon->queue[i]);
-			List_Free(simCon->queue);
+			Connection_Teardown(simCon);
 
 			s = {};
 		}
