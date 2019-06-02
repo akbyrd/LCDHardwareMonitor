@@ -207,6 +207,9 @@
   </ImportGroup>
   <Target Name="CleanBetter" AfterTargets="Clean">
       <RemoveDir Directories="$(TargetDir)" />
+      <!--
+      TODO: This fucks up Rebuild All
       <RemoveDir Directories="$(SolutionDir)run" />
+      -->
   </Target>
 </Project>
