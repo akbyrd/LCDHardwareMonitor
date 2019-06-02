@@ -121,7 +121,7 @@ struct ConnectionState
 	Pipe        pipe;
 	u32         sendIndex;
 	u32         recvIndex;
-	List<Bytes> queue;
+	List<Bytes> queue; // TODO: Ring buffer
 	u32         queueIndex;
 	b32         failure;
 };
@@ -167,6 +167,12 @@ void Serialize(ByteStream&, Message::SensorsAdded&);
 void Serialize(ByteStream&, Message::WidgetDescsAdded&);
 void Serialize(ByteStream&, PluginInfo&);
 void Serialize(ByteStream&, Sensor&);
+
+inline b32
+MessageTimeLeft(i64 startTicks)
+{
+	return Platform_GetElapsedMilliseconds(startTicks) < 8;
+}
 
 template <typename T>
 b32
@@ -278,16 +284,19 @@ SerializeAndQueueMessage(ConnectionState* con, T& message)
 	return true;
 }
 
-PipeResult
+b32
 SendMessage(ConnectionState* con)
 {
+	if (con->failure) return false;
+
 	// Nothing to send
-	if (con->queueIndex == con->queue.length) return PipeResult::TransientFailure;
+	if (con->queueIndex == con->queue.length) return false;
 
 	Bytes bytes = con->queue[con->queueIndex];
 
 	PipeResult result = Platform_WritePipe(&con->pipe, bytes);
-	if (result != PipeResult::Success) return HandleMessageResult(con, result);
+	HandleMessageResult(con, result);
+	if (result != PipeResult::Success) return false;
 
 	con->queueIndex++;
 	if (con->queueIndex == con->queue.length)
@@ -298,31 +307,33 @@ SendMessage(ConnectionState* con)
 		con->queueIndex = 0;
 	}
 
-	return PipeResult::Success;
+	return true;
 }
 
-PipeResult
+b32
 ReceiveMessage(ConnectionState* con, Bytes& bytes)
 {
-	using namespace Message;
+	if (con->failure) return false;
 
 	PipeResult result = Platform_ReadPipe(&con->pipe, bytes);
-	if (result != PipeResult::Success) return HandleMessageResult(con, result);
-	if (bytes.length == 0) return PipeResult::TransientFailure;
+	HandleMessageResult(con, result);
+	if (result != PipeResult::Success) return false;
+	if (bytes.length == 0) return false;
 
+	using namespace Message;
 	Header* header = (Header*) bytes.data;
 
-	LOG_IF(bytes.length < sizeof(Header), return HandleMessageResult(con, PipeResult::UnexpectedFailure),
+	LOG_IF(bytes.length < sizeof(Header), return HandleMessageResult(con, false),
 		Severity::Warning, "Corrupted message received");
 
-	LOG_IF(bytes.length != header->size, return HandleMessageResult(con, PipeResult::UnexpectedFailure),
+	LOG_IF(bytes.length != header->size, return HandleMessageResult(con, false),
 		Severity::Warning, "Incorrectly sized message received");
 
-	LOG_IF(header->index != con->recvIndex, return HandleMessageResult(con, PipeResult::UnexpectedFailure),
+	LOG_IF(header->index != con->recvIndex, return HandleMessageResult(con, false),
 		Severity::Warning, "Unexpected message received");
 
 	con->recvIndex++;
-	return PipeResult::Success;
+	return true;
 }
 
 // TODO: This is a bit lame

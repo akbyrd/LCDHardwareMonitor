@@ -1,6 +1,4 @@
 Decide on passing args by pointer or reference
-Timed loop
-Remove auto-connect from Send/Receive? (any maybe auto-disconnect as well)
 Add a proper OOM crash flow
 
 GUI Control

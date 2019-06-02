@@ -889,36 +889,31 @@ Simulation_Update(SimulationState* s)
 
 	// GUI Communication
 	ConnectionState* guiCon = &s->guiConnection;
-	if (!guiCon->failure)
+	while (!guiCon->failure)
 	{
-
-		Bytes bytes = {};
-		defer { List_Free(bytes); };
-
 		// Connection handling
 		{
 			b32 wasConnected = guiCon->pipe.state == PipeState::Connected;
-			b32 success = Platform_UpdatePipeConnection(&guiCon->pipe);
-			HandleMessageResult(guiCon, success);
+			PipeResult result = Platform_UpdatePipeConnection(&guiCon->pipe);
+			HandleMessageResult(guiCon, result);
 
-			if (success)
-			{
-				b32 isConnected = guiCon->pipe.state == PipeState::Connected;
-				if (isConnected && !wasConnected) OnConnect(guiCon, s);
-				if (!isConnected && wasConnected) OnDisconnect(guiCon);
-			}
+			b32 isConnected = guiCon->pipe.state == PipeState::Connected;
+			if (isConnected && !wasConnected) OnConnect(guiCon, s);
+			if (!isConnected && wasConnected) OnDisconnect(guiCon);
 		}
+		if (guiCon->pipe.state != PipeState::Connected) break;
 
-		// TODO: Loop
 		// Receive
-		PipeResult result = PipeResult::Success;
-		while (result == PipeResult::Success)
+		Bytes bytes = {};
+		defer { List_Free(bytes); };
+
+		i64 startTicks = Platform_GetTicks();
+		while (MessageTimeLeft(startTicks))
 		{
+			b32 success = ReceiveMessage(guiCon, bytes);
+			if (!success) break;
+
 			using namespace Message;
-
-			result = ReceiveMessage(guiCon, bytes);
-			if (result != PipeResult::Success) break;
-
 			Header* header = (Header*) bytes.data;
 			switch (header->id)
 			{
@@ -930,14 +925,14 @@ Simulation_Update(SimulationState* s)
 			}
 		}
 
-		// NOTE: The only reason sending uses a queue is so that we can time slice GUI communication.
-
-		// TODO: Loop
-		// TODO: Ring buffer
 		// Send
-		result = PipeResult::Success;
-		while (result == PipeResult::Success)
-			result = SendMessage(guiCon);
+		while (MessageTimeLeft(startTicks))
+		{
+			b32 success = SendMessage(guiCon);
+			if (!success) break;
+		}
+
+		break;
 	}
 
 	// DEBUG: Draw Coordinate System

@@ -182,6 +182,27 @@ namespace LCDHardwareMonitor::GUI
 			return true;
 		}
 
+		static void
+		OnDisconnect(GUI::SimulationState^ simState)
+		{
+			// DEBUG: Needed for the Watch window
+			State& s = state;
+
+			D3D9_DestroySharedSurface(&s.d3d9RenderTexture, &s.d3d9RenderSurface0);
+			simState->RenderSurface = IntPtr::Zero;
+			simState->Plugins->Clear();
+			simState->Sensors->Clear();
+			simState->WidgetDescs->Clear();
+			simState->IsSimulationConnected = false;
+			simState->NotifyPropertyChanged("");
+
+			ConnectionState* simCon = &s.simConnection;
+			simCon->sendIndex = 0;
+			simCon->recvIndex = 0;
+			// TODO: Will need to handle 'pending' states.
+			simState->Messages->Clear();
+		}
+
 		static bool
 		Update(GUI::SimulationState^ simState)
 		{
@@ -191,212 +212,193 @@ namespace LCDHardwareMonitor::GUI
 			ConnectionState* simCon = &s.simConnection;
 			Assert(!simCon->failure);
 
-			Bytes bytes = {};
-			defer { List_Free(bytes); };
-
-			// Connection handling
+			while (true)
 			{
-				b32 success;
+				Bytes bytes = {};
+				defer { List_Free(bytes); };
 
-				b32 wasConnected = simCon->pipe.state == PipeState::Connected;
-				success = Platform_UpdatePipeConnection(&simCon->pipe);
-				if (!success) return false;
-
-				if (success)
+				// Connection handling
 				{
+					b32 wasConnected = simCon->pipe.state == PipeState::Connected;
+					PipeResult result = Platform_UpdatePipeConnection(&simCon->pipe);
+					HandleMessageResult(simCon, result);
+
 					b32 isConnected = simCon->pipe.state == PipeState::Connected;
-					if (!isConnected && wasConnected)
-					{
-						// Synthesize a disconnect
-						using namespace Message;
-						Disconnect disconnect = {};
-						success = SerializeMessage(bytes, disconnect, simCon->recvIndex);
-						if (!success) return false;
-					}
+					if (!isConnected && wasConnected) OnDisconnect(simState);
 				}
-			}
+				if (simCon->pipe.state != PipeState::Connected) break;
 
-			// TODO: Loop
-			// Receive
-			PipeResult result = PipeResult::Success;
-			while (result == PipeResult::Success)
-			{
-				using namespace Message;
-
-				result = ReceiveMessage(simCon, bytes);
-				if (result == PipeResult::UnexpectedFailure) return false;
-				if (result == PipeResult::TransientFailure) break;
-
-				Header* header = (Header*) bytes.data;
-				switch (header->id)
+				// Receive
+				i64 startTicks = Platform_GetTicks();
+				while (MessageTimeLeft(startTicks))
 				{
-					default: Assert(false); break;
+					b32 success = ReceiveMessage(simCon, bytes);
+					if (!success) break;
 
-					case IdOf<Connect>:
+					using namespace Message;
+					Header* header = (Header*) bytes.data;
+					switch (header->id)
 					{
-						DeserializeMessage<Connect>(bytes);
+						default: Assert(false); break;
 
-						Connect* connect = (Connect*) bytes.data;
-						simState->Version = connect->version;
-
-						b32 success = D3D9_CreateSharedSurface(
-							s.d3d9Device,
-							&s.d3d9RenderTexture,
-							&s.d3d9RenderSurface0,
-							(HANDLE) connect->renderSurface,
-							connect->renderSize
-						);
-						if (!success) return false;
-
-						simState->RenderSurface = (IntPtr) s.d3d9RenderSurface0;
-						simState->IsSimulationConnected = true;
-						simState->NotifyPropertyChanged("");
-						break;
-					}
-
-					case IdOf<Disconnect>:
-					{
-						D3D9_DestroySharedSurface(&s.d3d9RenderTexture, &s.d3d9RenderSurface0);
-						simState->RenderSurface = IntPtr::Zero;
-						simState->Plugins->Clear();
-						simState->Sensors->Clear();
-						simState->WidgetDescs->Clear();
-						simState->IsSimulationConnected = false;
-						simState->NotifyPropertyChanged("");
-
-						simCon->sendIndex = 0;
-						simCon->recvIndex = 0;
-						// TODO: Will need to handle 'pending' states.
-						simState->Messages->Clear();
-						break;
-					}
-
-					case IdOf<PluginsAdded>:
-					{
-						DeserializeMessage<PluginsAdded>(bytes);
-						PluginsAdded* pluginsAdded = (PluginsAdded*) bytes.data;
-
-						for (u32 i = 0; i < pluginsAdded->infos.length; i++)
+						case IdOf<Connect>:
 						{
-							GUI::PluginInfo mPluginInfo = {};
-							mPluginInfo.Ref     = pluginsAdded->refs[i].index;
-							mPluginInfo.Name    = ToManagedString(pluginsAdded->infos[i].name);
-							mPluginInfo.Kind    = (GUI::PluginKind) pluginsAdded->kind;
-							mPluginInfo.Author  = ToManagedString(pluginsAdded->infos[i].author);
-							mPluginInfo.Version = pluginsAdded->infos[i].version;
-							simState->Plugins->Add(mPluginInfo);
+							DeserializeMessage<Connect>(bytes);
+
+							Connect* connect = (Connect*) bytes.data;
+							simState->Version = connect->version;
+
+							success = D3D9_CreateSharedSurface(
+								s.d3d9Device,
+								&s.d3d9RenderTexture,
+								&s.d3d9RenderSurface0,
+								(HANDLE) connect->renderSurface,
+								connect->renderSize
+							);
+							if (!success) return false;
+
+							simState->RenderSurface = (IntPtr) s.d3d9RenderSurface0;
+							simState->IsSimulationConnected = true;
+							simState->NotifyPropertyChanged("");
+							break;
 						}
-						break;
-					}
 
-					case IdOf<PluginStatesChanged>:
-					{
-						DeserializeMessage<PluginStatesChanged>(bytes);
-						PluginStatesChanged* statesChanged = (PluginStatesChanged*) bytes.data;
-
-						for (u32 i = 0; i < statesChanged->refs.length; i++)
+						case IdOf<Disconnect>:
 						{
-							for (u32 j = 0; j < (u32) simState->Plugins->Count; j++)
+							OnDisconnect(simState);
+							break;
+						}
+
+						case IdOf<PluginsAdded>:
+						{
+							DeserializeMessage<PluginsAdded>(bytes);
+							PluginsAdded* pluginsAdded = (PluginsAdded*) bytes.data;
+
+							for (u32 i = 0; i < pluginsAdded->infos.length; i++)
 							{
-								GUI::PluginInfo p = simState->Plugins[(i32) j];
-								if ((::PluginKind) p.Kind == statesChanged->kind && p.Ref == statesChanged->refs[i].index)
+								GUI::PluginInfo mPluginInfo = {};
+								mPluginInfo.Ref     = pluginsAdded->refs[i].index;
+								mPluginInfo.Name    = ToManagedString(pluginsAdded->infos[i].name);
+								mPluginInfo.Kind    = (GUI::PluginKind) pluginsAdded->kind;
+								mPluginInfo.Author  = ToManagedString(pluginsAdded->infos[i].author);
+								mPluginInfo.Version = pluginsAdded->infos[i].version;
+								simState->Plugins->Add(mPluginInfo);
+							}
+							break;
+						}
+
+						case IdOf<PluginStatesChanged>:
+						{
+							DeserializeMessage<PluginStatesChanged>(bytes);
+							PluginStatesChanged* statesChanged = (PluginStatesChanged*) bytes.data;
+
+							for (u32 i = 0; i < statesChanged->refs.length; i++)
+							{
+								for (u32 j = 0; j < (u32) simState->Plugins->Count; j++)
 								{
-									p.LoadState = (GUI::PluginLoadState) statesChanged->loadStates[i];
-									simState->Plugins[(i32) j] = p;
+									GUI::PluginInfo p = simState->Plugins[(i32) j];
+									if ((::PluginKind) p.Kind == statesChanged->kind && p.Ref == statesChanged->refs[i].index)
+									{
+										p.LoadState = (GUI::PluginLoadState) statesChanged->loadStates[i];
+										simState->Plugins[(i32) j] = p;
+									}
 								}
 							}
+							simState->NotifyPropertyChanged("");
+							break;
 						}
-						simState->NotifyPropertyChanged("");
-						break;
-					}
 
-					case IdOf<SensorsAdded>:
-					{
-						DeserializeMessage<SensorsAdded>(bytes);
-
-						SensorsAdded* sensorsAdded = (SensorsAdded*) bytes.data;
-						for (u32 i = 0; i < sensorsAdded->sensors.length; i++)
+						case IdOf<SensorsAdded>:
 						{
-							Slice<::Sensor> sensors = sensorsAdded->sensors[i];
-							for (u32 j = 0; j < sensors.length; j++)
+							DeserializeMessage<SensorsAdded>(bytes);
+
+							SensorsAdded* sensorsAdded = (SensorsAdded*) bytes.data;
+							for (u32 i = 0; i < sensorsAdded->sensors.length; i++)
 							{
-								::Sensor* sensor = &sensors[j];
+								Slice<::Sensor> sensors = sensorsAdded->sensors[i];
+								for (u32 j = 0; j < sensors.length; j++)
+								{
+									::Sensor* sensor = &sensors[j];
 
-								GUI::Sensor mSensor = {};
-								mSensor.PluginRef  = sensorsAdded->pluginRefs[i].index;
-								mSensor.Ref        = sensor->ref.index;
-								mSensor.Name       = ToManagedString(sensor->name);
-								mSensor.Identifier = ToManagedString(sensor->identifier);
-								mSensor.Format     = ToManagedString(sensor->format);
-								mSensor.Value      = sensor->value;
-								simState->Sensors->Add(mSensor);
+									GUI::Sensor mSensor = {};
+									mSensor.PluginRef  = sensorsAdded->pluginRefs[i].index;
+									mSensor.Ref        = sensor->ref.index;
+									mSensor.Name       = ToManagedString(sensor->name);
+									mSensor.Identifier = ToManagedString(sensor->identifier);
+									mSensor.Format     = ToManagedString(sensor->format);
+									mSensor.Value      = sensor->value;
+									simState->Sensors->Add(mSensor);
+								}
 							}
+							break;
 						}
-						break;
-					}
 
-					case IdOf<WidgetDescsAdded>:
-					{
-						DeserializeMessage<WidgetDescsAdded>(bytes);
-
-						WidgetDescsAdded* widgetDescsAdded = (WidgetDescsAdded*) bytes.data;
-						for (u32 i = 0; i < widgetDescsAdded->descs.length; i++)
+						case IdOf<WidgetDescsAdded>:
 						{
-							Slice<::WidgetDesc> widgetDescs = widgetDescsAdded->descs[i];
-							for (u32 j = 0; j < widgetDescs.length; j++)
-							{
-								::WidgetDesc* desc = &widgetDescs[j];
+							DeserializeMessage<WidgetDescsAdded>(bytes);
 
-								GUI::WidgetDesc mWidgetDesc = {};
-								mWidgetDesc.PluginRef = widgetDescsAdded->pluginRefs[i].index;
-								mWidgetDesc.Ref       = desc->ref.index;
-								mWidgetDesc.Name      = ToManagedString(desc->name);
-								simState->WidgetDescs->Add(mWidgetDesc);
+							WidgetDescsAdded* widgetDescsAdded = (WidgetDescsAdded*) bytes.data;
+							for (u32 i = 0; i < widgetDescsAdded->descs.length; i++)
+							{
+								Slice<::WidgetDesc> widgetDescs = widgetDescsAdded->descs[i];
+								for (u32 j = 0; j < widgetDescs.length; j++)
+								{
+									::WidgetDesc* desc = &widgetDescs[j];
+
+									GUI::WidgetDesc mWidgetDesc = {};
+									mWidgetDesc.PluginRef = widgetDescsAdded->pluginRefs[i].index;
+									mWidgetDesc.Ref       = desc->ref.index;
+									mWidgetDesc.Name      = ToManagedString(desc->name);
+									simState->WidgetDescs->Add(mWidgetDesc);
+								}
 							}
+							break;
 						}
-						break;
 					}
 				}
-			}
 
-			// TODO: Change this to On*() functions called directly from C#, similar to the sim side
-			// Construct messages
-			for (i32 i = 0; i < simState->Messages->Count; i++)
-			{
-				using namespace Message;
-
-				Message^ message = simState->Messages[i];
-				switch (message->type)
+				// TODO: Change this to On*() functions called directly from C#, similar to the sim side
+				// Construct messages
+				for (i32 i = 0; i < simState->Messages->Count; i++)
 				{
-					// TODO: I think I'd rather have the warnings
-					default: Assert(false); break;
+					using namespace Message;
 
-					case MessageType::LaunchSim:
-					case MessageType::ForceTerminateSim:
-						// Handled in App
-						continue;
-
-					case MessageType::TerminateSim:
+					Message^ message = simState->Messages[i];
+					switch (message->type)
 					{
-						TerminateSimulation nMessage = {};
-						b32 success = SerializeAndQueueMessage(simCon, nMessage);
-						if (!success) return false;
-						break;
-					}
+						// TODO: I think I'd rather have the warnings
+						default: Assert(false); break;
 
-					case MessageType::SetPluginLoadState:
-						// TODO: Implement
-						continue;
+						case MessageType::LaunchSim:
+						case MessageType::ForceTerminateSim:
+							// Handled in App
+							continue;
+
+						case MessageType::TerminateSim:
+						{
+							TerminateSimulation nMessage = {};
+							b32 success = SerializeAndQueueMessage(simCon, nMessage);
+							if (!success) return false;
+							break;
+						}
+
+						case MessageType::SetPluginLoadState:
+							// TODO: Implement
+							continue;
+					}
 				}
+
+				// Send
+				while (MessageTimeLeft(startTicks))
+				{
+					b32 success = SendMessage(simCon);
+					if (!success) break;
+				}
+
+				break;
 			}
 
-			// TODO: Loop
-			// Send
-			result = PipeResult::Success;
-			while (result == PipeResult::Success)
-				result = SendMessage(simCon);
-
-			return true;
+			return !simCon->failure;
 		}
 
 		static void

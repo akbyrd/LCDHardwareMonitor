@@ -300,6 +300,13 @@ Platform_GetElapsedSeconds(i64 startTicks)
 	return Platform_TicksToSeconds(elapsedTicks);
 }
 
+r32
+Platform_GetElapsedMilliseconds(i64 startTicks)
+{
+	i64 elapsedTicks = Platform_GetTicks() - startTicks;
+	return Platform_TicksToSeconds(elapsedTicks) * 1000.0f;
+}
+
 void
 Platform_RequestQuit()
 {
@@ -598,12 +605,11 @@ Platform_ConnectPipe(Pipe* pipe)
 		: Platform_ConnectPipeClient(pipe);
 }
 
-b32
+PipeResult
 Platform_UpdatePipeConnection(Pipe* pipe)
 {
 	PipeResult result = Platform_ConnectPipe(pipe);
-	if (result == PipeResult::UnexpectedFailure) return false;
-	if (result == PipeResult::TransientFailure) return true;
+	if (result != PipeResult::Success) return result;
 
 	u32 available = 0;
 	b32 success = PeekNamedPipe(
@@ -625,24 +631,21 @@ Platform_UpdatePipeConnection(Pipe* pipe)
 			case ERROR_NO_DATA:
 				Assert(available == 0);
 				result = Platform_DisconnectPipe(pipe);
-				if (result == PipeResult::UnexpectedFailure) return false;
-				return true;
+				return result;
 
 			default:
-				LOG_LAST_ERROR(Severity::Warning, "Failed to peek pipe '%s'", pipe->name.data);
-				return false;
+				LOG_LAST_ERROR(Severity::Warning, "Failed to update pipe connection '%s'", pipe->name.data);
+				return PipeResult::UnexpectedFailure;
 		}
 	}
 
-	return true;
+	return PipeResult::Success;
 }
 
 PipeResult
 Platform_CreatePipeServer(StringSlice name, Pipe* pipe)
 {
-	auto cleanupGuard = guard {
-		Platform_DestroyPipe(pipe);
-	};
+	auto cleanupGuard = guard { Platform_DestroyPipe(pipe); };
 
 	// Initialize
 	{
@@ -679,23 +682,16 @@ Platform_CreatePipeServer(StringSlice name, Pipe* pipe)
 			Severity::Warning, "Failed to create pipe server connect event '%s'", pipe->name.data);
 	}
 
-	// Attempt to connect
-	{
-		cleanupGuard.dismiss = true;
-
-		PipeResult result = Platform_ConnectPipe(pipe);
-		if (result != PipeResult::Success) return result;
-	}
-
+	// TODO: Would like to automatically kick of a connection here, but that makes it harder for the
+	// caller to handle connect/disconnect events.
+	cleanupGuard.dismiss = true;
 	return PipeResult::Success;
 }
 
 PipeResult
 Platform_CreatePipeClient(StringSlice name, Pipe* pipe)
 {
-	auto cleanupGuard = guard {
-		Platform_DestroyPipe(pipe);
-	};
+	auto cleanupGuard = guard { Platform_DestroyPipe(pipe); };
 
 	// Initialize
 	{
@@ -754,10 +750,7 @@ Platform_WritePipe(Pipe* pipe, Bytes bytes)
 
 	// NOTE: Synchronous writes will begin blocking once the pipes internal buffer is full.
 
-	PipeResult result;
-
-	result = Platform_ConnectPipe(pipe);
-	if (result != PipeResult::Success) return result;
+	if (pipe->state != PipeState::Connected) return PipeResult::TransientFailure;
 
 	u32 written;
 	b32 success = WriteFile(
@@ -774,8 +767,8 @@ Platform_WritePipe(Pipe* pipe, Bytes bytes)
 		{
 			// The pipe is being closed
 			case ERROR_NO_DATA:
-				result = Platform_DisconnectPipe(pipe);
-				if (result != PipeResult::Success) return result;
+				// TODO: Would like to set Disconnecting state here, but that makes it harder for the
+				// caller to handle connect/disconnect events.
 				return PipeResult::TransientFailure;
 
 			default:
@@ -800,13 +793,11 @@ Platform_WritePipe(Pipe* pipe, Bytes bytes)
 PipeResult
 Platform_ReadPipe(Pipe* pipe, Bytes& bytes)
 {
-	PipeResult result;
 	b32 success;
 
 	bytes.length = 0;
 
-	result = Platform_ConnectPipe(pipe);
-	if (result != PipeResult::Success) return result;
+	if (pipe->state != PipeState::Connected) return PipeResult::TransientFailure;
 
 	u32 available = 0;
 	success = PeekNamedPipe(
@@ -828,9 +819,9 @@ Platform_ReadPipe(Pipe* pipe, Bytes& bytes)
 			case ERROR_PIPE_NOT_CONNECTED:
 			case ERROR_NO_DATA:
 				Assert(available == 0);
-				result = Platform_DisconnectPipe(pipe);
-				if (result != PipeResult::Success) return result;
-				return PipeResult::Success;
+				// TODO: Would like to set Disconnecting state here, but that makes it harder for the
+				// caller to handle connect/disconnect events.
+				return PipeResult::TransientFailure;
 
 			default:
 				LOG_LAST_ERROR(Severity::Warning, "Failed to peek pipe '%s'", pipe->name.data);
