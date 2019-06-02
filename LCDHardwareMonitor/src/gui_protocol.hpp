@@ -116,6 +116,16 @@ struct ByteStream
 	Bytes          bytes;
 };
 
+struct ConnectionState
+{
+	Pipe        pipe;
+	u32         sendIndex;
+	u32         recvIndex;
+	List<Bytes> queue;
+	u32         queueIndex;
+	b32         failure;
+};
+
 // NOTE: There's one small gotcha with this serialization approach. We use
 // Serialize(ByteStream&, T&) to support a pattern where you simply call Serialize for every member
 // of your type and it will serialize properly as long as overloads exist for types that aren't
@@ -140,7 +150,6 @@ void Serialize(ByteStream&, Slice<T>&);
 
 void Serialize(ByteStream&, StringSlice&);
 
-// TODO: Try adding an assert to catch when a field is missing from a serialize function
 void Serialize(ByteStream&, Message::PluginsAdded&);
 void Serialize(ByteStream&, Message::PluginStatesChanged&);
 void Serialize(ByteStream&, Message::SetPluginLoadStates&);
@@ -195,23 +204,22 @@ DeserializeMessage(Bytes& bytes)
 }
 
 b32
-HandleMessageResult(Pipe* pipe, b32 success, b32* setOnFail)
+HandleMessageResult(ConnectionState* con, b32 success)
 {
 	if (!success)
 	{
-		if (setOnFail)
-			*setOnFail = true;
+		con->failure = true;
 
-		PipeResult result = Platform_DisconnectPipe(pipe);
+		PipeResult result = Platform_DisconnectPipe(&con->pipe);
 		LOG_IF(result != PipeResult::Success, IGNORE,
-			Severity::Error, "Failed to disconnect GUI pipe");
+			Severity::Error, "Failed to disconnect pipe during message failure");
 	}
 
 	return success;
 }
 
 PipeResult
-HandleMessageResult(Pipe* pipe, PipeResult result, b32* setOnFail)
+HandleMessageResult(ConnectionState* con, PipeResult result)
 {
 	switch (result)
 	{
@@ -221,7 +229,7 @@ HandleMessageResult(Pipe* pipe, PipeResult result, b32* setOnFail)
 		case PipeResult::TransientFailure: break;
 
 		case PipeResult::UnexpectedFailure:
-			HandleMessageResult(pipe, false, setOnFail);
+			HandleMessageResult(con, false);
 			break;
 	}
 
@@ -229,32 +237,31 @@ HandleMessageResult(Pipe* pipe, PipeResult result, b32* setOnFail)
 }
 
 b32
-QueueMessage(Bytes& bytes, List<Bytes>& queue, u32* sendIndex)
+QueueMessage(ConnectionState* con, Bytes& bytes)
 {
-	Bytes* result = List_Append(queue, bytes);
+	Bytes* result = List_Append(con->queue, bytes);
 	LOG_IF(!result, return false,
 		Severity::Warning, "Failed to allocate message queue space");
 
-	sendIndex++;
+	con->sendIndex++;
 	return true;
 }
 
-// TODO: Maybe wrap params up in a struct
 template <typename T>
 b32
-SerializeAndQueueMessage(Pipe* pipe, T& message, List<Bytes>& queue, u32* sendIndex, b32* setOnFail)
+SerializeAndQueueMessage(ConnectionState* con, T& message)
 {
 	b32 success;
 
 	Bytes bytes = {};
 	auto cleanupGuard = guard { List_Free(bytes); };
 
-	success = SerializeMessage(bytes, message, *sendIndex);
-	LOG_IF(!success, return HandleMessageResult(pipe, false, setOnFail),
+	success = SerializeMessage(bytes, message, con->sendIndex);
+	LOG_IF(!success, return HandleMessageResult(con, false),
 		Severity::Fatal, "Failed to serialize message");
 
-	success = QueueMessage(bytes, queue, sendIndex);
-	LOG_IF(!success, return HandleMessageResult(pipe, false, setOnFail),
+	success = QueueMessage(con, bytes);
+	LOG_IF(!success, return HandleMessageResult(con, false),
 		Severity::Warning, "Failed to queue message");
 
 	cleanupGuard.dismiss = true;
@@ -262,49 +269,49 @@ SerializeAndQueueMessage(Pipe* pipe, T& message, List<Bytes>& queue, u32* sendIn
 }
 
 PipeResult
-SendMessage(Pipe* pipe, List<Bytes>& queue, u32* queueIndex, b32* setOnFail)
+SendMessage(ConnectionState* con)
 {
 	// Nothing to send
-	if (*queueIndex == queue.length) return PipeResult::TransientFailure;
+	if (con->queueIndex == con->queue.length) return PipeResult::TransientFailure;
 
-	Bytes bytes = queue[*queueIndex];
+	Bytes bytes = con->queue[con->queueIndex];
 
-	PipeResult result = Platform_WritePipe(pipe, bytes);
-	if (result != PipeResult::Success) return HandleMessageResult(pipe, result, setOnFail);
+	PipeResult result = Platform_WritePipe(&con->pipe, bytes);
+	if (result != PipeResult::Success) return HandleMessageResult(con, result);
 
-	(*queueIndex)++;
-	if (*queueIndex == queue.length)
+	con->queueIndex++;
+	if (con->queueIndex == con->queue.length)
 	{
-		for (u32 i = 0; i < queue.length; i++)
-			queue[i].length = 0;
-		queue.length = 0;
-		*queueIndex = 0;
+		for (u32 i = 0; i < con->queue.length; i++)
+			con->queue[i].length = 0;
+		con->queue.length = 0;
+		con->queueIndex = 0;
 	}
 
 	return PipeResult::Success;
 }
 
 PipeResult
-ReceiveMessage(Pipe* pipe, Bytes& bytes, u32* recvIndex, b32* setOnFail)
+ReceiveMessage(ConnectionState* con, Bytes& bytes)
 {
 	using namespace Message;
 
-	PipeResult result = Platform_ReadPipe(pipe, bytes);
-	if (result != PipeResult::Success) return HandleMessageResult(pipe, result, setOnFail);
+	PipeResult result = Platform_ReadPipe(&con->pipe, bytes);
+	if (result != PipeResult::Success) return HandleMessageResult(con, result);
 	if (bytes.length == 0) return PipeResult::TransientFailure;
 
 	Header* header = (Header*) bytes.data;
 
-	LOG_IF(bytes.length < sizeof(Header), return HandleMessageResult(pipe, PipeResult::UnexpectedFailure, setOnFail),
+	LOG_IF(bytes.length < sizeof(Header), return HandleMessageResult(con, PipeResult::UnexpectedFailure),
 		Severity::Warning, "Corrupted message received");
 
-	LOG_IF(bytes.length != header->size, return HandleMessageResult(pipe, PipeResult::UnexpectedFailure, setOnFail),
+	LOG_IF(bytes.length != header->size, return HandleMessageResult(con, PipeResult::UnexpectedFailure),
 		Severity::Warning, "Incorrectly sized message received");
 
-	LOG_IF(header->index != *recvIndex, return HandleMessageResult(pipe, PipeResult::UnexpectedFailure, setOnFail),
+	LOG_IF(header->index != con->recvIndex, return HandleMessageResult(con, PipeResult::UnexpectedFailure),
 		Severity::Warning, "Unexpected message received");
 
-	recvIndex++;
+	con->recvIndex++;
 	return PipeResult::Success;
 }
 

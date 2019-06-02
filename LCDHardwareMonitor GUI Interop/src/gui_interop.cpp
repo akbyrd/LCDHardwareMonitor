@@ -16,12 +16,7 @@
 
 struct State
 {
-	Pipe                pipe;
-	u32                 sendIndex;
-	u32                 recvIndex;
-	List<Bytes>         queue;
-	u32                 queueIndex;
-
+	ConnectionState     simConnection;
 	IDirect3D9Ex*       d3d9;
 	IDirect3DDevice9Ex* d3d9Device;
 	IDirect3DTexture9*  d3d9RenderTexture;
@@ -177,9 +172,9 @@ namespace LCDHardwareMonitor::GUI
 
 			using namespace Message;
 
-			PipeResult result = Platform_CreatePipeClient("LCDHardwareMonitor GUI Pipe", &s.pipe);
+			PipeResult result = Platform_CreatePipeClient("LCDHardwareMonitor GUI Pipe", &s.simConnection.pipe);
 			LOG_IF(result == PipeResult::UnexpectedFailure, return false,
-				Severity::Error, "Failed to create pipe for GUI communication");
+				Severity::Error, "Failed to create pipe for sim communication");
 
 			b32 success = D3D9_Initialize((HWND) (void*) hwnd, &s.d3d9, &s.d3d9Device);
 			if (!success) return false;
@@ -193,6 +188,9 @@ namespace LCDHardwareMonitor::GUI
 			// DEBUG: Needed for the Watch window
 			State& s = state;
 
+			ConnectionState* simCon = &s.simConnection;
+			Assert(!simCon->failure);
+
 			Bytes bytes = {};
 			defer { List_Free(bytes); };
 
@@ -200,19 +198,19 @@ namespace LCDHardwareMonitor::GUI
 			{
 				b32 success;
 
-				b32 wasConnected = s.pipe.state == PipeState::Connected;
-				success = Platform_UpdatePipeConnection(&s.pipe);
+				b32 wasConnected = simCon->pipe.state == PipeState::Connected;
+				success = Platform_UpdatePipeConnection(&simCon->pipe);
 				if (!success) return false;
 
 				if (success)
 				{
-					b32 isConnected = s.pipe.state == PipeState::Connected;
+					b32 isConnected = simCon->pipe.state == PipeState::Connected;
 					if (!isConnected && wasConnected)
 					{
 						// Synthesize a disconnect
 						using namespace Message;
 						Disconnect disconnect = {};
-						success = SerializeMessage(bytes, disconnect, s.recvIndex);
+						success = SerializeMessage(bytes, disconnect, simCon->recvIndex);
 						if (!success) return false;
 					}
 				}
@@ -225,7 +223,7 @@ namespace LCDHardwareMonitor::GUI
 			{
 				using namespace Message;
 
-				result = ReceiveMessage(&s.pipe, bytes, &s.recvIndex, nullptr);
+				result = ReceiveMessage(simCon, bytes);
 				if (result == PipeResult::UnexpectedFailure) return false;
 				if (result == PipeResult::TransientFailure) break;
 
@@ -266,8 +264,8 @@ namespace LCDHardwareMonitor::GUI
 						simState->IsSimulationConnected = false;
 						simState->NotifyPropertyChanged("");
 
-						s.sendIndex = 0;
-						s.recvIndex = 0;
+						simCon->sendIndex = 0;
+						simCon->recvIndex = 0;
 						// TODO: Will need to handle 'pending' states.
 						simState->Messages->Clear();
 						break;
@@ -381,7 +379,7 @@ namespace LCDHardwareMonitor::GUI
 					case MessageType::TerminateSim:
 					{
 						TerminateSimulation nMessage = {};
-						b32 success = SerializeAndQueueMessage(&s.pipe, nMessage, s.queue, &s.sendIndex, nullptr);
+						b32 success = SerializeAndQueueMessage(simCon, nMessage);
 						if (!success) return false;
 						break;
 					}
@@ -396,7 +394,7 @@ namespace LCDHardwareMonitor::GUI
 			// Send
 			result = PipeResult::Success;
 			while (result == PipeResult::Success)
-				result = SendMessage(&s.pipe, s.queue, &s.queueIndex, nullptr);
+				result = SendMessage(simCon);
 
 			return true;
 		}
@@ -410,10 +408,17 @@ namespace LCDHardwareMonitor::GUI
 			D3D9_DestroySharedSurface(&s.d3d9RenderTexture, &s.d3d9RenderSurface0);
 			D3D9_Teardown(s.d3d9, s.d3d9Device);
 
-			PipeResult result = Platform_FlushPipe(&s.pipe);
+			ConnectionState* simCon = &s.simConnection;
+
+			// TODO: OnTeardown
+			PipeResult result = Platform_FlushPipe(&simCon->pipe);
 			LOG_IF(result == PipeResult::UnexpectedFailure, IGNORE,
-				Severity::Error, "Failed to flush GUI communication pipe");
-			Platform_DestroyPipe(&s.pipe);
+				Severity::Error, "Failed to flush sim communication pipe");
+			Platform_DestroyPipe(&simCon->pipe);
+
+			for (u32 i = 0; i < simCon->queue.capacity; i++)
+				List_Free(simCon->queue[i]);
+			List_Free(simCon->queue);
 
 			s = {};
 		}

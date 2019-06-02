@@ -2,6 +2,7 @@ struct SimulationState
 {
 	PluginLoaderState* pluginLoader;
 	RendererState*     renderer;
+	ConnectionState    guiConnection;
 
 	List<SensorPlugin> sensorPlugins;
 	List<WidgetPlugin> widgetPlugins;
@@ -13,13 +14,6 @@ struct SimulationState
 	Matrix             vp; // TODO: Remove this when simulation talks to the renderer directly
 	i64                startTime;
 	r32                currentTime;
-
-	Pipe               guiPipe;
-	u32                guiSendIndex;
-	u32                guiRecvIndex;
-	List<Bytes>        guiQueue;
-	u32                guiQueueIndex;
-	b32                guiFailure;
 };
 
 struct PluginContext
@@ -290,7 +284,7 @@ PushDrawCall(PluginContext* context, Material material)
 // internally. It will disconnect and stop attempting to send messages when a failure occurs.
 
 static void
-OnConnect(SimulationState* s)
+OnConnect(ConnectionState* con, SimulationState* s)
 {
 	b32 success;
 	using namespace Message;
@@ -301,7 +295,7 @@ OnConnect(SimulationState* s)
 		connect.renderSurface = (size) Renderer_GetSharedRenderSurface(s->renderer);
 		connect.renderSize.x  = s->renderSize.x;
 		connect.renderSize.y  = s->renderSize.y;
-		success = SerializeAndQueueMessage(&s->guiPipe, connect, s->guiQueue, &s->guiSendIndex, &s->guiFailure);
+		success = SerializeAndQueueMessage(con, connect);
 		if (!success) return;
 	}
 
@@ -311,14 +305,14 @@ OnConnect(SimulationState* s)
 		pluginsAdded.kind  = PluginKind::Sensor;
 		pluginsAdded.refs  = List_MemberSlice(s->sensorPlugins, &SensorPlugin::ref);
 		pluginsAdded.infos = List_MemberSlice(s->sensorPlugins, &SensorPlugin::info);
-		success = SerializeAndQueueMessage(&s->guiPipe, pluginsAdded, s->guiQueue, &s->guiSendIndex, &s->guiFailure);
+		success = SerializeAndQueueMessage(con, pluginsAdded);
 		if (!success) return;
 
 		PluginStatesChanged statesChanged = {};
 		statesChanged.kind       = PluginKind::Sensor;
 		statesChanged.refs       = List_MemberSlice(s->sensorPlugins, &SensorPlugin::ref);
 		statesChanged.loadStates = List_MemberSlice(s->sensorPlugins, &SensorPlugin::header, &PluginHeader::loadState);
-		success = SerializeAndQueueMessage(&s->guiPipe, statesChanged, s->guiQueue, &s->guiSendIndex, &s->guiFailure);
+		success = SerializeAndQueueMessage(con, statesChanged);
 		if (!success) return;
 	}
 
@@ -327,14 +321,14 @@ OnConnect(SimulationState* s)
 		pluginsAdded.kind  = PluginKind::Widget;
 		pluginsAdded.refs  = List_MemberSlice(s->widgetPlugins, &WidgetPlugin::ref);
 		pluginsAdded.infos = List_MemberSlice(s->widgetPlugins, &WidgetPlugin::info);
-		success = SerializeAndQueueMessage(&s->guiPipe, pluginsAdded, s->guiQueue, &s->guiSendIndex, &s->guiFailure);
+		success = SerializeAndQueueMessage(con, pluginsAdded);
 		if (!success) return;
 
 		PluginStatesChanged statesChanged = {};
 		statesChanged.kind       = PluginKind::Widget;
 		statesChanged.refs       = List_MemberSlice(s->widgetPlugins, &WidgetPlugin::ref);
 		statesChanged.loadStates = List_MemberSlice(s->widgetPlugins, &WidgetPlugin::header, &PluginHeader::loadState);
-		success = SerializeAndQueueMessage(&s->guiPipe, statesChanged, s->guiQueue, &s->guiSendIndex, &s->guiFailure);
+		success = SerializeAndQueueMessage(con, statesChanged);
 		if (!success) return;
 	}
 
@@ -342,7 +336,7 @@ OnConnect(SimulationState* s)
 		SensorsAdded sensorsAdded = {};
 		sensorsAdded.pluginRefs = List_MemberSlice(s->sensorPlugins, &SensorPlugin::ref);
 		sensorsAdded.sensors    = List_MemberSlice(s->sensorPlugins, &SensorPlugin::sensors);
-		success = SerializeAndQueueMessage(&s->guiPipe, sensorsAdded, s->guiQueue, &s->guiSendIndex, &s->guiFailure);
+		success = SerializeAndQueueMessage(con, sensorsAdded);
 		if (!success) return;
 	}
 
@@ -358,28 +352,28 @@ OnConnect(SimulationState* s)
 			WidgetDescsAdded widgetDescsAdded = {};
 			widgetDescsAdded.pluginRefs = widgetPlugin->ref;
 			widgetDescsAdded.descs      = descs;
-			success = SerializeAndQueueMessage(&s->guiPipe, widgetDescsAdded, s->guiQueue, &s->guiSendIndex, &s->guiFailure);
+			success = SerializeAndQueueMessage(con, widgetDescsAdded);
 			if (!success) return;
 		}
 	}
 }
 
 static void
-OnDisconnect(SimulationState* s)
+OnDisconnect(ConnectionState* con)
 {
-	s->guiSendIndex = 0;
-	s->guiRecvIndex = 0;
+	con->sendIndex = 0;
+	con->recvIndex = 0;
 }
 
 static void
-OnTeardown(SimulationState* s)
+OnTeardown(ConnectionState* con)
 {
 	using namespace Message;
 	PipeResult result;
 
 	Disconnect disconnect = {};
 	disconnect.header.id    = IdOf<Disconnect>;
-	disconnect.header.index = s->guiSendIndex - (s->guiQueue.length - s->guiQueueIndex);
+	disconnect.header.index = con->sendIndex - (con->queue.length - con->queueIndex);
 	disconnect.header.size  = sizeof(Disconnect);
 
 	Bytes bytes = {};
@@ -387,11 +381,11 @@ OnTeardown(SimulationState* s)
 	bytes.capacity = bytes.length;
 	bytes.data     = (u8*) &disconnect;
 
-	result = Platform_WritePipe(&s->guiPipe, bytes);
+	result = Platform_WritePipe(&con->pipe, bytes);
 	LOG_IF(result != PipeResult::Success, return,
 		Severity::Error, "Failed to send GUI disconnect signal");
 
-	result = Platform_FlushPipe(&s->guiPipe);
+	result = Platform_FlushPipe(&con->pipe);
 	LOG_IF(result == PipeResult::UnexpectedFailure, return,
 		Severity::Error, "Failed to flush GUI communication pipe");
 }
@@ -799,7 +793,7 @@ Simulation_Initialize(SimulationState* s, PluginLoaderState* pluginLoader, Rende
 		using namespace Message;
 
 		// TODO: Ensure there's only a single connection
-		PipeResult result = Platform_CreatePipeServer("LCDHardwareMonitor GUI Pipe", &s->guiPipe);
+		PipeResult result = Platform_CreatePipeServer("LCDHardwareMonitor GUI Pipe", &s->guiConnection.pipe);
 		LOG_IF(result == PipeResult::UnexpectedFailure, return false,
 			Severity::Error, "Failed to create pipe for GUI communication");
 	}
@@ -894,22 +888,24 @@ Simulation_Update(SimulationState* s)
 	}
 
 	// GUI Communication
-	if (!s->guiFailure)
+	ConnectionState* guiCon = &s->guiConnection;
+	if (!guiCon->failure)
 	{
+
 		Bytes bytes = {};
 		defer { List_Free(bytes); };
 
 		// Connection handling
 		{
-			b32 wasConnected = s->guiPipe.state == PipeState::Connected;
-			b32 success = Platform_UpdatePipeConnection(&s->guiPipe);
-			HandleMessageResult(&s->guiPipe, success, &s->guiFailure);
+			b32 wasConnected = guiCon->pipe.state == PipeState::Connected;
+			b32 success = Platform_UpdatePipeConnection(&guiCon->pipe);
+			HandleMessageResult(guiCon, success);
 
 			if (success)
 			{
-				b32 isConnected = s->guiPipe.state == PipeState::Connected;
-				if (isConnected && !wasConnected) OnConnect(s);
-				if (!isConnected && wasConnected) OnDisconnect(s);
+				b32 isConnected = guiCon->pipe.state == PipeState::Connected;
+				if (isConnected && !wasConnected) OnConnect(guiCon, s);
+				if (!isConnected && wasConnected) OnDisconnect(guiCon);
 			}
 		}
 
@@ -920,7 +916,7 @@ Simulation_Update(SimulationState* s)
 		{
 			using namespace Message;
 
-			result = ReceiveMessage(&s->guiPipe, bytes, &s->guiRecvIndex, &s->guiFailure);
+			result = ReceiveMessage(guiCon, bytes);
 			if (result != PipeResult::Success) break;
 
 			Header* header = (Header*) bytes.data;
@@ -941,7 +937,7 @@ Simulation_Update(SimulationState* s)
 		// Send
 		result = PipeResult::Success;
 		while (result == PipeResult::Success)
-			result = SendMessage(&s->guiPipe, s->guiQueue, &s->guiQueueIndex, &s->guiFailure);
+			result = SendMessage(guiCon);
 	}
 
 	// DEBUG: Draw Coordinate System
@@ -973,13 +969,15 @@ Simulation_Teardown(SimulationState* s)
 	// do this for testing, but it's unnecessary work in the normal teardown
 	// case.
 
-	if (s->guiPipe.state == PipeState::Connected)
-		OnTeardown(s);
-	Platform_DestroyPipe(&s->guiPipe);
+	ConnectionState* guiCon = &s->guiConnection;
 
-	for (u32 i = 0; i < s->guiQueue.capacity; i++)
-		List_Free(s->guiQueue[i]);
-	List_Free(s->guiQueue);
+	if (guiCon->pipe.state == PipeState::Connected)
+		OnTeardown(guiCon);
+	Platform_DestroyPipe(&guiCon->pipe);
+
+	for (u32 i = 0; i < guiCon->queue.capacity; i++)
+		List_Free(guiCon->queue[i]);
+	List_Free(guiCon->queue);
 
 	for (u32 i = 0; i < s->widgetPlugins.length; i++)
 		UnloadWidgetPlugin(s, &s->widgetPlugins[i]);
