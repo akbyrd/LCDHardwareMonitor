@@ -404,7 +404,6 @@ List_Slice(Slice<T>& slice, u32 start)
 	return result;
 }
 
-// TODO: Do we need separate specializations for List and Slice?
 template<typename T, typename U>
 inline Slice<U>
 List_MemberSlice(List<T>& list, U T::* memberPtr)
@@ -415,6 +414,42 @@ List_MemberSlice(List<T>& list, U T::* memberPtr)
 
 	if (list.length > 0)
 		result.data = &(list.data[0].*memberPtr);
+
+	return result;
+}
+
+template<typename T, typename U, typename V>
+inline Slice<V>
+List_MemberSlice(List<T>& list, U T::* memberPtr1, V U::* memberPtr2)
+{
+	Slice<V> result = {};
+	result.length = list.length;
+	result.stride = sizeof(T);
+
+	if (list.length > 0)
+	{
+		T* data0 = &list.data[0];
+		U* data1 = &(data0->*memberPtr1);
+		V* data2 = &(data1->*memberPtr2);
+		result.data = data2;
+	}
+
+	return result;
+}
+
+template<typename T, typename U>
+inline Slice<U>
+Slice_MemberSlice(Slice<T>& slice, U T::* memberPtr)
+{
+	Slice<U> result = {};
+	result.length = slice.length;
+	result.stride = sizeof(T);
+
+	if (slice.length > 0)
+	{
+		result.data   = &(slice.data[0].*memberPtr);
+		result.stride = slice.stride;
+	}
 
 	return result;
 }
