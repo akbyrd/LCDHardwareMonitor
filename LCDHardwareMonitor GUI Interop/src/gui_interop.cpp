@@ -172,7 +172,7 @@ namespace LCDHardwareMonitor::GUI
 
 			using namespace Message;
 
-			PipeResult result = Platform_CreatePipeClient("LCDHardwareMonitor GUI Pipe", &s.simConnection.pipe);
+			PipeResult result = Platform_CreatePipeClient("LCDHardwareMonitor GUI Pipe", s.simConnection.pipe);
 			LOG_IF(result == PipeResult::UnexpectedFailure, return false,
 				Severity::Error, "Failed to create pipe for sim communication");
 
@@ -183,7 +183,7 @@ namespace LCDHardwareMonitor::GUI
 		}
 
 		static void
-		OnDisconnect(GUI::SimulationState^ simState)
+		OnDisconnect(SimulationState^ simState)
 		{
 			// DEBUG: Needed for the Watch window
 			State& s = state;
@@ -196,21 +196,21 @@ namespace LCDHardwareMonitor::GUI
 			simState->IsSimulationConnected = false;
 			simState->NotifyPropertyChanged("");
 
-			ConnectionState* simCon = &s.simConnection;
-			simCon->sendIndex = 0;
-			simCon->recvIndex = 0;
+			ConnectionState& simCon = s.simConnection;
+			simCon.sendIndex = 0;
+			simCon.recvIndex = 0;
 			// TODO: Will need to handle 'pending' states.
 			simState->Messages->Clear();
 		}
 
 		static bool
-		Update(GUI::SimulationState^ simState)
+		Update(SimulationState^ simState)
 		{
 			// DEBUG: Needed for the Watch window
 			State& s = state;
 
-			ConnectionState* simCon = &s.simConnection;
-			Assert(!simCon->failure);
+			ConnectionState& simCon = s.simConnection;
+			Assert(!simCon.failure);
 
 			while (true)
 			{
@@ -219,14 +219,14 @@ namespace LCDHardwareMonitor::GUI
 
 				// Connection handling
 				{
-					b32 wasConnected = simCon->pipe.state == PipeState::Connected;
-					PipeResult result = Platform_UpdatePipeConnection(&simCon->pipe);
+					b32 wasConnected = simCon.pipe.state == PipeState::Connected;
+					PipeResult result = Platform_UpdatePipeConnection(simCon.pipe);
 					HandleMessageResult(simCon, result);
 
-					b32 isConnected = simCon->pipe.state == PipeState::Connected;
+					b32 isConnected = simCon.pipe.state == PipeState::Connected;
 					if (!isConnected && wasConnected) OnDisconnect(simState);
 				}
-				if (simCon->pipe.state != PipeState::Connected) break;
+				if (simCon.pipe.state != PipeState::Connected) break;
 
 				// Receive
 				i64 startTicks = Platform_GetTicks();
@@ -236,8 +236,8 @@ namespace LCDHardwareMonitor::GUI
 					if (!success) break;
 
 					using namespace Message;
-					Header* header = (Header*) bytes.data;
-					switch (header->id)
+					Header& header = (Header&) bytes[0];
+					switch (header.id)
 					{
 						default: Assert(false); break;
 
@@ -245,15 +245,15 @@ namespace LCDHardwareMonitor::GUI
 						{
 							DeserializeMessage<Connect>(bytes);
 
-							Connect* connect = (Connect*) bytes.data;
-							simState->Version = connect->version;
+							Connect& connect = (Connect&) bytes[0];
+							simState->Version = connect.version;
 
 							success = D3D9_CreateSharedSurface(
 								s.d3d9Device,
 								&s.d3d9RenderTexture,
 								&s.d3d9RenderSurface0,
-								(HANDLE) connect->renderSurface,
-								connect->renderSize
+								(HANDLE) connect.renderSurface,
+								connect.renderSize
 							);
 							if (!success) return false;
 
@@ -272,16 +272,16 @@ namespace LCDHardwareMonitor::GUI
 						case IdOf<PluginsAdded>:
 						{
 							DeserializeMessage<PluginsAdded>(bytes);
-							PluginsAdded* pluginsAdded = (PluginsAdded*) bytes.data;
+							PluginsAdded& pluginsAdded = (PluginsAdded&) bytes[0];
 
-							for (u32 i = 0; i < pluginsAdded->infos.length; i++)
+							for (u32 i = 0; i < pluginsAdded.infos.length; i++)
 							{
-								GUI::PluginInfo mPluginInfo = {};
-								mPluginInfo.Ref     = pluginsAdded->refs[i].index;
-								mPluginInfo.Name    = ToManagedString(pluginsAdded->infos[i].name);
-								mPluginInfo.Kind    = (GUI::PluginKind) pluginsAdded->kind;
-								mPluginInfo.Author  = ToManagedString(pluginsAdded->infos[i].author);
-								mPluginInfo.Version = pluginsAdded->infos[i].version;
+								PluginInfo mPluginInfo = {};
+								mPluginInfo.Ref     = pluginsAdded.refs[i].index;
+								mPluginInfo.Name    = ToManagedString(pluginsAdded.infos[i].name);
+								mPluginInfo.Kind    = (PluginKind) pluginsAdded.kind;
+								mPluginInfo.Author  = ToManagedString(pluginsAdded.infos[i].author);
+								mPluginInfo.Version = pluginsAdded.infos[i].version;
 								simState->Plugins->Add(mPluginInfo);
 							}
 							break;
@@ -290,16 +290,16 @@ namespace LCDHardwareMonitor::GUI
 						case IdOf<PluginStatesChanged>:
 						{
 							DeserializeMessage<PluginStatesChanged>(bytes);
-							PluginStatesChanged* statesChanged = (PluginStatesChanged*) bytes.data;
+							PluginStatesChanged& statesChanged = (PluginStatesChanged&) bytes[0];
 
-							for (u32 i = 0; i < statesChanged->refs.length; i++)
+							for (u32 i = 0; i < statesChanged.refs.length; i++)
 							{
 								for (u32 j = 0; j < (u32) simState->Plugins->Count; j++)
 								{
-									GUI::PluginInfo p = simState->Plugins[(i32) j];
-									if ((::PluginKind) p.Kind == statesChanged->kind && p.Ref == statesChanged->refs[i].index)
+									PluginInfo p = simState->Plugins[(i32) j];
+									if ((::PluginKind) p.Kind == statesChanged.kind && p.Ref == statesChanged.refs[i].index)
 									{
-										p.LoadState = (GUI::PluginLoadState) statesChanged->loadStates[i];
+										p.LoadState = (PluginLoadState) statesChanged.loadStates[i];
 										simState->Plugins[(i32) j] = p;
 									}
 								}
@@ -312,21 +312,21 @@ namespace LCDHardwareMonitor::GUI
 						{
 							DeserializeMessage<SensorsAdded>(bytes);
 
-							SensorsAdded* sensorsAdded = (SensorsAdded*) bytes.data;
-							for (u32 i = 0; i < sensorsAdded->sensors.length; i++)
+							SensorsAdded& sensorsAdded = (SensorsAdded&) bytes[0];
+							for (u32 i = 0; i < sensorsAdded.sensors.length; i++)
 							{
-								Slice<::Sensor> sensors = sensorsAdded->sensors[i];
+								Slice<::Sensor> sensors = sensorsAdded.sensors[i];
 								for (u32 j = 0; j < sensors.length; j++)
 								{
-									::Sensor* sensor = &sensors[j];
+									::Sensor& sensor = sensors[j];
 
-									GUI::Sensor mSensor = {};
-									mSensor.PluginRef  = sensorsAdded->pluginRefs[i].index;
-									mSensor.Ref        = sensor->ref.index;
-									mSensor.Name       = ToManagedString(sensor->name);
-									mSensor.Identifier = ToManagedString(sensor->identifier);
-									mSensor.Format     = ToManagedString(sensor->format);
-									mSensor.Value      = sensor->value;
+									Sensor mSensor = {};
+									mSensor.PluginRef  = sensorsAdded.pluginRefs[i].index;
+									mSensor.Ref        = sensor.ref.index;
+									mSensor.Name       = ToManagedString(sensor.name);
+									mSensor.Identifier = ToManagedString(sensor.identifier);
+									mSensor.Format     = ToManagedString(sensor.format);
+									mSensor.Value      = sensor.value;
 									simState->Sensors->Add(mSensor);
 								}
 							}
@@ -337,18 +337,18 @@ namespace LCDHardwareMonitor::GUI
 						{
 							DeserializeMessage<WidgetDescsAdded>(bytes);
 
-							WidgetDescsAdded* widgetDescsAdded = (WidgetDescsAdded*) bytes.data;
-							for (u32 i = 0; i < widgetDescsAdded->descs.length; i++)
+							WidgetDescsAdded& widgetDescsAdded = (WidgetDescsAdded&) bytes[0];
+							for (u32 i = 0; i < widgetDescsAdded.descs.length; i++)
 							{
-								Slice<::WidgetDesc> widgetDescs = widgetDescsAdded->descs[i];
+								Slice<::WidgetDesc> widgetDescs = widgetDescsAdded.descs[i];
 								for (u32 j = 0; j < widgetDescs.length; j++)
 								{
-									::WidgetDesc* desc = &widgetDescs[j];
+									::WidgetDesc& desc = widgetDescs[j];
 
-									GUI::WidgetDesc mWidgetDesc = {};
-									mWidgetDesc.PluginRef = widgetDescsAdded->pluginRefs[i].index;
-									mWidgetDesc.Ref       = desc->ref.index;
-									mWidgetDesc.Name      = ToManagedString(desc->name);
+									WidgetDesc mWidgetDesc = {};
+									mWidgetDesc.PluginRef = widgetDescsAdded.pluginRefs[i].index;
+									mWidgetDesc.Ref       = desc.ref.index;
+									mWidgetDesc.Name      = ToManagedString(desc.name);
 									simState->WidgetDescs->Add(mWidgetDesc);
 								}
 							}
@@ -398,7 +398,7 @@ namespace LCDHardwareMonitor::GUI
 				break;
 			}
 
-			return !simCon->failure;
+			return !simCon.failure;
 		}
 
 		static void
@@ -410,7 +410,7 @@ namespace LCDHardwareMonitor::GUI
 			D3D9_DestroySharedSurface(&s.d3d9RenderTexture, &s.d3d9RenderSurface0);
 			D3D9_Teardown(s.d3d9, s.d3d9Device);
 
-			ConnectionState* simCon = &s.simConnection;
+			ConnectionState& simCon = s.simConnection;
 			Connection_Teardown(simCon);
 
 			s = {};

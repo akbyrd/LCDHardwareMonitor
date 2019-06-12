@@ -71,18 +71,18 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 	simulationState.renderSize = { 320, 240 };
 
 	// Renderer
-	success = Renderer_Initialize(&rendererState, simulationState.renderSize);
+	success = Renderer_Initialize(rendererState, simulationState.renderSize);
 	LOG_IF(!success, return -1, Severity::Fatal, "Failed to initialize the renderer");
-	DEFER_TEARDOWN { Renderer_Teardown(&rendererState); };
+	DEFER_TEARDOWN { Renderer_Teardown(rendererState); };
 
-	success = Renderer_CreateRenderTextureSharedHandle(&rendererState);
+	success = Renderer_CreateRenderTextureSharedHandle(rendererState);
 	LOG_IF(!success, return -1, Severity::Fatal, "Failed to create a shared render texture");
 
 
 	// Simulation
-	success = Simulation_Initialize(&simulationState, &pluginLoaderState, &rendererState);
+	success = Simulation_Initialize(simulationState, pluginLoaderState, rendererState);
 	LOG_IF(!success, return -1, Severity::Fatal, "Failed to initialize the simulation");
-	DEFER_TEARDOWN { Simulation_Teardown(&simulationState); };
+	DEFER_TEARDOWN { Simulation_Teardown(simulationState); };
 
 
 	// Misc
@@ -92,9 +92,9 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 
 
 	// Debug
-	auto previewGuard = guard { PreviewWindow_Teardown(&previewState); };
+	auto previewGuard = guard { PreviewWindow_Teardown(previewState); };
 	#if false
-	PreviewWindow_Initialize(&previewState, &simulationState, hInstance, nullptr);
+	PreviewWindow_Initialize(&previewState, simulationState, hInstance, nullptr);
 	#else
 	previewGuard.dismiss = true;
 	#endif
@@ -132,7 +132,7 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 			switch (msg.message)
 			{
 				case WM_PREVIEWWINDOWCLOSED:
-					PreviewWindow_Teardown(&previewState);
+					PreviewWindow_Teardown(previewState);
 					break;
 
 				case WM_HOTKEY:
@@ -141,12 +141,12 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 					{
 						if (!previewState.hwnd)
 						{
-							PreviewWindow_Initialize(&previewState, &simulationState, hInstance, mainFiber);
+							PreviewWindow_Initialize(previewState, simulationState, rendererState, hInstance, mainFiber);
 							previewGuard.dismiss = false;
 						}
 						else
 						{
-							PreviewWindow_Teardown(&previewState);
+							PreviewWindow_Teardown(previewState);
 							previewGuard.dismiss = true;
 						}
 					}
@@ -160,11 +160,11 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 		}
 
 		// Tick
-		Simulation_Update(&simulationState);
+		Simulation_Update(simulationState);
 
-		Renderer_Render(&rendererState);
+		Renderer_Render(rendererState);
 		// BUG: Looks like it's possible to get WM_PREVIEWWINDOWCLOSED without WM_QUIT
-		PreviewWindow_Render(&previewState);
+		PreviewWindow_Render(previewState);
 
 		// TODO: Probably not a good idea when using fibers
 		Sleep(10);

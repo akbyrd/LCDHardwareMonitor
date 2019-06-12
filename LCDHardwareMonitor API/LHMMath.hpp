@@ -179,7 +179,7 @@ operator* (v2t<T> lhs, v2t<U> rhs)
 
 template<typename T, typename U>
 inline void
-operator*= (v2t<T>* lhs, U rhs)
+operator*= (v2t<T>& lhs, U rhs)
 {
 	lhs = lhs * rhs;
 }

@@ -17,8 +17,8 @@
 
 b32
 D3D9_Initialize(
-	HWND hwnd,
-	IDirect3D9Ex** d3d9,
+	HWND                 hwnd,
+	IDirect3D9Ex**       d3d9,
 	IDirect3DDevice9Ex** d3d9Device)
 {
 	HRESULT hr;

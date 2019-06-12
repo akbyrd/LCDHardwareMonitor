@@ -15,6 +15,7 @@ struct PreviewWindowState
 	u16                     zoomFactor;
 	i16                     mouseWheelAccumulator;
 	SimulationState*        simulationState;
+	RendererState*          rendererState;
 	b32                     mouseLook;
 	v2i                     mousePosStart;
 	v2                      cameraRotStart;
@@ -22,13 +23,18 @@ struct PreviewWindowState
 };
 
 b32
-PreviewWindow_Initialize(PreviewWindowState* s, SimulationState* simulationState, HINSTANCE hInstance, void* mainFiber)
+PreviewWindow_Initialize(
+	PreviewWindowState& s,
+	SimulationState&    simulationState,
+	RendererState&      rendererState,
+	HINSTANCE           hInstance,
+	void*               mainFiber)
 {
-	s->mainFiber       = mainFiber;
-	s->hInstance       = hInstance;
-	s->zoomFactor      = 1;
-	s->simulationState = simulationState;
-	RendererState* rendererState = s->simulationState->renderer;
+	s.mainFiber       = mainFiber;
+	s.hInstance       = hInstance;
+	s.zoomFactor      = 1;
+	s.simulationState = &simulationState;
+	s.rendererState   = &rendererState;
 
 	// Create Window
 	{
@@ -55,36 +61,36 @@ PreviewWindow_Initialize(PreviewWindowState* s, SimulationState* simulationState
 
 		u32 windowStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE;
 
-		RECT windowRect = { 0, 0, (i32) rendererState->renderSize.x, (i32) rendererState->renderSize.y };
+		RECT windowRect = { 0, 0, (i32) rendererState.renderSize.x, (i32) rendererState.renderSize.y };
 		success = AdjustWindowRect(&windowRect, (u32) windowStyle, false);
 		LOG_LAST_ERROR_IF(!success, IGNORE,
 			Severity::Error, "Failed to set preview window size or style");
 
-		s->renderSize = rendererState->renderSize;
+		s.renderSize = rendererState.renderSize;
 
-		s->nonClientSize.x = (windowRect.right - windowRect.left) - s->renderSize.x;
-		s->nonClientSize.y = (windowRect.bottom - windowRect.top) - s->renderSize.y;
+		s.nonClientSize.x = (windowRect.right - windowRect.left) - s.renderSize.x;
+		s.nonClientSize.y = (windowRect.bottom - windowRect.top) - s.renderSize.y;
 
-		s->hwnd = CreateWindowA(
+		s.hwnd = CreateWindowA(
 			windowClass.lpszClassName,
 			"LHM Preview",
 			(u32) windowStyle,
 			CW_USEDEFAULT, CW_USEDEFAULT,
-			(i32) (s->renderSize.x + s->nonClientSize.x),
-			(i32) (s->renderSize.y + s->nonClientSize.y),
+			(i32) (s.renderSize.x + s.nonClientSize.x),
+			(i32) (s.renderSize.y + s.nonClientSize.y),
 			nullptr,
 			nullptr,
 			hInstance,
-			s
+			&s
 		);
-		if (s->hwnd == INVALID_HANDLE_VALUE)
+		if (s.hwnd == INVALID_HANDLE_VALUE)
 		{
 			LOG_LAST_ERROR(Severity::Error, "Failed to create preview window");
-			s->hwnd = nullptr;
+			s.hwnd = nullptr;
 			return false;
 		}
 
-		success = SetForegroundWindow(s->hwnd);
+		success = SetForegroundWindow(s.hwnd);
 		LOG_LAST_ERROR_IF(!success, IGNORE,
 			Severity::Warning, "Failed to bring preview window to the foreground");
 	}
@@ -116,19 +122,19 @@ PreviewWindow_Initialize(PreviewWindowState* s, SimulationState* simulationState
 		// of any previous swap chains before creating a new one.
 		// https://msdn.microsoft.com/en-us/library/windows/desktop/ff476425(v=vs.85).aspx#Defer_Issues_with_Flip
 		DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
-		swapChainDesc.BufferDesc.Width                   = rendererState->renderSize.x;
-		swapChainDesc.BufferDesc.Height                  = rendererState->renderSize.y;
+		swapChainDesc.BufferDesc.Width                   = rendererState.renderSize.x;
+		swapChainDesc.BufferDesc.Height                  = rendererState.renderSize.y;
 		// TODO: Get values from system (match desktop. what happens if it changes?)
 		swapChainDesc.BufferDesc.RefreshRate.Numerator   = 60;
 		swapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
 		swapChainDesc.BufferDesc.Format                  = DXGI_FORMAT_B8G8R8A8_UNORM;
 		swapChainDesc.BufferDesc.ScanlineOrdering        = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
 		swapChainDesc.BufferDesc.Scaling                 = DXGI_MODE_SCALING_UNSPECIFIED;
-		swapChainDesc.SampleDesc.Count                   = rendererState->multisampleCount;
-		swapChainDesc.SampleDesc.Quality                 = rendererState->qualityLevelCount - 1;
+		swapChainDesc.SampleDesc.Count                   = rendererState.multisampleCount;
+		swapChainDesc.SampleDesc.Quality                 = rendererState.qualityLevelCount - 1;
 		swapChainDesc.BufferUsage                        = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 		swapChainDesc.BufferCount                        = 1;
-		swapChainDesc.OutputWindow                       = s->hwnd;
+		swapChainDesc.OutputWindow                       = s.hwnd;
 		swapChainDesc.Windowed                           = true;
 		swapChainDesc.SwapEffect                         = DXGI_SWAP_EFFECT_DISCARD;
 		swapChainDesc.Flags                              = 0;//DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
@@ -137,26 +143,26 @@ PreviewWindow_Initialize(PreviewWindowState* s, SimulationState* simulationState
 
 		// Create the swap chain
 		HRESULT hr;
-		hr = rendererState->dxgiFactory->CreateSwapChain(rendererState->d3dDevice.Get(), &swapChainDesc, &s->swapChain);
+		hr = rendererState.dxgiFactory->CreateSwapChain(rendererState.d3dDevice.Get(), &swapChainDesc, &s.swapChain);
 		LOG_HRESULT_IF_FAILED(hr, return false,
 			Severity::Error, "Failed to create preview window swap chain");
-		SetDebugObjectName(s->swapChain, "Preview Swap Chain");
+		SetDebugObjectName(s.swapChain, "Preview Swap Chain");
 
 		// Get the back buffer
-		hr = s->swapChain->GetBuffer(0, IID_PPV_ARGS(&s->backBuffer));
+		hr = s.swapChain->GetBuffer(0, IID_PPV_ARGS(&s.backBuffer));
 		LOG_HRESULT_IF_FAILED(hr, return false,
 			Severity::Error, "Failed to preview window create back buffer");
-		SetDebugObjectName(s->backBuffer, "Preview Back Buffer");
+		SetDebugObjectName(s.backBuffer, "Preview Back Buffer");
 
 		// Create a render target view to the back buffer
 		//ComPtr<ID3D11RenderTargetView> renderTargetView;
-		//hr = rendererState->d3dDevice->CreateRenderTargetView(s->backBuffer.Get(), nullptr, &renderTargetView);
+		//hr = rendererState.d3dDevice->CreateRenderTargetView(s.backBuffer.Get(), nullptr, &renderTargetView);
 		//LOG_HRESULT_IF_FAILED(hr, return false,
 		//	Severity::Error, "Failed to create preview window render target view");
 		//SetDebugObjectName(renderTargetView, "Preview Render Target View");
 
 		// Associate the window
-		hr = rendererState->dxgiFactory->MakeWindowAssociation(s->hwnd, DXGI_MWA_NO_ALT_ENTER);
+		hr = rendererState.dxgiFactory->MakeWindowAssociation(s.hwnd, DXGI_MWA_NO_ALT_ENTER);
 		LOG_HRESULT_IF_FAILED(hr, return false,
 			Severity::Error, "Failed to associate DXGI and preview window");
 	}
@@ -165,12 +171,12 @@ PreviewWindow_Initialize(PreviewWindowState* s, SimulationState* simulationState
 }
 
 b32
-PreviewWindow_Teardown(PreviewWindowState* s)
+PreviewWindow_Teardown(PreviewWindowState& s)
 {
 	// Detach Renderer
 	{
-		s->backBuffer.Reset();
-		s->swapChain .Reset();
+		s.backBuffer.Reset();
+		s.swapChain .Reset();
 	}
 
 
@@ -178,33 +184,33 @@ PreviewWindow_Teardown(PreviewWindowState* s)
 	{
 		b32 success;
 
-		success = DestroyWindow(s->hwnd);
+		success = DestroyWindow(s.hwnd);
 		LOG_LAST_ERROR_IF(!success, return false,
 			Severity::Error, "Failed to destroy preview window");
 
-		success = UnregisterClassA(previewWindowClass, s->hInstance);
+		success = UnregisterClassA(previewWindowClass, s.hInstance);
 		LOG_LAST_ERROR_IF(!success, IGNORE,
 			Severity::Error, "Failed to unregister preview window class");
 
-		*s = {};
+		s = {};
 	}
 
 	return true;
 }
 
 b32
-PreviewWindow_Render(PreviewWindowState* s)
+PreviewWindow_Render(PreviewWindowState& s)
 {
-	if (!s->hwnd) return true;
+	if (!s.hwnd) return true;
 
-	RendererState* rendererState = s->simulationState->renderer;
+	RendererState& rendererState = *s.rendererState;
 
 	// TODO: Handle DXGI_ERROR_DEVICE_RESET and DXGI_ERROR_DEVICE_REMOVED
 	// Developer Command Prompt for Visual Studio as an administrator, and
 	// typing dxcap -forcetdr which will immediately cause all currently
 	// running Direct3D apps to get a DXGI_ERROR_DEVICE_REMOVED event.
-	rendererState->d3dContext->CopyResource(s->backBuffer.Get(), rendererState->d3dRenderTexture.Get());
-	HRESULT hr = s->swapChain->Present(0, 0);
+	rendererState.d3dContext->CopyResource(s.backBuffer.Get(), rendererState.d3dRenderTexture.Get());
+	HRESULT hr = s.swapChain->Present(0, 0);
 	LOG_HRESULT_IF_FAILED(hr, return false,
 		Severity::Error, "Failed to present preview window");
 
@@ -212,23 +218,25 @@ PreviewWindow_Render(PreviewWindowState* s)
 }
 
 static void
-UpdateCameraPosition(PreviewWindowState* s, LPARAM lParam)
+UpdateCameraPosition(PreviewWindowState& s, LPARAM lParam)
 {
-	v2i mousePos = { GET_X_LPARAM(lParam), -GET_Y_LPARAM(lParam) };
-	v2i deltaPos = mousePos - s->mousePosStart;
-	s->cameraRot.yaw   = 0.0005f * deltaPos.x * 2*r32Pi;
-	s->cameraRot.pitch = 0.0005f * deltaPos.y * 2*r32Pi;
+	SimulationState& simulationState = *s.simulationState;
 
-	v3 rot = (v3) (s->cameraRotStart + s->cameraRot);
+	v2i mousePos = { GET_X_LPARAM(lParam), -GET_Y_LPARAM(lParam) };
+	v2i deltaPos = mousePos - s.mousePosStart;
+	s.cameraRot.yaw   = 0.0005f * deltaPos.x * 2*r32Pi;
+	s.cameraRot.pitch = 0.0005f * deltaPos.y * 2*r32Pi;
+
+	v3 rot = (v3) (s.cameraRotStart + s.cameraRot);
 	rot.pitch = Clamp(rot.pitch, -0.49f*r32Pi, 0.49f*r32Pi);
 	rot.roll  = 500;
 
 	v3 target = { 160.0f, 120.0f, 0.0f };
 	v3 pos    = GetOrbitPos(target, rot);
 
-	s->simulationState->cameraPos = pos;
-	s->simulationState->view      = LookAt(pos, target);
-	s->simulationState->vp        = s->simulationState->view * s->simulationState->proj;
+	simulationState.cameraPos = pos;
+	simulationState.view      = LookAt(pos, target);
+	simulationState.vp        = simulationState.view * simulationState.proj;
 }
 
 LRESULT CALLBACK
@@ -293,7 +301,7 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 		case WM_MOUSEMOVE:
 		{
 			if (!s->mouseLook) break;
-			UpdateCameraPosition(s, lParam);
+			UpdateCameraPosition(*s, lParam);
 			break;
 		}
 
@@ -312,7 +320,7 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 		case WM_MBUTTONDOWN:
 		{
 			s->mousePosStart = { GET_X_LPARAM(lParam), -GET_Y_LPARAM(lParam) };
-			UpdateCameraPosition(s, lParam);
+			UpdateCameraPosition(*s, lParam);
 			break;
 		}
 

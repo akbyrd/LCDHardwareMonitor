@@ -127,13 +127,13 @@ struct ConnectionState
 };
 
 void
-Connection_Teardown(ConnectionState* con)
+Connection_Teardown(ConnectionState& con)
 {
-	Platform_DestroyPipe(&con->pipe);
+	Platform_DestroyPipe(con.pipe);
 
-	for (u32 i = 0; i < con->queue.capacity; i++)
-		List_Free(con->queue[i]);
-	List_Free(con->queue);
+	for (u32 i = 0; i < con.queue.capacity; i++)
+		List_Free(con.queue[i]);
+	List_Free(con.queue);
 }
 
 // NOTE: There's one small gotcha with this serialization approach. We use
@@ -220,13 +220,13 @@ DeserializeMessage(Bytes& bytes)
 }
 
 b32
-HandleMessageResult(ConnectionState* con, b32 success)
+HandleMessageResult(ConnectionState& con, b32 success)
 {
 	if (!success)
 	{
-		con->failure = true;
+		con.failure = true;
 
-		PipeResult result = Platform_DisconnectPipe(&con->pipe);
+		PipeResult result = Platform_DisconnectPipe(con.pipe);
 		LOG_IF(result != PipeResult::Success, IGNORE,
 			Severity::Error, "Failed to disconnect pipe during message failure");
 	}
@@ -235,7 +235,7 @@ HandleMessageResult(ConnectionState* con, b32 success)
 }
 
 PipeResult
-HandleMessageResult(ConnectionState* con, PipeResult result)
+HandleMessageResult(ConnectionState& con, PipeResult result)
 {
 	switch (result)
 	{
@@ -253,26 +253,26 @@ HandleMessageResult(ConnectionState* con, PipeResult result)
 }
 
 b32
-QueueMessage(ConnectionState* con, Bytes& bytes)
+QueueMessage(ConnectionState& con, Bytes& bytes)
 {
-	Bytes* result = List_Append(con->queue, bytes);
+	Bytes* result = List_Append(con.queue, bytes);
 	LOG_IF(!result, return false,
 		Severity::Warning, "Failed to allocate message queue space");
 
-	con->sendIndex++;
+	con.sendIndex++;
 	return true;
 }
 
 template <typename T>
 b32
-SerializeAndQueueMessage(ConnectionState* con, T& message)
+SerializeAndQueueMessage(ConnectionState& con, T& message)
 {
 	b32 success;
 
 	Bytes bytes = {};
 	auto cleanupGuard = guard { List_Free(bytes); };
 
-	success = SerializeMessage(bytes, message, con->sendIndex);
+	success = SerializeMessage(bytes, message, con.sendIndex);
 	LOG_IF(!success, return HandleMessageResult(con, false),
 		Severity::Fatal, "Failed to serialize message");
 
@@ -285,54 +285,54 @@ SerializeAndQueueMessage(ConnectionState* con, T& message)
 }
 
 b32
-SendMessage(ConnectionState* con)
+SendMessage(ConnectionState& con)
 {
-	if (con->failure) return false;
+	if (con.failure) return false;
 
 	// Nothing to send
-	if (con->queueIndex == con->queue.length) return false;
+	if (con.queueIndex == con.queue.length) return false;
 
-	Bytes bytes = con->queue[con->queueIndex];
+	Bytes bytes = con.queue[con.queueIndex];
 
-	PipeResult result = Platform_WritePipe(&con->pipe, bytes);
+	PipeResult result = Platform_WritePipe(con.pipe, bytes);
 	HandleMessageResult(con, result);
 	if (result != PipeResult::Success) return false;
 
-	con->queueIndex++;
-	if (con->queueIndex == con->queue.length)
+	con.queueIndex++;
+	if (con.queueIndex == con.queue.length)
 	{
-		for (u32 i = 0; i < con->queue.length; i++)
-			con->queue[i].length = 0;
-		con->queue.length = 0;
-		con->queueIndex = 0;
+		for (u32 i = 0; i < con.queue.length; i++)
+			con.queue[i].length = 0;
+		con.queue.length = 0;
+		con.queueIndex = 0;
 	}
 
 	return true;
 }
 
 b32
-ReceiveMessage(ConnectionState* con, Bytes& bytes)
+ReceiveMessage(ConnectionState& con, Bytes& bytes)
 {
-	if (con->failure) return false;
+	if (con.failure) return false;
 
-	PipeResult result = Platform_ReadPipe(&con->pipe, bytes);
+	PipeResult result = Platform_ReadPipe(con.pipe, bytes);
 	HandleMessageResult(con, result);
 	if (result != PipeResult::Success) return false;
 	if (bytes.length == 0) return false;
 
 	using namespace Message;
-	Header* header = (Header*) bytes.data;
+	Header& header = (Header&) bytes[0];
 
 	LOG_IF(bytes.length < sizeof(Header), return HandleMessageResult(con, false),
 		Severity::Warning, "Corrupted message received");
 
-	LOG_IF(bytes.length != header->size, return HandleMessageResult(con, false),
+	LOG_IF(bytes.length != header.size, return HandleMessageResult(con, false),
 		Severity::Warning, "Incorrectly sized message received");
 
-	LOG_IF(header->index != con->recvIndex, return HandleMessageResult(con, false),
+	LOG_IF(header.index != con.recvIndex, return HandleMessageResult(con, false),
 		Severity::Warning, "Unexpected message received");
 
-	con->recvIndex++;
+	con.recvIndex++;
 	return true;
 }
 
@@ -556,9 +556,9 @@ Serialize(ByteStream& stream, WidgetDesc& widgetDesc)
 	Serialize(stream, widgetDesc.userDataSize);
 	if (stream.mode == ByteStreamMode::Write)
 	{
-		widgetDesc.initialize = nullptr;
-		widgetDesc.update     = nullptr;
-		widgetDesc.teardown   = nullptr;
+		widgetDesc.Initialize = nullptr;
+		widgetDesc.Update     = nullptr;
+		widgetDesc.Teardown   = nullptr;
 	}
 }
 

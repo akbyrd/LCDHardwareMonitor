@@ -1,4 +1,6 @@
 Decide on passing args by pointer or reference
+Look at tlbgen and references vs pointers
+
 Add a proper OOM crash flow
 
 GUI Control

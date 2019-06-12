@@ -11,7 +11,7 @@ template<typename T>
 void
 Bytes_ReadObject(Bytes& bytes, u32 offset, T& object)
 {
-	T* src = (T*) (bytes.data + offset);
+	T& src = (T&) bytes[offset];
 	object = *src;
 }
 
@@ -22,8 +22,8 @@ Bytes_WriteObject(Bytes& bytes, u32 offset, T& object)
 	if (!List_Reserve(bytes, offset + sizeof(T)))
 		return false;
 
-	T* dst = (T*) (bytes.data + offset);
-	*dst = object;
+	T& dst = (T&) bytes[offset];
+	dst = object;
 	bytes.length = Max(bytes.length, offset + sizeof(T));
 
 	return true;
@@ -31,13 +31,13 @@ Bytes_WriteObject(Bytes& bytes, u32 offset, T& object)
 
 template<typename T>
 b32
-Bytes_FromObject(T* object, Bytes bytes)
+Bytes_FromObject(T& object, Bytes bytes)
 {
 	if (!List_Reserve(bytes, sizeof(T)))
 		return false;
 
-	T* dst = (T*) bytes.data;
-	*dst = *object;
+	T& dst = (T&) bytes.data;
+	dst = object;
 	bytes.length = sizeof(T);
 
 	return true;
@@ -45,12 +45,12 @@ Bytes_FromObject(T* object, Bytes bytes)
 
 template<typename T>
 ByteSlice
-ByteSlice_FromObject(T* object)
+ByteSlice_FromObject(T& object)
 {
 	ByteSlice result = {};
 	result.length = sizeof(T);
 	result.stride = 1;
-	result.data   = (u8*) object;
+	result.data   = (u8*) &object;
 	return result;
 }
 

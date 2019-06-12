@@ -43,7 +43,7 @@ struct PluginLoaderState
 };
 
 b32
-PluginLoader_Initialize(PluginLoaderState* s)
+PluginLoader_Initialize(PluginLoaderState& s)
 {
 	// Managed
 	{
@@ -68,12 +68,12 @@ PluginLoader_Initialize(PluginLoaderState* s)
 		LOG_HRESULT_IF_FAILED(hr, return false,
 			Severity::Fatal, "Failed to set CLR startup flags");
 
-		hr = clrInfo->GetInterface(CLSID_CLRRuntimeHost, IID_PPV_ARGS(&s->clrHost));
+		hr = clrInfo->GetInterface(CLSID_CLRRuntimeHost, IID_PPV_ARGS(&s.clrHost));
 		LOG_HRESULT_IF_FAILED(hr, return false,
 			Severity::Fatal, "Failed to get CLR runtime host interface");
 
 		ComPtr<ICLRControl> clrControl;
-		hr = s->clrHost->GetCLRControl(&clrControl);
+		hr = s.clrHost->GetCLRControl(&clrControl);
 		LOG_HRESULT_IF_FAILED(hr, return false,
 			Severity::Fatal, "Failed to CLR control interface");
 
@@ -81,15 +81,15 @@ PluginLoader_Initialize(PluginLoaderState* s)
 		LOG_HRESULT_IF_FAILED(hr, return false,
 			Severity::Fatal, "Failed to set CLR AppDomain manager");
 
-		hr = s->clrHost->SetHostControl(&s->lhmHostControl);
+		hr = s.clrHost->SetHostControl(&s.lhmHostControl);
 		LOG_HRESULT_IF_FAILED(hr, return false,
 			Severity::Fatal, "Failed to set CLR host control");
 
-		hr = s->clrHost->Start();
+		hr = s.clrHost->Start();
 		LOG_HRESULT_IF_FAILED(hr, return false,
 			Severity::Fatal, "Failed to start CLR");
 
-		s->lhmPluginLoader = s->lhmHostControl.GetAppDomainManager();
+		s.lhmPluginLoader = s.lhmHostControl.GetAppDomainManager();
 	}
 
 
@@ -104,7 +104,7 @@ PluginLoader_Initialize(PluginLoaderState* s)
 }
 
 void
-PluginLoader_Teardown(PluginLoaderState* s)
+PluginLoader_Teardown(PluginLoaderState& s)
 {
 	// Managed
 	{
@@ -113,23 +113,23 @@ PluginLoader_Teardown(PluginLoaderState* s)
 		// breakpoints on code that occurs after this point may also crash
 		// (e.g. Renderer_Teardown).
 
-		HRESULT hr = s->clrHost->Stop();
+		HRESULT hr = s.clrHost->Stop();
 		LOG_HRESULT_IF_FAILED(hr, IGNORE,
 			Severity::Fatal, "Failed to stop CLR");
 
-		s->clrHost.Reset();
+		s.clrHost.Reset();
 	}
 }
 
 static b32
-DetectPluginLanguage(PluginHeader* pluginHeader)
+DetectPluginLanguage(PluginHeader& pluginHeader)
 {
 	// TODO: Move memory mapping to platform API?
 
 	String pluginPath = {};
 	defer { List_Free(pluginPath); };
 
-	b32 success = String_Format(pluginPath, "%s\\%s", pluginHeader->directory, pluginHeader->fileName);
+	b32 success = String_Format(pluginPath, "%s\\%s", pluginHeader.directory, pluginHeader.fileName);
 	if (!success) return false;
 
 	HANDLE pluginFile = CreateFileA(
@@ -158,14 +158,14 @@ DetectPluginLanguage(PluginHeader* pluginHeader)
 		nullptr
 	);
 	LOG_LAST_ERROR_IF(!pluginFileMap, return false,
-		Severity::Error, "Failed to create plugin file mapping '%s'", pluginHeader->fileName);
+		Severity::Error, "Failed to create plugin file mapping '%s'", pluginHeader.fileName);
 	defer { CloseHandle(pluginFileMap); };
 
 	// TODO: We could map the DOS header, get the PE offset, then remap starting there
 	// NOTE: Can't map a fixed number of bytes because the DOS stub is of unknown length
-	void* pluginFileMemory = MapViewOfFile(pluginFileMap, FILE_MAP_READ, 0, 0, 0);
+	u8* pluginFileMemory = (u8*) MapViewOfFile(pluginFileMap, FILE_MAP_READ, 0, 0, 0);
 	LOG_LAST_ERROR_IF(!pluginFileMemory, return false,
-		Severity::Error, "Failed to map view of plugin file '%s'", pluginHeader->fileName);
+		Severity::Error, "Failed to map view of plugin file '%s'", pluginHeader.fileName);
 	defer {
 		if (pluginFileMemory)
 		{
@@ -173,63 +173,63 @@ DetectPluginLanguage(PluginHeader* pluginHeader)
 			// TODO: What happens if Unmap is called with null? Can we drop the check?
 			b32 success = UnmapViewOfFile(pluginFileMemory);
 			LOG_IF(!success, IGNORE,
-				Severity::Error, "Failed to unmap view of plugin file '%s'", pluginHeader->fileName);
+				Severity::Error, "Failed to unmap view of plugin file '%s'", pluginHeader.fileName);
 		}
 	};
 
-	IMAGE_DOS_HEADER* dosHeader = (IMAGE_DOS_HEADER*) pluginFileMemory;
-	LOG_IF(dosHeader->e_magic != IMAGE_DOS_SIGNATURE, return false,
-		Severity::Error, "Plugin file does not have a proper DOS header '%s'", pluginHeader->fileName);
+	IMAGE_DOS_HEADER& dosHeader = *(IMAGE_DOS_HEADER*) pluginFileMemory;
+	LOG_IF(dosHeader.e_magic != IMAGE_DOS_SIGNATURE, return false,
+		Severity::Error, "Plugin file does not have a proper DOS header '%s'", pluginHeader.fileName);
 
-	IMAGE_NT_HEADERS* ntHeader = (IMAGE_NT_HEADERS*) ((u8*) pluginFileMemory + dosHeader->e_lfanew);
-	LOG_IF(ntHeader->Signature != IMAGE_NT_SIGNATURE, return false,
-		Severity::Error, "Plugin file does not have a proper NT header '%s'", pluginHeader->fileName);
+	IMAGE_NT_HEADERS& ntHeader = (IMAGE_NT_HEADERS&) pluginFileMemory[dosHeader.e_lfanew];
+	LOG_IF(ntHeader.Signature != IMAGE_NT_SIGNATURE, return false,
+		Severity::Error, "Plugin file does not have a proper NT header '%s'", pluginHeader.fileName);
 
-	IMAGE_FILE_HEADER* fileHeader = &ntHeader->FileHeader;
-	LOG_IF(fileHeader->SizeOfOptionalHeader == 0, return false,
-		Severity::Error, "Plugin file does not have an optional header '%s'", pluginHeader->fileName);
-	LOG_IF(!HAS_FLAG(fileHeader->Characteristics, IMAGE_FILE_DLL), return false,
-		Severity::Error, "Plugin file is not a DLL '%s'", pluginHeader->fileName);
+	IMAGE_FILE_HEADER& fileHeader = ntHeader.FileHeader;
+	LOG_IF(fileHeader.SizeOfOptionalHeader == 0, return false,
+		Severity::Error, "Plugin file does not have an optional header '%s'", pluginHeader.fileName);
+	LOG_IF(!HAS_FLAG(fileHeader.Characteristics, IMAGE_FILE_DLL), return false,
+		Severity::Error, "Plugin file is not a DLL '%s'", pluginHeader.fileName);
 
-	IMAGE_OPTIONAL_HEADER* optionalHeader = &ntHeader->OptionalHeader;
-	LOG_IF(optionalHeader->Magic != IMAGE_NT_OPTIONAL_HDR_MAGIC, return false,
-		Severity::Error, "Plugin file does not have a proper optional header '%s'", pluginHeader->fileName);
+	IMAGE_OPTIONAL_HEADER& optionalHeader = ntHeader.OptionalHeader;
+	LOG_IF(optionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR_MAGIC, return false,
+		Severity::Error, "Plugin file does not have a proper optional header '%s'", pluginHeader.fileName);
 
-	if (optionalHeader->NumberOfRvaAndSizes <= IMAGE_DIRECTORY_ENTRY_COMHEADER)
+	if (optionalHeader.NumberOfRvaAndSizes <= IMAGE_DIRECTORY_ENTRY_COMHEADER)
 	{
-		pluginHeader->language = PluginLanguage::Native;
+		pluginHeader.language = PluginLanguage::Native;
 	}
 	else
 	{
-		IMAGE_DATA_DIRECTORY* clrDirectory = &optionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_COMHEADER];
-		pluginHeader->language = clrDirectory->Size == 0 ? PluginLanguage::Native : PluginLanguage::Managed;
+		IMAGE_DATA_DIRECTORY& clrDirectory = optionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_COMHEADER];
+		pluginHeader.language = clrDirectory.Size == 0 ? PluginLanguage::Native : PluginLanguage::Managed;
 	}
 
 	return true;
 }
 
 static b32
-ValidatePluginInfo(PluginInfo* pluginInfo)
+ValidatePluginInfo(PluginInfo& pluginInfo)
 {
 	b32 valid = true;
-	valid = valid && pluginInfo->name.length > 0;
-	valid = valid && pluginInfo->author.length > 0;
-	valid = valid && pluginInfo->version;
+	valid = valid && pluginInfo.name.length > 0;
+	valid = valid && pluginInfo.author.length > 0;
+	valid = valid && pluginInfo.version;
 	return valid;
 }
 
 b32
-PluginLoader_LoadSensorPlugin(PluginLoaderState* s, SensorPlugin* sensorPlugin)
+PluginLoader_LoadSensorPlugin(PluginLoaderState& s, SensorPlugin& sensorPlugin)
 {
 	b32 success;
 
-	PluginHeader* pluginHeader = &sensorPlugin->header;
-	auto pluginGuard = guard { pluginHeader->loadState = PluginLoadState::Broken; };
+	PluginHeader& pluginHeader = sensorPlugin.header;
+	auto pluginGuard = guard { pluginHeader.loadState = PluginLoadState::Broken; };
 
 	success = DetectPluginLanguage(pluginHeader);
 	if (!success) return false;
 
-	switch (pluginHeader->language)
+	switch (pluginHeader.language)
 	{
 		case PluginLanguage::Null:
 			success = false;
@@ -240,24 +240,24 @@ PluginLoader_LoadSensorPlugin(PluginLoaderState* s, SensorPlugin* sensorPlugin)
 			success = false;
 
 			// TODO: Will this work with delay loaded dependencies?
-			success = SetDllDirectoryA(pluginHeader->directory);
+			success = SetDllDirectoryA(pluginHeader.directory);
 			LOG_IF(!success, break,
-				Severity::Error, "Failed to set Sensor plugin DLL directory '%s'", pluginHeader->fileName);
+				Severity::Error, "Failed to set Sensor plugin DLL directory '%s'", pluginHeader.fileName);
 
-			pluginHeader->userData = LoadLibraryA(pluginHeader->fileName);
-			LOG_IF(!pluginHeader->userData, break,
-				Severity::Error, "Failed to load unmanaged Sensor plugin '%s'", pluginHeader->fileName);
+			pluginHeader.userData = LoadLibraryA(pluginHeader.fileName);
+			LOG_IF(!pluginHeader.userData, break,
+				Severity::Error, "Failed to load unmanaged Sensor plugin '%s'", pluginHeader.fileName);
 
 			success = SetDllDirectoryA("");
 			LOG_IF(!success, break,
-				Severity::Error, "Failed to unset Sensor plugin DLL directory '%s'", pluginHeader->fileName);
+				Severity::Error, "Failed to unset Sensor plugin DLL directory '%s'", pluginHeader.fileName);
 
-			HMODULE pluginModule = (HMODULE) pluginHeader->userData;
-			sensorPlugin->functions.getPluginInfo = (SensorPluginFunctions::GetPluginInfoFn*) (void*) GetProcAddress(pluginModule, "GetSensorPluginInfo");
-			LOG_IF(!sensorPlugin->functions.getPluginInfo, break,
-				Severity::Error, "Failed to find unmanaged GetSensorPluginInfo '%s'", pluginHeader->fileName);
+			HMODULE pluginModule = (HMODULE) pluginHeader.userData;
+			sensorPlugin.functions.getPluginInfo = (SensorPluginFunctions::GetPluginInfoFn*) (void*) GetProcAddress(pluginModule, "GetSensorPluginInfo");
+			LOG_IF(!sensorPlugin.functions.getPluginInfo, break,
+				Severity::Error, "Failed to find unmanaged GetSensorPluginInfo '%s'", pluginHeader.fileName);
 
-			sensorPlugin->functions.getPluginInfo(&sensorPlugin->info, &sensorPlugin->functions);
+			sensorPlugin.functions.getPluginInfo(sensorPlugin.info, sensorPlugin.functions);
 
 			success = true;
 			break;
@@ -267,69 +267,69 @@ PluginLoader_LoadSensorPlugin(PluginLoaderState* s, SensorPlugin* sensorPlugin)
 		{
 			// NOTE: fuslogvw is great for debugging managed assembly loading.
 			// TODO: Do we need to try/catch the managed code?
-			success = s->lhmPluginLoader->LoadSensorPlugin(sensorPlugin);
+			success = s.lhmPluginLoader->LoadSensorPlugin(&sensorPlugin);
 			LOG_IF(!success, IGNORE,
-				Severity::Error, "Failed to load managed Sensor plugin '%s'", pluginHeader->fileName);
+				Severity::Error, "Failed to load managed Sensor plugin '%s'", pluginHeader.fileName);
 			break;
 		}
 	}
 	if (!success) return false;
 
-	success = ValidatePluginInfo(&sensorPlugin->info);
+	success = ValidatePluginInfo(sensorPlugin.info);
 	LOG_IF(!success, return false,
-		Severity::Error, "Sensor plugin provided invalid info '%s'", pluginHeader->fileName);
+		Severity::Error, "Sensor plugin provided invalid info '%s'", pluginHeader.fileName);
 
 	pluginGuard.dismiss = true;
-	pluginHeader->loadState = PluginLoadState::Loaded;
+	pluginHeader.loadState = PluginLoadState::Loaded;
 	return true;
 }
 
 b32
-PluginLoader_UnloadSensorPlugin(PluginLoaderState* s, SensorPlugin* sensorPlugin)
+PluginLoader_UnloadSensorPlugin(PluginLoaderState& s, SensorPlugin& sensorPlugin)
 {
 	b32 success = false;
 
-	PluginHeader* pluginHeader = &sensorPlugin->header;
-	auto pluginGuard = guard { pluginHeader->loadState = PluginLoadState::Broken; };
+	PluginHeader& pluginHeader = sensorPlugin.header;
+	auto pluginGuard = guard { pluginHeader.loadState = PluginLoadState::Broken; };
 
-	switch (pluginHeader->language)
+	switch (pluginHeader.language)
 	{
 		case PluginLanguage::Null:
 			success = false;
 			break;
 
 		case PluginLanguage::Native:
-			success = FreeLibrary((HMODULE) pluginHeader->userData);
+			success = FreeLibrary((HMODULE) pluginHeader.userData);
 			LOG_IF(!success, break,
-				Severity::Error, "Failed to unload unmanaged Sensor plugin '%s'", sensorPlugin->info.name.data);
-			pluginHeader->userData = nullptr;
+				Severity::Error, "Failed to unload unmanaged Sensor plugin '%s'", sensorPlugin.info.name.data);
+			pluginHeader.userData = nullptr;
 			break;
 
 		case PluginLanguage::Managed:
-			success = s->lhmPluginLoader->UnloadSensorPlugin(sensorPlugin);
+			success = s.lhmPluginLoader->UnloadSensorPlugin(&sensorPlugin);
 			LOG_IF(!success, IGNORE,
-				Severity::Error, "Failed to unload managed Sensor plugin '%s'", sensorPlugin->info.name.data);
+				Severity::Error, "Failed to unload managed Sensor plugin '%s'", sensorPlugin.info.name.data);
 			break;
 	}
 	if (!success) return false;
 
 	pluginGuard.dismiss = true;
-	pluginHeader->loadState = PluginLoadState::Unloaded;
+	pluginHeader.loadState = PluginLoadState::Unloaded;
 	return true;
 }
 
 b32
-PluginLoader_LoadWidgetPlugin(PluginLoaderState* s, WidgetPlugin* widgetPlugin)
+PluginLoader_LoadWidgetPlugin(PluginLoaderState& s, WidgetPlugin& widgetPlugin)
 {
 	b32 success;
 
-	PluginHeader* pluginHeader = &widgetPlugin->header;
-	auto pluginGuard = guard { pluginHeader->loadState = PluginLoadState::Broken; };
+	PluginHeader& pluginHeader = widgetPlugin.header;
+	auto pluginGuard = guard { pluginHeader.loadState = PluginLoadState::Broken; };
 
 	success = DetectPluginLanguage(pluginHeader);
 	if (!success) return false;
 
-	switch (pluginHeader->language)
+	switch (pluginHeader.language)
 	{
 		case PluginLanguage::Null:
 			success = false;
@@ -340,24 +340,24 @@ PluginLoader_LoadWidgetPlugin(PluginLoaderState* s, WidgetPlugin* widgetPlugin)
 			success = false;
 
 			// TODO: Will this work with delay loaded dependencies?
-			success = SetDllDirectoryA(pluginHeader->directory);
+			success = SetDllDirectoryA(pluginHeader.directory);
 			LOG_IF(!success, break,
-				Severity::Error, "Failed to set Widget plugin DLL directory '%s'", pluginHeader->fileName);
+				Severity::Error, "Failed to set Widget plugin DLL directory '%s'", pluginHeader.fileName);
 
-			pluginHeader->userData = LoadLibraryA(pluginHeader->fileName);
-			LOG_IF(!pluginHeader->userData, break,
-				Severity::Error, "Failed to load unmanaged Widget plugin '%s'", pluginHeader->fileName);
+			pluginHeader.userData = LoadLibraryA(pluginHeader.fileName);
+			LOG_IF(!pluginHeader.userData, break,
+				Severity::Error, "Failed to load unmanaged Widget plugin '%s'", pluginHeader.fileName);
 
 			success = SetDllDirectoryA("");
 			LOG_IF(!success, break,
-				Severity::Error, "Failed to set Widget plugin DLL directory '%s'", pluginHeader->fileName);
+				Severity::Error, "Failed to set Widget plugin DLL directory '%s'", pluginHeader.fileName);
 
-			HMODULE pluginModule = (HMODULE) pluginHeader->userData;
-			widgetPlugin->functions.getPluginInfo = (WidgetPluginFunctions::GetPluginInfoFn*) (void*) GetProcAddress(pluginModule, "GetWidgetPluginInfo");
-			LOG_IF(!widgetPlugin->functions.getPluginInfo, break,
-				Severity::Error, "Failed to find unmanaged GetWidgetPluginInfo '%s'", pluginHeader->fileName);
+			HMODULE pluginModule = (HMODULE) pluginHeader.userData;
+			widgetPlugin.functions.GetPluginInfo = (WidgetPluginFunctions::GetPluginInfoFn*) (void*) GetProcAddress(pluginModule, "GetWidgetPluginInfo");
+			LOG_IF(!widgetPlugin.functions.GetPluginInfo, break,
+				Severity::Error, "Failed to find unmanaged GetWidgetPluginInfo '%s'", pluginHeader.fileName);
 
-			widgetPlugin->functions.getPluginInfo(&widgetPlugin->info, &widgetPlugin->functions);
+			widgetPlugin.functions.GetPluginInfo(widgetPlugin.info, widgetPlugin.functions);
 
 			success = true;
 			break;
@@ -367,53 +367,53 @@ PluginLoader_LoadWidgetPlugin(PluginLoaderState* s, WidgetPlugin* widgetPlugin)
 		{
 			// NOTE: fuslogvw is great for debugging managed assembly loading.
 			// TODO: Do we need to try/catch the managed code?
-			success = s->lhmPluginLoader->LoadWidgetPlugin(widgetPlugin);
+			success = s.lhmPluginLoader->LoadWidgetPlugin(&widgetPlugin);
 			LOG_IF(!success, IGNORE,
-				Severity::Error, "Failed to load managed Widget plugin '%s'", pluginHeader->fileName);
+				Severity::Error, "Failed to load managed Widget plugin '%s'", pluginHeader.fileName);
 			break;
 		}
 	}
 	if (!success) return false;
 
-	success = ValidatePluginInfo(&widgetPlugin->info);
+	success = ValidatePluginInfo(widgetPlugin.info);
 	LOG_IF(!success, return false,
-		Severity::Error, "Widget plugin provided invalid info '%s'", pluginHeader->fileName);
+		Severity::Error, "Widget plugin provided invalid info '%s'", pluginHeader.fileName);
 
 	pluginGuard.dismiss = true;
-	pluginHeader->loadState = PluginLoadState::Loaded;
+	pluginHeader.loadState = PluginLoadState::Loaded;
 	return true;
 }
 
 b32
-PluginLoader_UnloadWidgetPlugin(PluginLoaderState* s, WidgetPlugin* widgetPlugin)
+PluginLoader_UnloadWidgetPlugin(PluginLoaderState& s, WidgetPlugin& widgetPlugin)
 {
 	b32 success = false;
 
-	PluginHeader* pluginHeader = &widgetPlugin->header;
-	auto pluginGuard = guard { pluginHeader->loadState = PluginLoadState::Broken; };
+	PluginHeader& pluginHeader = widgetPlugin.header;
+	auto pluginGuard = guard { pluginHeader.loadState = PluginLoadState::Broken; };
 
-	switch (pluginHeader->language)
+	switch (pluginHeader.language)
 	{
 		case PluginLanguage::Null:
 			success = false;
 			break;
 
 		case PluginLanguage::Native:
-			success = FreeLibrary((HMODULE) pluginHeader->userData);
+			success = FreeLibrary((HMODULE) pluginHeader.userData);
 			LOG_IF(!success, break,
-				Severity::Error, "Failed to unload unmanaged Widget plugin '%s'", widgetPlugin->info.name.data);
-			pluginHeader->userData = nullptr;
+				Severity::Error, "Failed to unload unmanaged Widget plugin '%s'", widgetPlugin.info.name.data);
+			pluginHeader.userData = nullptr;
 			break;
 
 		case PluginLanguage::Managed:
-			success = s->lhmPluginLoader->UnloadWidgetPlugin(widgetPlugin);
+			success = s.lhmPluginLoader->UnloadWidgetPlugin(&widgetPlugin);
 			LOG_IF(!success, IGNORE,
-				Severity::Error, "Failed to unload managed Widget plugin '%s'", widgetPlugin->info.name.data);
+				Severity::Error, "Failed to unload managed Widget plugin '%s'", widgetPlugin.info.name.data);
 			break;
 	}
 	if (!success) return false;
 
 	pluginGuard.dismiss = true;
-	pluginHeader->loadState = PluginLoadState::Unloaded;
+	pluginHeader.loadState = PluginLoadState::Unloaded;
 	return true;
 }

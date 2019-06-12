@@ -23,7 +23,7 @@ struct SensorPluginAPI
 {
 	struct Initialize
 	{
-		using RegisterSensorsFn = void(PluginContext*, Slice<Sensor>);
+		using RegisterSensorsFn = void(PluginContext&, Slice<Sensor>);
 
 		RegisterSensorsFn* RegisterSensors;
 	};
@@ -32,8 +32,8 @@ struct SensorPluginAPI
 	{
 		// NOTE: Plugins should not free Sensor members until *after* calling UnregisterSensors!
 
-		using RegisterSensorsFn   = void(PluginContext*, Slice<Sensor>);
-		using UnregisterSensorsFn = void(PluginContext*, Slice<SensorRef>);
+		using RegisterSensorsFn   = void(PluginContext&, Slice<Sensor>);
+		using UnregisterSensorsFn = void(PluginContext&, Slice<SensorRef>);
 
 		RegisterSensorsFn*   RegisterSensors;
 		UnregisterSensorsFn* UnregisterSensors;
@@ -49,10 +49,10 @@ struct SensorPluginAPI
 
 struct SensorPluginFunctions
 {
-	using GetPluginInfoFn = void(PluginInfo* info, SensorPluginFunctions* functions);
-	using InitializeFn    = b32 (PluginContext* context, SensorPluginAPI::Initialize api);
-	using UpdateFn        = void(PluginContext* context, SensorPluginAPI::Update     api);
-	using TeardownFn      = void(PluginContext* context, SensorPluginAPI::Teardown   api);
+	using GetPluginInfoFn = void(PluginInfo& info, SensorPluginFunctions& functions);
+	using InitializeFn    = b32 (PluginContext& context, SensorPluginAPI::Initialize api);
+	using UpdateFn        = void(PluginContext& context, SensorPluginAPI::Update     api);
+	using TeardownFn      = void(PluginContext& context, SensorPluginAPI::Teardown   api);
 
 	GetPluginInfoFn* getPluginInfo;
 	InitializeFn*    initialize;

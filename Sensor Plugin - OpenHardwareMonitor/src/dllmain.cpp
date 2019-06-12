@@ -31,12 +31,12 @@ public ref struct State : ISensorPlugin, ISensorInitialize, ISensorUpdate, ISens
 	};
 
 	virtual void
-	GetPluginInfo(PluginInfo* info)
+	GetPluginInfo(PluginInfo& info)
 	{
 		// TODO: Do we need a Teardown function in case these strings are allocated?
-		info->name    = "OHM Sensors";
-		info->author  = "akbyrd";
-		info->version = 1;
+		info.name    = "OHM Sensors";
+		info.author  = "akbyrd";
+		info.version = 1;
 	}
 
 	StringSlice
@@ -50,7 +50,7 @@ public ref struct State : ISensorPlugin, ISensorInitialize, ISensorUpdate, ISens
 	}
 
 	virtual b32
-	Initialize(PluginContext* context, SensorPluginAPI::Initialize api)
+	Initialize(PluginContext& context, SensorPluginAPI::Initialize api)
 	{
 		computer       = gcnew Computer();
 		activeSensors  = gcnew SList<ISensor^>;
@@ -142,7 +142,7 @@ public ref struct State : ISensorPlugin, ISensorInitialize, ISensorUpdate, ISens
 	}
 
 	virtual void
-	Update(PluginContext* context, SensorPluginAPI::Update api)
+	Update(PluginContext& context, SensorPluginAPI::Update api)
 	{
 		UNUSED(context);
 
@@ -152,28 +152,28 @@ public ref struct State : ISensorPlugin, ISensorInitialize, ISensorUpdate, ISens
 		// TODO: This is stupid. Something something activeSensors
 		for (u32 i = 0; i < api.sensors.length; i++)
 		{
-			Sensor* sensor = &api.sensors[i];
+			Sensor& sensor = api.sensors[i];
 			ISensor^ ohmSensor = State::activeSensors[(i32) i];
 
 			// TODO: This string could disappear
-			sensor->value = ohmSensor->Value.GetValueOrDefault();
+			sensor.value = ohmSensor->Value.GetValueOrDefault();
 		}
 	}
 
 	virtual void
-	Teardown(PluginContext* context, SensorPluginAPI::Teardown api)
+	Teardown(PluginContext& context, SensorPluginAPI::Teardown api)
 	{
 		UNUSED(context);
 
 		for (u32 i = 0; i < api.sensors.length; i++)
 		{
-			Sensor* sensor = &api.sensors[i];
+			Sensor& sensor = api.sensors[i];
 
-			Marshal::FreeHGlobal((IntPtr) sensor->name.data);
-			Marshal::FreeHGlobal((IntPtr) sensor->identifier.data);
-			Marshal::FreeHGlobal((IntPtr) sensor->format.data);
+			Marshal::FreeHGlobal((IntPtr) sensor.name.data);
+			Marshal::FreeHGlobal((IntPtr) sensor.identifier.data);
+			Marshal::FreeHGlobal((IntPtr) sensor.format.data);
 
-			*sensor = {};
+			sensor = {};
 		}
 	}
 };

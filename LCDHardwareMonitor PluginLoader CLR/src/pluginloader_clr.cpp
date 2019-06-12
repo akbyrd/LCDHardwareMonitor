@@ -17,6 +17,8 @@ using mString = System::String;
 // NOTE: Cross domain function calls average 200ns with the delegate pattern.
 // Try playing with security settings if optimizing this
 
+// NOTE: Can't pass references through COM interfaces. tlbgen replaces them with pointers.
+
 // TODO: *Really* want to default to non-visible so TLBs aren't bloated to
 // hell, but I can't find a way to allow native types as parameters to
 // ILHMPluginLoader functions without setting the entire assembly to visible.
@@ -27,10 +29,10 @@ using mString = System::String;
 public interface class
 ILHMPluginLoader
 {
-	b32 LoadSensorPlugin   (SensorPlugin* sensorPlugin);
-	b32 UnloadSensorPlugin (SensorPlugin* sensorPlugin);
-	b32 LoadWidgetPlugin   (WidgetPlugin* widgetPlugin);
-	b32 UnloadWidgetPlugin (WidgetPlugin* widgetPlugin);
+	b32 LoadSensorPlugin   (SensorPlugin& sensorPlugin);
+	b32 UnloadSensorPlugin (SensorPlugin& sensorPlugin);
+	b32 LoadWidgetPlugin   (WidgetPlugin& widgetPlugin);
+	b32 UnloadWidgetPlugin (WidgetPlugin& widgetPlugin);
 };
 
 [ComVisible(false)]
@@ -38,9 +40,9 @@ public value struct
 SensorPlugin_CLR
 {
 	#define Attributes UnmanagedFunctionPointer(CallingConvention::Cdecl)
-	[Attributes] delegate b32  InitializeDelegate (PluginContext* context, SensorPluginAPI::Initialize api);
-	[Attributes] delegate void UpdateDelegate     (PluginContext* context, SensorPluginAPI::Update     api);
-	[Attributes] delegate void TeardownDelegate   (PluginContext* context, SensorPluginAPI::Teardown   api);
+	[Attributes] delegate b32  InitializeDelegate (PluginContext& context, SensorPluginAPI::Initialize api);
+	[Attributes] delegate void UpdateDelegate     (PluginContext& context, SensorPluginAPI::Update     api);
+	[Attributes] delegate void TeardownDelegate   (PluginContext& context, SensorPluginAPI::Teardown   api);
 	#undef Attributes
 
 	ISensorPlugin^      pluginInstance;
@@ -54,9 +56,9 @@ public value struct
 WidgetPlugin_CLR
 {
 	#define Attributes UnmanagedFunctionPointer(CallingConvention::Cdecl)
-	[Attributes] delegate b32  InitializeDelegate (PluginContext* context, WidgetPluginAPI::Initialize api);
-	[Attributes] delegate void UpdateDelegate     (PluginContext* context, WidgetPluginAPI::Update     api);
-	[Attributes] delegate void TeardownDelegate   (PluginContext* context, WidgetPluginAPI::Teardown   api);
+	[Attributes] delegate b32  InitializeDelegate (PluginContext& context, WidgetPluginAPI::Initialize api);
+	[Attributes] delegate void UpdateDelegate     (PluginContext& context, WidgetPluginAPI::Update     api);
+	[Attributes] delegate void TeardownDelegate   (PluginContext& context, WidgetPluginAPI::Teardown   api);
 	#undef Attributes
 
 	IWidgetPlugin^      pluginInstance;
@@ -79,14 +81,14 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	}
 
 	virtual b32
-	LoadSensorPlugin(SensorPlugin* sensorPlugin)
+	LoadSensorPlugin(SensorPlugin& sensorPlugin)
 	{
 		b32 success;
 
-		success = LoadPlugin(&sensorPlugin->header);
+		success = LoadPlugin(sensorPlugin.header);
 		if (!success) return false;
 
-		LHMPluginLoader^ pluginLoader = GetDomainResidentLoader(sensorPlugin->header);
+		LHMPluginLoader^ pluginLoader = GetDomainResidentLoader(sensorPlugin.header);
 		success = pluginLoader->InitializeSensorPlugin(sensorPlugin);
 		if (!success) return false;
 
@@ -94,29 +96,29 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	}
 
 	virtual b32
-	UnloadSensorPlugin(SensorPlugin* sensorPlugin)
+	UnloadSensorPlugin(SensorPlugin& sensorPlugin)
 	{
 		b32 success;
 
-		LHMPluginLoader^ pluginLoader = GetDomainResidentLoader(sensorPlugin->header);
+		LHMPluginLoader^ pluginLoader = GetDomainResidentLoader(sensorPlugin.header);
 		success = pluginLoader->TeardownSensorPlugin(sensorPlugin);
 		if (!success) return false;
 
-		success = UnloadPlugin(&sensorPlugin->header);
+		success = UnloadPlugin(sensorPlugin.header);
 		if (!success) return false;
 
 		return true;
 	}
 
 	virtual b32
-	LoadWidgetPlugin(WidgetPlugin* widgetPlugin)
+	LoadWidgetPlugin(WidgetPlugin& widgetPlugin)
 	{
 		b32 success;
 
-		success = LoadPlugin(&widgetPlugin->header);
+		success = LoadPlugin(widgetPlugin.header);
 		if (!success) return false;
 
-		LHMPluginLoader^ pluginLoader = GetDomainResidentLoader(widgetPlugin->header);
+		LHMPluginLoader^ pluginLoader = GetDomainResidentLoader(widgetPlugin.header);
 		success = pluginLoader->InitializeWidgetPlugin(widgetPlugin);
 		if (!success) return false;
 
@@ -124,15 +126,15 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	}
 
 	virtual b32
-	UnloadWidgetPlugin(WidgetPlugin* widgetPlugin)
+	UnloadWidgetPlugin(WidgetPlugin& widgetPlugin)
 	{
 		b32 success;
 
-		LHMPluginLoader^ pluginLoader = GetDomainResidentLoader(widgetPlugin->header);
+		LHMPluginLoader^ pluginLoader = GetDomainResidentLoader(widgetPlugin.header);
 		success = pluginLoader->TeardownWidgetPlugin(widgetPlugin);
 		if (!success) return false;
 
-		success = UnloadPlugin(&widgetPlugin->header);
+		success = UnloadPlugin(widgetPlugin.header);
 		if (!success) return false;
 
 		return true;
@@ -148,10 +150,10 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	}
 
 	b32
-	LoadPlugin(PluginHeader* pluginHeader)
+	LoadPlugin(PluginHeader& pluginHeader)
 	{
-		auto name      = gcnew mString(pluginHeader->fileName);
-		auto directory = gcnew mString(pluginHeader->directory);
+		auto name      = gcnew mString(pluginHeader.fileName);
+		auto directory = gcnew mString(pluginHeader.directory);
 
 		// NOTE: LHMAppDomainManager is going to get loaded into each new
 		// AppDomain so we need to let ApplicationBase get inherited from the
@@ -167,18 +169,18 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 		//domainSetup.ShadowCopyFiles       = true
 
 		AppDomain^ appDomain = CreateDomain(name, nullptr, domainSetup);
-		pluginHeader->userData = (void*) (IntPtr) GCHandle::Alloc(appDomain);
+		pluginHeader.userData = (void*) (IntPtr) GCHandle::Alloc(appDomain);
 		return true;
 	}
 
 	b32
-	UnloadPlugin(PluginHeader* pluginHeader)
+	UnloadPlugin(PluginHeader& pluginHeader)
 	{
-		GCHandle appDomainHandle = (GCHandle) (IntPtr) pluginHeader->userData;
+		GCHandle appDomainHandle = (GCHandle) (IntPtr) pluginHeader.userData;
 
 		AppDomain::Unload((AppDomain^) appDomainHandle.Target);
 		appDomainHandle.Free();
-		pluginHeader->userData = nullptr;
+		pluginHeader.userData = nullptr;
 		return true;
 	}
 
@@ -221,12 +223,12 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	}
 
 	b32
-	InitializeSensorPlugin(SensorPlugin* sensorPlugin)
+	InitializeSensorPlugin(SensorPlugin& sensorPlugin)
 	{
-		b32 success = LoadAssemblyAndInstantiateType(sensorPlugin->header.fileName, sensorPluginCLR.pluginInstance);
+		b32 success = LoadAssemblyAndInstantiateType(sensorPlugin.header.fileName, sensorPluginCLR.pluginInstance);
 		if (!success) return false;
 
-		sensorPluginCLR.pluginInstance->GetPluginInfo(&sensorPlugin->info);
+		sensorPluginCLR.pluginInstance->GetPluginInfo(sensorPlugin.info);
 
 		// DEBUG: Remove me (just for fast loading)
 		#if true
@@ -236,21 +238,21 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 		if (iInitialize)
 		{
 			sensorPluginCLR.initializeDelegate = gcnew SensorPlugin_CLR::InitializeDelegate(iInitialize, &ISensorInitialize::Initialize);
-			sensorPlugin->functions.initialize = (SensorPluginFunctions::InitializeFn*) (void*) Marshal::GetFunctionPointerForDelegate(sensorPluginCLR.initializeDelegate);
+			sensorPlugin.functions.initialize = (SensorPluginFunctions::InitializeFn*) (void*) Marshal::GetFunctionPointerForDelegate(sensorPluginCLR.initializeDelegate);
 		}
 
 		auto iUpdate = dynamic_cast<ISensorUpdate^>(sensorPluginCLR.pluginInstance);
 		if (iUpdate)
 		{
 			sensorPluginCLR.updateDelegate = gcnew SensorPlugin_CLR::UpdateDelegate(iUpdate, &ISensorUpdate::Update);
-			sensorPlugin->functions.update = (SensorPluginFunctions::UpdateFn*) (void*) Marshal::GetFunctionPointerForDelegate(sensorPluginCLR.updateDelegate);
+			sensorPlugin.functions.update = (SensorPluginFunctions::UpdateFn*) (void*) Marshal::GetFunctionPointerForDelegate(sensorPluginCLR.updateDelegate);
 		}
 
 		auto iTeardown = dynamic_cast<ISensorTeardown^>(sensorPluginCLR.pluginInstance);
 		if (iTeardown)
 		{
 			sensorPluginCLR.teardownDelegate = gcnew SensorPlugin_CLR::TeardownDelegate(iTeardown, &ISensorTeardown::Teardown);
-			sensorPlugin->functions.teardown = (SensorPluginFunctions::TeardownFn*) (void*) Marshal::GetFunctionPointerForDelegate(sensorPluginCLR.teardownDelegate);
+			sensorPlugin.functions.teardown = (SensorPluginFunctions::TeardownFn*) (void*) Marshal::GetFunctionPointerForDelegate(sensorPluginCLR.teardownDelegate);
 		}
 		#endif
 
@@ -258,50 +260,50 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	}
 
 	b32
-	TeardownSensorPlugin(SensorPlugin* sensorPlugin)
+	TeardownSensorPlugin(SensorPlugin& sensorPlugin)
 	{
-		sensorPlugin->functions = {};
+		sensorPlugin.functions = {};
 		sensorPluginCLR = SensorPlugin_CLR();
 
 		return true;
 	}
 
 	b32
-	InitializeWidgetPlugin(WidgetPlugin* widgetPlugin)
+	InitializeWidgetPlugin(WidgetPlugin& widgetPlugin)
 	{
-		b32 success = LoadAssemblyAndInstantiateType(widgetPlugin->header.fileName, widgetPluginCLR.pluginInstance);
+		b32 success = LoadAssemblyAndInstantiateType(widgetPlugin.header.fileName, widgetPluginCLR.pluginInstance);
 		if (!success) return false;
 
-		widgetPluginCLR.pluginInstance->GetPluginInfo(&widgetPlugin->info);
+		widgetPluginCLR.pluginInstance->GetPluginInfo(widgetPlugin.info);
 
 		auto iInitialize = dynamic_cast<IWidgetInitialize^>(widgetPluginCLR.pluginInstance);
 		if (iInitialize)
 		{
 			widgetPluginCLR.initializeDelegate = gcnew WidgetPlugin_CLR::InitializeDelegate(iInitialize, &IWidgetInitialize::Initialize);
-			widgetPlugin->functions.initialize = (WidgetPluginFunctions::InitializeFn*) (void*) Marshal::GetFunctionPointerForDelegate(widgetPluginCLR.initializeDelegate);
+			widgetPlugin.functions.Initialize = (WidgetPluginFunctions::InitializeFn*) (void*) Marshal::GetFunctionPointerForDelegate(widgetPluginCLR.initializeDelegate);
 		}
 
 		auto iUpdate = dynamic_cast<IWidgetUpdate^>(widgetPluginCLR.pluginInstance);
 		if (iUpdate)
 		{
 			widgetPluginCLR.updateDelegate = gcnew WidgetPlugin_CLR::UpdateDelegate(iUpdate, &IWidgetUpdate::Update);
-			widgetPlugin->functions.update = (WidgetPluginFunctions::UpdateFn*) (void*) Marshal::GetFunctionPointerForDelegate(widgetPluginCLR.updateDelegate);
+			widgetPlugin.functions.Update = (WidgetPluginFunctions::UpdateFn*) (void*) Marshal::GetFunctionPointerForDelegate(widgetPluginCLR.updateDelegate);
 		}
 
 		auto iTeardown = dynamic_cast<IWidgetTeardown^>(widgetPluginCLR.pluginInstance);
 		if (iTeardown)
 		{
 			widgetPluginCLR.teardownDelegate = gcnew WidgetPlugin_CLR::TeardownDelegate(iTeardown, &IWidgetTeardown::Teardown);
-			widgetPlugin->functions.teardown = (WidgetPluginFunctions::TeardownFn*) (void*) Marshal::GetFunctionPointerForDelegate(widgetPluginCLR.teardownDelegate);
+			widgetPlugin.functions.Teardown = (WidgetPluginFunctions::TeardownFn*) (void*) Marshal::GetFunctionPointerForDelegate(widgetPluginCLR.teardownDelegate);
 		}
 
 		return true;
 	}
 
 	b32
-	TeardownWidgetPlugin(WidgetPlugin* widgetPlugin)
+	TeardownWidgetPlugin(WidgetPlugin& widgetPlugin)
 	{
-		widgetPlugin->functions = {};
+		widgetPlugin.functions = {};
 		widgetPluginCLR = WidgetPlugin_CLR();
 
 		return true;
