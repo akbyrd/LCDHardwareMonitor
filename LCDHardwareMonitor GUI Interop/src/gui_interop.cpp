@@ -176,38 +176,39 @@ namespace LCDHardwareMonitor::GUI
 			LOG_IF(result == PipeResult::UnexpectedFailure, return false,
 				Severity::Error, "Failed to create pipe for sim communication");
 
-			b32 success = D3D9_Initialize((HWND) (void*) hwnd, &s.d3d9, &s.d3d9Device);
+			b32 success = D3D9_Initialize((HWND) (void*) hwnd, s.d3d9, s.d3d9Device);
 			if (!success) return false;
 
 			return true;
 		}
 
 		static void
-		OnDisconnect(SimulationState^ simState)
+		OnDisconnect(SimulationState% simState)
 		{
 			// DEBUG: Needed for the Watch window
 			State& s = state;
 
-			D3D9_DestroySharedSurface(&s.d3d9RenderTexture, &s.d3d9RenderSurface0);
-			simState->RenderSurface = IntPtr::Zero;
-			simState->Plugins->Clear();
-			simState->Sensors->Clear();
-			simState->WidgetDescs->Clear();
-			simState->IsSimulationConnected = false;
-			simState->NotifyPropertyChanged("");
+			D3D9_DestroySharedSurface(s.d3d9RenderTexture, s.d3d9RenderSurface0);
+			simState.RenderSurface = IntPtr::Zero;
+			simState.Plugins->Clear();
+			simState.Sensors->Clear();
+			simState.WidgetDescs->Clear();
+			simState.IsSimulationConnected = false;
+			simState.NotifyPropertyChanged("");
 
 			ConnectionState& simCon = s.simConnection;
 			simCon.sendIndex = 0;
 			simCon.recvIndex = 0;
 			// TODO: Will need to handle 'pending' states.
-			simState->Messages->Clear();
+			simState.Messages->Clear();
 		}
 
 		static bool
-		Update(SimulationState^ simState)
+		Update(SimulationState^ _simState)
 		{
 			// DEBUG: Needed for the Watch window
 			State& s = state;
+			SimulationState% simState = *_simState;
 
 			ConnectionState& simCon = s.simConnection;
 			Assert(!simCon.failure);
@@ -246,20 +247,20 @@ namespace LCDHardwareMonitor::GUI
 							DeserializeMessage<Connect>(bytes);
 
 							Connect& connect = (Connect&) bytes[0];
-							simState->Version = connect.version;
+							simState.Version = connect.version;
 
 							success = D3D9_CreateSharedSurface(
-								s.d3d9Device,
-								&s.d3d9RenderTexture,
-								&s.d3d9RenderSurface0,
+								*s.d3d9Device,
+								s.d3d9RenderTexture,
+								s.d3d9RenderSurface0,
 								(HANDLE) connect.renderSurface,
 								connect.renderSize
 							);
 							if (!success) return false;
 
-							simState->RenderSurface = (IntPtr) s.d3d9RenderSurface0;
-							simState->IsSimulationConnected = true;
-							simState->NotifyPropertyChanged("");
+							simState.RenderSurface = (IntPtr) s.d3d9RenderSurface0;
+							simState.IsSimulationConnected = true;
+							simState.NotifyPropertyChanged("");
 							break;
 						}
 
@@ -282,7 +283,7 @@ namespace LCDHardwareMonitor::GUI
 								mPluginInfo.Kind    = (PluginKind) pluginsAdded.kind;
 								mPluginInfo.Author  = ToManagedString(pluginsAdded.infos[i].author);
 								mPluginInfo.Version = pluginsAdded.infos[i].version;
-								simState->Plugins->Add(mPluginInfo);
+								simState.Plugins->Add(mPluginInfo);
 							}
 							break;
 						}
@@ -294,17 +295,17 @@ namespace LCDHardwareMonitor::GUI
 
 							for (u32 i = 0; i < statesChanged.refs.length; i++)
 							{
-								for (u32 j = 0; j < (u32) simState->Plugins->Count; j++)
+								for (u32 j = 0; j < (u32) simState.Plugins->Count; j++)
 								{
-									PluginInfo p = simState->Plugins[(i32) j];
+									PluginInfo p = simState.Plugins[(i32) j];
 									if ((::PluginKind) p.Kind == statesChanged.kind && p.Ref == statesChanged.refs[i].index)
 									{
 										p.LoadState = (PluginLoadState) statesChanged.loadStates[i];
-										simState->Plugins[(i32) j] = p;
+										simState.Plugins[(i32) j] = p;
 									}
 								}
 							}
-							simState->NotifyPropertyChanged("");
+							simState.NotifyPropertyChanged("");
 							break;
 						}
 
@@ -327,7 +328,7 @@ namespace LCDHardwareMonitor::GUI
 									mSensor.Identifier = ToManagedString(sensor.identifier);
 									mSensor.Format     = ToManagedString(sensor.format);
 									mSensor.Value      = sensor.value;
-									simState->Sensors->Add(mSensor);
+									simState.Sensors->Add(mSensor);
 								}
 							}
 							break;
@@ -349,7 +350,7 @@ namespace LCDHardwareMonitor::GUI
 									mWidgetDesc.PluginRef = widgetDescsAdded.pluginRefs[i].index;
 									mWidgetDesc.Ref       = desc.ref.index;
 									mWidgetDesc.Name      = ToManagedString(desc.name);
-									simState->WidgetDescs->Add(mWidgetDesc);
+									simState.WidgetDescs->Add(mWidgetDesc);
 								}
 							}
 							break;
@@ -359,11 +360,11 @@ namespace LCDHardwareMonitor::GUI
 
 				// TODO: Change this to On*() functions called directly from C#, similar to the sim side
 				// Construct messages
-				for (i32 i = 0; i < simState->Messages->Count; i++)
+				for (i32 i = 0; i < simState.Messages->Count; i++)
 				{
 					using namespace Message;
 
-					Message^ message = simState->Messages[i];
+					Message^ message = simState.Messages[i];
 					switch (message->type)
 					{
 						// TODO: I think I'd rather have the warnings
@@ -407,7 +408,7 @@ namespace LCDHardwareMonitor::GUI
 			// DEBUG: Needed for the Watch window
 			State& s = state;
 
-			D3D9_DestroySharedSurface(&s.d3d9RenderTexture, &s.d3d9RenderSurface0);
+			D3D9_DestroySharedSurface(s.d3d9RenderTexture, s.d3d9RenderSurface0);
 			D3D9_Teardown(s.d3d9, s.d3d9Device);
 
 			ConnectionState& simCon = s.simConnection;

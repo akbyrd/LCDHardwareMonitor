@@ -108,7 +108,7 @@ RegisterSensors(PluginContext& context, Slice<Sensor> sensors)
 	b32 success = List_AppendRange(sensorPlugin.sensors, sensors);
 	LOG_IF(!success, return,
 		Severity::Error, "Failed to allocate space for %u Sensors '%s'",
-		sensors.length, context.sensorPlugin->info.name.data);
+		sensors.length, sensorPlugin.info.name.data);
 
 	// TODO: Re-use empty slots in the list (from removes)
 
@@ -920,8 +920,8 @@ Simulation_Update(SimulationState& s)
 			if (!success) break;
 
 			using namespace Message;
-			Header* header = (Header*) bytes.data;
-			switch (header->id)
+			Header& header = (Header&) bytes[0];
+			switch (header.id)
 			{
 				default: Assert(false); break;
 

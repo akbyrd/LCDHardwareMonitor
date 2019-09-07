@@ -2,9 +2,9 @@ Style Notes
 
 - These notes are as much for me as anyone else.
 
-- Compile as C++14, but keep the shenanigans to a minimum. I use quite a few
-  C++11 features, and I can't currently think of any C++14 features, but I don't
-  feel the need to rule them out.
+- Compile as C++17, but keep the shenanigans to a minimum. I use quite a few
+  C++11 features, but not many beyond that. Mostly just constexpr and small
+  syntatctic niceties like beginning nested namespaces with 'namespace A::B`.
 
 - I find the type_t convention rather pointless, so I typedef that stuff away.
   In particular, I like the basic types being as brief as possible. i32 is a
@@ -53,15 +53,10 @@ Style Notes
       LOG_IF(FAILED(hr), return false,
         Severity::Fatal, "D3D11CreateDevice");
 
-- Use pointers instead of references. Yes, it's annoying that there's different
-  syntax for accessing members, which can be irritating when refactoring. But
-  references just trade that for a new annoyance: less clear at the call sites
-  that the argument may be modified. There's an argument to be made that you
-  can't tell a lot of things just from looking at the call site, but
-  subjectively just doesn't feel like it's worth using an additional language
-  feature for something that's not a clear win. Also, since you can't pass
-  or return nullptr when using references it leads to inconsistent code when you
-  specifically want to support a nullptr case.
+- Use pointers when parameters may be null, otherwise use references. I started
+  with pointers and the syntatic difference (arrow vs dot) is a constant small
+  annoyance. In theory it's less obvious when a function modifies a parameter,
+  but since I don't use const it's a moot point.
 
 - Don't create more functions than are necessary. The only time something
   becomes a new function is when it needs to be called multiple times from

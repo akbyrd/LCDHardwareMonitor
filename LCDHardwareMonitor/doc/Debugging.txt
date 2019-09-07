@@ -69,9 +69,9 @@ Message Ids
 {
 	Matrix world = Identity();
 	SetScale(world, v3 { 2000, 2000, 2000 });
-	SetTranslation(world, s->cameraPos);
+	SetTranslation(world, s.cameraPos);
 	static Matrix wvp;
-	wvp = world * s->vp;
+	wvp = world * s.vp;
 
 	Material material = {};
 	material.mesh = StandardMesh::Cube;

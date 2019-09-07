@@ -88,8 +88,8 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 		success = LoadPlugin(sensorPlugin.header);
 		if (!success) return false;
 
-		LHMPluginLoader^ pluginLoader = GetDomainResidentLoader(sensorPlugin.header);
-		success = pluginLoader->InitializeSensorPlugin(sensorPlugin);
+		LHMPluginLoader% pluginLoader = GetDomainResidentLoader(sensorPlugin.header);
+		success = pluginLoader.InitializeSensorPlugin(sensorPlugin);
 		if (!success) return false;
 
 		return true;
@@ -100,8 +100,8 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	{
 		b32 success;
 
-		LHMPluginLoader^ pluginLoader = GetDomainResidentLoader(sensorPlugin.header);
-		success = pluginLoader->TeardownSensorPlugin(sensorPlugin);
+		LHMPluginLoader% pluginLoader = GetDomainResidentLoader(sensorPlugin.header);
+		success = pluginLoader.TeardownSensorPlugin(sensorPlugin);
 		if (!success) return false;
 
 		success = UnloadPlugin(sensorPlugin.header);
@@ -118,8 +118,8 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 		success = LoadPlugin(widgetPlugin.header);
 		if (!success) return false;
 
-		LHMPluginLoader^ pluginLoader = GetDomainResidentLoader(widgetPlugin.header);
-		success = pluginLoader->InitializeWidgetPlugin(widgetPlugin);
+		LHMPluginLoader% pluginLoader = GetDomainResidentLoader(widgetPlugin.header);
+		success = pluginLoader.InitializeWidgetPlugin(widgetPlugin);
 		if (!success) return false;
 
 		return true;
@@ -130,8 +130,8 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	{
 		b32 success;
 
-		LHMPluginLoader^ pluginLoader = GetDomainResidentLoader(widgetPlugin.header);
-		success = pluginLoader->TeardownWidgetPlugin(widgetPlugin);
+		LHMPluginLoader% pluginLoader = GetDomainResidentLoader(widgetPlugin.header);
+		success = pluginLoader.TeardownWidgetPlugin(widgetPlugin);
 		if (!success) return false;
 
 		success = UnloadPlugin(widgetPlugin.header);
@@ -140,12 +140,12 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 		return true;
 	}
 
-	LHMPluginLoader^
+	LHMPluginLoader%
 	GetDomainResidentLoader(PluginHeader pluginHeader)
 	{
 		GCHandle         appDomainHandle = (GCHandle) (IntPtr) pluginHeader.userData;
-		AppDomain^       appDomain       = (AppDomain^) appDomainHandle.Target;
-		LHMPluginLoader^ pluginLoader    = (LHMPluginLoader^) appDomain->DomainManager;
+		AppDomain%       appDomain       = *(AppDomain^) appDomainHandle.Target;
+		LHMPluginLoader% pluginLoader    = *(LHMPluginLoader^) appDomain.DomainManager;
 		return pluginLoader;
 	}
 
@@ -159,16 +159,16 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 		// AppDomain so we need to let ApplicationBase get inherited from the
 		// default domain in order for it to be found. We set PrivateBinPath so
 		// the actual plugin can be found when we load it.
-		auto domainSetup = gcnew AppDomainSetup();
-		domainSetup->PrivateBinPath     = directory;
-		domainSetup->LoaderOptimization = LoaderOptimization::MultiDomainHost;
+		AppDomainSetup% domainSetup = *gcnew AppDomainSetup();
+		domainSetup.PrivateBinPath     = directory;
+		domainSetup.LoaderOptimization = LoaderOptimization::MultiDomainHost;
 
 		// TODO: Shadowcopy and file watch
 		//domainSetup.CachePath             = "Cache"
 		//domainSetup.ShadowCopyDirectories = true
 		//domainSetup.ShadowCopyFiles       = true
 
-		AppDomain^ appDomain = CreateDomain(name, nullptr, domainSetup);
+		AppDomain^ appDomain = CreateDomain(name, nullptr, %domainSetup);
 		pluginHeader.userData = (void*) (IntPtr) GCHandle::Alloc(appDomain);
 		return true;
 	}

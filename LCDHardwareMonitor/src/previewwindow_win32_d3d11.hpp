@@ -249,8 +249,8 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 	{
 		case WM_NCCREATE:
 		{
-			CREATESTRUCT* createStruct = (CREATESTRUCT*) lParam;
-			s = (PreviewWindowState*) createStruct->lpCreateParams;
+			CREATESTRUCT& createStruct = *(CREATESTRUCT*) lParam;
+			s = (PreviewWindowState*) createStruct.lpCreateParams;
 
 			// NOTE: Because Windows is dumb. See Return value section:
 			// https://msdn.microsoft.com/en-us/library/windows/desktop/ms644898.aspx

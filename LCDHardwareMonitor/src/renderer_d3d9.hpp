@@ -18,12 +18,12 @@
 b32
 D3D9_Initialize(
 	HWND                 hwnd,
-	IDirect3D9Ex**       d3d9,
-	IDirect3DDevice9Ex** d3d9Device)
+	IDirect3D9Ex*&       d3d9,
+	IDirect3DDevice9Ex*& d3d9Device)
 {
 	HRESULT hr;
 
-	hr = Direct3DCreate9Ex(D3D_SDK_VERSION, d3d9);
+	hr = Direct3DCreate9Ex(D3D_SDK_VERSION, &d3d9);
 	LOG_HRESULT_IF_FAILED(hr, return false,
 		Severity::Error, "Failed to initialize D3D9");
 
@@ -33,14 +33,14 @@ D3D9_Initialize(
 	presentParams.hDeviceWindow        = nullptr;
 	presentParams.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
 
-	hr = (*d3d9)->CreateDeviceEx(
+	hr = (*d3d9).CreateDeviceEx(
 		D3DADAPTER_DEFAULT,
 		D3DDEVTYPE_HAL,
 		hwnd,
 		D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_NOWINDOWCHANGES,
 		&presentParams,
 		nullptr,
-		d3d9Device
+		&d3d9Device
 	);
 	LOG_HRESULT_IF_FAILED(hr, return false,
 		Severity::Error, "Failed to create D3D9 device");
@@ -50,38 +50,47 @@ D3D9_Initialize(
 
 void
 D3D9_Teardown(
-	IDirect3D9Ex*       d3d9,
-	IDirect3DDevice9Ex* d3d9Device)
+	IDirect3D9Ex*&       d3d9,
+	IDirect3DDevice9Ex*& d3d9Device)
 {
-	d3d9      ->Release();
-	d3d9Device->Release();
+	if (d3d9)
+	{
+		(*d3d9).Release();
+		d3d9 = nullptr;
+	}
+
+	if (d3d9Device)
+	{
+		(*d3d9Device).Release();
+		d3d9Device = nullptr;
+	}
 }
 
 b32
 D3D9_CreateSharedSurface(
-	IDirect3DDevice9Ex* d3d9Device,
-	IDirect3DTexture9** d3d9RenderTexture,
-	IDirect3DSurface9** d3d9RenderSurface0,
+	IDirect3DDevice9Ex& d3d9Device,
+	IDirect3DTexture9*& d3d9RenderTexture,
+	IDirect3DSurface9*& d3d9RenderSurface0,
 	HANDLE              d3dRenderTextureSharedHandle,
 	v2u                 renderSize)
 {
 	HRESULT hr;
 
 	// TODO: Send multisampling from the simulation
-	hr = d3d9Device->CreateTexture(
+	hr = d3d9Device.CreateTexture(
 		renderSize.x,
 		renderSize.y,
 		1,
 		D3DUSAGE_RENDERTARGET,
 		D3DFMT_A8R8G8B8,
 		D3DPOOL_DEFAULT,
-		d3d9RenderTexture,
+		&d3d9RenderTexture,
 		&d3dRenderTextureSharedHandle
 	);
 	LOG_HRESULT_IF_FAILED(hr, return false,
 		Severity::Error, "Failed to create D3D9 render texture");
 
-	hr = (*d3d9RenderTexture)->GetSurfaceLevel(0, d3d9RenderSurface0);
+	hr = (*d3d9RenderTexture).GetSurfaceLevel(0, &d3d9RenderSurface0);
 	LOG_HRESULT_IF_FAILED(hr, return false,
 		Severity::Error, "Failed to get D3D9 render surface");
 
@@ -90,18 +99,18 @@ D3D9_CreateSharedSurface(
 
 void
 D3D9_DestroySharedSurface(
-	IDirect3DTexture9** d3d9RenderTexture,
-	IDirect3DSurface9** d3d9RenderSurface0)
+	IDirect3DTexture9*& d3d9RenderTexture,
+	IDirect3DSurface9*& d3d9RenderSurface0)
 {
-	if (*d3d9RenderTexture)
+	if (d3d9RenderTexture)
 	{
-		(*d3d9RenderTexture)->Release();
-		*d3d9RenderTexture = nullptr;
+		(*d3d9RenderTexture).Release();
+		d3d9RenderTexture = nullptr;
 	}
 
-	if (*d3d9RenderSurface0)
+	if (d3d9RenderSurface0)
 	{
-		(*d3d9RenderSurface0)->Release();
-		*d3d9RenderSurface0 = nullptr;
+		(*d3d9RenderSurface0).Release();
+		d3d9RenderSurface0 = nullptr;
 	}
 }

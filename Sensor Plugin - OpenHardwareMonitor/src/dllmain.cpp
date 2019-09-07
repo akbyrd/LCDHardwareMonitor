@@ -74,18 +74,18 @@ public ref struct State : ISensorPlugin, ISensorInitialize, ISensorUpdate, ISens
 			current.index = i;
 
 			// Hardware
-			IHardware^ currentHardware = current.hardware[i];
-			activeHardware->Add(currentHardware);
+			IHardware% currentHardware = *current.hardware[i];
+			activeHardware->Add(%currentHardware);
 
 			// Sensors
-			array<ISensor^>^ ohmSensors = currentHardware->Sensors;
+			array<ISensor^>^ ohmSensors = currentHardware.Sensors;
 			for (i32 j = 0; j < ohmSensors->Length; j++)
 			{
-				ISensor^ ohmSensor = ohmSensors[j];
-				activeSensors->Add(ohmSensor);
+				ISensor% ohmSensor = *ohmSensors[j];
+				activeSensors->Add(%ohmSensor);
 
 				SString^ format;
-				switch (ohmSensor->SensorType)
+				switch (ohmSensor.SensorType)
 				{
 					case SensorType::Clock:       format = "%i MHz";   break;
 					case SensorType::Control:     format = "%s%%";     break;
@@ -99,15 +99,15 @@ public ref struct State : ISensorPlugin, ISensorInitialize, ISensorUpdate, ISens
 					case SensorType::SmallData:   format = "%s";       break;
 					case SensorType::Temperature: format = "%.0f C";   break;
 					case SensorType::Voltage:     format = "%.2f V";   break;
-					default:                      format = "Unknown SensorType: " + ohmSensor->SensorType.ToString(); break;
+					default:                      format = "Unknown SensorType: " + ohmSensor.SensorType.ToString(); break;
 				}
 				// TODO: Format in C
 				// TODO: Don't update unless changed
-				SString^ value  = SString::Format(format, ohmSensor->Value);
+				SString^ value  = SString::Format(format, ohmSensor.Value);
 
 				Sensor sensor = {};
-				sensor.name       = ToStringSlice(ohmSensor->Name);
-				sensor.identifier = ToStringSlice(ohmSensor->Identifier->ToString());
+				sensor.name       = ToStringSlice(ohmSensor.Name);
+				sensor.identifier = ToStringSlice(ohmSensor.Identifier->ToString());
 				sensor.format     = ToStringSlice(value);
 				api.RegisterSensors(context, sensor);
 			}
@@ -153,10 +153,10 @@ public ref struct State : ISensorPlugin, ISensorInitialize, ISensorUpdate, ISens
 		for (u32 i = 0; i < api.sensors.length; i++)
 		{
 			Sensor& sensor = api.sensors[i];
-			ISensor^ ohmSensor = State::activeSensors[(i32) i];
+			ISensor% ohmSensor = *State::activeSensors[(i32) i];
 
 			// TODO: This string could disappear
-			sensor.value = ohmSensor->Value.GetValueOrDefault();
+			sensor.value = ohmSensor.Value.GetValueOrDefault();
 		}
 	}
 
