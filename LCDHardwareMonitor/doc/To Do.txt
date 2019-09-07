@@ -1,3 +1,5 @@
+Input from app to sim
+Auto-run/close sim with GUI (as a dev option)
 Decide on passing args by pointer or reference
 Look at tlbgen and references vs pointers
 
