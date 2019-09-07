@@ -33,6 +33,9 @@ namespace LCDHardwareMonitor.GUI
 				Shutdown();
 			}
 
+			SimulationState.ProcessStateTimer.Start();
+			OnTick(null, null);
+
 			// TODO: Is it possible to get the animation rate or max refresh rate for the interval?
 			timer = new DispatcherTimer(DispatcherPriority.Input);
 			timer.Interval = TimeSpan.FromSeconds(1.0 / 60.0);
@@ -42,10 +45,14 @@ namespace LCDHardwareMonitor.GUI
 
 		void OnExit(object sender, ExitEventArgs e)
 		{
+			// DEBUG: Only want this during development
+			if (SimulationState.ProcessState == ProcessState.Launched)
+				SimulationState.Messages.Add(MessageType.TerminateSim);
+			OnTick(null, null);
+
 			Interop.Teardown();
 		}
 
-		// TODO: Probably want to run this once from OnActivate to put things in the correct state
 		void OnTick(object sender, EventArgs e)
 		{
 			Process[] processes = Process.GetProcessesByName("LCDHardwareMonitor");
@@ -57,7 +64,11 @@ namespace LCDHardwareMonitor.GUI
 			switch (SimulationState.ProcessState)
 			{
 				case ProcessState.Null:
-					SimulationState.ProcessState = running ? ProcessState.Launched : ProcessState.Terminated;
+					// NOTE: Slightly faster to use "Multiple startup projects" when developing
+					if (running)
+							SimulationState.ProcessState = ProcessState.Launched;
+					else
+						SimulationState.Messages.Add(MessageType.LaunchSim);
 					break;
 
 				case ProcessState.Launching:
@@ -85,6 +96,7 @@ namespace LCDHardwareMonitor.GUI
 					break;
 			}
 
+			// TODO: Doesn't seem right to update ProcessState here instead when making the request
 			foreach (Message m in SimulationState.Messages)
 			{
 				switch (m.type)

@@ -388,7 +388,10 @@ OnTeardown(ConnectionState& con)
 	bytes.data     = (u8*) &disconnect;
 
 	result = Platform_WritePipe(con.pipe, bytes);
-	LOG_IF(result != PipeResult::Success, return,
+	// TODO: WritePipe should probably update the connection state to make this checking more correct
+	LOG_IF(result == PipeResult::TransientFailure, return,
+		Severity::Info, "Unable to send GUI disconnect signal");
+	LOG_IF(result == PipeResult::UnexpectedFailure, return,
 		Severity::Error, "Failed to send GUI disconnect signal");
 
 	result = Platform_FlushPipe(con.pipe);

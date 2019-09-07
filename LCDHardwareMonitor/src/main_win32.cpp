@@ -12,11 +12,11 @@
 #include "renderer_d3d11.hpp"
 #include "previewwindow_win32_d3d11.hpp"
 
-// TODO: Should probably push renderer and plugin manager administration into
-// the simulation.
+// TODO: Should probably push renderer and plugin manager administration into the simulation.
 // TODO: Support x86 and x64
 // TODO: Reduce link dependencies
 // TODO: Need a proper shutdown implementation (clean vs error)
+// TODO: Need to handle multiple instance more gracefully
 
 static const i32 togglePreviewWindowID = 0;
 
