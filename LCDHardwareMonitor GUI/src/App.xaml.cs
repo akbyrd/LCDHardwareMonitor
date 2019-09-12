@@ -1,6 +1,8 @@
 using System;
 using System.Diagnostics;
+using System.Reflection;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Threading;
 
@@ -18,6 +20,7 @@ namespace LCDHardwareMonitor.GUI
 			SimulationState = new SimulationState();
 			Activated += OnActivate;
 			Exit += OnExit;
+			DisableTabletSupport();
 		}
 
 		void OnActivate(object sender, EventArgs e)
@@ -36,9 +39,9 @@ namespace LCDHardwareMonitor.GUI
 			SimulationState.ProcessStateTimer.Start();
 			OnTick(null, null);
 
-			// TODO: Is it possible to get the animation rate or max refresh rate for the interval?
-			timer = new DispatcherTimer(DispatcherPriority.Input);
-			timer.Interval = TimeSpan.FromSeconds(1.0 / 60.0);
+			// TODO: Setting this to 60 yields 30 FPS. 70 yields 60 FPS and that seems to be the cap.
+			timer = new DispatcherTimer(DispatcherPriority.Send);
+			timer.Interval = TimeSpan.FromSeconds(1.0 / 70.0);
 			timer.Tick += OnTick;
 			timer.Start();
 		}
@@ -66,7 +69,7 @@ namespace LCDHardwareMonitor.GUI
 				case ProcessState.Null:
 					// NOTE: Slightly faster to use "Multiple startup projects" when developing
 					if (running)
-							SimulationState.ProcessState = ProcessState.Launched;
+						SimulationState.ProcessState = ProcessState.Launched;
 					else
 						SimulationState.Messages.Add(MessageType.LaunchSim);
 					break;
@@ -131,6 +134,40 @@ namespace LCDHardwareMonitor.GUI
 			}
 
 			SimulationState.Messages.Clear();
+		}
+
+		void DisableTabletSupport()
+		{
+			// NOTE: This is a filthy hack to disable tablet support because it breaks mouse capture.
+			// This is a problem with *all* WPF applications in Windows 10. Nice work Microsoft.
+			// https://github.com/dotnet/wpf/issues/1323
+			// https://developercommunity.visualstudio.com/content/problem/573655/wpf-mouse-capture-issue-windows-10-1903.html
+			// https://docs.microsoft.com/en-us/dotnet/framework/wpf/advanced/disable-the-realtimestylus-for-wpf-applications
+
+			TabletDeviceCollection devices = Tablet.TabletDevices;
+			if (devices.Count > 0)
+			{
+				object stylusLogic = typeof(InputManager).InvokeMember("StylusLogic",
+					BindingFlags.GetProperty | BindingFlags.Instance | BindingFlags.NonPublic,
+					null, InputManager.Current, null);
+
+				if (stylusLogic != null)
+				{
+					Type stylusLogicType = stylusLogic.GetType();
+					var args = new object[] { (uint) 0 };
+
+					// NOTE: The loop below may not work on some systems, which could cause an infinite
+					// loop. Also, it appears the remove call sometimes needs to happen several times
+					// for a device to be removed.
+					int maxTries = 4 * devices.Count;
+					while (devices.Count > 0 && maxTries-- > 0)
+					{
+						stylusLogicType.InvokeMember("OnTabletRemoved",
+							BindingFlags.InvokeMethod | BindingFlags.Instance | BindingFlags.NonPublic,
+							null, stylusLogic, args);
+					}
+				}
+			}
 		}
 	}
 }

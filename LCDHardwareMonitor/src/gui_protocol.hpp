@@ -89,6 +89,28 @@ namespace Message
 		Header header;
 	};
 
+	struct MouseMove
+	{
+		Header header;
+		v2i pos;
+	};
+
+	enum struct ButtonState
+	{
+		Null,
+		Down,
+		Up,
+	};
+
+	struct MouseButton
+	{
+		Header header;
+		v2i pos;
+		ButtonState state;
+		bool left;
+		bool middle;
+	};
+
 	struct SetPluginLoadStates
 	{
 		Header                 header;

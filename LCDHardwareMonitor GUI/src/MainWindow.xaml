@@ -92,6 +92,9 @@
 					<StackPanel Grid.Row="0">
 						<Label Content="LCD Preview" />
 						<Image
+							MouseMove="Preview_MouseMove"
+							MouseDown="Preview_MouseDown"
+							MouseUp="Preview_MouseUp"
 							Visibility="{Binding IsSimulationConnected, Converter={StaticResource vc}}"
 							Stretch="None">
 							<Image.Source>

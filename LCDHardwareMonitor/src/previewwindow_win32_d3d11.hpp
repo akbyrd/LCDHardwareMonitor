@@ -16,10 +16,6 @@ struct PreviewWindowState
 	i16                     mouseWheelAccumulator;
 	SimulationState*        simulationState;
 	RendererState*          rendererState;
-	b32                     mouseLook;
-	v2i                     mousePosStart;
-	v2                      cameraRotStart;
-	v2                      cameraRot;
 };
 
 b32
@@ -217,28 +213,6 @@ PreviewWindow_Render(PreviewWindowState& s)
 	return true;
 }
 
-static void
-UpdateCameraPosition(PreviewWindowState& s, LPARAM lParam)
-{
-	SimulationState& simulationState = *s.simulationState;
-
-	v2i mousePos = { GET_X_LPARAM(lParam), -GET_Y_LPARAM(lParam) };
-	v2i deltaPos = mousePos - s.mousePosStart;
-	s.cameraRot.yaw   = 0.0005f * deltaPos.x * 2*r32Pi;
-	s.cameraRot.pitch = 0.0005f * deltaPos.y * 2*r32Pi;
-
-	v3 rot = (v3) (s.cameraRotStart + s.cameraRot);
-	rot.pitch = Clamp(rot.pitch, -0.49f*r32Pi, 0.49f*r32Pi);
-	rot.roll  = 500;
-
-	v3 target = { 160.0f, 120.0f, 0.0f };
-	v3 pos    = GetOrbitPos(target, rot);
-
-	simulationState.cameraPos = pos;
-	simulationState.view      = LookAt(pos, target);
-	simulationState.vp        = simulationState.view * simulationState.proj;
-}
-
 LRESULT CALLBACK
 PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -288,20 +262,19 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 			break;
 		}
 
+		case WM_MOUSEMOVE:
+		{
+			v2i pos = { GET_X_LPARAM(lParam), -GET_Y_LPARAM(lParam) };
+			OnMouseMove(*s->simulationState, pos);
+			break;
+		}
+
 		case WM_LBUTTONDOWN:
 		{
 			SetCapture(s->hwnd);
 
-			s->mouseLook      = true;
-			s->mousePosStart  = { GET_X_LPARAM(lParam), -GET_Y_LPARAM(lParam) };
-			s->cameraRotStart = s->cameraRot;
-			break;
-		}
-
-		case WM_MOUSEMOVE:
-		{
-			if (!s->mouseLook) break;
-			UpdateCameraPosition(*s, lParam);
+			v2i pos = { GET_X_LPARAM(lParam), -GET_Y_LPARAM(lParam) };
+			OnLeftMouseDown(*s->simulationState, pos);
 			break;
 		}
 
@@ -310,17 +283,15 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 			b32 success = ReleaseCapture();
 			LOG_LAST_ERROR_IF(!success, IGNORE, Severity::Warning, "Failed to release mouse capture");
 
-			s->mouseLook       = false;
-			s->mousePosStart   = {};
-			s->cameraRot      += s->cameraRotStart;
-			s->cameraRotStart  = {};
+			v2i pos = { GET_X_LPARAM(lParam), -GET_Y_LPARAM(lParam) };
+			OnLeftMouseUp(*s->simulationState, pos);
 			break;
 		}
 
 		case WM_MBUTTONDOWN:
 		{
-			s->mousePosStart = { GET_X_LPARAM(lParam), -GET_Y_LPARAM(lParam) };
-			UpdateCameraPosition(*s, lParam);
+			v2i pos = { GET_X_LPARAM(lParam), -GET_Y_LPARAM(lParam) };
+			OnMiddleMouseDown(*s->simulationState, pos);
 			break;
 		}
 

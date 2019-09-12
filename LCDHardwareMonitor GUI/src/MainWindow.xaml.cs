@@ -8,6 +8,7 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
+using sMouseButton = System.Windows.Input.MouseButton;
 
 namespace LCDHardwareMonitor.GUI
 {
@@ -84,6 +85,70 @@ namespace LCDHardwareMonitor.GUI
 
 			Message request = new Message(MessageType.SetPluginLoadState, data);
 			simState.Messages.Add(request);
+		}
+
+		// TODO: Proper logging
+		private void Preview_MouseMove(object sender, MouseEventArgs e)
+		{
+			var element = sender as UIElement;
+			e.Handled = element.IsMouseCaptured;
+
+			Point pos = Mouse.GetPosition(null);
+			simState.Messages.Add(new Message(MessageType.MouseMove, pos));
+		}
+
+		private void Preview_MouseDown(object sender, MouseButtonEventArgs e)
+		{
+			switch (e.ChangedButton)
+			{
+				case sMouseButton.Left:
+				{
+					var element = sender as UIElement;
+					e.Handled = !element.IsMouseCaptured;
+					bool success = Mouse.Capture(element);
+					if (!success) Debug.Print("Warning: Failed to capture mouse");
+
+					var mouseButton = new MouseButton();
+					mouseButton.pos = Mouse.GetPosition(null);
+					mouseButton.state = e.ButtonState;
+					mouseButton.left = true;
+					simState.Messages.Add(new Message(MessageType.MouseButton, mouseButton));
+					break;
+				}
+
+				case sMouseButton.Middle:
+				{
+					e.Handled = true;
+					var mouseButton = new MouseButton();
+					mouseButton.pos = Mouse.GetPosition(null);
+					mouseButton.state = e.ButtonState;
+					mouseButton.middle = true;
+					simState.Messages.Add(new Message(MessageType.MouseButton, mouseButton));
+					break;
+				}
+			}
+		}
+
+		private void Preview_MouseUp(object sender, MouseButtonEventArgs e)
+		{
+			switch (e.ChangedButton)
+			{
+				case sMouseButton.Left:
+				{
+					var element = sender as UIElement;
+					e.Handled = element.IsMouseCaptured;
+
+					bool success = Mouse.Capture(null);
+					if (!success) Debug.Print("Warning: Failed to release mouse capture");
+
+					var mouseButton = new MouseButton();
+					mouseButton.pos = Mouse.GetPosition(null);
+					mouseButton.state = e.ButtonState;
+					mouseButton.left = true;
+					simState.Messages.Add(new Message(MessageType.MouseButton, mouseButton));
+					break;
+				}
+			}
 		}
 	}
 

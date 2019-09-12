@@ -14,6 +14,11 @@ struct SimulationState
 	Matrix             vp; // TODO: Remove this when simulation talks to the renderer directly
 	i64                startTime;
 	r32                currentTime;
+
+	b32                mouseLook;
+	v2                 cameraRot;
+	v2i                mousePosStart;
+	v2                 cameraRotStart;
 };
 
 struct PluginContext
@@ -290,7 +295,7 @@ PushDrawCall(PluginContext& context, Material material)
 // internally. It will disconnect and stop attempting to send messages when a failure occurs.
 
 static void
-OnConnect(ConnectionState& con, SimulationState& s)
+OnConnect(SimulationState& s, ConnectionState& con)
 {
 	b32 success;
 	using namespace Message;
@@ -397,6 +402,64 @@ OnTeardown(ConnectionState& con)
 	result = Platform_FlushPipe(con.pipe);
 	LOG_IF(result == PipeResult::UnexpectedFailure, return,
 		Severity::Error, "Failed to flush GUI communication pipe");
+}
+
+static void
+OnMiddleMouseDown(SimulationState& s, v2i mousePos)
+{
+	UNUSED(mousePos);
+
+	v2 offset = (v2) s.renderSize / 2.0f;
+	v3 pos    = { offset.x, offset.y, 500 };
+	v3 target = { offset.x, offset.y, 0 };
+
+	s.cameraPos = pos;
+	s.cameraRot = {};
+	s.view      = LookAt(pos, target);
+	s.proj      = Orthographic((v2) s.renderSize, 0, 10000);
+	s.vp        = s.view * s.proj;
+}
+
+static void
+OnLeftMouseDown(SimulationState& s, v2i mousePos)
+{
+	s.mouseLook      = true;
+	s.mousePosStart  = mousePos;
+	s.cameraRotStart = s.cameraRot;
+}
+
+static void
+OnLeftMouseUp(SimulationState& s, v2i mousePos)
+{
+	UNUSED(mousePos);
+
+	s.cameraRot      += s.cameraRotStart;
+	s.mouseLook       = false;
+	s.mousePosStart   = {};
+	s.cameraRotStart  = {};
+}
+
+static void
+OnMouseMove(SimulationState& s, v2i mousePos)
+{
+	if (!s.mouseLook) return;
+
+	v2i deltaPos = mousePos - s.mousePosStart;
+	s.cameraRot.yaw   = 0.0005f * deltaPos.x * 2*r32Pi;
+	s.cameraRot.pitch = 0.0005f * deltaPos.y * 2*r32Pi;
+
+	v3 rot = (v3) (s.cameraRotStart + s.cameraRot);
+	rot.pitch = Clamp(rot.pitch, -0.49f*r32Pi, 0.49f*r32Pi);
+	rot.roll  = 500;
+
+	// TODO: Get render size out of here
+	v2 offset = (v2) s.renderSize / 2.0f;
+	v3 target = { offset.x, offset.y, 0 };
+	v3 pos    = GetOrbitPos(target, rot);
+
+	s.cameraPos = pos;
+	s.view      = LookAt(pos, target);
+	s.vp        = s.view * s.proj;
 }
 
 // =================================================================================================
@@ -603,16 +666,7 @@ Simulation_Initialize(SimulationState& s, PluginLoaderState& pluginLoader, Rende
 		Severity::Error, "Failed to allocate Widget plugins list");
 
 	// Setup Camera
-	{
-		v2 offset = (v2) s.renderSize / 2.0f;
-		v3 pos    = { offset.x, offset.y, 500 };
-		v3 target = { offset.x, offset.y, 0 };
-
-		s.cameraPos = pos;
-		s.view      = LookAt(pos, target);
-		s.proj      = Orthographic((v2) s.renderSize, 0, 10000);
-		s.vp        = s.view * s.proj;
-	}
+	OnMiddleMouseDown(s, {});
 
 	// Load Default Assets
 	{
@@ -907,7 +961,7 @@ Simulation_Update(SimulationState& s)
 			HandleMessageResult(guiCon, result);
 
 			b32 isConnected = guiCon.pipe.state == PipeState::Connected;
-			if (isConnected && !wasConnected) OnConnect(guiCon, s);
+			if (isConnected && !wasConnected) OnConnect(s, guiCon);
 			if (!isConnected && wasConnected) OnDisconnect(guiCon);
 		}
 		if (guiCon.pipe.state != PipeState::Connected) break;
@@ -931,6 +985,32 @@ Simulation_Update(SimulationState& s)
 				case IdOf<TerminateSimulation>:
 					Platform_RequestQuit();
 					break;
+
+				case IdOf<MouseMove>:
+				{
+					MouseMove& mouseMove = (MouseMove&) bytes[0];
+					OnMouseMove(s, mouseMove.pos);
+					break;
+				}
+
+				case IdOf<MouseButton>:
+				{
+					MouseButton& mouseButton = (MouseButton&) bytes[0];
+					if (mouseButton.left)
+					{
+						Assert(mouseButton.state != ButtonState::Null);
+						if (mouseButton.state == ButtonState::Down)
+							OnLeftMouseDown(s, mouseButton.pos);
+						else
+							OnLeftMouseUp(s, mouseButton.pos);
+					}
+					else if (mouseButton.middle)
+					{
+						if (mouseButton.state == ButtonState::Down)
+							OnMiddleMouseDown(s, mouseButton.pos);
+					}
+					break;
+				}
 			}
 		}
 

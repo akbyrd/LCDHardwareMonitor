@@ -31,7 +31,11 @@ namespace LCDHardwareMonitor::GUI
 	using namespace System::Collections::ObjectModel;
 	using namespace System::ComponentModel;
 	using namespace System::Diagnostics;
-	using mString = System::String;
+	using namespace System::Windows;
+	using namespace System::Windows::Input;
+	using sString = System::String;
+	using nButtonState = Message::ButtonState;
+	using nMouseButton = Message::MouseButton;
 
 	public enum struct PluginKind
 	{
@@ -48,13 +52,12 @@ namespace LCDHardwareMonitor::GUI
 		Broken,
 	};
 
-	// TODO: Can we use native primitives?
 	public value struct PluginInfo
 	{
 		property UInt32     Ref;
-		property mString^   Name;
+		property sString^   Name;
 		property PluginKind Kind;
-		property mString^   Author;
+		property sString^   Author;
 		property UInt32     Version;
 
 		property PluginLoadState LoadState; // TODO: Probably belongs in another struct
@@ -64,9 +67,9 @@ namespace LCDHardwareMonitor::GUI
 	{
 		property UInt32   PluginRef;
 		property UInt32   Ref;
-		property mString^ Name;
-		property mString^ Identifier;
-		property mString^ Format;
+		property sString^ Name;
+		property sString^ Identifier;
+		property sString^ Format;
 		property Single   Value;
 	};
 
@@ -74,7 +77,7 @@ namespace LCDHardwareMonitor::GUI
 	{
 		property UInt32   PluginRef;
 		property UInt32   Ref;
-		property mString^ Name;
+		property sString^ Name;
 	};
 
 	public enum struct ProcessState
@@ -93,15 +96,27 @@ namespace LCDHardwareMonitor::GUI
 		TerminateSim,
 		ForceTerminateSim,
 		SetPluginLoadState,
+
+		// Input
+		MouseMove,
+		MouseButton,
+	};
+
+	public value struct MouseButton
+	{
+		property Point pos;
+		property MouseButtonState state;
+		property bool left;
+		property bool middle;
 	};
 
 	public value struct Message
 	{
-		Message(MessageType _type) { type = _type; data = nullptr; }
-		Message(MessageType _type, Object^ _data) { type = _type; data = _data; }
-		static operator Message (MessageType type) { return Message(type);  }
+		Message(MessageType type) { this->type = type; data = nullptr; }
+		Message(MessageType type, Object^ data) { this->type = type; this->data = data; }
+		static operator Message(MessageType type) { return Message(type); }
 
-		MessageType     type;
+		MessageType type;
 		Object^ data;
 	};
 
@@ -133,7 +148,7 @@ namespace LCDHardwareMonitor::GUI
 		}
 
 		virtual event PropertyChangedEventHandler^ PropertyChanged;
-		void NotifyPropertyChanged(mString^ propertyName)
+		void NotifyPropertyChanged(sString^ propertyName)
 		{
 			// TODO: Is this safe without the null check?
 			PropertyChanged(this, gcnew PropertyChangedEventArgs(propertyName));
@@ -147,7 +162,18 @@ namespace LCDHardwareMonitor::GUI
 		PluginLoadState loadState;
 	};
 
-	mString^
+	nButtonState
+	ToButtonState(MouseButtonState buttonState)
+	{
+		switch (buttonState)
+		{
+			default: Assert(false); return nButtonState::Null;
+			case MouseButtonState::Pressed: return nButtonState::Down;
+			case MouseButtonState::Released: return nButtonState::Up;
+		}
+	}
+
+	sString^
 	ToManagedString(StringSlice cstring)
 	{
 		LOG_IF((i32) cstring.length < 0, IGNORE,
@@ -158,7 +184,7 @@ namespace LCDHardwareMonitor::GUI
 		while (length > 0 && cstring[length - 1] == '\0')
 			length--;
 
-		mString^ result = gcnew mString(cstring.data, 0, (i32) length);
+		sString^ result = gcnew sString(cstring.data, 0, (i32) length);
 		return result;
 	}
 
@@ -363,7 +389,6 @@ namespace LCDHardwareMonitor::GUI
 				for (i32 i = 0; i < simState.Messages->Count; i++)
 				{
 					using namespace Message;
-
 					Message^ message = simState.Messages[i];
 					switch (message->type)
 					{
@@ -373,7 +398,7 @@ namespace LCDHardwareMonitor::GUI
 						case MessageType::LaunchSim:
 						case MessageType::ForceTerminateSim:
 							// Handled in App
-							continue;
+							break;
 
 						case MessageType::TerminateSim:
 						{
@@ -385,7 +410,32 @@ namespace LCDHardwareMonitor::GUI
 
 						case MessageType::SetPluginLoadState:
 							// TODO: Implement
-							continue;
+							break;
+
+						case MessageType::MouseMove:
+						{
+							Point pos = (Point) message->data;
+
+							MouseMove nMessage = {};
+							nMessage.pos = { (int) pos.X, (int) -pos.Y };
+							b32 success = SerializeAndQueueMessage(simCon, nMessage);
+							if (!success) return false;
+							break;
+						}
+
+						case MessageType::MouseButton:
+						{
+							MouseButton mouseButton = (MouseButton) message->data;
+
+							nMouseButton nMessage = {};
+							nMessage.pos = { (int) mouseButton.pos.X, (int) -mouseButton.pos.Y };
+							nMessage.state = ToButtonState(mouseButton.state);
+							nMessage.left = mouseButton.left;
+							nMessage.middle = mouseButton.middle;
+							b32 success = SerializeAndQueueMessage(simCon, nMessage);
+							if (!success) return false;
+							break;
+						}
 					}
 				}
 
