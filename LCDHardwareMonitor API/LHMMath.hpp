@@ -28,6 +28,20 @@ const r32 r32Max = 3.402823466e+38f;
 const r32 r32Epsilon = 31.192092896e-07f;
 const r32 r32Pi      = 3.141592654f;
 
+template<typename T>
+inline T
+Abs(T value)
+{
+	return value < 0 ? -value : value;
+}
+
+inline b32
+ApproximatelyZero(r32 value)
+{
+	b32 result = Abs(value) < r32Epsilon;
+	return result;
+}
+
 template<typename T, typename U, typename V>
 inline T
 Clamp(T value, U min, V max)
@@ -159,6 +173,14 @@ inline void
 operator-= (v2t<T>& lhs, U rhs)
 {
 	lhs = lhs - rhs;
+}
+
+template<typename T, typename U>
+inline v2t<T>
+operator* (v2t<T> v, U multiplier)
+{
+	v2t<T> result = { multiplier * v.x, multiplier * v.y };
+	return result;
 }
 
 template<typename T, typename U>
@@ -410,6 +432,14 @@ operator* (U multiplier, v3t<T> v)
 
 template<typename T, typename U>
 inline v3t<T>
+operator* (v3t<T> v, U multiplier)
+{
+	v3t<T> result = { multiplier * v.x, multiplier * v.y, multiplier * v.z };
+	return result;
+}
+
+template<typename T, typename U>
+inline v3t<T>
 operator* (v3t<T> lhs, v3t<U> rhs)
 {
 	v3t<T> result = { lhs.x * rhs.x, lhs.y * rhs.y, lhs.z * rhs.z };
@@ -520,18 +550,16 @@ Dot(v3t<T> lhs, v3t<U> rhs)
 
 template<typename T, typename U>
 inline v3
-GetOrbitPos(v3t<T> target, v3t<U> ypr)
+GetOrbitPos(v3t<T> target, v2t<U> yp, r32 radius)
 {
-	// NOTE:
-	// Using roll as radius
-	// Pitch, then yaw
+	// NOTE: Pitch, then yaw
 
-	r32 cy = cos(-ypr.yaw);
-	r32 sy = sin(-ypr.yaw);
-	r32 cp = cos(ypr.pitch);
-	r32 sp = sin(ypr.pitch);
+	r32 cy = cos(-yp.yaw);
+	r32 sy = sin(-yp.yaw);
+	r32 cp = cos(yp.pitch);
+	r32 sp = sin(yp.pitch);
 
-	v3 offset = ypr.roll * v3 { sy*cp, -sp, cy*cp };
+	v3 offset = radius * v3 { sy*cp, -sp, cy*cp };
 
 	v3 pos = target + offset;
 	return pos;
@@ -591,6 +619,11 @@ union v4t
 		T g;
 		T b;
 		T a;
+	};
+	struct
+	{
+		v2t<T> pos;
+		v2t<T> size;
 	};
 	T arr[4];
 
@@ -664,6 +697,14 @@ operator-= (v4t<T>& lhs, U rhs)
 template<typename T, typename U>
 inline v4t<T>
 operator* (U multiplier, v4t<T> v)
+{
+	v4t<T> result = { multiplier * v.x, multiplier * v.y, multiplier * v.z, multiplier * v.w };
+	return result;
+}
+
+template<typename T, typename U>
+inline v4t<T>
+operator* (v4t<T> v, U multiplier)
 {
 	v4t<T> result = { multiplier * v.x, multiplier * v.y, multiplier * v.z, multiplier * v.w };
 	return result;
@@ -836,6 +877,18 @@ Normalize(v4t<T> v)
 	return result;
 }
 
+template<typename T, typename U>
+inline bool
+RectContains(v4t<T> rect, v2t<U> pos)
+{
+	bool result = true;
+	result &= pos.x >= rect.pos.x;
+	result &= pos.x <  rect.pos.x + rect.size.x;
+	result &= pos.y >= rect.pos.y;
+	result &= pos.y <  rect.pos.y + rect.size.y;
+	return result;
+}
+
 
 // === Matrix ======================================================================================
 
@@ -939,6 +992,19 @@ Identity()
 	return result;
 }
 
+// TODO: What about scale?
+inline Matrix
+InvertRT(const Matrix& m)
+{
+	Matrix result = {
+		m.xx, m.xy, m.xz, -Dot(Row(m, 0), Row(m, 3)),
+		m.yx, m.yy, m.yz, -Dot(Row(m, 1), Row(m, 3)),
+		m.zx, m.zy, m.zz, -Dot(Row(m, 2), Row(m, 3)),
+		0.0f, 0.0f, 0.0f, 1.0f,
+	};
+	return result;
+}
+
 template<typename T, typename U>
 inline Matrix
 LookAt(v3t<T> pos, v3t<U> target)
@@ -960,18 +1026,16 @@ LookAt(v3t<T> pos, v3t<U> target)
 
 template<typename T, typename U>
 inline Matrix
-Orbit(v3t<T> target, v3t<U> ypr)
+Orbit(v3t<T> target, v2t<U> yp, r32 radius)
 {
-	// NOTE:
-	// Using roll as radius
-	// Pitch, then yaw
+	// NOTE:Pitch, then yaw
 
-	r32 cy = cos(-ypr.yaw);
-	r32 sy = sin(-ypr.yaw);
-	r32 cp = cos(ypr.pitch);
-	r32 sp = sin(ypr.pitch);
+	r32 cy = cos(-yp.yaw);
+	r32 sy = sin(-yp.yaw);
+	r32 cp = cos(yp.pitch);
+	r32 sp = sin(yp.pitch);
 
-	v3 offset = ypr.roll * v3 { sy*cp, -sp, cy*cp };
+	v3 offset = radius * v3 { sy*cp, -sp, cy*cp };
 
 	v3 pos = target + offset;
 	return LookAt(pos, target);

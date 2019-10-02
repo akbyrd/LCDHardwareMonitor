@@ -26,6 +26,9 @@ namespace LCDHardwareMonitor.GUI
 
 		private void CompositionTarget_Rendering(object sender, EventArgs e)
 		{
+			if (!preview.IsVisible) return;
+
+			// TODO BUG: When the display turns off this line appears to stall indefinitely
 			LCDPreviewTexture.Lock();
 			LCDPreviewTexture.SetBackBuffer(D3DResourceType.IDirect3DSurface9, simState.RenderSurface, true);
 
@@ -87,67 +90,74 @@ namespace LCDHardwareMonitor.GUI
 			simState.Messages.Add(request);
 		}
 
-		// TODO: Proper logging
-		private void Preview_MouseMove(object sender, MouseEventArgs e)
+		private Point GetMousePosition()
 		{
-			var element = sender as UIElement;
-			e.Handled = element.IsMouseCaptured;
-
-			Point pos = Mouse.GetPosition(null);
-			simState.Messages.Add(new Message(MessageType.MouseMove, pos));
+			Point previewPos = preview.PointToScreen(new Point());
+			Point cursorPos = Win32.GetCursorPos();
+			Point mousePos = (Point) (cursorPos - previewPos);
+			mousePos.Y = preview.RenderSize.Height - 1 - mousePos.Y;
+			return mousePos;
 		}
 
-		private void Preview_MouseDown(object sender, MouseButtonEventArgs e)
+		// TODO: Proper logging
+		// TODO: Clear mouse pos when minimized / not visible?
+		internal void OnMouseMove()
+		{
+			Point mousePos = GetMousePosition();
+			if (mousePos != simState.MousePos)
+			{
+				simState.Messages.Add(new Message(MessageType.MouseMove, mousePos));
+				simState.MousePos = mousePos;
+				simState.NotifyPropertyChanged("");
+			}
+		}
+
+		private new void MouseDown(object sender, MouseButtonEventArgs e)
 		{
 			switch (e.ChangedButton)
 			{
+				default: return;
+
 				case sMouseButton.Left:
+				case sMouseButton.Middle:
+				case sMouseButton.Right:
 				{
 					var element = sender as UIElement;
 					e.Handled = !element.IsMouseCaptured;
 					bool success = Mouse.Capture(element);
 					if (!success) Debug.Print("Warning: Failed to capture mouse");
 
-					var mouseButton = new MouseButton();
-					mouseButton.pos = Mouse.GetPosition(null);
-					mouseButton.state = e.ButtonState;
-					mouseButton.left = true;
-					simState.Messages.Add(new Message(MessageType.MouseButton, mouseButton));
-					break;
-				}
-
-				case sMouseButton.Middle:
-				{
-					e.Handled = true;
-					var mouseButton = new MouseButton();
-					mouseButton.pos = Mouse.GetPosition(null);
-					mouseButton.state = e.ButtonState;
-					mouseButton.middle = true;
-					simState.Messages.Add(new Message(MessageType.MouseButton, mouseButton));
+					var mbChange = new MouseButtonChange();
+					mbChange.pos = GetMousePosition();
+					mbChange.button = e.ChangedButton;
+					mbChange.state = e.ButtonState;
+					simState.Messages.Add(new Message(MessageType.MouseButtonChange, mbChange));
 					break;
 				}
 			}
 		}
 
-		private void Preview_MouseUp(object sender, MouseButtonEventArgs e)
+		private new void MouseUp(object sender, MouseButtonEventArgs e)
 		{
 			switch (e.ChangedButton)
 			{
+				default: return;
+
 				case sMouseButton.Left:
-				{
+				case sMouseButton.Middle:
+				case sMouseButton.Right:
 					var element = sender as UIElement;
 					e.Handled = element.IsMouseCaptured;
 
 					bool success = Mouse.Capture(null);
 					if (!success) Debug.Print("Warning: Failed to release mouse capture");
 
-					var mouseButton = new MouseButton();
-					mouseButton.pos = Mouse.GetPosition(null);
-					mouseButton.state = e.ButtonState;
-					mouseButton.left = true;
-					simState.Messages.Add(new Message(MessageType.MouseButton, mouseButton));
+					var mbChange = new MouseButtonChange();
+					mbChange.pos = GetMousePosition();
+					mbChange.button = e.ChangedButton;
+					mbChange.state = e.ButtonState;
+					simState.Messages.Add(new Message(MessageType.MouseButtonChange, mbChange));
 					break;
-				}
 			}
 		}
 	}

@@ -55,6 +55,7 @@
     <FxCompile Include="res\Debug Coordinates.ps">
       <Filter>Resources</Filter>
     </FxCompile>
+    <FxCompile Include="res\Solid Colored.ps" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main_win32.cpp">

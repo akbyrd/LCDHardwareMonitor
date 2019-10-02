@@ -99,7 +99,7 @@ namespace LCDHardwareMonitor.GUI
 					break;
 			}
 
-			// TODO: Doesn't seem right to update ProcessState here instead when making the request
+			// TODO: Doesn't seem right to update ProcessState here instead of when making the request
 			foreach (Message m in SimulationState.Messages)
 			{
 				switch (m.type)
@@ -125,6 +125,10 @@ namespace LCDHardwareMonitor.GUI
 				SimulationState.ProcessStateTimer.Restart();
 				SimulationState.NotifyPropertyChanged("");
 			}
+
+			var mainWindow = (MainWindow) MainWindow;
+			if (mainWindow != null)
+				mainWindow.OnMouseMove();
 
 			bool success = Interop.Update(SimulationState);
 			if (!success)

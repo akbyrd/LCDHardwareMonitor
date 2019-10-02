@@ -4,15 +4,17 @@
 struct WidgetPlugin;
 using WidgetPluginRef = List<WidgetPlugin>::RefT;
 
+struct Widget;
+using WidgetRef = List<Widget>::RefT;
+
 struct Widget
 {
 	v2              position;
-	//v2              scale;
+	v2              size;
 	v2              pivot;
 	r32             depth;
 	SensorPluginRef sensorPluginRef;
 	SensorRef       sensorRef;
-	//u8              data[1];
 };
 
 struct WidgetInstanceAPI
@@ -98,5 +100,24 @@ struct WidgetPluginFunctions
 	UpdateFn*        Update;
 	TeardownFn*      Teardown;
 };
+
+inline v2
+WidgetPosition(Widget widget)
+{
+	// TODO: Actually get this from the mesh
+	v2 meshPivot = { 0.5f, 0.5f };
+
+	v2 result = widget.position + (meshPivot - widget.pivot) * widget.size;
+	return result;
+}
+
+inline v4
+WidgetRect(Widget widget)
+{
+	v4 result = {};
+	result.pos = widget.position - widget.pivot * widget.size;
+	result.size = widget.size;
+	return result;
+}
 
 #endif

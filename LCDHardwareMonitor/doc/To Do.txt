@@ -1,8 +1,16 @@
+Remove the blending in the WPF image
+Would it be easier to declare the native structs in C# rather than having custom ones?
+Change line separators
+Bug when clicking X to close preview window
+Escape to close GUI
+Naming: Widget vs WidgetInstance
+
 GUI Control
 	Load/Unload plugins
 	Add/Remove widgets
 	Configure widgets
 	Configure global settings (update rate)
+	Reconcile input when connecting (buttons already down) and disconnecting (release down buttons).
 
 Stuff
 	Look at tlbgen and references vs pointers

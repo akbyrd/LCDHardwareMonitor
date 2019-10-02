@@ -213,6 +213,15 @@ PreviewWindow_Render(PreviewWindowState& s)
 	return true;
 }
 
+static v2i
+GetMousePosition(LPARAM lParam, u16 zoomFactor, v2u renderSize)
+{
+	v2i pos = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+	pos /= zoomFactor;
+	pos.y = (i32) renderSize.y - 1 - pos.y;
+	return pos;
+}
+
 LRESULT CALLBACK
 PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -264,7 +273,7 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 
 		case WM_MOUSEMOVE:
 		{
-			v2i pos = { GET_X_LPARAM(lParam), -GET_Y_LPARAM(lParam) };
+			v2i pos = GetMousePosition(lParam, s->zoomFactor, s->renderSize);
 			OnMouseMove(*s->simulationState, pos);
 			break;
 		}
@@ -273,7 +282,7 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 		{
 			SetCapture(s->hwnd);
 
-			v2i pos = { GET_X_LPARAM(lParam), -GET_Y_LPARAM(lParam) };
+			v2i pos = GetMousePosition(lParam, s->zoomFactor, s->renderSize);
 			OnLeftMouseDown(*s->simulationState, pos);
 			break;
 		}
@@ -283,14 +292,33 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 			b32 success = ReleaseCapture();
 			LOG_LAST_ERROR_IF(!success, IGNORE, Severity::Warning, "Failed to release mouse capture");
 
-			v2i pos = { GET_X_LPARAM(lParam), -GET_Y_LPARAM(lParam) };
+			v2i pos = GetMousePosition(lParam, s->zoomFactor, s->renderSize);
 			OnLeftMouseUp(*s->simulationState, pos);
+			break;
+		}
+
+		case WM_RBUTTONDOWN:
+		{
+			SetCapture(s->hwnd);
+
+			v2i pos = GetMousePosition(lParam, s->zoomFactor, s->renderSize);
+			OnRightMouseDown(*s->simulationState, pos);
+			break;
+		}
+
+		case WM_RBUTTONUP:
+		{
+			b32 success = ReleaseCapture();
+			LOG_LAST_ERROR_IF(!success, IGNORE, Severity::Warning, "Failed to release mouse capture");
+
+			v2i pos = GetMousePosition(lParam, s->zoomFactor, s->renderSize);
+			OnRightMouseUp(*s->simulationState, pos);
 			break;
 		}
 
 		case WM_MBUTTONDOWN:
 		{
-			v2i pos = { GET_X_LPARAM(lParam), -GET_Y_LPARAM(lParam) };
+			v2i pos = GetMousePosition(lParam, s->zoomFactor, s->renderSize);
 			OnMiddleMouseDown(*s->simulationState, pos);
 			break;
 		}

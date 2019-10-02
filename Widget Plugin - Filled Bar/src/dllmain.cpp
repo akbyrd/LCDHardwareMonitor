@@ -4,7 +4,6 @@
 
 struct BarWidget
 {
-	v2u          size;
 	r32          borderSize;
 	r32          borderBlur;
 	VSPerObject  vsPerObject;
@@ -19,21 +18,22 @@ InitializeBarWidgets(PluginContext& context, WidgetInstanceAPI::Initialize api)
 {
 	for (u32 i = 0; i < api.widgets.length; i++)
 	{
-		//Widget&    widget    = api.widgets[i];
+		Widget&    widget    = api.widgets[i];
 		BarWidget& barWidget = (BarWidget&) api.widgetsUserData[i];
 
-		barWidget.size       = { 240, 12 };
+		widget.size = { 240, 12 };
+
 		barWidget.borderSize = 1.0f;
 		barWidget.borderBlur = 0.0f;
 
-		v2 pixelsPerUV = 1.0f / (v2) barWidget.size;
+		v2 pixelsPerUV = 1.0f / widget.size;
 		barWidget.psInitialize.borderSizeUV    = barWidget.borderSize * pixelsPerUV;
 		barWidget.psInitialize.borderBlurUV    = barWidget.borderBlur * pixelsPerUV;
 		barWidget.psInitialize.borderColor     = Color32(47, 112, 22, 255);
 		barWidget.psInitialize.fillColor       = Color32(47, 112, 22, 255);
 		barWidget.psInitialize.backgroundColor = Color32( 0,   0,  0, 255);
 
-		api.PushConstantBufferUpdate(context, filledBarMat, ShaderStage::Pixel,  0, &barWidget.psInitialize);
+		api.PushConstantBufferUpdate(context, filledBarMat, ShaderStage::Pixel, 0, &barWidget.psInitialize);
 	}
 	return true;
 }
@@ -61,12 +61,10 @@ UpdateBarWidgets(PluginContext& context, WidgetInstanceAPI::Update api)
 
 		// Draw
 		{
-			Matrix world = Identity();
+			v2 position = WidgetPosition(widget);
+			v2 size = widget.size;
 
-			v2 size = (v2) barWidget.size;
-			v2 position = widget.position;
-			// TODO: Add a SetPosition that takes a pivot and size
-			position += (v2{ 0.5f, 0.5f } - widget.pivot) * size;
+			Matrix world = Identity();
 			SetPosition(world, position, -widget.depth);
 			SetScale   (world, size, 1.0f);
 			barWidget.vsPerObject.wvp = world * api.GetViewProjectionMatrix(context);
@@ -75,24 +73,6 @@ UpdateBarWidgets(PluginContext& context, WidgetInstanceAPI::Update api)
 			api.PushConstantBufferUpdate(context, filledBarMat, ShaderStage::Pixel,  1, &barWidget.psPerObject);
 			api.PushDrawCall(context, filledBarMat);
 		}
-	}
-
-	// DEBUG: Background Quad
-	{
-		v3 pos   = { 160.0f, 120.0f, -10.0f };
-		v3 scale = { 244.0f,  76.0f,   1.0f };
-		Matrix world = GetST(scale, pos);
-
-		static Matrix wvp;
-		wvp = world * api.GetViewProjectionMatrix(context);
-
-		Material material = {};
-		material.mesh = StandardMesh::Quad;
-		material.vs   = StandardVertexShader::WVP;
-		material.ps   = StandardPixelShader::VertexColored;
-
-		api.PushConstantBufferUpdate(context, filledBarMat, ShaderStage::Vertex, 0, &wvp);
-		api.PushDrawCall(context, material);
 	}
 }
 

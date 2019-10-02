@@ -42,6 +42,9 @@ struct SensorPlugin
 	//List<SensorRef> activeSensors;
 };
 
+struct WidgetData;
+using WidgetDataRef = List<WidgetData>::RefT;
+
 struct WidgetData
 {
 	WidgetDesc   desc;

@@ -14,6 +14,8 @@
 #include "platform_win32.hpp"
 #include "renderer_d3d9.hpp"
 
+#include <WinUser.h>
+
 struct State
 {
 	ConnectionState     simConnection;
@@ -36,6 +38,7 @@ namespace LCDHardwareMonitor::GUI
 	using sString = System::String;
 	using nButtonState = Message::ButtonState;
 	using nMouseButton = Message::MouseButton;
+	using nMouseButtonChange = Message::MouseButtonChange;
 
 	public enum struct PluginKind
 	{
@@ -99,15 +102,14 @@ namespace LCDHardwareMonitor::GUI
 
 		// Input
 		MouseMove,
-		MouseButton,
+		MouseButtonChange,
 	};
 
-	public value struct MouseButton
+	public value struct MouseButtonChange
 	{
 		property Point pos;
+		property MouseButton button;
 		property MouseButtonState state;
-		property bool left;
-		property bool middle;
 	};
 
 	public value struct Message
@@ -133,6 +135,7 @@ namespace LCDHardwareMonitor::GUI
 		property bool         IsSimulationConnected;
 		property ProcessState ProcessState;
 		property Stopwatch^   ProcessStateTimer;
+		property Point        MousePos;
 
 		// Messages
 		System::Collections::Generic::List<Message>^ Messages;
@@ -161,6 +164,18 @@ namespace LCDHardwareMonitor::GUI
 		UInt32          ref_;
 		PluginLoadState loadState;
 	};
+
+	nMouseButton
+	ToMouseButton(MouseButton button)
+	{
+		switch (button)
+		{
+			default: Assert(false); return nMouseButton::Null;
+			case MouseButton::Left: return nMouseButton::Left;
+			case MouseButton::Middle: return nMouseButton::Middle;
+			case MouseButton::Right: return nMouseButton::Right;
+		}
+	}
 
 	nButtonState
 	ToButtonState(MouseButtonState buttonState)
@@ -417,21 +432,20 @@ namespace LCDHardwareMonitor::GUI
 							Point pos = (Point) message->data;
 
 							MouseMove nMessage = {};
-							nMessage.pos = { (int) pos.X, (int) -pos.Y };
+							nMessage.pos = { (int) pos.X, (int) pos.Y };
 							b32 success = SerializeAndQueueMessage(simCon, nMessage);
 							if (!success) return false;
 							break;
 						}
 
-						case MessageType::MouseButton:
+						case MessageType::MouseButtonChange:
 						{
-							MouseButton mouseButton = (MouseButton) message->data;
+							MouseButtonChange mouseButtonChange = (MouseButtonChange) message->data;
 
-							nMouseButton nMessage = {};
-							nMessage.pos = { (int) mouseButton.pos.X, (int) -mouseButton.pos.Y };
-							nMessage.state = ToButtonState(mouseButton.state);
-							nMessage.left = mouseButton.left;
-							nMessage.middle = mouseButton.middle;
+							nMouseButtonChange nMessage = {};
+							nMessage.pos = { (int) mouseButtonChange.pos.X, (int) mouseButtonChange.pos.Y };
+							nMessage.button = ToMouseButton(mouseButtonChange.button);
+							nMessage.state = ToButtonState(mouseButtonChange.state);
 							b32 success = SerializeAndQueueMessage(simCon, nMessage);
 							if (!success) return false;
 							break;
@@ -465,6 +479,20 @@ namespace LCDHardwareMonitor::GUI
 			Connection_Teardown(simCon);
 
 			s = {};
+		}
+	};
+
+
+	public value struct Win32 abstract sealed
+	{
+		static Point
+		GetCursorPos()
+		{
+			POINT point = {};
+			bool result = ::GetCursorPos(&point);
+			// TODO: Logging
+			Assert(result);
+			return Point(point.x, point.y);
 		}
 	};
 }

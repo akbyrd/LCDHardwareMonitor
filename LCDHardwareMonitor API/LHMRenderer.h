@@ -46,8 +46,9 @@ namespace StandardVertexShader
 namespace StandardPixelShader
 {
 	static const PixelShader Null             = { 0 };
-	static const PixelShader VertexColored    = { 1 };
-	static const PixelShader DebugCoordinates = { 2 };
+	static const PixelShader SolidColored     = { 1 };
+	static const PixelShader VertexColored    = { 2 };
+	static const PixelShader DebugCoordinates = { 3 };
 };
 
 #endif

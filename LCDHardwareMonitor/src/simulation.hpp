@@ -1,3 +1,30 @@
+#include "Solid Colored.ps.h"
+
+struct FullWidgetRef
+{
+	WidgetPluginRef pluginRef;
+	WidgetDataRef   dataRef;
+	WidgetRef       ref;
+};
+
+inline b32 operator== (FullWidgetRef lhs, FullWidgetRef rhs)
+{
+	b32 result = true;
+	result &= lhs.pluginRef == rhs.pluginRef;
+	result &= lhs.dataRef == rhs.dataRef;
+	result &= lhs.ref == rhs.ref;
+	return result;
+}
+
+inline b32 operator!= (FullWidgetRef lhs, FullWidgetRef rhs)
+{
+	b32 result = false;
+	result |= lhs.pluginRef != rhs.pluginRef;
+	result |= lhs.dataRef != rhs.dataRef;
+	result |= lhs.ref != rhs.ref;
+	return result;
+}
+
 struct SimulationState
 {
 	PluginLoaderState* pluginLoader;
@@ -12,13 +39,17 @@ struct SimulationState
 	Matrix             view;
 	Matrix             proj;
 	Matrix             vp; // TODO: Remove this when simulation talks to the renderer directly
+	Matrix             iview;
 	i64                startTime;
 	r32                currentTime;
 
 	b32                mouseLook;
-	v2                 cameraRot;
+	v2                 mousePos;
 	v2i                mousePosStart;
+	v2                 cameraRot;
 	v2                 cameraRotStart;
+	FullWidgetRef      hovered;
+	FullWidgetRef      selected;
 };
 
 struct PluginContext
@@ -370,8 +401,11 @@ OnConnect(SimulationState& s, ConnectionState& con)
 }
 
 static void
-OnDisconnect(ConnectionState& con)
+OnDisconnect(SimulationState& s, ConnectionState& con)
 {
+	s.hovered = {};
+	s.selected = {};
+
 	con.sendIndex = 0;
 	con.recvIndex = 0;
 }
@@ -405,6 +439,44 @@ OnTeardown(ConnectionState& con)
 }
 
 static void
+OnMouseMove(SimulationState& s, v2i mousePos)
+{
+	s.mousePos = (v2) mousePos;
+	if (!s.mouseLook) return;
+
+	v2i deltaPos = mousePos - s.mousePosStart;
+	s.cameraRot = 0.0005f * (v2) deltaPos * 2*r32Pi;
+
+	v2 rot = s.cameraRotStart + s.cameraRot;
+	rot.pitch = Clamp(rot.pitch, -0.49f*r32Pi, 0.49f*r32Pi);
+
+	// TODO: Get render size out of here
+	v2 offset = (v2) s.renderSize / 2.0f;
+	v3 target = { offset.x, offset.y, 0 };
+	v3 pos    = GetOrbitPos(target, rot, 500);
+
+	s.cameraPos = pos;
+	s.view      = LookAt(pos, target);
+	s.vp        = s.view * s.proj;
+
+	s.iview = InvertRT(s.view);
+}
+
+static void
+OnLeftMouseDown(SimulationState& s, v2i mousePos)
+{
+	UNUSED(mousePos);
+	s.selected = s.hovered;
+}
+
+static void
+OnLeftMouseUp(SimulationState& s, v2i mousePos)
+{
+	UNUSED(s);
+	UNUSED(mousePos);
+}
+
+static void
 OnMiddleMouseDown(SimulationState& s, v2i mousePos)
 {
 	UNUSED(mousePos);
@@ -415,13 +487,23 @@ OnMiddleMouseDown(SimulationState& s, v2i mousePos)
 
 	s.cameraPos = pos;
 	s.cameraRot = {};
-	s.view      = LookAt(pos, target);
-	s.proj      = Orthographic((v2) s.renderSize, 0, 10000);
-	s.vp        = s.view * s.proj;
+
+	s.view = LookAt(pos, target);
+	s.proj = Orthographic((v2) s.renderSize, 0, 10000);
+	s.vp   = s.view * s.proj;
+
+	s.iview = InvertRT(s.view);
 }
 
 static void
-OnLeftMouseDown(SimulationState& s, v2i mousePos)
+OnMiddleMouseUp(SimulationState& s, v2i mousePos)
+{
+	UNUSED(s);
+	UNUSED(mousePos);
+}
+
+static void
+OnRightMouseDown(SimulationState& s, v2i mousePos)
 {
 	s.mouseLook      = true;
 	s.mousePosStart  = mousePos;
@@ -429,10 +511,9 @@ OnLeftMouseDown(SimulationState& s, v2i mousePos)
 }
 
 static void
-OnLeftMouseUp(SimulationState& s, v2i mousePos)
+OnRightMouseUp(SimulationState& s, v2i mousePos)
 {
 	UNUSED(mousePos);
-
 	s.cameraRot      += s.cameraRotStart;
 	s.mouseLook       = false;
 	s.mousePosStart   = {};
@@ -440,29 +521,23 @@ OnLeftMouseUp(SimulationState& s, v2i mousePos)
 }
 
 static void
-OnMouseMove(SimulationState& s, v2i mousePos)
+OnWidgetSelect(SimulationState& s, FullWidgetRef ref)
 {
-	if (!s.mouseLook) return;
-
-	v2i deltaPos = mousePos - s.mousePosStart;
-	s.cameraRot.yaw   = 0.0005f * deltaPos.x * 2*r32Pi;
-	s.cameraRot.pitch = 0.0005f * deltaPos.y * 2*r32Pi;
-
-	v3 rot = (v3) (s.cameraRotStart + s.cameraRot);
-	rot.pitch = Clamp(rot.pitch, -0.49f*r32Pi, 0.49f*r32Pi);
-	rot.roll  = 500;
-
-	// TODO: Get render size out of here
-	v2 offset = (v2) s.renderSize / 2.0f;
-	v3 target = { offset.x, offset.y, 0 };
-	v3 pos    = GetOrbitPos(target, rot);
-
-	s.cameraPos = pos;
-	s.view      = LookAt(pos, target);
-	s.vp        = s.view * s.proj;
+	// TODO: Validate
+	// TODO: Clear on widget remove
+	s.selected = ref;
 }
 
 // =================================================================================================
+
+static Widget&
+GetWidget(SimulationState& s, FullWidgetRef ref)
+{
+	WidgetPlugin& plugin = s.widgetPlugins[ref.pluginRef];
+	WidgetData& data = plugin.widgetDatas[ref.dataRef];
+	Widget& widget = data.widgets[ref.ref];
+	return widget;
+}
 
 static SensorPlugin*
 LoadSensorPlugin(SimulationState& s, c8* directory, c8* fileName)
@@ -687,6 +762,14 @@ Simulation_Initialize(SimulationState& s, PluginLoaderState& pluginLoader, Rende
 		// Pixel shader
 		{
 			PixelShader ps;
+
+			u32 cBufSizes[] = {
+				{ sizeof(PSInitialize) },
+			};
+			ps = Renderer_LoadPixelShader(*s.renderer, "Default", "Shaders/Solid Colored.ps.cso", cBufSizes);
+			LOG_IF(!ps, return false,
+				Severity::Error, "Failed to load built-in solid colored pixel shader");
+			Assert(ps == StandardPixelShader::SolidColored);
 
 			ps = Renderer_LoadPixelShader(*s.renderer, "Default", "Shaders/Vertex Colored.ps.cso", {});
 			LOG_IF(!ps, return false,
@@ -962,7 +1045,7 @@ Simulation_Update(SimulationState& s)
 
 			b32 isConnected = guiCon.pipe.state == PipeState::Connected;
 			if (isConnected && !wasConnected) OnConnect(s, guiCon);
-			if (!isConnected && wasConnected) OnDisconnect(guiCon);
+			if (!isConnected && wasConnected) OnDisconnect(s, guiCon);
 		}
 		if (guiCon.pipe.state != PipeState::Connected) break;
 
@@ -993,21 +1076,42 @@ Simulation_Update(SimulationState& s)
 					break;
 				}
 
-				case IdOf<MouseButton>:
+				case IdOf<MouseButtonChange>:
 				{
-					MouseButton& mouseButton = (MouseButton&) bytes[0];
-					if (mouseButton.left)
+					MouseButtonChange& mbChange = (MouseButtonChange&) bytes[0];
+					switch (mbChange.button)
 					{
-						Assert(mouseButton.state != ButtonState::Null);
-						if (mouseButton.state == ButtonState::Down)
-							OnLeftMouseDown(s, mouseButton.pos);
-						else
-							OnLeftMouseUp(s, mouseButton.pos);
-					}
-					else if (mouseButton.middle)
-					{
-						if (mouseButton.state == ButtonState::Down)
-							OnMiddleMouseDown(s, mouseButton.pos);
+						case MouseButton::Null: Assert(false);
+
+						case MouseButton::Left:
+						{
+							Assert(mbChange.state);
+							if (mbChange.state == ButtonState::Down)
+								OnLeftMouseDown(s, mbChange.pos);
+							else
+								OnLeftMouseUp(s, mbChange.pos);
+							break;
+						}
+
+						case MouseButton::Middle:
+						{
+							Assert(mbChange.state);
+							if (mbChange.state == ButtonState::Down)
+								OnMiddleMouseDown(s, mbChange.pos);
+							else
+								OnMiddleMouseUp(s, mbChange.pos);
+							break;
+						}
+
+						case MouseButton::Right:
+						{
+							Assert(mbChange.state);
+							if (mbChange.state == ButtonState::Down)
+								OnRightMouseDown(s, mbChange.pos);
+							else
+								OnRightMouseUp(s, mbChange.pos);
+							break;
+						}
 					}
 					break;
 				}
@@ -1024,6 +1128,11 @@ Simulation_Update(SimulationState& s)
 		break;
 	}
 
+	// Simulation Drawing
+	PluginContext simContext = {};
+	simContext.success = true;
+	simContext.s = &s;
+
 	// DEBUG: Draw Coordinate System
 	{
 		Matrix world = Identity();
@@ -1037,11 +1146,104 @@ Simulation_Update(SimulationState& s)
 		material.vs   = StandardVertexShader::WVP;
 		material.ps   = StandardPixelShader::DebugCoordinates;
 
-		PluginContext context2 = {};
-		context2.success = true;
-		context2.s = &s;
-		PushConstantBufferUpdate(context2, material, ShaderStage::Vertex, 0, &wvp);
-		PushDrawCall(context2, material);
+		PushConstantBufferUpdate(simContext, material, ShaderStage::Vertex, 0, &wvp);
+		PushDrawCall(simContext, material);
+	}
+
+	// Select mouse over widget
+	if (guiCon.pipe.state == PipeState::Connected)
+	{
+		s.hovered = {};
+
+		// TODO: Mouse selection is off by just a bit. Floating point issues?
+		// TODO: Don't fully understand why the half renderSize offset is necessary
+		v4 mousePos = (v4) (s.mousePos - (v2) s.renderSize / 2.0f);
+		mousePos.w = 1.0f;
+		mousePos *= s.iview;
+
+		v4 mouseDir = { 0.0f, 0.0f, -1.0f, 0.0f };
+		mouseDir *= s.iview;
+
+		r32 selectionDepth = r32Max;
+		for (u32 i = 0; i < s.widgetPlugins.length; i++)
+		{
+			WidgetPlugin& widgetPlugin = s.widgetPlugins[i];
+			for (u32 j = 0; j < widgetPlugin.widgetDatas.length; j++)
+			{
+				WidgetData& widgetData = widgetPlugin.widgetDatas[i];
+				for (u32 k = 0; k < widgetData.widgets.length; k++)
+				{
+					Widget& widget = widgetData.widgets[k];
+					if (widget.depth < selectionDepth)
+					{
+						if (!ApproximatelyZero(mouseDir.z))
+						{
+							r32 dist = (-widget.depth - mousePos.z) / mouseDir.z;
+							v4 selectionPos = mousePos + dist*mouseDir;
+
+							v4 rect = WidgetRect(widget);
+							if (RectContains(rect, (v2) selectionPos))
+							{
+								s.hovered.pluginRef = widgetPlugin.ref;
+								s.hovered.dataRef   = { j + 1 };
+								s.hovered.ref       = { k + 1 };
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// TODO: Outline shader? How should we handle depth?
+	// Draw Hover
+	if (s.hovered.ref && s.hovered != s.selected)
+	{
+		Widget& widget = GetWidget(s, s.hovered);
+
+		v2 position = WidgetPosition(widget);
+		v2 size = widget.size + v2{ 8, 8 };
+
+		Matrix world = Identity();
+		SetPosition(world, position, -(widget.depth + 5.0f));
+		SetScale   (world, size, 1.0f);
+		static Matrix wvp;
+		wvp = world * s.vp;
+		static v4 color = Color32(28, 151, 234, 255);
+
+		Material material = {};
+		material.mesh = StandardMesh::Quad;
+		material.vs   = StandardVertexShader::WVP;
+		material.ps   = StandardPixelShader::SolidColored;
+
+		PushConstantBufferUpdate(simContext, material, ShaderStage::Vertex, 0, &wvp);
+		PushConstantBufferUpdate(simContext, material, ShaderStage::Pixel,  0, &color);
+		PushDrawCall(simContext, material);
+	}
+
+	// Draw Selection
+	if (s.selected.ref)
+	{
+		Widget& widget = GetWidget(s, s.selected);
+
+		v2 position = WidgetPosition(widget);
+		v2 size = widget.size + v2{ 8, 8 };
+
+		Matrix world = Identity();
+		SetPosition(world, position, -(widget.depth + 5.0f));
+		SetScale   (world, size, 1.0f);
+		static Matrix wvp;
+		wvp = world * s.vp;
+		static v4 color = Color32(0, 122, 204, 255);
+
+		Material material = {};
+		material.mesh = StandardMesh::Quad;
+		material.vs   = StandardVertexShader::WVP;
+		material.ps   = StandardPixelShader::SolidColored;
+
+		PushConstantBufferUpdate(simContext, material, ShaderStage::Vertex, 0, &wvp);
+		PushConstantBufferUpdate(simContext, material, ShaderStage::Pixel,  0, &color);
+		PushDrawCall(simContext, material);
 	}
 }
 

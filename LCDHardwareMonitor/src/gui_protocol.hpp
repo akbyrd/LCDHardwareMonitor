@@ -101,14 +101,23 @@ namespace Message
 		Down,
 		Up,
 	};
+	bool operator!(ButtonState state) { return state == ButtonState::Null; }
 
-	struct MouseButton
+	enum struct MouseButton
+	{
+		Null,
+		Left,
+		Right,
+		Middle,
+	};
+	bool operator!(MouseButton button) { return button == MouseButton::Null; }
+
+	struct MouseButtonChange
 	{
 		Header header;
 		v2i pos;
+		MouseButton button;
 		ButtonState state;
-		bool left;
-		bool middle;
 	};
 
 	struct SetPluginLoadStates
