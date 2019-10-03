@@ -125,7 +125,8 @@ GetNameFromPath(String& path)
 	return result;
 }
 
-// === Sensor API ==================================================================================
+// -------------------------------------------------------------------------------------------------
+// Sensor API
 
 static void
 RegisterSensors(PluginContext& context, Slice<Sensor> sensors)
@@ -181,7 +182,8 @@ UnregisterSensors(PluginContext& context, Slice<SensorRef> sensorRefs)
 	context.success = true;
 }
 
-// === Widget API ==================================================================================
+// -------------------------------------------------------------------------------------------------
+// Widget API
 
 static void
 RegisterWidgets(PluginContext& context, Slice<WidgetDesc> widgetDescs)
@@ -320,7 +322,8 @@ PushDrawCall(PluginContext& context, Material material)
 	context.success = true;
 }
 
-// === GUI Messages ================================================================================
+// -------------------------------------------------------------------------------------------------
+// GUI Messages
 
 // NOTE: None of these functions return error codes because the messaging system handles errors
 // internally. It will disconnect and stop attempting to send messages when a failure occurs.
@@ -528,7 +531,7 @@ OnWidgetSelect(SimulationState& s, FullWidgetRef ref)
 	s.selected = ref;
 }
 
-// =================================================================================================
+// -------------------------------------------------------------------------------------------------
 
 static Widget&
 GetWidget(SimulationState& s, FullWidgetRef ref)

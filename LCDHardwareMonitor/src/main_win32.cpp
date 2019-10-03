@@ -133,6 +133,7 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 			{
 				case WM_PREVIEWWINDOWCLOSED:
 					PreviewWindow_Teardown(previewState);
+					previewGuard.dismiss = true;
 					break;
 
 				case WM_HOTKEY:

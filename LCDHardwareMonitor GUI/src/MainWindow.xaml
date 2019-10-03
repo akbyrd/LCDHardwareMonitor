@@ -12,6 +12,7 @@
 	ResizeMode="CanResizeWithGrip" ResizeBorderThickness="0, 0, 10, 10"
 	WindowTitleBrush="Transparent" NonActiveWindowTitleBrush="Transparent"
 	MinHeight="450" MinWidth="512"
+	KeyDown="Window_KeyDown"
 	DataContext="{Binding Path=SimulationState, Source={x:Static Application.Current}}">
 
 	<!-- Resize Grip Style -->
@@ -96,6 +97,7 @@
 							MouseDown="MouseDown"
 							MouseUp="MouseUp"
 							Visibility="{Binding IsSimulationConnected, Converter={StaticResource vc}}"
+							RenderOptions.BitmapScalingMode="NearestNeighbor"
 							Stretch="None">
 							<Image.Source>
 								<pc:D3DImage x:Name="LCDPreviewTexture" />

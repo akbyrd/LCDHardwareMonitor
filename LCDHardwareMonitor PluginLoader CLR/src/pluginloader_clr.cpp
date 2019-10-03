@@ -71,7 +71,8 @@ WidgetPlugin_CLR
 public ref struct
 LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 {
-	// === Executed in Default AppDomain ============================================================
+	// ----------------------------------------------------------------------------------------------
+	// Executed in Default AppDomain
 
 	void
 	InitializeNewDomain(AppDomainSetup^ appDomainInfo) override
@@ -184,7 +185,8 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 		return true;
 	}
 
-	// === Executed in Plugin AppDomain =============================================================
+	// ----------------------------------------------------------------------------------------------
+	// Executed in Plugin AppDomain
 
 	SensorPlugin_CLR sensorPluginCLR;
 	WidgetPlugin_CLR widgetPluginCLR;

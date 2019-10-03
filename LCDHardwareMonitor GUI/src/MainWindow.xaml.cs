@@ -90,6 +90,18 @@ namespace LCDHardwareMonitor.GUI
 			simState.Messages.Add(request);
 		}
 
+		private void Window_KeyDown(object sender, KeyEventArgs e)
+		{
+			switch (e.Key)
+			{
+				default: return;
+
+				case Key.Escape:
+					Close();
+					break;
+			}
+		}
+
 		private Point GetMousePosition()
 		{
 			Point previewPos = preview.PointToScreen(new Point());
