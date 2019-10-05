@@ -1,4 +1,8 @@
-Would it be easier to declare the native structs in C# rather than having custom ones?
+WidgetDesc -> Widget
+Widget -> WidgetInstance
+Native namespace for interop?
+Remove default: Assert(false); break;
+Need to handle mouse position when preview isn't visible
 
 GUI Control
 	Load/Unload plugins

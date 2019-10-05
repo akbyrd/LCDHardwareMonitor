@@ -1074,6 +1074,7 @@ Simulation_Update(SimulationState& s)
 
 				case IdOf<MouseMove>:
 				{
+					DeserializeMessage<MouseMove>(bytes);
 					MouseMove& mouseMove = (MouseMove&) bytes[0];
 					OnMouseMove(s, mouseMove.pos);
 					break;
@@ -1081,6 +1082,7 @@ Simulation_Update(SimulationState& s)
 
 				case IdOf<MouseButtonChange>:
 				{
+					DeserializeMessage<MouseButtonChange>(bytes);
 					MouseButtonChange& mbChange = (MouseButtonChange&) bytes[0];
 					switch (mbChange.button)
 					{

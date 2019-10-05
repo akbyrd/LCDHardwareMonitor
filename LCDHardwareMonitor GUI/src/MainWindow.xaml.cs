@@ -45,18 +45,18 @@ namespace LCDHardwareMonitor.GUI
 				default: Debug.Assert(false); break;
 
 				case ProcessState.Terminated:
-					simState.Messages.Add(MessageType.LaunchSim);
+					Interop.LaunchSim(simState);
 					break;
 
 				case ProcessState.Launched:
-					simState.Messages.Add(MessageType.TerminateSim);
+					Interop.TerminateSim(simState);
 					break;
 			}
 		}
 
 		private void ForceTerminateSim_Click(object sender, RoutedEventArgs e)
 		{
-			simState.Messages.Add(MessageType.ForceTerminateSim);
+			Interop.ForceTerminateSim(simState);
 		}
 
 		private void LoadPlugin_Click(object sender, RoutedEventArgs e)
@@ -70,6 +70,7 @@ namespace LCDHardwareMonitor.GUI
 				default: Debug.Assert(false); return;
 
 				case PluginLoadState.Broken:
+					// TODO: Proper logging?
 					return;
 
 				case PluginLoadState.Loaded:
@@ -81,13 +82,7 @@ namespace LCDHardwareMonitor.GUI
 					break;
 			}
 
-			SetPluginLoadStates data = new SetPluginLoadStates();
-			data.kind      = item.Kind;
-			data.ref_      = item.Ref;
-			data.loadState = requestState;
-
-			Message request = new Message(MessageType.SetPluginLoadState, data);
-			simState.Messages.Add(request);
+			Interop.SetPluginLoadState(item.Kind, item.Ref, requestState);
 		}
 
 		private void Window_KeyDown(object sender, KeyEventArgs e)
@@ -102,8 +97,11 @@ namespace LCDHardwareMonitor.GUI
 			}
 		}
 
-		private Point GetMousePosition()
+		internal Point GetMousePosition()
 		{
+			// TODO: Make this better
+			if (!preview.IsVisible) return new Point();
+
 			Point previewPos = preview.PointToScreen(new Point());
 			Point cursorPos = Win32.GetCursorPos();
 			Point mousePos = (Point) (cursorPos - previewPos);
@@ -111,20 +109,7 @@ namespace LCDHardwareMonitor.GUI
 			return mousePos;
 		}
 
-		// TODO: Proper logging
-		// TODO: Clear mouse pos when minimized / not visible?
-		internal void OnMouseMove()
-		{
-			Point mousePos = GetMousePosition();
-			if (mousePos != simState.MousePos)
-			{
-				simState.Messages.Add(new Message(MessageType.MouseMove, mousePos));
-				simState.MousePos = mousePos;
-				simState.NotifyPropertyChanged("");
-			}
-		}
-
-		private new void MouseDown(object sender, MouseButtonEventArgs e)
+		private void Preview_MouseDown(object sender, MouseButtonEventArgs e)
 		{
 			switch (e.ChangedButton)
 			{
@@ -136,20 +121,17 @@ namespace LCDHardwareMonitor.GUI
 				{
 					var element = sender as UIElement;
 					e.Handled = !element.IsMouseCaptured;
+					Interop.MouseButtonChange(simState, GetMousePosition(), e.ChangedButton, e.ButtonState);
+
+					// TODO: Proper logging
 					bool success = Mouse.Capture(element);
 					if (!success) Debug.Print("Warning: Failed to capture mouse");
-
-					var mbChange = new MouseButtonChange();
-					mbChange.pos = GetMousePosition();
-					mbChange.button = e.ChangedButton;
-					mbChange.state = e.ButtonState;
-					simState.Messages.Add(new Message(MessageType.MouseButtonChange, mbChange));
 					break;
 				}
 			}
 		}
 
-		private new void MouseUp(object sender, MouseButtonEventArgs e)
+		private void Preview_MouseUp(object sender, MouseButtonEventArgs e)
 		{
 			switch (e.ChangedButton)
 			{
@@ -160,15 +142,11 @@ namespace LCDHardwareMonitor.GUI
 				case sMouseButton.Right:
 					var element = sender as UIElement;
 					e.Handled = element.IsMouseCaptured;
+					Interop.MouseButtonChange(simState, GetMousePosition(), e.ChangedButton, e.ButtonState);
 
+					// TODO: Proper logging
 					bool success = Mouse.Capture(null);
 					if (!success) Debug.Print("Warning: Failed to release mouse capture");
-
-					var mbChange = new MouseButtonChange();
-					mbChange.pos = GetMousePosition();
-					mbChange.button = e.ChangedButton;
-					mbChange.state = e.ButtonState;
-					simState.Messages.Add(new Message(MessageType.MouseButtonChange, mbChange));
 					break;
 			}
 		}

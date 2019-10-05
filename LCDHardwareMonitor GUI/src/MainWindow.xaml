@@ -94,8 +94,8 @@
 						<Label Content="LCD Preview" />
 						<Image
 							x:Name="preview"
-							MouseDown="MouseDown"
-							MouseUp="MouseUp"
+							MouseDown="Preview_MouseDown"
+							MouseUp="Preview_MouseUp"
 							Visibility="{Binding IsSimulationConnected, Converter={StaticResource vc}}"
 							RenderOptions.BitmapScalingMode="NearestNeighbor"
 							Stretch="None">
