@@ -4,81 +4,99 @@
 #undef IGNORE
 #define VC_EXTRALEAN
 #define WIN32_LEAN_AND_MEAN
+#define _CRT_SECURE_NO_WARNINGS
 #include <Windows.h>
 #pragma pop_macro("IGNORE")
 #pragma warning(pop)
 
-void
-Platform_Print(c8* message)
+template <u32 PlaceholderCount, typename... Args>
+inline void
+Platform_PrintChecked(StringView format, Args... args)
 {
-	// NOTE: printf/stdout do not appear in the Visual Studio Output window :(
-	printf(message);
-	if (IsDebuggerPresent())
-		OutputDebugStringA(message);
+	static_assert(PlaceholderCount == sizeof...(Args));
+	Platform_PrintImpl(format, args...);
 }
 
-template<typename... Args>
+void
+Platform_PrintImpl(StringView message)
+{
+	// NOTE: printf/stdout do not appear in the Visual Studio Output window :(
+	printf(message.data);
+	if (IsDebuggerPresent())
+		OutputDebugStringA(message.data);
+}
+
+template <typename... Args>
 inline void
-Platform_Print(c8* format, Args... args)
+Platform_PrintImpl(StringView format, Args... args)
 {
 	String message = {};
 	defer { List_Free(message); };
 
-	b32 success = String_Format(message, format, args...);
+	b32 success = String_FormatImpl(message, format, args...);
 	if (!success)
 	{
-		Platform_Print(format);
+		Platform_PrintImpl("String_Format failed. Unformatted message:\n\t");
+		Platform_PrintImpl(format);
 		return;
 	}
 
-	Platform_Print(message.data);
+	Platform_PrintImpl(message);
+}
+
+template <u32 PlaceholderCount, typename... Args>
+inline void
+Platform_LogChecked(Severity severity, Location location, StringView format, Args... args)
+{
+	static_assert(PlaceholderCount == sizeof...(Args));
+	Platform_LogImpl(severity, location, format, args...);
 }
 
 void
-Platform_Log(Severity severity, Location location, c8* message)
+Platform_LogImpl(Severity severity, Location location, StringView message)
 {
 	Assert(severity != Severity::Null);
 
 	String fullMessage = {};
-	defer { List_Free(fullMessage); };
+	defer { String_Free(fullMessage); };
 
-	b32 success = String_Format(fullMessage, "%s - %s\n\t%s(%i)\n", location.function, message, location.file, location.line);
+	b32 success = String_FormatImpl(fullMessage, "% - %\n\t%(%)\n", location.function, message, location.file, location.line);
 	if (!success)
 	{
-		Platform_Print("String_Format failed. Unformatted message:\n\t");
-		Platform_Print(location.function);
-		Platform_Print(" - ");
-		Platform_Print(message);
-		Platform_Print("\n\t");
-		Platform_Print(location.file);
-		Platform_Print("\n");
+		Platform_PrintImpl("String_Format failed. Unformatted message:\n\t");
+		Platform_PrintImpl(location.function);
+		Platform_PrintImpl(" - ");
+		Platform_PrintImpl(message);
+		Platform_PrintImpl("\n\t");
+		Platform_PrintImpl(location.file);
+		Platform_PrintImpl("\n");
 	}
 
-	Platform_Print(fullMessage.data);
+	Platform_PrintImpl(fullMessage);
 	if (severity > Severity::Info)
 		__debugbreak();
 }
 
-template<typename... Args>
+template <typename... Args>
 inline void
-Platform_Log(Severity severity, Location location, c8* format, Args... args)
+Platform_LogImpl(Severity severity, Location location, StringView format, Args... args)
 {
 	String message = {};
-	defer { List_Free(message); };
+	defer { String_Free(message); };
 
-	b32 success = String_Format(message, format, args...);
+	b32 success = String_FormatImpl(message, format, args...);
 	if (!success)
 	{
-		Platform_Print("String_Format failed. Unformatted message:\n\t");
-		Platform_Print(format);
+		Platform_PrintImpl("String_Format failed. Unformatted message:\n\t");
+		Platform_PrintImpl(format);
 		return;
 	}
 
-	Platform_Log(severity, location, message.data);
+	Platform_LogImpl(severity, location, message);
 }
 
 void
-LogFormatMessage(u32 messageID, Severity severity, Location location, c8* message)
+LogFormatMessage(u32 messageID, Severity severity, Location location, StringView message)
 {
 	c8* windowsMessage = 0;
 	defer { LocalFree(windowsMessage); };
@@ -94,8 +112,8 @@ LogFormatMessage(u32 messageID, Severity severity, Location location, c8* messag
 	if (uResult == 0)
 	{
 		// TODO: Try to print the last error once
-		Platform_Print("FormatMessageA failed. Remaining message:\n\t");
-		Platform_Log(severity, location, message);
+		Platform_PrintImpl("FormatMessageA failed. Remaining message:\n\t");
+		Platform_LogImpl(severity, location, message);
 		return;
 	}
 
@@ -104,17 +122,17 @@ LogFormatMessage(u32 messageID, Severity severity, Location location, c8* messag
 	while (length > 0 && (windowsMessage[length - 1] == '\n' || windowsMessage[length - 1] == '\r'))
 		windowsMessage[(length--) - 1] = '\0';
 
-	Platform_Log(severity, location, "%s: %s (%u)", message, windowsMessage, messageID);
+	Platform_LogImpl(severity, location, "%: % (%)", message, windowsMessage, messageID);
 }
 
-template<typename... Args>
+template <typename... Args>
 inline void
-LogFormatMessage(u32 messageID, Severity severity, Location location, c8* format, Args... args)
+LogFormatMessage(u32 messageID, Severity severity, Location location, StringView format, Args... args)
 {
 	String message = {};
 	defer { List_Free(message); };
 
-	b32 success = String_Format(message, format, args...);
+	b32 success = String_FormatImpl(message, format, args...);
 	if (!success)
 	{
 		LogFormatMessage(messageID, severity, location, format);
@@ -125,58 +143,62 @@ LogFormatMessage(u32 messageID, Severity severity, Location location, c8* format
 }
 
 void
-LogHRESULT(HRESULT hr, Severity severity, Location location, c8* message)
+LogHRESULT(HRESULT hr, Severity severity, Location location, StringView message)
 {
 	// TODO: This cast is weird. I feel like either LogHRESULT or LogLastError is doing the wrong
 	// thing. There's a function for converting an error to an HRESULT which implies the difference
 	// is meaningful.
+	// NOTE: TODO? CLR HRESULTS aren't found by FormatMessage. Start with 0x8013. Defined in
+	// corerror.h/mscorrc.dll
 	LogFormatMessage((u32) hr, severity, location, message);
 }
 
-template<typename... Args>
+template <typename... Args>
 inline void
-LogHRESULT(HRESULT hr, Severity severity, Location location, c8* format, Args... args)
+LogHRESULT(HRESULT hr, Severity severity, Location location, StringView format, Args... args)
 {
 	String message = {};
-	defer { List_Free(message); };
+	defer { String_Free(message); };
 
-	b32 success = String_Format(message, format, args...);
+	b32 success = String_FormatImpl(message, format, args...);
 	if (!success)
 	{
+		Platform_PrintImpl("String_Format failed. Unformatted message:\n\t");
 		LogHRESULT(hr, severity, location, format);
 		return;
 	}
 
-	LogHRESULT(hr, severity, location, message.data);
+	LogHRESULT(hr, severity, location, message);
 }
-#define LOG_HRESULT(hr, severity, format, ...) LogHRESULT(hr, severity, LOCATION, format, __VA_ARGS__)
-#define LOG_HRESULT_IF_FAILED(hr, action, severity, format, ...) IF(FAILED(hr), LOG_HRESULT(hr, severity, format, __VA_ARGS__); action)
+#define LOG_HRESULT(hr, severity, format, ...) LogHRESULT(hr, severity, LOCATION, format, ##__VA_ARGS__)
+#define LOG_HRESULT_IF_FAILED(hr, action, severity, format, ...) IF(FAILED(hr), LOG_HRESULT(hr, severity, format, ##__VA_ARGS__); action)
 
 void
-LogLastError(Severity severity, Location location, c8* message)
+LogLastError(Severity severity, Location location, StringView message)
 {
 	u32 lastError = GetLastError();
 	LogFormatMessage(lastError, severity, location, message);
 }
 
-template<typename... Args>
+template <typename... Args>
 inline void
-LogLastError(Severity severity, Location location, c8* format, Args... args)
+LogLastError(Severity severity, Location location, StringView format, Args... args)
 {
 	String message = {};
-	defer { List_Free(message); };
+	defer { String_Free(message); };
 
-	b32 success = String_Format(message, format, args...);
+	b32 success = String_FormatImpl(message, format, args...);
 	if (!success)
 	{
+		Platform_PrintImpl("String_Format failed. Unformatted message:\n\t");
 		LogLastError(severity, location, format);
 		return;
 	}
 
-	LogLastError(severity, location, message.data);
+	LogLastError(severity, location, message);
 }
-#define LOG_LAST_ERROR(severity, format, ...) LogLastError(severity, LOCATION, format, __VA_ARGS__)
-#define LOG_LAST_ERROR_IF(expression, action, severity, format, ...) IF(expression, LOG_LAST_ERROR(severity, format, __VA_ARGS__); action)
+#define LOG_LAST_ERROR(severity, format, ...) LogLastError(severity, LOCATION, format, ##__VA_ARGS__)
+#define LOG_LAST_ERROR_IF(expression, action, severity, format, ...) IF(expression, LOG_LAST_ERROR(severity, format, ##__VA_ARGS__); action)
 
 // TODO: RAII wrapper
 static String
@@ -188,7 +210,7 @@ GetWorkingDirectory()
 	LOG_LAST_ERROR_IF(!length, return result,
 		Severity::Warning, "Failed to get working directory length");
 
-	b32 success = List_Reserve(result, length);
+	b32 success = String_Reserve(result, length);
 	LOG_IF(!success, return result,
 		Severity::Warning, "Failed to allocate working directory");
 
@@ -205,15 +227,17 @@ GetWorkingDirectory()
 }
 
 static Bytes
-LoadFile(c8* path, u32 padding = 0)
+LoadFile(StringView path, u32 padding = 0)
 {
 	b32 success;
 	Bytes result = {};
 	{
 		auto resultGuard = guard { List_Free(result); };
 
+		// TODO BUG: Reading off the end of the buffer
+		Assert(path.length && path[path.length] == '\0');
 		HANDLE file = CreateFileA(
-			path,
+			path.data,
 			GENERIC_READ,
 			FILE_SHARE_READ,
 			nullptr,
@@ -225,26 +249,26 @@ LoadFile(c8* path, u32 padding = 0)
 		if (file == INVALID_HANDLE_VALUE)
 		{
 			String cwd = GetWorkingDirectory();
-			defer { List_Free(cwd); };
-			LOG_LAST_ERROR(Severity::Warning, "Failed to create file handle '%s'; CWD: '%s'", path, cwd.data);
+			defer { String_Free(cwd); };
+			LOG_LAST_ERROR(Severity::Warning, "Failed to create file handle '%'; CWD: '%'", path, cwd);
 			return result;
 		}
 
 		LARGE_INTEGER size_win32;
 		success = GetFileSizeEx(file, &size_win32);
 		LOG_LAST_ERROR_IF(!success, return result,
-			Severity::Warning, "Failed to get file size '%s'", path);
+			Severity::Warning, "Failed to get file size '%'", path);
 		LOG_IF(size_win32.QuadPart > u32Max - padding, return result,
-			Severity::Warning, "File is too large to load '%s'", path);
+			Severity::Warning, "File is too large to load '%'", path);
 
 		u32 size = (u32) size_win32.QuadPart;
 		success = List_Reserve(result, size + padding);
 		LOG_IF(!success, return result,
-			Severity::Warning, "Failed to allocate file memory '%s'", path);
+			Severity::Warning, "Failed to allocate file memory '%'", path);
 
 		success = ReadFile(file, result.data, size, (DWORD*) &result.length, nullptr);
 		LOG_LAST_ERROR_IF(!success, return result,
-			Severity::Warning, "Failed to read file '%s'", path);
+			Severity::Warning, "Failed to read file '%'", path);
 
 		resultGuard.dismiss = true;
 	}
@@ -252,13 +276,13 @@ LoadFile(c8* path, u32 padding = 0)
 }
 
 Bytes
-Platform_LoadFileBytes(c8* path)
+Platform_LoadFileBytes(StringView path)
 {
 	return LoadFile(path, 0);
 }
 
 String
-Platform_LoadFileString(c8* path)
+Platform_LoadFileString(StringView path)
 {
 	String result = {};
 
@@ -346,7 +370,7 @@ Platform_DisconnectPipeServer(Pipe& pipe)
 				&pipe.impl->connect
 			);
 			LOG_LAST_ERROR_IF(!success, return PipeResult::UnexpectedFailure,
-				Severity::Warning, "Failed to cancel pending pipe server connection '%s'", pipe.name.data);
+				Severity::Warning, "Failed to cancel pending pipe server connection '%'", pipe.name);
 			break;
 		}
 
@@ -358,7 +382,7 @@ Platform_DisconnectPipeServer(Pipe& pipe)
 		{
 			b32 success = DisconnectNamedPipe(pipe.impl->handle);
 			LOG_LAST_ERROR_IF(!success, return PipeResult::UnexpectedFailure,
-				Severity::Warning, "Failed to disconnect pipe server '%s'", pipe.name.data);
+				Severity::Warning, "Failed to disconnect pipe server '%'", pipe.name);
 			break;
 		}
 	}
@@ -390,7 +414,7 @@ Platform_DisconnectPipeClient(Pipe& pipe)
 		{
 			b32 success = CloseHandle(pipe.impl->handle);
 			LOG_LAST_ERROR_IF(!success, return PipeResult::UnexpectedFailure,
-				Severity::Warning, "Failed to disconnect pipe client '%s'", pipe.name.data);
+				Severity::Warning, "Failed to disconnect pipe client '%'", pipe.name);
 
 			pipe.impl->handle = nullptr;
 			break;
@@ -437,7 +461,7 @@ Platform_ConnectPipeServer(Pipe& pipe)
 					return PipeResult::TransientFailure;
 
 				default:
-					LOG_LAST_ERROR(Severity::Warning, "Failed to create pipe server '%s'", pipe.name.data);
+					LOG_LAST_ERROR(Severity::Warning, "Failed to create pipe server '%'", pipe.name);
 					return PipeResult::UnexpectedFailure;
 			}
 		}
@@ -574,7 +598,7 @@ Platform_ConnectPipeClient(Pipe& pipe)
 						return PipeResult::TransientFailure;
 
 					default:
-						LOG_LAST_ERROR(Severity::Error, "Failed to create pipe client '%s'", pipe.name.data);
+						LOG_LAST_ERROR(Severity::Error, "Failed to create pipe client '%'", pipe.name);
 						return PipeResult::UnexpectedFailure;
 				}
 			}
@@ -587,7 +611,7 @@ Platform_ConnectPipeClient(Pipe& pipe)
 				nullptr
 			);
 			LOG_LAST_ERROR_IF(!success, return PipeResult::UnexpectedFailure,
-				Severity::Warning, "Failed to set pipe client mode '%s'", pipe.name.data);
+				Severity::Warning, "Failed to set pipe client mode '%'", pipe.name);
 			break;
 		}
 	}
@@ -634,7 +658,7 @@ Platform_UpdatePipeConnection(Pipe& pipe)
 				return result;
 
 			default:
-				LOG_LAST_ERROR(Severity::Warning, "Failed to update pipe connection '%s'", pipe.name.data);
+				LOG_LAST_ERROR(Severity::Warning, "Failed to update pipe connection '%'", pipe.name);
 				return PipeResult::UnexpectedFailure;
 		}
 	}
@@ -643,7 +667,7 @@ Platform_UpdatePipeConnection(Pipe& pipe)
 }
 
 PipeResult
-Platform_CreatePipeServer(StringSlice name, Pipe& pipe)
+Platform_CreatePipeServer(StringView name, Pipe& pipe)
 {
 	auto cleanupGuard = guard { Platform_DestroyPipe(pipe); };
 
@@ -653,7 +677,7 @@ Platform_CreatePipeServer(StringSlice name, Pipe& pipe)
 		pipe.state = PipeState::Disconnected;
 		pipe.isServer = true;
 
-		b32 success = String_FromSlice(pipe.name, name);
+		b32 success = String_FromView(pipe.name, name);
 		LOG_IF(!success, return PipeResult::UnexpectedFailure,
 			Severity::Warning, "Failed to allocate pipe");
 	}
@@ -662,13 +686,13 @@ Platform_CreatePipeServer(StringSlice name, Pipe& pipe)
 	{
 		pipe.impl = (PipeImpl*) malloc(sizeof(PipeImpl));
 		LOG_IF(!pipe.impl, return PipeResult::UnexpectedFailure,
-			Severity::Warning, "Failed to allocate pipe '%s'", pipe.name.data);
+			Severity::Warning, "Failed to allocate pipe '%'", pipe.name);
 
 		*pipe.impl = {};
 
-		b32 success = String_Format(pipe.impl->fullName, "\\\\.\\pipe\\%s", pipe.name.data);
+		b32 success = String_Format(pipe.impl->fullName, "\\\\.\\pipe\\%", pipe.name);
 		LOG_IF(!success, return PipeResult::UnexpectedFailure,
-			Severity::Warning, "Failed to format string for pipe name '%s'", pipe.name.data);
+			Severity::Warning, "Failed to format string for pipe name '%'", pipe.name);
 	}
 
 	// Create connection event
@@ -679,7 +703,7 @@ Platform_CreatePipeServer(StringSlice name, Pipe& pipe)
 
 		pipe.impl->connect.hEvent = CreateEventA(nullptr, true, true, nullptr);
 		LOG_LAST_ERROR_IF(pipe.impl->connect.hEvent == INVALID_HANDLE_VALUE, return PipeResult::UnexpectedFailure,
-			Severity::Warning, "Failed to create pipe server connect event '%s'", pipe.name.data);
+			Severity::Warning, "Failed to create pipe server connect event '%'", pipe.name);
 	}
 
 	// TODO: Would like to automatically kick of a connection here, but that makes it harder for the
@@ -689,7 +713,7 @@ Platform_CreatePipeServer(StringSlice name, Pipe& pipe)
 }
 
 PipeResult
-Platform_CreatePipeClient(StringSlice name, Pipe& pipe)
+Platform_CreatePipeClient(StringView name, Pipe& pipe)
 {
 	auto cleanupGuard = guard { Platform_DestroyPipe(pipe); };
 
@@ -699,7 +723,7 @@ Platform_CreatePipeClient(StringSlice name, Pipe& pipe)
 		pipe.state = PipeState::Disconnected;
 		pipe.isServer = false;
 
-		b32 success = String_FromSlice(pipe.name, name);
+		b32 success = String_FromView(pipe.name, name);
 		LOG_IF(!success, return PipeResult::UnexpectedFailure,
 			Severity::Warning, "Failed to allocate pipe");
 	}
@@ -712,9 +736,9 @@ Platform_CreatePipeClient(StringSlice name, Pipe& pipe)
 
 		*pipe.impl = {};
 
-		b32 success = String_Format(pipe.impl->fullName, "\\\\.\\pipe\\%s", pipe.name.data);
+		b32 success = String_Format(pipe.impl->fullName, "\\\\.\\pipe\\%", pipe.name);
 		LOG_IF(!success, return PipeResult::UnexpectedFailure,
-			Severity::Warning, "Failed to format string for pipe name '%s'", pipe.name.data);
+			Severity::Warning, "Failed to format string for pipe name '%'", pipe.name);
 	}
 
 	// Attempt to connect
@@ -731,8 +755,8 @@ Platform_CreatePipeClient(StringSlice name, Pipe& pipe)
 void
 Platform_DestroyPipe(Pipe& pipe)
 {
-	List_Free(pipe.name);
-	List_Free(pipe.impl->fullName);
+	String_Free(pipe.name);
+	String_Free(pipe.impl->fullName);
 	// TODO: Handle failure?
 	CloseHandle(pipe.impl->handle);
 	CloseHandle(pipe.impl->connect.hEvent);
@@ -772,7 +796,7 @@ Platform_WritePipe(Pipe& pipe, Bytes bytes)
 				return PipeResult::TransientFailure;
 
 			default:
-				LOG_LAST_ERROR(Severity::Warning, "Writing to pipe failed '%s'", pipe.name.data);
+				LOG_LAST_ERROR(Severity::Warning, "Writing to pipe failed '%'", pipe.name);
 				return PipeResult::UnexpectedFailure;
 		}
 	}
@@ -785,7 +809,7 @@ Platform_WritePipe(Pipe& pipe, Bytes bytes)
 	// The sender will get a failure message and simply resend the message next time it gets a
 	// chance.
 	LOG_IF(written != bytes.length, return PipeResult::TransientFailure,
-		Severity::Fatal, "Writing to pipe truncated '%s'", pipe.name.data);
+		Severity::Fatal, "Writing to pipe truncated '%'", pipe.name);
 
 	return PipeResult::Success;
 }
@@ -824,7 +848,7 @@ Platform_ReadPipe(Pipe& pipe, Bytes& bytes)
 				return PipeResult::TransientFailure;
 
 			default:
-				LOG_LAST_ERROR(Severity::Warning, "Failed to peek pipe '%s'", pipe.name.data);
+				LOG_LAST_ERROR(Severity::Warning, "Failed to peek pipe '%'", pipe.name);
 				return PipeResult::UnexpectedFailure;
 		}
 	}
@@ -833,7 +857,7 @@ Platform_ReadPipe(Pipe& pipe, Bytes& bytes)
 
 	success = List_Reserve(bytes, available);
 	LOG_IF(!success, return PipeResult::TransientFailure,
-		Severity::Warning, "Failed to reserve pipe read buffer '%s'", pipe.name.data);
+		Severity::Warning, "Failed to reserve pipe read buffer '%'", pipe.name);
 
 	u32 read;
 	success = ReadFile(
@@ -853,7 +877,7 @@ Platform_ReadPipe(Pipe& pipe, Bytes& bytes)
 				return PipeResult::TransientFailure;
 
 			default:
-				LOG_LAST_ERROR(Severity::Warning, "Reading from pipe failed '%s'", pipe.name.data);
+				LOG_LAST_ERROR(Severity::Warning, "Reading from pipe failed '%'", pipe.name);
 				return PipeResult::UnexpectedFailure;
 		}
 	}
@@ -861,7 +885,7 @@ Platform_ReadPipe(Pipe& pipe, Bytes& bytes)
 	// TODO: Could potentially drop the connection instead of fataling. Or implement an ack for each
 	// message
 	LOG_IF(read != available, return PipeResult::UnexpectedFailure,
-		Severity::Fatal, "Read wrong amount of data from pipe '%s'", pipe.name.data);
+		Severity::Fatal, "Read wrong amount of data from pipe '%'", pipe.name);
 
 	bytes.length = read;
 	return PipeResult::Success;
@@ -874,7 +898,7 @@ Platform_FlushPipe(Pipe& pipe)
 
 	b32 success = FlushFileBuffers(pipe.impl->handle);
 	LOG_LAST_ERROR_IF(!success, return PipeResult::UnexpectedFailure,
-		Severity::Error, "Failed to flush pipe '%s'", pipe.name.data);
+		Severity::Error, "Failed to flush pipe '%'", pipe.name);
 
 	return PipeResult::Success;
 }

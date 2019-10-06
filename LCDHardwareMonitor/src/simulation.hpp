@@ -69,8 +69,8 @@ CreateWidget(WidgetPlugin& widgetPlugin, WidgetData& widgetData)
 
 	b32 success = List_Reserve(widgetData.widgetsUserData, widgetData.desc.userDataSize);
 	LOG_IF(!success, return nullptr,
-		Severity::Error, "Failed to allocate space for %u bytes of Widget user data '%s'",
-		widgetData.desc.userDataSize, widgetPlugin.info.name.data);
+		Severity::Error, "Failed to allocate space for % bytes of Widget user data '%'",
+		widgetData.desc.userDataSize, widgetPlugin.info.name);
 	widgetData.widgetsUserData.length += widgetData.desc.userDataSize;
 
 	return widget;
@@ -103,24 +103,23 @@ RemoveSensorRefs(SimulationState& s, SensorPluginRef sensorPluginRef, Slice<Sens
 	}
 }
 
-static StringSlice
+static StringView
 GetNameFromPath(String& path)
 {
 	if (path.length == 0) return {};
 
-	String::RefT first = List_FindLast(path, '/');
-	if (first == String::RefT::Null)
-		first = List_GetFirstRef(path);
+	StrPos first = String_FindLast(path, '/');
+	if (first == StrPos::Null)
+		first = String_GetFirstPos(path);
 
-	String::RefT last = List_FindLast(path, '.');
-	if (last == String::RefT::Null)
-		last = List_GetLastRef(path);
+	StrPos last = String_FindLast(path, '.');
+	if (last == StrPos::Null)
+		last = String_GetLastPos(path);
 
 	if (first == last) return {};
 
-	StringSlice result = {};
+	StringView result = {};
 	result.length = last.index - first.index + 1;
-	result.stride = sizeof(c8);
 	result.data   = &path[first];
 	return result;
 }
@@ -144,8 +143,8 @@ RegisterSensors(PluginContext& context, Slice<Sensor> sensors)
 
 	b32 success = List_AppendRange(sensorPlugin.sensors, sensors);
 	LOG_IF(!success, return,
-		Severity::Error, "Failed to allocate space for %u Sensors '%s'",
-		sensors.length, sensorPlugin.info.name.data);
+		Severity::Error, "Failed to allocate space for % Sensors '%'",
+		sensors.length, sensorPlugin.info.name);
 
 	// TODO: Re-use empty slots in the list (from removes)
 
@@ -168,7 +167,7 @@ UnregisterSensors(PluginContext& context, Slice<SensorRef> sensorRefs)
 		valid = valid && List_IsRefValid(sensorPlugin.sensors, sensorRef);
 		valid = valid && sensorPlugin.sensors[sensorRef].ref == sensorRef;
 		LOG_IF(!valid, return,
-			Severity::Error, "Sensor plugin gave a bad SensorRef '%s'", sensorPlugin.info.name.data);
+			Severity::Error, "Sensor plugin gave a bad SensorRef '%'", sensorPlugin.info.name);
 	}
 
 	RemoveSensorRefs(*context.s, sensorPlugin.ref, sensorRefs);
@@ -210,8 +209,8 @@ RegisterWidgets(PluginContext& context, Slice<WidgetDesc> widgetDescs)
 
 		success = List_Reserve(widgetData.widgetsUserData, 8 * widgetDesc.userDataSize);
 		LOG_IF(!success, return,
-			Severity::Error, "Failed to allocate space for Widget user data list. %u bytes each '%s'",
-			widgetDesc.userDataSize, widgetPlugin.info.name.data);
+			Severity::Error, "Failed to allocate space for Widget user data list. % bytes each '%'",
+			widgetDesc.userDataSize, widgetPlugin.info.name);
 
 		WidgetData* widgetData2 = List_Append(widgetPlugin.widgetDatas, widgetData);
 		LOG_IF(!widgetData2, return,
@@ -235,7 +234,7 @@ UnregisterAllWidgets(PluginContext& context)
 }
 
 static PixelShader
-LoadPixelShader(PluginContext& context, c8* relPath, Slice<u32> cBufSizes)
+LoadPixelShader(PluginContext& context, StringView relPath, Slice<u32> cBufSizes)
 {
 	if (!context.success) return PixelShader::Null;
 	context.success = false;
@@ -244,19 +243,19 @@ LoadPixelShader(PluginContext& context, c8* relPath, Slice<u32> cBufSizes)
 	RendererState& rendererState = *context.s->renderer;
 
 	String path = {};
-	defer { List_Free(path); };
+	defer { String_Free(path); };
 
-	b32 success = String_Format(path, "%s/%s", widgetPlugin.header.directory, relPath);
+	b32 success = String_Format(path, "%/%", widgetPlugin.header.directory, relPath);
 	LOG_IF(!success, return PixelShader::Null,
-		Severity::Error, "Failed to format pixel shader path '%s'", relPath);
+		Severity::Error, "Failed to format pixel shader path '%'", relPath);
 
-	StringSlice psName = GetNameFromPath(path);
+	StringView psName = GetNameFromPath(path);
 	LOG_IF(!psName.data, psName = path,
-		Severity::Warning, "Failed to get pixel shader name from path '%s'", relPath);
+		Severity::Warning, "Failed to get pixel shader name from path '%'", relPath);
 
-	PixelShader ps = Renderer_LoadPixelShader(rendererState, psName, path.data, cBufSizes);
+	PixelShader ps = Renderer_LoadPixelShader(rendererState, psName, path, cBufSizes);
 	LOG_IF(!ps, return PixelShader::Null,
-		Severity::Error, "Failed to load pixel shader '%s'", path.data);
+		Severity::Error, "Failed to load pixel shader '%'", path);
 
 	context.success = true;
 	return ps;
@@ -543,7 +542,7 @@ GetWidget(SimulationState& s, FullWidgetRef ref)
 }
 
 static SensorPlugin*
-LoadSensorPlugin(SimulationState& s, c8* directory, c8* fileName)
+LoadSensorPlugin(SimulationState& s, StringView directory, StringView fileName)
 {
 	b32 success;
 
@@ -553,14 +552,20 @@ LoadSensorPlugin(SimulationState& s, c8* directory, c8* fileName)
 
 	auto pluginGuard = guard { sensorPlugin->header.loadState = PluginLoadState::Broken; };
 
-	sensorPlugin->ref              = List_GetLastRef(s.sensorPlugins);
-	sensorPlugin->header.fileName  = fileName;
-	sensorPlugin->header.directory = directory;
-	sensorPlugin->header.kind      = PluginKind::Sensor;
+	sensorPlugin->ref         = List_GetLastRef(s.sensorPlugins);
+	sensorPlugin->header.kind = PluginKind::Sensor;
+
+	success = String_Format(sensorPlugin->header.fileName, "%", fileName);
+	LOG_IF(!success, return nullptr,
+		Severity::Error, "Failed to copy Sensor plugin file name");
+
+	success = String_Format(sensorPlugin->header.directory, "%", directory);
+	LOG_IF(!success, return nullptr,
+		Severity::Error, "Failed to copy Sensor plugin directory");
 
 	success = PluginLoader_LoadSensorPlugin(*s.pluginLoader, *sensorPlugin);
 	LOG_IF(!success, return nullptr,
-		Severity::Error, "Failed to load Sensor plugin '%s'", fileName);
+		Severity::Error, "Failed to load Sensor plugin '%'", fileName);
 
 	success = List_Reserve(sensorPlugin->sensors, 32);
 	LOG_IF(!success, return nullptr,
@@ -580,7 +585,7 @@ LoadSensorPlugin(SimulationState& s, c8* directory, c8* fileName)
 		success = sensorPlugin->functions.initialize(context, api);
 		success &= context.success;
 		LOG_IF(!success, return nullptr,
-			Severity::Error, "Failed to initialize Sensor plugin '%s'", sensorPlugin->info.name.data);
+			Severity::Error, "Failed to initialize Sensor plugin '%'", sensorPlugin->info.name);
 	}
 
 	pluginGuard.dismiss = true;
@@ -615,7 +620,7 @@ UnloadSensorPlugin(SimulationState& s, SensorPlugin& sensorPlugin)
 	b32 success = PluginLoader_UnloadSensorPlugin(*s.pluginLoader, sensorPlugin);
 	List_Free(sensorPlugin.sensors);
 	LOG_IF(!success, return false,
-		Severity::Error, "Failed to unload Sensor plugin '%s'", sensorPlugin.info.name.data);
+		Severity::Error, "Failed to unload Sensor plugin '%'", sensorPlugin.info.name);
 
 	// TODO: Add and remove plugin infos based on directory contents instead of
 	// loaded state.
@@ -626,7 +631,7 @@ UnloadSensorPlugin(SimulationState& s, SensorPlugin& sensorPlugin)
 }
 
 static WidgetPlugin*
-LoadWidgetPlugin(SimulationState& s, c8* directory, c8* fileName)
+LoadWidgetPlugin(SimulationState& s, StringView directory, StringView fileName)
 {
 	b32 success;
 
@@ -636,14 +641,20 @@ LoadWidgetPlugin(SimulationState& s, c8* directory, c8* fileName)
 	LOG_IF(!widgetPlugin, return nullptr,
 		Severity::Error, "Failed to allocate WidgetPlugin");
 
-	widgetPlugin->ref              = List_GetLastRef(s.widgetPlugins);
-	widgetPlugin->header.fileName  = fileName;
-	widgetPlugin->header.directory = directory;
-	widgetPlugin->header.kind      = PluginKind::Widget;
+	widgetPlugin->ref         = List_GetLastRef(s.widgetPlugins);
+	widgetPlugin->header.kind = PluginKind::Widget;
+
+	success = String_Format(widgetPlugin->header.fileName, "%", fileName);
+	LOG_IF(!success, return nullptr,
+		Severity::Error, "Failed to copy Widget plugin file name");
+
+	success = String_Format(widgetPlugin->header.directory, "%", directory);
+	LOG_IF(!success, return nullptr,
+		Severity::Error, "Failed to copy Widget plugin directory");
 
 	success = PluginLoader_LoadWidgetPlugin(*s.pluginLoader, *widgetPlugin);
 	LOG_IF(!success, return nullptr,
-		Severity::Error, "Failed to load Widget plugin '%s'", fileName);
+		Severity::Error, "Failed to load Widget plugin '%'", fileName);
 
 	// TODO: try/catch?
 	if (widgetPlugin->functions.Initialize)
@@ -712,7 +723,7 @@ UnloadWidgetPlugin(SimulationState& s, WidgetPlugin& widgetPlugin)
 
 	b32 success = PluginLoader_UnloadWidgetPlugin(*s.pluginLoader, widgetPlugin);
 	LOG_IF(!success, return false,
-		Severity::Error, "Failed to unload Widget plugin '%s'", widgetPlugin.info.name.data);
+		Severity::Error, "Failed to unload Widget plugin '%'", widgetPlugin.info.name);
 
 	// TODO: Add and remove plugin infos based on directory contents instead
 	// of loaded state.

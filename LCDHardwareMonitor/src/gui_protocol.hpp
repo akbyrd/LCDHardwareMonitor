@@ -189,7 +189,7 @@ void Serialize(ByteStream&, List<T>&);
 template<typename T>
 void Serialize(ByteStream&, Slice<T>&);
 
-void Serialize(ByteStream&, StringSlice&);
+void Serialize(ByteStream&, StringView&);
 
 void Serialize(ByteStream&, Message::PluginsAdded&);
 void Serialize(ByteStream&, Message::PluginStatesChanged&);
@@ -494,10 +494,10 @@ Serialize(ByteStream& stream, Slice<T>& slice)
 }
 
 void
-Serialize(ByteStream& stream, StringSlice& string)
+Serialize(ByteStream& stream, String& string)
 {
 	c8* data = (c8*) &stream.bytes[stream.cursor];
-	stream.cursor += List_SizeOf(string);
+	stream.cursor += string.length + 1;
 
 	switch (stream.mode)
 	{
@@ -511,8 +511,31 @@ Serialize(ByteStream& stream, StringSlice& string)
 			break;
 
 		case ByteStreamMode::Write:
-			Assert(string.stride == 1);
-			memcpy(data, string.data, string.length);
+			memcpy(data, string.data, string.length + 1);
+			string.data = nullptr;
+			break;
+	}
+}
+
+void
+Serialize(ByteStream& stream, StringView& string)
+{
+	c8* data = (c8*) &stream.bytes[stream.cursor];
+	stream.cursor += string.length + 1;
+
+	switch (stream.mode)
+	{
+		default: Assert(false); break;
+
+		case ByteStreamMode::Size:
+			break;
+
+		case ByteStreamMode::Read:
+			string.data = data;
+			break;
+
+		case ByteStreamMode::Write:
+			memcpy(data, string.data, string.length + 1);
 			string.data = nullptr;
 			break;
 	}

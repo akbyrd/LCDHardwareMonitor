@@ -153,8 +153,8 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	b32
 	LoadPlugin(PluginHeader& pluginHeader)
 	{
-		auto name      = gcnew mString(pluginHeader.fileName);
-		auto directory = gcnew mString(pluginHeader.directory);
+		auto name      = gcnew mString(pluginHeader.fileName.data);
+		auto directory = gcnew mString(pluginHeader.directory.data);
 
 		// NOTE: LHMAppDomainManager is going to get loaded into each new
 		// AppDomain so we need to let ApplicationBase get inherited from the
@@ -193,11 +193,11 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 
 	generic <typename T>
 	static b32
-	LoadAssemblyAndInstantiateType(c8* _fileName, T% instance)
+	LoadAssemblyAndInstantiateType(::String _fileName, T% instance)
 	{
 		// NOTE: T^ and T^% map back to plain T
 		mString^ typeName = T::typeid->FullName;
-		mString^ fileName = Path::GetFileNameWithoutExtension(gcnew mString(_fileName));
+		mString^ fileName = Path::GetFileNameWithoutExtension(gcnew mString(_fileName.data));
 
 		auto assembly = Assembly::Load(fileName);
 		for each (Type^ type in assembly->GetExportedTypes())
@@ -213,13 +213,13 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 				{
 					// TODO: Logging
 					//LOG_IF(!instance, return false,
-					//	Severity::Error, "Found multiple managed plugin types '%s', _fileName");
+					//	Severity::Error, "Found multiple managed plugin types '%', _fileName.data");
 				}
 			}
 		}
 		// TODO: Logging
 		//LOG_IF(!instance, return false,
-		//	Severity::Error, "Failed to find a managed plugin type '%s', _fileName");
+		//	Severity::Error, "Failed to find a managed plugin type '%', _fileName.data");
 
 		return true;
 	}

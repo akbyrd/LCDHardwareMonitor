@@ -38,12 +38,12 @@ struct DrawCall
 	Material material;
 };
 
-b32                   Renderer_Initialize                   (RendererState&, v2i renderSize);
+b32                   Renderer_Initialize                   (RendererState&, v2u renderSize);
 b32                   Renderer_RebuildSharedGeometryBuffers (RendererState&);
 void                  Renderer_Teardown                     (RendererState&);
-Mesh                  Renderer_CreateMesh                   (RendererState&, StringSlice name, Slice<Vertex> vertices, Slice<Index> indices);
-VertexShader          Renderer_LoadVertexShader             (RendererState&, StringSlice name, c8* path, Slice<VertexAttribute> attributes, Slice<u32> cBufSizes);
-PixelShader           Renderer_LoadPixelShader              (RendererState&, StringSlice name, c8* path, Slice<u32> cBufSizes);
+Mesh                  Renderer_CreateMesh                   (RendererState&, StringView name, Slice<Vertex> vertices, Slice<Index> indices);
+VertexShader          Renderer_LoadVertexShader             (RendererState&, StringView name, StringView path, Slice<VertexAttribute> attributes, Slice<u32> cBufSizes);
+PixelShader           Renderer_LoadPixelShader              (RendererState&, StringView name, StringView path, Slice<u32> cBufSizes);
 // TODO: Combine with CreateMesh, LoadVertexShader, and LoadPixelShader
 Material              Renderer_CreateMaterial               (RendererState&, Mesh mesh, VertexShader vs, PixelShader ps);
 ConstantBufferUpdate* Renderer_PushConstantBufferUpdate     (RendererState&);

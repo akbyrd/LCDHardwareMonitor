@@ -152,17 +152,12 @@ namespace LCDHardwareMonitor::GUI
 		}
 
 		static sString^
-		ToManagedString(StringSlice cstring)
+		ToManagedString(StringView cstring)
 		{
 			LOG_IF((i32) cstring.length < 0, IGNORE,
 				Severity::Warning, "Native string truncated");
 
-			// TODO: Remove this
-			u32 length = cstring.length;
-			while (length > 0 && cstring[length - 1] == '\0')
-				length--;
-
-			sString^ result = gcnew sString(cstring.data, 0, (i32) length);
+			sString^ result = gcnew sString(cstring.data, 0, (i32) cstring.length);
 			return result;
 		}
 

@@ -119,35 +119,33 @@ struct RendererState
 	List<RenderCommand>            commandList;
 };
 
-template<typename T>
+#define SetDebugObjectName(resource, format, ...) \
+	SetDebugObjectNameChecked<CountPlaceholders(format)>(resource, format, ##__VA_ARGS__)
+
+template<u32 PlaceholderCount, typename T, typename... Args>
 static inline void
-SetDebugObjectName(const ComPtr<T>& resource, StringSlice name)
+SetDebugObjectNameChecked(const ComPtr<T>& resource, StringView format, Args... args)
 {
-	#if defined(DEBUG)
-	Assert(name.length > 0);
-	resource->SetPrivateData(WKPDID_D3DDebugObjectName, name.length - 1, name.data);
-	#else
-		UNUSED(resource); UNUSED(name);
-	#endif
+	static_assert(PlaceholderCount == sizeof...(Args));
+	SetDebugObjectNameImpl(resource, format, args...);
 }
 
 template<typename T, typename... Args>
 static inline void
-SetDebugObjectName(const ComPtr<T>& resource, StringSlice format, Args... args)
+SetDebugObjectNameImpl(const ComPtr<T>& resource, StringView format, Args... args)
 {
 	#if defined(DEBUG)
-	String name = {};
-	defer { List_Free(name); };
+	String string = {};
+	defer { String_Free(string); };
 
-	b32 success = String_Format(name, (c8*) format.data, args...);
-	if (!success)
-	{
-		LOG(Severity::Warning, "Failed to format D3D object name");
-		SetDebugObjectName(resource, format);
-		return;
-	}
+	b32 success = String_FormatImpl(string, format, args...);
+	LOG_IF(!success, IGNORE,
+		Severity::Warning, "Failed to format D3D object name");
 
-	SetDebugObjectName(resource, name);
+	StringView name = success ? string : format;
+	Assert(name.length > 0);
+
+	resource->SetPrivateData(WKPDID_D3DDebugObjectName, name.length - 1, name.data);
 	#else
 		UNUSED(resource); UNUSED(format); UNUSED_ARGS(args...);
 	#endif
@@ -488,7 +486,7 @@ Renderer_Teardown(RendererState& s)
 	for (u32 i = 0; i < s.meshes.length; i++)
 	{
 		MeshData& mesh = s.meshes[i];
-		List_Free(mesh.name);
+		String_Free(mesh.name);
 	}
 	List_Free(s.meshes);
 
@@ -500,7 +498,7 @@ Renderer_Teardown(RendererState& s)
 		for (u32 j = 0; j < ps.constantBuffers.length; j++)
 			ps.constantBuffers[j].d3dConstantBuffer.Reset();
 		List_Free(ps.constantBuffers);
-		List_Free(ps.name);
+		String_Free(ps.name);
 	}
 	List_Free(s.pixelShaders);
 
@@ -513,7 +511,7 @@ Renderer_Teardown(RendererState& s)
 		for (u32 j = 0; j < vs.constantBuffers.length; j++)
 			vs.constantBuffers[j].d3dConstantBuffer.Reset();
 		List_Free(vs.constantBuffers);
-		List_Free(vs.name);
+		String_Free(vs.name);
 	}
 	List_Free(s.vertexShaders);
 
@@ -552,19 +550,19 @@ Renderer_Teardown(RendererState& s)
 
 // TODO: Standardize asset function naming convention
 Mesh
-Renderer_CreateMesh(RendererState& s, StringSlice name, Slice<Vertex> vertices, Slice<Index> indices)
+Renderer_CreateMesh(RendererState& s, StringView name, Slice<Vertex> vertices, Slice<Index> indices)
 {
 	MeshData mesh = {};
 	defer {
 		// TODO: Can end up with orphaned vertices/indices allocated
-		List_Free(mesh.name);
+		String_Free(mesh.name);
 	};
 
 	// Copy Name
 	{
-		b32 success = List_Duplicate(name, mesh.name);
+		b32 success = String_FromView(mesh.name, name);
 		LOG_IF(!success, IGNORE,
-			Severity::Warning, "Failed to copy mesh name '%s'", name.data);
+			Severity::Warning, "Failed to copy mesh name '%'", name);
 	}
 
 	// Copy Data
@@ -578,18 +576,18 @@ Renderer_CreateMesh(RendererState& s, StringSlice name, Slice<Vertex> vertices, 
 
 		success = List_AppendRange(s.vertexBuffer, vertices);
 		LOG_IF(!success, return Mesh::Null,
-			Severity::Error, "Failed to allocate space for %u mesh vertices '%s'", vertices.length, name.data);
+			Severity::Error, "Failed to allocate space for % mesh vertices '%'", vertices.length, name);
 
 		success = List_AppendRange(s.indexBuffer, indices);
 		LOG_IF(!success, return Mesh::Null,
-			Severity::Error, "Failed to allocate space for %u mesh indices '%s'", indices.length, name.data);
+			Severity::Error, "Failed to allocate space for % mesh indices '%'", indices.length, name);
 	}
 
 	// Commit
 	{
 		MeshData* mesh2 = List_Append(s.meshes, mesh);
 		LOG_IF(!mesh2, return Mesh::Null,
-			Severity::Error, "Failed to allocate space for mesh '%s'", name.data);
+			Severity::Error, "Failed to allocate space for mesh '%'", name);
 		mesh = {};
 
 		// TODO: Eventually lists will reuse slots
@@ -606,7 +604,7 @@ Renderer_CreateConstantBuffer(RendererState& s, ConstantBuffer& cBuf)
 	// TODO: Decide where validation should be handled: simulation or renderer
 
 	LOG_IF(!IsMultipleOf(cBuf.size, 16), return false,
-		Severity::Error, "Constant buffer size '%u' is not a multiple of 16", cBuf.size);
+		Severity::Error, "Constant buffer size '%' is not a multiple of 16", cBuf.size);
 
 	D3D11_BUFFER_DESC d3dDesc = {};
 	d3dDesc.ByteWidth           = cBuf.size;
@@ -627,7 +625,7 @@ Renderer_CreateConstantBuffer(RendererState& s, ConstantBuffer& cBuf)
 
 // TODO: Should a failed load mark the file as bad?
 VertexShader
-Renderer_LoadVertexShader(RendererState& s, StringSlice name, c8* path, Slice<VertexAttribute> attributes, Slice<u32> cBufSizes)
+Renderer_LoadVertexShader(RendererState& s, StringView name, StringView path, Slice<VertexAttribute> attributes, Slice<u32> cBufSizes)
 {
 	// Vertex Shader
 	VertexShaderData vs = {};
@@ -638,14 +636,14 @@ Renderer_LoadVertexShader(RendererState& s, StringSlice name, c8* path, Slice<Ve
 		for (u32 i = 0; i < vs.constantBuffers.length; i++)
 			vs.constantBuffers[i].d3dConstantBuffer.Reset();
 		List_Free(vs.constantBuffers);
-		List_Free(vs.name);
+		String_Free(vs.name);
 	};
 
 	// Copy Name
 	{
-		b32 success = List_Duplicate(name, vs.name);
+		b32 success = String_FromView(vs.name, name);
 		LOG_IF(!success, IGNORE,
-			Severity::Warning, "Failed to copy vertex shader name '%s'", path);
+			Severity::Warning, "Failed to copy vertex shader name '%'", path);
 	}
 
 	// Load
@@ -660,8 +658,8 @@ Renderer_LoadVertexShader(RendererState& s, StringSlice name, c8* path, Slice<Ve
 	{
 		HRESULT hr = s.d3dDevice->CreateVertexShader(vsBytes.data, vsBytes.length, nullptr, &vs.d3dVertexShader);
 		LOG_HRESULT_IF_FAILED(hr, return VertexShader::Null,
-			Severity::Error, "Failed to create vertex shader '%s'", path);
-		SetDebugObjectName(vs.d3dVertexShader, "Vertex Shader: %s", name.data);
+			Severity::Error, "Failed to create vertex shader '%'", path);
+		SetDebugObjectName(vs.d3dVertexShader, "Vertex Shader: %", name);
 	}
 
 	// Constant Buffers
@@ -671,7 +669,7 @@ Renderer_LoadVertexShader(RendererState& s, StringSlice name, c8* path, Slice<Ve
 
 		success = List_Reserve(vs.constantBuffers, cBufSizes.length);
 		LOG_IF(!success, return VertexShader::Null,
-			Severity::Error, "Failed to allocate space for %u VS constant buffers '%s'", cBufSizes.length, path);
+			Severity::Error, "Failed to allocate space for % VS constant buffers '%'", cBufSizes.length, path);
 
 		for (u32 i = 0; i < cBufSizes.length; i++)
 		{
@@ -680,7 +678,7 @@ Renderer_LoadVertexShader(RendererState& s, StringSlice name, c8* path, Slice<Ve
 
 			success = Renderer_CreateConstantBuffer(s, *cBuf);
 			LOG_IF(!success, return VertexShader::Null,
-				Severity::Error, "Failed to create VS constant buffer %u for '%s'", i, path);
+				Severity::Error, "Failed to create VS constant buffer % for '%'", i, path);
 		}
 	}
 
@@ -689,7 +687,7 @@ Renderer_LoadVertexShader(RendererState& s, StringSlice name, c8* path, Slice<Ve
 		List<D3D11_INPUT_ELEMENT_DESC> vsInputDescs = {};
 		b32 success = List_Reserve(vsInputDescs, attributes.length);
 		LOG_IF(!success, return VertexShader::Null,
-			Severity::Error, "Failed to allocate space for %u VS input descriptions '%s'", attributes.length, path);
+			Severity::Error, "Failed to allocate space for % VS input descriptions '%'", attributes.length, path);
 		for (u32 i = 0; i < attributes.length; i++)
 		{
 			const c8* semantic;
@@ -700,7 +698,7 @@ Renderer_LoadVertexShader(RendererState& s, StringSlice name, c8* path, Slice<Ve
 				case VertexAttributeSemantic::TexCoord: semantic = HLSLSemantic::TexCoord; break;
 
 				default:
-					LOG(Severity::Error, "Unrecognized VS attribute semantic %i '%s'", attributes[i].semantic, path);
+					LOG(Severity::Error, "Unrecognized VS attribute semantic % '%'", (i32) attributes[i].semantic, path);
 					return VertexShader::Null;
 			}
 
@@ -712,7 +710,7 @@ Renderer_LoadVertexShader(RendererState& s, StringSlice name, c8* path, Slice<Ve
 				case VertexAttributeFormat::v4: format = DXGI_FORMAT_R32G32B32A32_FLOAT; break;
 
 				default:
-					LOG(Severity::Error, "Unrecognized VS attribute format %i '%s'", attributes[i].format, path);
+					LOG(Severity::Error, "Unrecognized VS attribute format % '%'", (i32) attributes[i].format, path);
 					return VertexShader::Null;
 			}
 
@@ -729,8 +727,8 @@ Renderer_LoadVertexShader(RendererState& s, StringSlice name, c8* path, Slice<Ve
 
 		HRESULT hr = s.d3dDevice->CreateInputLayout(vsInputDescs.data, vsInputDescs.length, vsBytes.data, vsBytes.length, &vs.d3dInputLayout);
 		LOG_HRESULT_IF_FAILED(hr, return VertexShader::Null,
-			Severity::Error, "Failed to create VS input layout '%s'", path);
-		SetDebugObjectName(vs.d3dInputLayout, "Input Layout: %s", name.data);
+			Severity::Error, "Failed to create VS input layout '%'", path);
+		SetDebugObjectName(vs.d3dInputLayout, "Input Layout: %", name);
 
 		vs.d3dPrimitveTopology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	}
@@ -741,7 +739,7 @@ Renderer_LoadVertexShader(RendererState& s, StringSlice name, c8* path, Slice<Ve
 	{
 		vs2 = List_Append(s.vertexShaders, vs);
 		LOG_IF(!vs2, return VertexShader::Null,
-			Severity::Error, "Failed to allocate space for vertex shader '%s'", path);
+			Severity::Error, "Failed to allocate space for vertex shader '%'", path);
 		vs = {};
 
 		// TODO: Eventually lists will reuse slots
@@ -753,7 +751,7 @@ Renderer_LoadVertexShader(RendererState& s, StringSlice name, c8* path, Slice<Ve
 
 // TODO: Unload functions
 PixelShader
-Renderer_LoadPixelShader(RendererState& s, StringSlice name, c8* path, Slice<u32> cBufSizes)
+Renderer_LoadPixelShader(RendererState& s, StringView name, StringView path, Slice<u32> cBufSizes)
 {
 	PixelShaderData ps = {};
 	defer {
@@ -762,14 +760,14 @@ Renderer_LoadPixelShader(RendererState& s, StringSlice name, c8* path, Slice<u32
 		for (u32 i = 0; i < ps.constantBuffers.length; i++)
 			ps.constantBuffers[i].d3dConstantBuffer.Reset();
 		List_Free(ps.constantBuffers);
-		List_Free(ps.name);
+		String_Free(ps.name);
 	};
 
 	// Copy Name
 	{
-		b32 success = List_Duplicate(name, ps.name);
+		b32 success = String_FromView(ps.name, name);
 		LOG_IF(!success, IGNORE,
-			Severity::Warning, "Failed to copy pixel shader name '%s'", path);
+			Severity::Warning, "Failed to copy pixel shader name '%'", path);
 	}
 
 	// Load
@@ -784,8 +782,8 @@ Renderer_LoadPixelShader(RendererState& s, StringSlice name, c8* path, Slice<u32
 	{
 		HRESULT hr = s.d3dDevice->CreatePixelShader(psBytes.data, (u64) psBytes.length, nullptr, &ps.d3dPixelShader);
 		LOG_HRESULT_IF_FAILED(hr, return PixelShader::Null,
-			Severity::Error, "Failed to create pixel shader '%s'", path);
-		SetDebugObjectName(ps.d3dPixelShader, "Pixel Shader: %s", name.data);
+			Severity::Error, "Failed to create pixel shader '%'", path);
+		SetDebugObjectName(ps.d3dPixelShader, "Pixel Shader: %", name);
 	}
 
 	// Constant Buffers
@@ -795,7 +793,7 @@ Renderer_LoadPixelShader(RendererState& s, StringSlice name, c8* path, Slice<u32
 
 		success = List_Reserve(ps.constantBuffers, cBufSizes.length);
 		LOG_IF(!success, return PixelShader::Null,
-			Severity::Error, "Failed to allocate space for %u PS constant buffers '%s'", cBufSizes.length, path);
+			Severity::Error, "Failed to allocate space for % PS constant buffers '%'", cBufSizes.length, path);
 
 		for (u32 i = 0; i < cBufSizes.length; i++)
 		{
@@ -804,7 +802,7 @@ Renderer_LoadPixelShader(RendererState& s, StringSlice name, c8* path, Slice<u32
 
 			success = Renderer_CreateConstantBuffer(s, *cBuf);
 			LOG_IF(!success, return PixelShader::Null,
-				Severity::Error, "Failed to create PS constant buffer %u for '%s'", i, path);
+				Severity::Error, "Failed to create PS constant buffer % for '%'", i, path);
 		}
 	}
 
@@ -813,7 +811,7 @@ Renderer_LoadPixelShader(RendererState& s, StringSlice name, c8* path, Slice<u32
 	{
 		ps2 = List_Append(s.pixelShaders, ps);
 		LOG_IF(!ps2, return PixelShader::Null,
-			Severity::Error, "Failed to allocate space for pixel shader '%s'", path);
+			Severity::Error, "Failed to allocate space for pixel shader '%'", path);
 		ps = {};
 
 		// TODO: Eventually lists will reuse slots

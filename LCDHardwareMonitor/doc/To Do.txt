@@ -1,5 +1,19 @@
-WidgetDesc -> Widget
-Widget -> WidgetInstance
+Don't store StringViews
+
+Renaming
+	WidgetDesc -> Widget
+	Widget -> WidgetInstance
+	WidgetInstanceAPI!
+
+Interesting...
+	#if __WIN
+		constexpr static bool IsWindows = true;
+	#else
+		constexpr static bool IsWindows = false;
+	#endif
+Stop using b32
+Start using Scoped
+Try removing WidgetData
 Native namespace for interop?
 Remove default: Assert(false); break;
 Need to handle mouse position when preview isn't visible
@@ -15,7 +29,6 @@ Stuff
 	Look at tlbgen and references vs pointers
 	Maybe get 64 bit working?
 	Add a proper OOM crash flow
-	Fix StringSlice trailing zero
 	I think pipes want to be no-wait
 	Users probably need to be able to create custom UI for plugin settings
 	Ensure we're handling CloseHandle failures correctly
@@ -59,7 +72,6 @@ OHM Plugin
 
 
 Back Burner
-	Can one of the template parameters to Scoped be eliminated through partial specialization?
 	Allow logging from plugins
 	Is it cleaner to use the auto-COM-interface of LHMPluginLoader?
 	Handle multiple plugins in the same file (probably just a detailed error)
@@ -82,8 +94,6 @@ Back Burner
 
 Refactoring
 	Rewrite List<T>
-	Rewrite String. String is a fucking nightmare right now.
-	Passing a SliceSlice to a log format WILL NOT work and is a super likely mistake!
 	Try out range based for loops
 	Ensure Platform function naming is uniform
 	Decide on 'plugin loader' naming on both sides of the managed boundary

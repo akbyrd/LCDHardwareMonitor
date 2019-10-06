@@ -23,9 +23,8 @@ enum struct PluginLoadState
 struct PluginHeader
 {
 	PluginLoadState loadState;
-	// TODO: Change to String and update logging
-	c8*             fileName;
-	c8*             directory;
+	String          fileName;
+	String          directory;
 	PluginKind      kind;
 	PluginLanguage  language;
 	void*           userData;

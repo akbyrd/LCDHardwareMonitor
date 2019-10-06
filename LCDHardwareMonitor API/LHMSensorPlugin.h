@@ -9,11 +9,11 @@ using SensorRef = List<Sensor>::RefT;
 
 struct Sensor
 {
-	SensorRef   ref;
-	StringSlice name;
-	StringSlice identifier;
-	StringSlice format;
-	r32         value;
+	SensorRef  ref;
+	StringView name;
+	StringView identifier;
+	StringView format;
+	r32        value;
 
 	// TODO: Might want an integer Type field with a plugin provided to-string
 	// function.

@@ -2,8 +2,6 @@
 #include "LHMAPICLR.h"
 
 #pragma managed
-#include <cstring>
-
 // NOTE: It looks like it's not possible to update individual sensors. Updates
 // happen at the hardware level. */
 
@@ -39,12 +37,11 @@ public ref struct State : ISensorPlugin, ISensorInitialize, ISensorUpdate, ISens
 		info.version = 1;
 	}
 
-	StringSlice
-	ToStringSlice(SString^ string)
+	StringView
+	ToStringView(SString^ string)
 	{
-		StringSlice result = {};
+		StringView result = {};
 		result.length = (u32) string->Length;
-		result.stride = 1;
 		result.data   = (c8*) Marshal::StringToHGlobalAnsi(string).ToPointer();
 		return result;
 	}
@@ -106,10 +103,13 @@ public ref struct State : ISensorPlugin, ISensorInitialize, ISensorUpdate, ISens
 				SString^ value  = SString::Format(format, ohmSensor.Value);
 
 				Sensor sensor = {};
-				sensor.name       = ToStringSlice(ohmSensor.Name);
-				sensor.identifier = ToStringSlice(ohmSensor.Identifier->ToString());
-				sensor.format     = ToStringSlice(value);
+				sensor.name       = ToStringView(ohmSensor.Name);
+				sensor.identifier = ToStringView(ohmSensor.Identifier->ToString());
+				sensor.format     = ToStringView(value);
 				api.RegisterSensors(context, sensor);
+				Marshal::FreeHGlobal((IntPtr) sensor.name.data);
+				Marshal::FreeHGlobal((IntPtr) sensor.identifier.data);
+				Marshal::FreeHGlobal((IntPtr) sensor.format.data);
 			}
 
 			// Sub-Hardware

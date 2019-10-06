@@ -76,7 +76,7 @@ struct WidgetPluginAPI
 	struct Initialize
 	{
 		using RegisterWidgetsFn = void       (PluginContext&, Slice<WidgetDesc>);
-		using LoadPixelShaderFn = PixelShader(PluginContext&, c8* relPath, Slice<u32> cBufSizes);
+		using LoadPixelShaderFn = PixelShader(PluginContext&, StringView relPath, Slice<u32> cBufSizes);
 		using CreateMaterialFn  = Material   (PluginContext&, Mesh, VertexShader, PixelShader);
 
 		RegisterWidgetsFn* RegisterWidgets;

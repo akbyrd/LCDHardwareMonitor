@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+	<Type Name="String">
+		<DisplayString>{{ {data,sb} }}</DisplayString>
+	</Type>
+
+	<Type Name="StringView">
+		<DisplayString>{{ {data,sb} }}</DisplayString>
+	</Type>
+
 	<Type Name="List&lt;*&gt;">
 		<DisplayString>{{ length = {length}, capacity = {capacity} }}</DisplayString>
 		<Expand>
@@ -10,15 +18,6 @@
 		</Expand>
 	</Type>
 
-	<Type Name="List&lt;char&gt;">
-		<DisplayString>{{ {data,s} }}</DisplayString>
-		<StringView>data</StringView>
-		<Expand>
-			<Item Name="length">length</Item>
-			<Item Name="capacity">capacity</Item>
-		</Expand>
-	</Type>
-
 	<Type Name="Slice&lt;*&gt;">
 		<DisplayString>{{ length = {length}, stride = {stride} }}</DisplayString>
 		<Expand>
@@ -26,15 +25,6 @@
 				<Size>length</Size>
 				<ValueNode>($T1&amp;) ((u8*) data)[stride*$i]</ValueNode>
 			</IndexListItems>
-		</Expand>
-	</Type>
-
-	<Type Name="Slice&lt;char&gt;">
-		<DisplayString>{{ {data,s} }}</DisplayString>
-		<StringView>data</StringView>
-		<Expand>
-			<Item Name="length">length</Item>
-			<Item Name="stride">stride</Item>
 		</Expand>
 	</Type>
 
