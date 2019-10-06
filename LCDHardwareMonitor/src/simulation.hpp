@@ -205,7 +205,7 @@ RegisterWidgets(PluginContext& context, Slice<WidgetDesc> widgetDescs)
 
 		success = List_Reserve(widgetData.widgets, 8);
 		LOG_IF(!success, return,
-			Severity::Error, "Failed to allocate space for Widget instances list");
+			Severity::Error, "Failed to allocate space for Widgets list");
 
 		success = List_Reserve(widgetData.widgetsUserData, 8 * widgetDesc.userDataSize);
 		LOG_IF(!success, return,
@@ -695,7 +695,7 @@ UnloadWidgetPlugin(SimulationState& s, WidgetPlugin& widgetPlugin)
 	context.s            = &s;
 	context.widgetPlugin = &widgetPlugin;
 
-	WidgetInstanceAPI::Teardown instancesAPI = {};
+	WidgetAPI::Teardown wigetAPI = {};
 	for (u32 i = 0; i < widgetPlugin.widgetDatas.length; i++)
 	{
 		WidgetData& widgetData = widgetPlugin.widgetDatas[i];
@@ -703,20 +703,20 @@ UnloadWidgetPlugin(SimulationState& s, WidgetPlugin& widgetPlugin)
 
 		context.success = true;
 
-		instancesAPI.widgets                = widgetData.widgets;
-		instancesAPI.widgetsUserData        = widgetData.widgetsUserData;
-		instancesAPI.widgetsUserData.stride = widgetData.desc.userDataSize;
+		wigetAPI.widgets                = widgetData.widgets;
+		wigetAPI.widgetsUserData        = widgetData.widgetsUserData;
+		wigetAPI.widgetsUserData.stride = widgetData.desc.userDataSize;
 
 		// TODO: try/catch?
 		if (widgetData.desc.Teardown)
-			widgetData.desc.Teardown(context, instancesAPI);
+			widgetData.desc.Teardown(context, wigetAPI);
 	}
 
 	// TODO: try/catch?
 	if (widgetPlugin.functions.Teardown)
 	{
-		WidgetPluginAPI::Teardown api = {};
-		widgetPlugin.functions.Teardown(context, api);
+		WidgetPluginAPI::Teardown pluginAPI = {};
+		widgetPlugin.functions.Teardown(context, pluginAPI);
 	}
 
 	UnregisterAllWidgets(context);
@@ -938,7 +938,7 @@ Simulation_Initialize(SimulationState& s, PluginLoaderState& pluginLoader, Rende
 			context.widgetPlugin = filledBarPlugin;
 			context.success      = true;
 
-			WidgetInstanceAPI::Initialize api = {};
+			WidgetAPI::Initialize api = {};
 			u32 iLast = widgetData.widgets.length - 1;
 			api.widgets                  = widgetData.widgets[iLast];
 			api.widgetsUserData          = widgetData.widgetsUserData[iLast * widgetData.desc.userDataSize];
@@ -1010,14 +1010,14 @@ Simulation_Update(SimulationState& s)
 
 		WidgetPluginAPI::Update pluginAPI = {};
 
-		WidgetInstanceAPI::Update instancesAPI = {};
-		instancesAPI.t                        = s.currentTime;
-		instancesAPI.sensors                  = s.sensorPlugins[0].sensors;
-		instancesAPI.GetViewMatrix            = GetViewMatrix;
-		instancesAPI.GetProjectionMatrix      = GetProjectionMatrix;
-		instancesAPI.GetViewProjectionMatrix  = GetViewProjectionMatrix;
-		instancesAPI.PushConstantBufferUpdate = PushConstantBufferUpdate;
-		instancesAPI.PushDrawCall             = PushDrawCall;
+		WidgetAPI::Update wigetAPI = {};
+		wigetAPI.t                        = s.currentTime;
+		wigetAPI.sensors                  = s.sensorPlugins[0].sensors;
+		wigetAPI.GetViewMatrix            = GetViewMatrix;
+		wigetAPI.GetProjectionMatrix      = GetProjectionMatrix;
+		wigetAPI.GetViewProjectionMatrix  = GetViewProjectionMatrix;
+		wigetAPI.PushConstantBufferUpdate = PushConstantBufferUpdate;
+		wigetAPI.PushDrawCall             = PushDrawCall;
 
 		for (u32 i = 0; i < s.widgetPlugins.length; i++)
 		{
@@ -1037,12 +1037,12 @@ Simulation_Update(SimulationState& s)
 
 				context.success = true;
 
-				instancesAPI.widgets                = widgetData.widgets;
-				instancesAPI.widgetsUserData        = widgetData.widgetsUserData;
-				instancesAPI.widgetsUserData.stride = widgetData.desc.userDataSize;
+				wigetAPI.widgets                = widgetData.widgets;
+				wigetAPI.widgetsUserData        = widgetData.widgetsUserData;
+				wigetAPI.widgetsUserData.stride = widgetData.desc.userDataSize;
 
 				// TODO: try/catch?
-				widgetData.desc.Update(context, instancesAPI);
+				widgetData.desc.Update(context, wigetAPI);
 			}
 		}
 	}

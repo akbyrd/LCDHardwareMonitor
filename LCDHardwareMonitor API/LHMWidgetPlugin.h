@@ -17,7 +17,7 @@ struct Widget
 	SensorRef       sensorRef;
 };
 
-struct WidgetInstanceAPI
+struct WidgetAPI
 {
 	struct Initialize
 	{
@@ -59,9 +59,9 @@ using WidgetDescRef = List<WidgetDesc>::RefT;
 
 struct WidgetDesc
 {
-	using InitializeFn = b32 (PluginContext&, WidgetInstanceAPI::Initialize);
-	using UpdateFn     = void(PluginContext&, WidgetInstanceAPI::Update);
-	using TeardownFn   = void(PluginContext&, WidgetInstanceAPI::Teardown);
+	using InitializeFn = b32 (PluginContext&, WidgetAPI::Initialize);
+	using UpdateFn     = void(PluginContext&, WidgetAPI::Update);
+	using TeardownFn   = void(PluginContext&, WidgetAPI::Teardown);
 
 	WidgetDescRef ref;
 	String        name;

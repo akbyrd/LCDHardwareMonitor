@@ -11,6 +11,6 @@ struct PluginContext {};
 #pragma make_public(PluginInfo)
 #pragma make_public(SensorPluginAPI)
 #pragma make_public(WidgetPluginAPI)
-#pragma make_public(WidgetInstanceAPI)
+#pragma make_public(WidgetAPI)
 
 #endif

@@ -278,24 +278,24 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 
 		widgetPluginCLR.pluginInstance->GetPluginInfo(widgetPlugin.info);
 
-		auto iInitialize = dynamic_cast<IWidgetInitialize^>(widgetPluginCLR.pluginInstance);
+		auto iInitialize = dynamic_cast<IWidgetPluginInitialize^>(widgetPluginCLR.pluginInstance);
 		if (iInitialize)
 		{
-			widgetPluginCLR.initializeDelegate = gcnew WidgetPlugin_CLR::InitializeDelegate(iInitialize, &IWidgetInitialize::Initialize);
+			widgetPluginCLR.initializeDelegate = gcnew WidgetPlugin_CLR::InitializeDelegate(iInitialize, &IWidgetPluginInitialize::Initialize);
 			widgetPlugin.functions.Initialize = (WidgetPluginFunctions::InitializeFn*) (void*) Marshal::GetFunctionPointerForDelegate(widgetPluginCLR.initializeDelegate);
 		}
 
-		auto iUpdate = dynamic_cast<IWidgetUpdate^>(widgetPluginCLR.pluginInstance);
+		auto iUpdate = dynamic_cast<IWidgetPluginUpdate^>(widgetPluginCLR.pluginInstance);
 		if (iUpdate)
 		{
-			widgetPluginCLR.updateDelegate = gcnew WidgetPlugin_CLR::UpdateDelegate(iUpdate, &IWidgetUpdate::Update);
+			widgetPluginCLR.updateDelegate = gcnew WidgetPlugin_CLR::UpdateDelegate(iUpdate, &IWidgetPluginUpdate::Update);
 			widgetPlugin.functions.Update = (WidgetPluginFunctions::UpdateFn*) (void*) Marshal::GetFunctionPointerForDelegate(widgetPluginCLR.updateDelegate);
 		}
 
-		auto iTeardown = dynamic_cast<IWidgetTeardown^>(widgetPluginCLR.pluginInstance);
+		auto iTeardown = dynamic_cast<IWidgetPluginTeardown^>(widgetPluginCLR.pluginInstance);
 		if (iTeardown)
 		{
-			widgetPluginCLR.teardownDelegate = gcnew WidgetPlugin_CLR::TeardownDelegate(iTeardown, &IWidgetTeardown::Teardown);
+			widgetPluginCLR.teardownDelegate = gcnew WidgetPlugin_CLR::TeardownDelegate(iTeardown, &IWidgetPluginTeardown::Teardown);
 			widgetPlugin.functions.Teardown = (WidgetPluginFunctions::TeardownFn*) (void*) Marshal::GetFunctionPointerForDelegate(widgetPluginCLR.teardownDelegate);
 		}
 

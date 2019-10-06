@@ -14,7 +14,7 @@ struct BarWidget
 static Material filledBarMat = {};
 
 static b32
-InitializeBarWidgets(PluginContext& context, WidgetInstanceAPI::Initialize api)
+InitializeBarWidgets(PluginContext& context, WidgetAPI::Initialize api)
 {
 	for (u32 i = 0; i < api.widgets.length; i++)
 	{
@@ -39,7 +39,7 @@ InitializeBarWidgets(PluginContext& context, WidgetInstanceAPI::Initialize api)
 }
 
 static void
-UpdateBarWidgets(PluginContext& context, WidgetInstanceAPI::Update api)
+UpdateBarWidgets(PluginContext& context, WidgetAPI::Update api)
 {
 	for (u32 i = 0; i < api.widgets.length; i++)
 	{

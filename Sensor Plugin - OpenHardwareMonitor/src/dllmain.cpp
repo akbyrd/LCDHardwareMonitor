@@ -16,7 +16,7 @@ using SList = System::Collections::Generic::List<T>;
 
 using SString = System::String;
 
-public ref struct State : ISensorPlugin, ISensorInitialize, ISensorUpdate, ISensorTeardown
+public ref struct State : ISensorPlugin, ISensorPluginInitialize, ISensorPluginUpdate, ISensorPluginTeardown
 {
 	Computer^          computer;
 	SList<ISensor^>^   activeSensors;

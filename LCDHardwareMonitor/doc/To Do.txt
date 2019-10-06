@@ -1,10 +1,5 @@
 Don't store StringViews
 
-Renaming
-	WidgetDesc -> Widget
-	Widget -> WidgetInstance
-	WidgetInstanceAPI!
-
 Interesting...
 	#if __WIN
 		constexpr static bool IsWindows = true;
