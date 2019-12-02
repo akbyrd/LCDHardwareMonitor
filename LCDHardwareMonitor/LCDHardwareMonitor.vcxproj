@@ -168,7 +168,9 @@
     <ClInclude Include="src\platform_win32.hpp" />
     <ClInclude Include="src\renderer.h" />
     <ClInclude Include="src\renderer_d3d11.hpp" />
+    <ClInclude Include="src\renderer_d3d9.hpp" />
     <ClInclude Include="src\simulation.hpp" />
+    <ClInclude Include="src\Solid Colored.ps.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="res\Debug Coordinates.ps">
