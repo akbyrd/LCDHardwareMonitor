@@ -69,14 +69,13 @@ struct
 
 #define guard make_guard << [&]
 
-template<typename TResource, typename TCleanup, TCleanup Cleanup>
+template<typename TResource, auto& ReleaseFn>
 struct Scoped
 {
-	Scoped(TResource resource) : resource(resource) { }
-	~Scoped() { Cleanup(resource); }
+	~Scoped() { ReleaseFn(resource); }
 
-	const TResource resource;
-	operator TResource() { return resource; }
+	TResource resource;
+	operator TResource&() { return resource; }
 };
 
 #endif

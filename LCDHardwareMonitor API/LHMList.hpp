@@ -54,6 +54,15 @@ struct List
 	inline T& operator[] (u32 i)  { return data[i]; }
 };
 
+#if false
+template<typename T>
+inline void
+List_Free(List<T>& list);
+
+template<typename T>
+using ScopedList = Scoped<List<T>, List_Free<T>>;
+#endif
+
 template<typename T>
 struct Slice
 {
@@ -61,13 +70,14 @@ struct Slice
 	u32 stride;
 	T*  data;
 
-	                                 Slice()                                   { length = 0;            stride = sizeof(T);    data = nullptr;       }
-	template<typename U>             Slice(u32 _length, U* _data)              { length = _length;      stride = sizeof(U);    data = _data;         }
-	template<typename U>             Slice(u32 _length, u32 _stride, U* _data) { length = _length;      stride = _stride;      data = _data;         }
-	template<typename U>             Slice(const List<U>& list)                { length = list.length;  stride = sizeof(U);    data = list.data;     }
-	template<typename U>             Slice(const Slice<U>& slice)              { length = slice.length; stride = slice.stride; data = slice.data;    }
-	template<typename U>             Slice(const U& element)                   { length = 1;            stride = sizeof(U);    data = (U*) &element; }
-	template<typename U, u32 Length> Slice(const U(&arr)[Length])              { length = Length;       stride = sizeof(U);    data = (U*) arr;      }
+	                                 Slice()                                   { length = 0;                    stride = sizeof(T);            data = nullptr;            }
+	template<typename U>             Slice(u32 _length, U* _data)              { length = _length;              stride = sizeof(U);            data = _data;              }
+	template<typename U>             Slice(u32 _length, u32 _stride, U* _data) { length = _length;              stride = _stride;              data = _data;              }
+	template<typename U>             Slice(const List<U>& list)                { length = list.length;          stride = sizeof(U);            data = list.data;          }
+	template<typename U>             Slice(const Slice<U>& slice)              { length = slice.length;         stride = slice.stride;         data = slice.data;         }
+	template<typename U>             Slice(const U& element)                   { length = 1;                    stride = sizeof(U);            data = (U*) &element;      }
+	template<typename U, u32 Length> Slice(const U(&arr)[Length])              { length = Length;               stride = sizeof(U);            data = (U*) arr;           }
+	//template<typename U>             Slice(ScopedList<U>& list)                { length = list.resource.length; stride = list.resource.stride; data = list.resource.data; }
 
 	operator Slice<Slice<T>>() { return { 1, sizeof(Slice<T>), this }; }
 

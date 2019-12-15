@@ -6,6 +6,7 @@
 // TODO: Allow explicit cast to List & Slice types
 using Bytes = List<u8>;
 using ByteSlice = Slice<u8>;
+using ScopedBytes = Scoped<List<u8>, List_Free<u8>>;
 
 template<typename T>
 void
