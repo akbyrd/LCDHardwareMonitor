@@ -9,7 +9,7 @@
 #pragma pop_macro("IGNORE")
 #pragma warning(pop)
 
-template <u32 PlaceholderCount, typename... Args>
+template<u32 PlaceholderCount, typename... Args>
 inline void
 Platform_PrintChecked(StringView format, Args... args)
 {
@@ -26,7 +26,7 @@ Platform_PrintImpl(StringView message)
 		OutputDebugStringA(message.data);
 }
 
-template <typename... Args>
+template<typename... Args>
 inline void
 Platform_PrintImpl(StringView format, Args... args)
 {
@@ -44,7 +44,7 @@ Platform_PrintImpl(StringView format, Args... args)
 	Platform_PrintImpl(message);
 }
 
-template <u32 PlaceholderCount, typename... Args>
+template<u32 PlaceholderCount, typename... Args>
 inline void
 Platform_LogChecked(Severity severity, Location location, StringView format, Args... args)
 {
@@ -77,7 +77,7 @@ Platform_LogImpl(Severity severity, Location location, StringView message)
 		__debugbreak();
 }
 
-template <typename... Args>
+template<typename... Args>
 inline void
 Platform_LogImpl(Severity severity, Location location, StringView format, Args... args)
 {
@@ -125,7 +125,7 @@ LogFormatMessage(u32 messageID, Severity severity, Location location, StringView
 	Platform_LogImpl(severity, location, "%: % (%)", message, windowsMessage, messageID);
 }
 
-template <typename... Args>
+template<typename... Args>
 inline void
 LogFormatMessage(u32 messageID, Severity severity, Location location, StringView format, Args... args)
 {
@@ -153,7 +153,7 @@ LogHRESULT(HRESULT hr, Severity severity, Location location, StringView message)
 	LogFormatMessage((u32) hr, severity, location, message);
 }
 
-template <typename... Args>
+template<typename... Args>
 inline void
 LogHRESULT(HRESULT hr, Severity severity, Location location, StringView format, Args... args)
 {
@@ -180,7 +180,7 @@ LogLastError(Severity severity, Location location, StringView message)
 	LogFormatMessage(lastError, severity, location, message);
 }
 
-template <typename... Args>
+template<typename... Args>
 inline void
 LogLastError(Severity severity, Location location, StringView format, Args... args)
 {

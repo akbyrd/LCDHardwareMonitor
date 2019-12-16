@@ -129,7 +129,7 @@ namespace Message
 	};
 }
 
-template <>
+template<>
 constexpr u32 IdOf<Message::Null> = 0;
 
 enum struct ByteStreamMode
@@ -205,7 +205,7 @@ MessageTimeLeft(i64 startTicks)
 	return Platform_GetElapsedMilliseconds(startTicks) < 8;
 }
 
-template <typename T>
+template<typename T>
 b32
 SerializeMessage(Bytes& bytes, T& message, u32 messageIndex)
 {
@@ -237,7 +237,7 @@ SerializeMessage(Bytes& bytes, T& message, u32 messageIndex)
 	return true;
 }
 
-template <typename T>
+template<typename T>
 void
 DeserializeMessage(Bytes& bytes)
 {
@@ -294,7 +294,7 @@ QueueMessage(ConnectionState& con, Bytes& bytes)
 	return true;
 }
 
-template <typename T>
+template<typename T>
 b32
 SerializeAndQueueMessage(ConnectionState& con, T& message)
 {

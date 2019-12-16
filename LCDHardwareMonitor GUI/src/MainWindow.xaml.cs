@@ -8,7 +8,6 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
-using sMouseButton = System.Windows.Input.MouseButton;
 
 namespace LCDHardwareMonitor.GUI
 {
@@ -115,9 +114,9 @@ namespace LCDHardwareMonitor.GUI
 			{
 				default: return;
 
-				case sMouseButton.Left:
-				case sMouseButton.Middle:
-				case sMouseButton.Right:
+				case MouseButton.Left:
+				case MouseButton.Middle:
+				case MouseButton.Right:
 				{
 					var element = sender as UIElement;
 					e.Handled = !element.IsMouseCaptured;
@@ -137,9 +136,9 @@ namespace LCDHardwareMonitor.GUI
 			{
 				default: return;
 
-				case sMouseButton.Left:
-				case sMouseButton.Middle:
-				case sMouseButton.Right:
+				case MouseButton.Left:
+				case MouseButton.Middle:
+				case MouseButton.Right:
 					var element = sender as UIElement;
 					e.Handled = element.IsMouseCaptured;
 					Interop.MouseButtonChange(simState, GetMousePosition(), e.ChangedButton, e.ButtonState);

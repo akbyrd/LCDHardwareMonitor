@@ -17,6 +17,7 @@
 	#pragma warning (disable: 4774) // printf format not a literal
 	#pragma warning (disable: 4820) // Struct padding added
 	#pragma warning (disable: 5039) // Throwing function passed to extern C function
+	#pragma warning (disable: 5045) // Spectre mitigations
 
 	#define EXPORT extern "C" __declspec(dllexport)
 	#define __FUNCTION_FULL_NAME__ __FUNCSIG__

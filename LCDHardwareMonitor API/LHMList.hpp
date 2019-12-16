@@ -20,6 +20,7 @@
 //   Grow returns false.
 //   Append returns a nullptr instead of a pointer to the new slot.
 
+// TODO: Consider renaming this to Handle or something. Ref is overloaded
 struct ListRefBase
 {
 	u32 index;
@@ -250,8 +251,8 @@ template<typename T>
 inline ListRef<T>
 List_FindLast(List<T>& list, T item)
 {
-	for (u32 i = list.length - 1; i >= 0; i--)
-		if (list.data[i] == item)
+	for (u32 i = list.length; i > 0; i--)
+		if (list.data[i - 1] == item)
 			return List_GetRef(list, i);
 
 	return ListRef<T>::Null;
@@ -276,6 +277,8 @@ template<typename T>
 inline T&
 List_GetFirst(List<T>& list)
 {
+	// TODO: Decide what to do here
+	//Assert(list.length > 0);
 	return list.data[0];
 }
 
@@ -283,6 +286,7 @@ template<typename T>
 inline T&
 List_GetLast(List<T>& list)
 {
+	//Assert(list.length > 0);
 	return list.data[list.length - 1];
 }
 
@@ -291,6 +295,7 @@ inline ListRef<T>
 List_GetRef(List<T>& list, u32 index)
 {
 	UNUSED(list);
+	//Assert(list.length > 0);
 	ListRef<T> ref = {};
 	ref.index = index + 1;
 	return ref;
@@ -315,7 +320,7 @@ inline T*
 List_GetFirstPtr(List<T>& list)
 {
 	if (list.length == 0)
-		return nullptr;
+		return &list.data[0];
 
 	return &list.data[0];
 }
@@ -325,9 +330,16 @@ inline T*
 List_GetLastPtr(List<T>& list)
 {
 	if (list.length == 0)
-		return nullptr;
+		return &list.data[0];
 
 	return &list.data[list.length - 1];
+}
+
+template<typename T>
+inline u32
+List_GetRemaining(List<T>& list)
+{
+	return list.capacity - list.length;
 }
 
 template<typename T>
@@ -394,6 +406,14 @@ List_SizeOf(Slice<T>& slice)
 }
 
 template<typename T>
+inline size
+List_SizeOfRemaining(List<T>& list)
+{
+	size result = (list.capacity - list.length) * sizeof(T);
+	return result;
+}
+
+template<typename T>
 inline Slice<T>
 List_Slice(Slice<T>& slice, u32 start)
 {
@@ -435,6 +455,14 @@ List_MemberSlice(List<T>& list, U T::* memberPtr1, V U::* memberPtr2)
 	}
 
 	return result;
+}
+
+template<typename T>
+inline T&
+List_GetLast(Slice<T>& list)
+{
+	Assert(list.length > 0);
+	return list.data[list.length - 1];
 }
 
 template<typename T, typename U>

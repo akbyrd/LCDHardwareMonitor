@@ -554,10 +554,10 @@ GetOrbitPos(v3t<T> target, v2t<U> yp, r32 radius)
 {
 	// NOTE: Pitch, then yaw
 
-	r32 cy = cos(-yp.yaw);
-	r32 sy = sin(-yp.yaw);
-	r32 cp = cos(yp.pitch);
-	r32 sp = sin(yp.pitch);
+	r32 cy = cosf(-yp.yaw);
+	r32 sy = sinf(-yp.yaw);
+	r32 cp = cosf(yp.pitch);
+	r32 sp = sinf(yp.pitch);
 
 	v3 offset = radius * v3 { sy*cp, -sp, cy*cp };
 
@@ -593,7 +593,7 @@ template<typename T>
 inline v3t<T>
 Normalize(v3t<T> v)
 {
-	r32 magnitude = sqrt(v.x*v.x + v.y*v.y + v.z*v.z);
+	r32 magnitude = sqrtf(v.x*v.x + v.y*v.y + v.z*v.z);
 	v3t<T> result = { v.x / magnitude, v.y / magnitude, v.z / magnitude };
 	return result;
 }

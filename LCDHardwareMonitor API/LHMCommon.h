@@ -16,12 +16,11 @@ using r32 = float;
 using r64 = double;
 
 using c8  = char;
-using c16 = wchar_t;
 
 using b8  = bool;
-using b32 = int;
+using b32 = int; // TODO: Consider removing this
 
-using size = size_t;
+using size = size_t; // TODO: Consider removing this
 
 const u64 Kilobyte = 1024LL;
 const u64 Megabyte = 1024LL * Kilobyte;

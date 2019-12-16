@@ -36,8 +36,8 @@ namespace LCDHardwareMonitor::GUI
 	using namespace System::Diagnostics;
 	using namespace System::Windows;
 	using namespace System::Windows::Input;
-	using sString = System::String;
-	using sMouseButton = System::Windows::Input::MouseButton;
+	using mString = System::String;
+	using mMouseButton = System::Windows::Input::MouseButton;
 
 	public enum struct PluginKind
 	{
@@ -57,9 +57,9 @@ namespace LCDHardwareMonitor::GUI
 	public value struct PluginInfo
 	{
 		property UInt32     Ref;
-		property sString^   Name;
+		property mString^   Name;
 		property PluginKind Kind;
-		property sString^   Author;
+		property mString^   Author;
 		property UInt32     Version;
 
 		property PluginLoadState LoadState; // TODO: Probably belongs in another struct
@@ -69,9 +69,9 @@ namespace LCDHardwareMonitor::GUI
 	{
 		property UInt32   PluginRef;
 		property UInt32   Ref;
-		property sString^ Name;
-		property sString^ Identifier;
-		property sString^ Format;
+		property mString^ Name;
+		property mString^ Identifier;
+		property mString^ Format;
 		property Single   Value;
 	};
 
@@ -79,7 +79,7 @@ namespace LCDHardwareMonitor::GUI
 	{
 		property UInt32   PluginRef;
 		property UInt32   Ref;
-		property sString^ Name;
+		property mString^ Name;
 	};
 
 	public enum struct ProcessState
@@ -116,7 +116,7 @@ namespace LCDHardwareMonitor::GUI
 		}
 
 		virtual event PropertyChangedEventHandler^ PropertyChanged;
-		void NotifyPropertyChanged(sString^ propertyName)
+		void NotifyPropertyChanged(mString^ propertyName)
 		{
 			// TODO: Is this safe without the null check?
 			PropertyChanged(this, gcnew PropertyChangedEventArgs(propertyName));
@@ -129,14 +129,14 @@ namespace LCDHardwareMonitor::GUI
 		// Helper Functions
 
 		static Message::MouseButton
-		ToMouseButton(sMouseButton button)
+		ToMouseButton(mMouseButton button)
 		{
 			switch (button)
 			{
 				default: Assert(false); return Message::MouseButton::Null;
-				case sMouseButton::Left: return Message::MouseButton::Left;
-				case sMouseButton::Middle: return Message::MouseButton::Middle;
-				case sMouseButton::Right: return Message::MouseButton::Right;
+				case mMouseButton::Left: return Message::MouseButton::Left;
+				case mMouseButton::Middle: return Message::MouseButton::Middle;
+				case mMouseButton::Right: return Message::MouseButton::Right;
 			}
 		}
 
@@ -151,13 +151,13 @@ namespace LCDHardwareMonitor::GUI
 			}
 		}
 
-		static sString^
+		static mString^
 		ToManagedString(StringView cstring)
 		{
 			LOG_IF((i32) cstring.length < 0, IGNORE,
 				Severity::Warning, "Native string truncated");
 
-			sString^ result = gcnew sString(cstring.data, 0, (i32) cstring.length);
+			mString^ result = gcnew mString(cstring.data, 0, (i32) cstring.length);
 			return result;
 		}
 
@@ -188,8 +188,8 @@ namespace LCDHardwareMonitor::GUI
 			SetProcessState(simState, ProcessState::Terminating);
 
 			Message::TerminateSimulation terminate = {};
-			bool success = SerializeAndQueueMessage(state.simConnection, terminate);
-			return success;
+			b32 success = SerializeAndQueueMessage(state.simConnection, terminate);
+			return (bool) success;
 		}
 
 		static void
@@ -210,19 +210,19 @@ namespace LCDHardwareMonitor::GUI
 
 			Message::MouseMove move = {};
 			move.pos = { (int) pos.X, (int) pos.Y };
-			bool success = SerializeAndQueueMessage(state.simConnection, move);
-			return success;
+			b32 success = SerializeAndQueueMessage(state.simConnection, move);
+			return (bool) success;
 		}
 
 		static bool
-		MouseButtonChange(SimulationState^, Point pos, sMouseButton button, MouseButtonState buttonState)
+		MouseButtonChange(SimulationState^, Point pos, mMouseButton button, MouseButtonState buttonState)
 		{
 			Message::MouseButtonChange buttonChange = {};
 			buttonChange.pos = { (int) pos.X, (int) pos.Y };
 			buttonChange.button = ToMouseButton(button);
 			buttonChange.state = ToButtonState(buttonState);
-			bool success = SerializeAndQueueMessage(state.simConnection, buttonChange);
-			return success;
+			b32 success = SerializeAndQueueMessage(state.simConnection, buttonChange);
+			return (bool) success;
 		}
 
 		static void
@@ -239,7 +239,7 @@ namespace LCDHardwareMonitor::GUI
 		{
 			simState.Version = connect.version;
 
-			bool success = D3D9_CreateSharedSurface(
+			b32 success = D3D9_CreateSharedSurface(
 				*state.d3d9Device,
 				state.d3d9RenderTexture,
 				state.d3d9RenderSurface0,
@@ -361,7 +361,7 @@ namespace LCDHardwareMonitor::GUI
 			LOG_IF(result == PipeResult::UnexpectedFailure, return false,
 				Severity::Error, "Failed to create pipe for sim communication");
 
-			bool success = D3D9_Initialize((HWND) (void*) hwnd, s.d3d9, s.d3d9Device);
+			b32 success = D3D9_Initialize((HWND) (void*) hwnd, s.d3d9, s.d3d9Device);
 			if (!success) return false;
 
 			return true;
@@ -397,7 +397,7 @@ namespace LCDHardwareMonitor::GUI
 				i64 startTicks = Platform_GetTicks();
 				while (MessageTimeLeft(startTicks))
 				{
-					bool success = ReceiveMessage(simCon, bytes);
+					b32 success = ReceiveMessage(simCon, bytes);
 					if (!success) break;
 
 					Header& header = (Header&) bytes[0];
@@ -458,7 +458,7 @@ namespace LCDHardwareMonitor::GUI
 				// Send
 				while (MessageTimeLeft(startTicks))
 				{
-					bool success = SendMessage(simCon);
+					b32 success = SendMessage(simCon);
 					if (!success) break;
 				}
 

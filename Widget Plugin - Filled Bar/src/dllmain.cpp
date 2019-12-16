@@ -55,8 +55,9 @@ UpdateBarWidgets(PluginContext& context, WidgetInstanceAPI::Update api)
 		}
 		else
 		{
+			// DEBUG: Remove this
 			r32 phase = (r32) i / (r32) (api.widgets.length + 1) * 0.5f * r32Pi;
-			barWidget.psPerObject.fillAmount = sin(api.t + phase) * sin(api.t + phase);
+			barWidget.psPerObject.fillAmount = sinf(api.t + phase) * sinf(api.t + phase);
 		}
 
 		// Draw

@@ -43,14 +43,14 @@ enum struct PipeResult
 #define Platform_Print(format, ...) \
 	Platform_PrintChecked<CountPlaceholders(format)>(format, ##__VA_ARGS__)
 
-template <u32 PlaceholderCount, typename... Args>
+template<u32 PlaceholderCount, typename... Args>
 inline void
 Platform_PrintChecked(StringView format, Args... args);
 
 #define Platform_Log(severity, location, format, ...) \
 	Platform_LogChecked<CountPlaceholders(format)>(severity, location, format, ##__VA_ARGS__)
 
-template <u32 PlaceholderCount, typename... Args>
+template<u32 PlaceholderCount, typename... Args>
 inline void
 Platform_LogChecked(Severity severity, Location location, StringView format, Args... args);
 
@@ -77,6 +77,6 @@ PipeResult Platform_FlushPipe              (Pipe&);
 #define LOG(severity, format, ...) Platform_Log(severity, LOCATION, format, __VA_ARGS__)
 #define LOG_IF(expression, action, severity, format, ...) IF(expression, LOG(severity, format, __VA_ARGS__); action)
 #else
-#define LOG(severity, format, ...) 
-#define LOG_IF(expression, action, severity, format, ...) 
+#define LOG(severity, format, ...)
+#define LOG_IF(expression, action, severity, format, ...)
 #endif
