@@ -82,7 +82,7 @@ Initialize(PluginContext& context, WidgetPluginAPI::Initialize api)
 {
 	// TODO: Shouldn't have to do this on the user side
 	String name = {};
-	b32 success = String_Format(name, "Filled Bar");
+	b32 success = String_FromView(name, "Filled Bar");
 	if (!success) return false;
 
 	WidgetDesc widgetDesc = {};
@@ -105,8 +105,9 @@ Initialize(PluginContext& context, WidgetPluginAPI::Initialize api)
 EXPORT void
 GetWidgetPluginInfo(PluginInfo& info, WidgetPluginFunctions& functions)
 {
-	info.name    = "Filled Bar";
-	info.author  = "akbyrd";
+	b32 success;
+	success = String_FromView(info.name,   "Filled Bar"); Assert(success);
+	success = String_FromView(info.author, "akbyrd");     Assert(success);
 	info.version = 1;
 
 	functions.Initialize = Initialize;

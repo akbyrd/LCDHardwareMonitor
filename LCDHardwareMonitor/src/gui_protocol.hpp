@@ -189,6 +189,7 @@ void Serialize(ByteStream&, List<T>&);
 template<typename T>
 void Serialize(ByteStream&, Slice<T>&);
 
+// TODO: String?
 void Serialize(ByteStream&, StringView&);
 
 void Serialize(ByteStream&, Message::PluginsAdded&);

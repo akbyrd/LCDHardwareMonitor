@@ -12,7 +12,7 @@ using namespace System;
 using namespace System::IO;
 using namespace System::Reflection;
 using namespace System::Runtime::InteropServices;
-using mString = System::String;
+using CLRString = System::String;
 
 // NOTE: Cross domain function calls average 200ns with the delegate pattern.
 // Try playing with security settings if optimizing this
@@ -153,8 +153,8 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	b32
 	LoadPlugin(PluginHeader& pluginHeader)
 	{
-		auto name      = gcnew mString(pluginHeader.fileName.data);
-		auto directory = gcnew mString(pluginHeader.directory.data);
+		auto name      = gcnew CLRString(pluginHeader.fileName.data);
+		auto directory = gcnew CLRString(pluginHeader.directory.data);
 
 		// NOTE: LHMAppDomainManager is going to get loaded into each new
 		// AppDomain so we need to let ApplicationBase get inherited from the
@@ -196,8 +196,8 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	LoadAssemblyAndInstantiateType(::String _fileName, T% instance)
 	{
 		// NOTE: T^ and T^% map back to plain T
-		mString^ typeName = T::typeid->FullName;
-		mString^ fileName = Path::GetFileNameWithoutExtension(gcnew mString(_fileName.data));
+		CLRString^ typeName = T::typeid->FullName;
+		CLRString^ fileName = Path::GetFileNameWithoutExtension(gcnew CLRString(_fileName.data));
 
 		auto assembly = Assembly::Load(fileName);
 		for each (Type^ type in assembly->GetExportedTypes())

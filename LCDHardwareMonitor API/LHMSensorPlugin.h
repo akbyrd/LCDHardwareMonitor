@@ -9,14 +9,13 @@ using SensorRef = List<Sensor>::RefT;
 
 struct Sensor
 {
-	SensorRef  ref;
-	StringView name;
-	StringView identifier;
-	StringView format;
-	r32        value;
+	SensorRef ref;
+	String    name;
+	String    identifier;
+	String    format;
+	r32       value;
 
-	// TODO: Might want an integer Type field with a plugin provided to-string
-	// function.
+	// TODO: Might want an integer Type field with a plugin provided to-string function.
 };
 
 struct SensorPluginAPI

@@ -1,4 +1,14 @@
-Don't store StringViews
+Stop using b32
+Figure out what happens when memory allocations fail
+Start using Scoped
+Namespaces
+Native namespace for interop?
+String_FromView vs Create vs Copy
+String_FromCLR
+
+Try removing WidgetData
+Remove default: Assert(false); break;
+Need to handle mouse position when preview isn't visible
 
 Interesting...
 	#if __WIN
@@ -6,12 +16,6 @@ Interesting...
 	#else
 		constexpr static bool IsWindows = false;
 	#endif
-Stop using b32
-Start using Scoped
-Try removing WidgetData
-Native namespace for interop?
-Remove default: Assert(false); break;
-Need to handle mouse position when preview isn't visible
 
 GUI Control
 	Load/Unload plugins
@@ -79,8 +83,6 @@ Back Burner
 	There's some sort of mouse position jump on my laptop when rotating the camera
 	Re-use memory when formatting
 	Use an arena for logging
-	Figure out what happens when memory allocations fail
-	Compile time printf replacement
 	We don't support XP. Don't allow running on it.
 	Decide on static or dynamic linking to e.g. the CRT. Bundle redistributables if dynamically
 		linking.

@@ -3,7 +3,7 @@
 
 #pragma managed
 // NOTE: It looks like it's not possible to update individual sensors. Updates
-// happen at the hardware level. */
+// happen at the hardware level.
 
 using namespace System;
 using namespace System::Collections::Generic;
@@ -12,15 +12,16 @@ using namespace OpenHardwareMonitor;
 using namespace OpenHardwareMonitor::Hardware;
 
 template<typename T>
-using SList = System::Collections::Generic::List<T>;
+using CLRList = System::Collections::Generic::List<T>;
+using CLRString = System::String;
 
-using SString = System::String;
+using LHMString = ::String;
 
-public ref struct State : ISensorPlugin, ISensorPluginInitialize, ISensorPluginUpdate, ISensorPluginTeardown
+public ref struct State : ISensorPlugin, ISensorPluginInitialize, ISensorPluginUpdate
 {
-	Computer^          computer;
-	SList<ISensor^>^   activeSensors;
-	SList<IHardware^>^ activeHardware;
+	Computer^            computer;
+	CLRList<ISensor^>^   activeSensors;
+	CLRList<IHardware^>^ activeHardware;
 
 	value struct StackEntry
 	{
@@ -31,27 +32,35 @@ public ref struct State : ISensorPlugin, ISensorPluginInitialize, ISensorPluginU
 	virtual void
 	GetPluginInfo(PluginInfo& info)
 	{
-		// TODO: Do we need a Teardown function in case these strings are allocated?
-		info.name    = "OHM Sensors";
-		info.author  = "akbyrd";
+		b32 success;
+		success = String_FromView(info.name,   "OHM Sensors"); Assert(success);
+		success = String_FromView(info.author, "akbyrd");      Assert(success);
 		info.version = 1;
 	}
 
-	StringView
-	ToStringView(SString^ string)
+	// TODO: This should be re-usable API somewhere.
+	b32
+	String_FromCLR(LHMString lhmString, CLRString^ clrString)
 	{
-		StringView result = {};
-		result.length = (u32) string->Length;
-		result.data   = (c8*) Marshal::StringToHGlobalAnsi(string).ToPointer();
-		return result;
+		c8* cstring = (c8*) Marshal::StringToHGlobalAnsi(clrString).ToPointer();
+
+		u32 length = (u32) clrString->Length + 1;
+		b32 success = String_Reserve(lhmString, length);
+		if (!success) return false;
+
+		lhmString.length = length;
+		strncpy_s(&lhmString[0], lhmString.capacity, cstring, length);
+
+		Marshal::FreeHGlobal((IntPtr) cstring);
+		return true;
 	}
 
 	virtual b32
 	Initialize(PluginContext& context, SensorPluginAPI::Initialize api)
 	{
 		computer       = gcnew Computer();
-		activeSensors  = gcnew SList<ISensor^>;
-		activeHardware = gcnew SList<IHardware^>;
+		activeSensors  = gcnew CLRList<ISensor^>;
+		activeHardware = gcnew CLRList<IHardware^>;
 
 		// ENABLE ALL THE THINGS!
 		computer->CPUEnabled           = true;
@@ -65,7 +74,6 @@ public ref struct State : ISensorPlugin, ISensorPluginInitialize, ISensorPluginU
 
 		auto stack = gcnew Stack<StackEntry>(10);
 		StackEntry current = { 0, computer->Hardware };
-		// TODO: Use u32?
 		for (i32 i = 0; i < current.hardware->Length; i++)
 		{
 			current.index = i;
@@ -81,7 +89,7 @@ public ref struct State : ISensorPlugin, ISensorPluginInitialize, ISensorPluginU
 				ISensor% ohmSensor = *ohmSensors[j];
 				activeSensors->Add(%ohmSensor);
 
-				SString^ format;
+				CLRString^ format;
 				switch (ohmSensor.SensorType)
 				{
 					case SensorType::Clock:       format = "%i MHz";   break;
@@ -98,18 +106,14 @@ public ref struct State : ISensorPlugin, ISensorPluginInitialize, ISensorPluginU
 					case SensorType::Voltage:     format = "%.2f V";   break;
 					default:                      format = "Unknown SensorType: " + ohmSensor.SensorType.ToString(); break;
 				}
-				// TODO: Format in C
 				// TODO: Don't update unless changed
-				SString^ value  = SString::Format(format, ohmSensor.Value);
+				CLRString^ value  = CLRString::Format(format, ohmSensor.Value);
 
 				Sensor sensor = {};
-				sensor.name       = ToStringView(ohmSensor.Name);
-				sensor.identifier = ToStringView(ohmSensor.Identifier->ToString());
-				sensor.format     = ToStringView(value);
+				String_FromCLR(sensor.name,       ohmSensor.Name);
+				String_FromCLR(sensor.identifier, ohmSensor.Identifier->ToString());
+				String_FromCLR(sensor.format,     value);
 				api.RegisterSensors(context, sensor);
-				Marshal::FreeHGlobal((IntPtr) sensor.name.data);
-				Marshal::FreeHGlobal((IntPtr) sensor.identifier.data);
-				Marshal::FreeHGlobal((IntPtr) sensor.format.data);
 			}
 
 			// Sub-Hardware
@@ -155,25 +159,7 @@ public ref struct State : ISensorPlugin, ISensorPluginInitialize, ISensorPluginU
 			Sensor& sensor = api.sensors[i];
 			ISensor% ohmSensor = *State::activeSensors[(i32) i];
 
-			// TODO: This string could disappear
 			sensor.value = ohmSensor.Value.GetValueOrDefault();
-		}
-	}
-
-	virtual void
-	Teardown(PluginContext& context, SensorPluginAPI::Teardown api)
-	{
-		UNUSED(context);
-
-		for (u32 i = 0; i < api.sensors.length; i++)
-		{
-			Sensor& sensor = api.sensors[i];
-
-			Marshal::FreeHGlobal((IntPtr) sensor.name.data);
-			Marshal::FreeHGlobal((IntPtr) sensor.identifier.data);
-			Marshal::FreeHGlobal((IntPtr) sensor.format.data);
-
-			sensor = {};
 		}
 	}
 };

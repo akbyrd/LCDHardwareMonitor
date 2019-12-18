@@ -103,10 +103,10 @@ RemoveSensorRefs(SimulationState& s, SensorPluginRef sensorPluginRef, Slice<Sens
 	}
 }
 
-static StringView
-GetNameFromPath(String& path)
+static b32
+GetNameFromPath(String& name, StringView path)
 {
-	if (path.length == 0) return {};
+	if (path.length == 0) return false;
 
 	StrPos first = String_FindLast(path, '/');
 	if (first == StrPos::Null)
@@ -116,17 +116,20 @@ GetNameFromPath(String& path)
 	if (last == StrPos::Null)
 		last = String_GetLastPos(path);
 
-	if (first == last) return {};
+	if (first == last) return false;
 
-	StringView result = {};
-	result.length = last.index - first.index + 1;
-	result.data   = &path[first];
-	return result;
+	StringSlice nameSlice = StringSlice_Create(path, first, last);
+
+	b32 success = String_FromSlice(name, nameSlice);
+	LOG_IF(!success, return false,
+		Severity::Error, "Failed to allocate space for name");
+	return true;
 }
 
 // -------------------------------------------------------------------------------------------------
 // Sensor API
 
+// TODO: All these functions should be setting context.success to false when failing
 static void
 RegisterSensors(PluginContext& context, Slice<Sensor> sensors)
 {
@@ -239,19 +242,23 @@ LoadPixelShader(PluginContext& context, StringView relPath, Slice<u32> cBufSizes
 	if (!context.success) return PixelShader::Null;
 	context.success = false;
 
+	b32 success;
+
 	WidgetPlugin& widgetPlugin = *context.widgetPlugin;
 	RendererState& rendererState = *context.s->renderer;
 
 	String path = {};
 	defer { String_Free(path); };
-
-	b32 success = String_Format(path, "%/%", widgetPlugin.header.directory, relPath);
+	success = String_Format(path, "%/%", widgetPlugin.header.directory, relPath);
 	LOG_IF(!success, return PixelShader::Null,
 		Severity::Error, "Failed to format pixel shader path '%'", relPath);
 
-	StringView psName = GetNameFromPath(path);
-	LOG_IF(!psName.data, psName = path,
-		Severity::Warning, "Failed to get pixel shader name from path '%'", relPath);
+	// TODO: This is super awkward
+	StringView psName = {};
+	String psNameTemp;
+	defer { String_Free(psNameTemp); };
+	success = GetNameFromPath(psNameTemp, path);
+	psName = success ? psNameTemp : path;
 
 	PixelShader ps = Renderer_LoadPixelShader(rendererState, psName, path, cBufSizes);
 	LOG_IF(!ps, return PixelShader::Null,
@@ -555,11 +562,11 @@ LoadSensorPlugin(SimulationState& s, StringView directory, StringView fileName)
 	sensorPlugin->ref         = List_GetLastRef(s.sensorPlugins);
 	sensorPlugin->header.kind = PluginKind::Sensor;
 
-	success = String_Format(sensorPlugin->header.fileName, "%", fileName);
+	success = String_FromView(sensorPlugin->header.fileName, fileName);
 	LOG_IF(!success, return nullptr,
 		Severity::Error, "Failed to copy Sensor plugin file name");
 
-	success = String_Format(sensorPlugin->header.directory, "%", directory);
+	success = String_FromView(sensorPlugin->header.directory, directory);
 	LOG_IF(!success, return nullptr,
 		Severity::Error, "Failed to copy Sensor plugin directory");
 
@@ -644,11 +651,11 @@ LoadWidgetPlugin(SimulationState& s, StringView directory, StringView fileName)
 	widgetPlugin->ref         = List_GetLastRef(s.widgetPlugins);
 	widgetPlugin->header.kind = PluginKind::Widget;
 
-	success = String_Format(widgetPlugin->header.fileName, "%", fileName);
+	success = String_FromView(widgetPlugin->header.fileName, fileName);
 	LOG_IF(!success, return nullptr,
 		Severity::Error, "Failed to copy Widget plugin file name");
 
-	success = String_Format(widgetPlugin->header.directory, "%", directory);
+	success = String_FromView(widgetPlugin->header.directory, directory);
 	LOG_IF(!success, return nullptr,
 		Severity::Error, "Failed to copy Widget plugin directory");
 

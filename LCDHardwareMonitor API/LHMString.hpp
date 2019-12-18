@@ -42,9 +42,24 @@ struct StringView
 	c8* data;
 
 	StringView()                       { length = 0;             data = nullptr;     }
-	StringView(String& string)         { length = string.length; data = string.data; }
+	StringView(const String& string)   { length = string.length; data = string.data; }
 	template<u32 Length>
 	StringView(const c8(&arr)[Length]) { length = Length - 1;    data = (c8*) arr;   }
+
+	c8& operator[] (StrPos p) { return data[p.index - 1]; }
+	c8& operator[] (u32 i)    { return data[i]; }
+};
+
+struct StringSlice
+{
+	u32 length;
+	c8* data;
+
+	StringSlice()                         { length = 0;             data = nullptr;     }
+	StringSlice(const String& string)     { length = string.length; data = string.data; }
+	StringSlice(const StringView& string) { length = string.length; data = string.data; }
+	template<u32 Length>
+	StringSlice(const c8(&arr)[Length])   { length = Length - 1;    data = (c8*) arr;   }
 
 	c8& operator[] (StrPos p) { return data[p.index - 1]; }
 	c8& operator[] (u32 i)    { return data[i]; }
@@ -99,8 +114,20 @@ String_FromView(String& string, StringView view)
 	return true;
 }
 
+b32
+String_FromSlice(String& string, StringSlice slice)
+{
+	b32 success = String_Reserve(string, slice.length);
+	if (!success) return false;
+
+	string.length = slice.length;
+	strncpy_s(&string[0], string.capacity, &slice[0], slice.length);
+
+	return true;
+}
+
 inline StrPos
-String_GetPos(String& string, u32 index)
+String_GetPos(StringView string, u32 index)
 {
 	UNUSED(string);
 	Assert(index < string.length);
@@ -110,19 +137,19 @@ String_GetPos(String& string, u32 index)
 }
 
 inline StrPos
-String_GetFirstPos(String& string)
+String_GetFirstPos(StringView string)
 {
 	return String_GetPos(string, 0);
 }
 
 inline StrPos
-String_GetLastPos(String& string)
+String_GetLastPos(StringView string)
 {
 	return String_GetPos(string, string.length - 1);
 }
 
 inline StrPos
-String_FindFirst(String& string, c8 item)
+String_FindFirst(StringView string, c8 item)
 {
 	for (u32 i = 0; i < string.length; i++)
 		if (string.data[i] == item)
@@ -132,13 +159,25 @@ String_FindFirst(String& string, c8 item)
 }
 
 inline StrPos
-String_FindLast(String& string, c8 item)
+String_FindLast(StringView string, c8 item)
 {
 	for (u32 i = string.length; i > 0; i--)
 		if (string.data[i - 1] == item)
 			return String_GetPos(string, i);
 
 	return StrPos::Null;
+}
+
+// -------------------------------------------------------------------------------------------------
+// StringSlice API
+
+StringSlice
+StringSlice_Create(StringView string, StrPos first, StrPos last)
+{
+	StringSlice slice = {};
+	slice.data    = &string[first];
+	string.length = last.index - first.index + 1;
+	return slice;
 }
 
 // -------------------------------------------------------------------------------------------------

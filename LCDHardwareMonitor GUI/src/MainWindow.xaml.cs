@@ -144,6 +144,7 @@ namespace LCDHardwareMonitor.GUI
 					Interop.MouseButtonChange(simState, GetMousePosition(), e.ChangedButton, e.ButtonState);
 
 					// TODO: Proper logging
+					// TODO: Failure is logged when dragging from outside the window and releasing inside it
 					bool success = Mouse.Capture(null);
 					if (!success) Debug.Print("Warning: Failed to release mouse capture");
 					break;

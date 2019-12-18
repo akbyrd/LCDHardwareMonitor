@@ -36,8 +36,10 @@ namespace LCDHardwareMonitor::GUI
 	using namespace System::Diagnostics;
 	using namespace System::Windows;
 	using namespace System::Windows::Input;
-	using mString = System::String;
-	using mMouseButton = System::Windows::Input::MouseButton;
+
+	using CLRString = System::String;
+	using CLRMouseButton = System::Windows::Input::MouseButton;
+	using LHMString = ::String;
 
 	public enum struct PluginKind
 	{
@@ -57,9 +59,9 @@ namespace LCDHardwareMonitor::GUI
 	public value struct PluginInfo
 	{
 		property UInt32     Ref;
-		property mString^   Name;
+		property CLRString^ Name;
 		property PluginKind Kind;
-		property mString^   Author;
+		property CLRString^ Author;
 		property UInt32     Version;
 
 		property PluginLoadState LoadState; // TODO: Probably belongs in another struct
@@ -67,19 +69,19 @@ namespace LCDHardwareMonitor::GUI
 
 	public value struct Sensor
 	{
-		property UInt32   PluginRef;
-		property UInt32   Ref;
-		property mString^ Name;
-		property mString^ Identifier;
-		property mString^ Format;
-		property Single   Value;
+		property UInt32     PluginRef;
+		property UInt32     Ref;
+		property CLRString^ Name;
+		property CLRString^ Identifier;
+		property CLRString^ Format;
+		property Single     Value;
 	};
 
 	public value struct WidgetDesc
 	{
-		property UInt32   PluginRef;
-		property UInt32   Ref;
-		property mString^ Name;
+		property UInt32     PluginRef;
+		property UInt32     Ref;
+		property CLRString^ Name;
 	};
 
 	public enum struct ProcessState
@@ -116,7 +118,7 @@ namespace LCDHardwareMonitor::GUI
 		}
 
 		virtual event PropertyChangedEventHandler^ PropertyChanged;
-		void NotifyPropertyChanged(mString^ propertyName)
+		void NotifyPropertyChanged(CLRString^ propertyName)
 		{
 			// TODO: Is this safe without the null check?
 			PropertyChanged(this, gcnew PropertyChangedEventArgs(propertyName));
@@ -129,14 +131,14 @@ namespace LCDHardwareMonitor::GUI
 		// Helper Functions
 
 		static Message::MouseButton
-		ToMouseButton(mMouseButton button)
+		ToMouseButton(CLRMouseButton button)
 		{
 			switch (button)
 			{
-				default: Assert(false); return Message::MouseButton::Null;
-				case mMouseButton::Left: return Message::MouseButton::Left;
-				case mMouseButton::Middle: return Message::MouseButton::Middle;
-				case mMouseButton::Right: return Message::MouseButton::Right;
+				default: Assert(false);      return Message::MouseButton::Null;
+				case CLRMouseButton::Left:   return Message::MouseButton::Left;
+				case CLRMouseButton::Middle: return Message::MouseButton::Middle;
+				case CLRMouseButton::Right:  return Message::MouseButton::Right;
 			}
 		}
 
@@ -145,19 +147,20 @@ namespace LCDHardwareMonitor::GUI
 		{
 			switch (buttonState)
 			{
-				default: Assert(false); return Message::ButtonState::Null;
-				case MouseButtonState::Pressed: return Message::ButtonState::Down;
+				default: Assert(false);          return Message::ButtonState::Null;
+				case MouseButtonState::Pressed:  return Message::ButtonState::Down;
 				case MouseButtonState::Released: return Message::ButtonState::Up;
 			}
 		}
 
-		static mString^
+		// TODO: LHMString?
+		static CLRString^
 		ToManagedString(StringView cstring)
 		{
 			LOG_IF((i32) cstring.length < 0, IGNORE,
 				Severity::Warning, "Native string truncated");
 
-			mString^ result = gcnew mString(cstring.data, 0, (i32) cstring.length);
+			CLRString^ result = gcnew CLRString(cstring.data, 0, (i32) cstring.length);
 			return result;
 		}
 
@@ -215,7 +218,7 @@ namespace LCDHardwareMonitor::GUI
 		}
 
 		static bool
-		MouseButtonChange(SimulationState^, Point pos, mMouseButton button, MouseButtonState buttonState)
+		MouseButtonChange(SimulationState^, Point pos, CLRMouseButton button, MouseButtonState buttonState)
 		{
 			Message::MouseButtonChange buttonChange = {};
 			buttonChange.pos = { (int) pos.X, (int) pos.Y };
