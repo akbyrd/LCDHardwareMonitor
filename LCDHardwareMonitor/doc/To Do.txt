@@ -3,7 +3,6 @@ Start using Scoped
 Namespaces
 Native namespace for interop?
 String_FromView vs Create vs Copy
-String_FromCLR
 
 Try removing WidgetData
 Remove default: Assert(false); break;

@@ -38,23 +38,6 @@ public ref struct State : ISensorPlugin, ISensorPluginInitialize, ISensorPluginU
 		info.version = 1;
 	}
 
-	// TODO: This should be re-usable API somewhere.
-	b8
-	String_FromCLR(LHMString lhmString, CLRString^ clrString)
-	{
-		c8* cstring = (c8*) Marshal::StringToHGlobalAnsi(clrString).ToPointer();
-
-		u32 length = (u32) clrString->Length + 1;
-		b8 success = String_Reserve(lhmString, length);
-		if (!success) return false;
-
-		lhmString.length = length;
-		strncpy_s(&lhmString[0], lhmString.capacity, cstring, length);
-
-		Marshal::FreeHGlobal((IntPtr) cstring);
-		return true;
-	}
-
 	virtual b8
 	Initialize(PluginContext& context, SensorPluginAPI::Initialize api)
 	{
