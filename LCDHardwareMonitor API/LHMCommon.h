@@ -16,9 +16,7 @@ using r32 = float;
 using r64 = double;
 
 using c8  = char;
-
 using b8  = bool;
-using b32 = int; // TODO: Consider removing this
 
 using size = size_t; // TODO: Consider removing this
 

@@ -154,7 +154,7 @@ struct ConnectionState
 	u32         recvIndex;
 	List<Bytes> queue; // TODO: Ring buffer
 	u32         queueIndex;
-	b32         failure;
+	b8          failure;
 };
 
 void
@@ -200,14 +200,14 @@ void Serialize(ByteStream&, Message::WidgetDescsAdded&);
 void Serialize(ByteStream&, PluginInfo&);
 void Serialize(ByteStream&, Sensor&);
 
-inline b32
+inline b8
 MessageTimeLeft(i64 startTicks)
 {
 	return Platform_GetElapsedMilliseconds(startTicks) < 8;
 }
 
 template<typename T>
-b32
+b8
 SerializeMessage(Bytes& bytes, T& message, u32 messageIndex)
 {
 	using namespace Message;
@@ -218,7 +218,7 @@ SerializeMessage(Bytes& bytes, T& message, u32 messageIndex)
 	stream.mode = ByteStreamMode::Size;
 	Serialize(stream, &message);
 
-	b32 success = List_Reserve(stream.bytes, stream.cursor);
+	b8 success = List_Reserve(stream.bytes, stream.cursor);
 	LOG_IF(!success, return false,
 		Severity::Fatal, "Failed to allocate message");
 	stream.bytes.length = stream.cursor;
@@ -251,8 +251,8 @@ DeserializeMessage(Bytes& bytes)
 	Serialize(stream, (T*) bytes.data);
 }
 
-b32
-HandleMessageResult(ConnectionState& con, b32 success)
+b8
+HandleMessageResult(ConnectionState& con, b8 success)
 {
 	if (!success)
 	{
@@ -284,7 +284,7 @@ HandleMessageResult(ConnectionState& con, PipeResult result)
 	return result;
 }
 
-b32
+b8
 QueueMessage(ConnectionState& con, Bytes& bytes)
 {
 	Bytes* result = List_Append(con.queue, bytes);
@@ -296,10 +296,10 @@ QueueMessage(ConnectionState& con, Bytes& bytes)
 }
 
 template<typename T>
-b32
+b8
 SerializeAndQueueMessage(ConnectionState& con, T& message)
 {
-	b32 success;
+	b8 success;
 
 	Bytes bytes = {};
 	auto cleanupGuard = guard { List_Free(bytes); };
@@ -316,7 +316,7 @@ SerializeAndQueueMessage(ConnectionState& con, T& message)
 	return true;
 }
 
-b32
+b8
 SendMessage(ConnectionState& con)
 {
 	if (con.failure) return false;
@@ -342,7 +342,7 @@ SendMessage(ConnectionState& con)
 	return true;
 }
 
-b32
+b8
 ReceiveMessage(ConnectionState& con, Bytes& bytes)
 {
 	if (con.failure) return false;

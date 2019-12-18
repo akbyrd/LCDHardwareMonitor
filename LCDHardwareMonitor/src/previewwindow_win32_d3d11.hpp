@@ -18,7 +18,7 @@ struct PreviewWindowState
 	RendererState*          rendererState;
 };
 
-b32
+b8
 PreviewWindow_Initialize(
 	PreviewWindowState& s,
 	SimulationState&    simulationState,
@@ -34,7 +34,7 @@ PreviewWindow_Initialize(
 
 	// Create Window
 	{
-		b32 success;
+		b8 success;
 
 		LRESULT CALLBACK
 		PreviewWndProc(HWND, u32, WPARAM, LPARAM);
@@ -166,7 +166,7 @@ PreviewWindow_Initialize(
 	return true;
 }
 
-b32
+b8
 PreviewWindow_Teardown(PreviewWindowState& s)
 {
 	// Detach Renderer
@@ -178,7 +178,7 @@ PreviewWindow_Teardown(PreviewWindowState& s)
 
 	// Destroy Window
 	{
-		b32 success;
+		b8 success;
 
 		success = DestroyWindow(s.hwnd);
 		LOG_LAST_ERROR_IF(!success, return false,
@@ -194,7 +194,7 @@ PreviewWindow_Teardown(PreviewWindowState& s)
 	return true;
 }
 
-b32
+b8
 PreviewWindow_Render(PreviewWindowState& s)
 {
 	if (!s.hwnd) return true;
@@ -259,7 +259,7 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 		case WM_EXITMENULOOP:
 		case WM_EXITSIZEMOVE:
 		{
-			b32 success = KillTimer(s->hwnd, 1);
+			b8 success = KillTimer(s->hwnd, 1);
 			LOG_LAST_ERROR_IF(!success, IGNORE, Severity::Warning, "Failed to kill modal timer");
 			break;
 		}
@@ -289,7 +289,7 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 
 		case WM_LBUTTONUP:
 		{
-			b32 success = ReleaseCapture();
+			b8 success = ReleaseCapture();
 			LOG_LAST_ERROR_IF(!success, IGNORE, Severity::Warning, "Failed to release mouse capture");
 
 			v2i pos = GetMousePosition(lParam, s->zoomFactor, s->renderSize);
@@ -308,7 +308,7 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 
 		case WM_RBUTTONUP:
 		{
-			b32 success = ReleaseCapture();
+			b8 success = ReleaseCapture();
 			LOG_LAST_ERROR_IF(!success, IGNORE, Severity::Warning, "Failed to release mouse capture");
 
 			v2i pos = GetMousePosition(lParam, s->zoomFactor, s->renderSize);
@@ -342,7 +342,7 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 
 			if (newZoomFactor != s->zoomFactor)
 			{
-				b32 success;
+				b8 success;
 
 				RECT windowRect;
 				success = GetWindowRect(s->hwnd, &windowRect);
@@ -413,7 +413,7 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 		case WM_CLOSE:
 		{
 			// TODO: If we hold onto the necessary pointers, we could just teardown directly
-			b32 success = PostMessageA(nullptr, WM_PREVIEWWINDOWCLOSED, 0, 0);
+			b8 success = PostMessageA(nullptr, WM_PREVIEWWINDOWCLOSED, 0, 0);
 			LOG_LAST_ERROR_IF(!success, IGNORE,
 				Severity::Error, "Failed to post preview window close message");
 			return 0;

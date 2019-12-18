@@ -28,7 +28,7 @@ struct Pipe
 {
 	String    name;
 	PipeState state;
-	b32       isServer;
+	b8        isServer;
 	PipeImpl* impl;
 };
 

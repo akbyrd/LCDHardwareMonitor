@@ -33,7 +33,7 @@ Platform_PrintImpl(StringView format, Args... args)
 	String message = {};
 	defer { List_Free(message); };
 
-	b32 success = String_FormatImpl(message, format, args...);
+	b8 success = String_FormatImpl(message, format, args...);
 	if (!success)
 	{
 		Platform_PrintImpl("String_Format failed. Unformatted message:\n\t");
@@ -60,7 +60,7 @@ Platform_LogImpl(Severity severity, Location location, StringView message)
 	String fullMessage = {};
 	defer { String_Free(fullMessage); };
 
-	b32 success = String_FormatImpl(fullMessage, "% - %\n\t%(%)\n", location.function, message, location.file, location.line);
+	b8 success = String_FormatImpl(fullMessage, "% - %\n\t%(%)\n", location.function, message, location.file, location.line);
 	if (!success)
 	{
 		Platform_PrintImpl("String_Format failed. Unformatted message:\n\t");
@@ -84,7 +84,7 @@ Platform_LogImpl(Severity severity, Location location, StringView format, Args..
 	String message = {};
 	defer { String_Free(message); };
 
-	b32 success = String_FormatImpl(message, format, args...);
+	b8 success = String_FormatImpl(message, format, args...);
 	if (!success)
 	{
 		Platform_PrintImpl("String_Format failed. Unformatted message:\n\t");
@@ -132,7 +132,7 @@ LogFormatMessage(u32 messageID, Severity severity, Location location, StringView
 	String message = {};
 	defer { List_Free(message); };
 
-	b32 success = String_FormatImpl(message, format, args...);
+	b8 success = String_FormatImpl(message, format, args...);
 	if (!success)
 	{
 		LogFormatMessage(messageID, severity, location, format);
@@ -160,7 +160,7 @@ LogHRESULT(HRESULT hr, Severity severity, Location location, StringView format, 
 	String message = {};
 	defer { String_Free(message); };
 
-	b32 success = String_FormatImpl(message, format, args...);
+	b8 success = String_FormatImpl(message, format, args...);
 	if (!success)
 	{
 		Platform_PrintImpl("String_Format failed. Unformatted message:\n\t");
@@ -187,7 +187,7 @@ LogLastError(Severity severity, Location location, StringView format, Args... ar
 	String message = {};
 	defer { String_Free(message); };
 
-	b32 success = String_FormatImpl(message, format, args...);
+	b8 success = String_FormatImpl(message, format, args...);
 	if (!success)
 	{
 		Platform_PrintImpl("String_Format failed. Unformatted message:\n\t");
@@ -210,7 +210,7 @@ GetWorkingDirectory()
 	LOG_LAST_ERROR_IF(!length, return result,
 		Severity::Warning, "Failed to get working directory length");
 
-	b32 success = String_Reserve(result, length);
+	b8 success = String_Reserve(result, length);
 	LOG_IF(!success, return result,
 		Severity::Warning, "Failed to allocate working directory");
 
@@ -229,7 +229,7 @@ GetWorkingDirectory()
 static Bytes
 LoadFile(StringView path, u32 padding = 0)
 {
-	b32 success;
+	b8 success;
 	Bytes result = {};
 	{
 		auto resultGuard = guard { List_Free(result); };
@@ -344,7 +344,7 @@ struct PipeImpl
 	OVERLAPPED connect;
 };
 
-inline b32
+inline b8
 IsValidHandle(HANDLE handle)
 {
 	// NOTE: Some Win32 functions return nullptr and some return INVALID_HANDLE_VALUE on failure.
@@ -365,7 +365,7 @@ Platform_DisconnectPipeServer(Pipe& pipe)
 
 		case PipeState::Connecting:
 		{
-			b32 success = CancelIoEx(
+			b8 success = CancelIoEx(
 				pipe.impl->handle,
 				&pipe.impl->connect
 			);
@@ -380,7 +380,7 @@ Platform_DisconnectPipeServer(Pipe& pipe)
 		case PipeState::Connected:
 		case PipeState::Disconnecting:
 		{
-			b32 success = DisconnectNamedPipe(pipe.impl->handle);
+			b8 success = DisconnectNamedPipe(pipe.impl->handle);
 			LOG_LAST_ERROR_IF(!success, return PipeResult::UnexpectedFailure,
 				Severity::Warning, "Failed to disconnect pipe server '%'", pipe.name);
 			break;
@@ -412,7 +412,7 @@ Platform_DisconnectPipeClient(Pipe& pipe)
 		case PipeState::Connected:
 		case PipeState::Disconnecting:
 		{
-			b32 success = CloseHandle(pipe.impl->handle);
+			b8 success = CloseHandle(pipe.impl->handle);
 			LOG_LAST_ERROR_IF(!success, return PipeResult::UnexpectedFailure,
 				Severity::Warning, "Failed to disconnect pipe client '%'", pipe.name);
 
@@ -485,7 +485,7 @@ Platform_ConnectPipeServer(Pipe& pipe)
 		// Begin a connection
 		case PipeState::Disconnected:
 		{
-			b32 success = ConnectNamedPipe(pipe.impl->handle, &pipe.impl->connect);
+			b8 success = ConnectNamedPipe(pipe.impl->handle, &pipe.impl->connect);
 			if (!success)
 			{
 				u32 error = GetLastError();
@@ -520,7 +520,7 @@ Platform_ConnectPipeServer(Pipe& pipe)
 		case PipeState::Connecting:
 		{
 			u32 written;
-			b32 success = GetOverlappedResult(
+			b8 success = GetOverlappedResult(
 				pipe.impl->handle,
 				&pipe.impl->connect,
 				(DWORD*) &written,
@@ -604,7 +604,7 @@ Platform_ConnectPipeClient(Pipe& pipe)
 			}
 
 			u32 mode = PIPE_READMODE_MESSAGE | PIPE_WAIT;
-			b32 success = SetNamedPipeHandleState(
+			b8 success = SetNamedPipeHandleState(
 				pipe.impl->handle,
 				(DWORD*) &mode,
 				nullptr,
@@ -636,7 +636,7 @@ Platform_UpdatePipeConnection(Pipe& pipe)
 	if (result != PipeResult::Success) return result;
 
 	u32 available = 0;
-	b32 success = PeekNamedPipe(
+	b8 success = PeekNamedPipe(
 		pipe.impl->handle,
 		nullptr,
 		0,
@@ -677,7 +677,7 @@ Platform_CreatePipeServer(StringView name, Pipe& pipe)
 		pipe.state = PipeState::Disconnected;
 		pipe.isServer = true;
 
-		b32 success = String_FromView(pipe.name, name);
+		b8 success = String_FromView(pipe.name, name);
 		LOG_IF(!success, return PipeResult::UnexpectedFailure,
 			Severity::Warning, "Failed to allocate pipe");
 	}
@@ -690,7 +690,7 @@ Platform_CreatePipeServer(StringView name, Pipe& pipe)
 
 		*pipe.impl = {};
 
-		b32 success = String_Format(pipe.impl->fullName, "\\\\.\\pipe\\%", pipe.name);
+		b8 success = String_Format(pipe.impl->fullName, "\\\\.\\pipe\\%", pipe.name);
 		LOG_IF(!success, return PipeResult::UnexpectedFailure,
 			Severity::Warning, "Failed to format string for pipe name '%'", pipe.name);
 	}
@@ -723,7 +723,7 @@ Platform_CreatePipeClient(StringView name, Pipe& pipe)
 		pipe.state = PipeState::Disconnected;
 		pipe.isServer = false;
 
-		b32 success = String_FromView(pipe.name, name);
+		b8 success = String_FromView(pipe.name, name);
 		LOG_IF(!success, return PipeResult::UnexpectedFailure,
 			Severity::Warning, "Failed to allocate pipe");
 	}
@@ -736,7 +736,7 @@ Platform_CreatePipeClient(StringView name, Pipe& pipe)
 
 		*pipe.impl = {};
 
-		b32 success = String_Format(pipe.impl->fullName, "\\\\.\\pipe\\%", pipe.name);
+		b8 success = String_Format(pipe.impl->fullName, "\\\\.\\pipe\\%", pipe.name);
 		LOG_IF(!success, return PipeResult::UnexpectedFailure,
 			Severity::Warning, "Failed to format string for pipe name '%'", pipe.name);
 	}
@@ -777,7 +777,7 @@ Platform_WritePipe(Pipe& pipe, Bytes bytes)
 	if (pipe.state != PipeState::Connected) return PipeResult::TransientFailure;
 
 	u32 written;
-	b32 success = WriteFile(
+	b8 success = WriteFile(
 		pipe.impl->handle,
 		bytes.data,
 		bytes.length,
@@ -817,7 +817,7 @@ Platform_WritePipe(Pipe& pipe, Bytes bytes)
 PipeResult
 Platform_ReadPipe(Pipe& pipe, Bytes& bytes)
 {
-	b32 success;
+	b8 success;
 
 	bytes.length = 0;
 
@@ -896,7 +896,7 @@ Platform_FlushPipe(Pipe& pipe)
 {
 	if (!IsValidHandle(pipe.impl->handle)) return PipeResult::TransientFailure;
 
-	b32 success = FlushFileBuffers(pipe.impl->handle);
+	b8 success = FlushFileBuffers(pipe.impl->handle);
 	LOG_LAST_ERROR_IF(!success, return PipeResult::UnexpectedFailure,
 		Severity::Error, "Failed to flush pipe '%'", pipe.name);
 

@@ -30,17 +30,17 @@ template<typename T>
 struct ListRef : ListRefBase
 {
 	static const ListRef<T> Null;
-	operator b32() { return *this != Null; }
+	operator b8() { return *this != Null; }
 };
 
 template<typename T>
 const ListRef<T> ListRef<T>::Null = {};
 
 template<typename T>
-inline b32 operator== (ListRef<T> lhs, ListRef<T> rhs) { return lhs.index == rhs.index; }
+inline b8 operator== (ListRef<T> lhs, ListRef<T> rhs) { return lhs.index == rhs.index; }
 
 template<typename T>
-inline b32 operator!= (ListRef<T> lhs, ListRef<T> rhs) { return lhs.index != rhs.index; }
+inline b8 operator!= (ListRef<T> lhs, ListRef<T> rhs) { return lhs.index != rhs.index; }
 
 template<typename T>
 struct List
@@ -87,7 +87,7 @@ struct Slice
 };
 
 template<typename T>
-inline b32
+inline b8
 List_Reserve(List<T>& list, u32 capacity)
 {
 	if (list.capacity < capacity)
@@ -107,7 +107,7 @@ List_Reserve(List<T>& list, u32 capacity)
 }
 
 template<typename T>
-inline b32
+inline b8
 List_Grow(List<T>& list)
 {
 	if (list.length == list.capacity)
@@ -151,7 +151,7 @@ List_Append(List<T>& list)
 }
 
 template<typename T>
-inline b32
+inline b8
 List_AppendRange(List<T>& list, Slice<T> items)
 {
 	if (!List_Reserve(list, list.length + items.length))
@@ -180,27 +180,27 @@ List_Clear(List<T>& list)
 }
 
 template<typename T>
-inline b32
+inline b8
 List_Contains(List<T>& list, T* item)
 {
 	if (list.length == 0)
 		return false;
 
 	// TODO: This returns false positives if the address in the range, but not an actual item
-	b32 result = item >= &list.data[0] && item < &list.data[list.length];
+	b8 result = item >= &list.data[0] && item < &list.data[list.length];
 	return result;
 }
 
 template<typename T>
-inline b32
+inline b8
 List_Contains(List<T>& list, T& item)
 {
-	b32 result = List_Contains(list, &item);
+	b8 result = List_Contains(list, &item);
 	return result;
 }
 
 template<typename T>
-inline b32
+inline b8
 List_ContainsValue(List<T>& list, T item)
 {
 	if (list.length == 0)
@@ -215,7 +215,7 @@ List_ContainsValue(List<T>& list, T item)
 }
 
 template<typename T>
-inline b32
+inline b8
 List_Duplicate(Slice<T>& slice, List<T>& duplicate)
 {
 	if (!List_Reserve(duplicate, slice.length))
@@ -231,7 +231,7 @@ List_Duplicate(Slice<T>& slice, List<T>& duplicate)
 }
 
 template<typename T>
-inline b32
+inline b8
 List_Equal(List<T>& lhs, List<T>& rhs)
 {
 	if (lhs.length != rhs.length)
@@ -353,10 +353,10 @@ List_GetRemaining(List<T>& list)
 }
 
 template<typename T>
-inline b32
+inline b8
 List_IsRefValid(List<T>& list, ListRef<T> ref)
 {
-	b32 result = (ref.index - 1) < list.length;
+	b8 result = (ref.index - 1) < list.length;
 	return result;
 }
 
@@ -381,7 +381,7 @@ List_RemoveLast(List<T>& list)
 }
 
 template<typename T>
-inline b32
+inline b8
 List_Shrink(List<T>& list)
 {
 	u32 capacity = list.capacity / 2;

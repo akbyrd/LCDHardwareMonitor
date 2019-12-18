@@ -52,7 +52,7 @@ template<typename TLambda>
 struct guarded final
 {
 	const TLambda lambda;
-	b32 dismiss;
+	b8 dismiss;
 	guarded(TLambda&& _lambda) : lambda(_lambda), dismiss(false) { }
 	~guarded() { if (!dismiss) lambda(); }
 };

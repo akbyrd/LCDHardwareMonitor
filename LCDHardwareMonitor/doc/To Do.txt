@@ -1,4 +1,3 @@
-Stop using b32
 Figure out what happens when memory allocations fail
 Start using Scoped
 Namespaces
@@ -102,7 +101,7 @@ Error Handling
 	Each function up the stack adds its own information
 	Last function to handle the error does the printing
 	Might have to allocate for the formatting, so check if strings are dynamic and free them
-	Maybe change functions to return a Result<T> with operator b32(), context string, etc
+	Maybe change functions to return a Result<T> with operator b8(), context string, etc
 	Goal: only a single print occurs during an error, but it may be multiple lines
 	The top level handler is the one who knows if something is a warning or an error, not the inner
 		most handler. LoadFile can't know if it's loading a cache file or a critical resource.

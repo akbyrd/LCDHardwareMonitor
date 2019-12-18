@@ -32,20 +32,20 @@ public ref struct State : ISensorPlugin, ISensorPluginInitialize, ISensorPluginU
 	virtual void
 	GetPluginInfo(PluginInfo& info)
 	{
-		b32 success;
+		b8 success;
 		success = String_FromView(info.name,   "OHM Sensors"); Assert(success);
 		success = String_FromView(info.author, "akbyrd");      Assert(success);
 		info.version = 1;
 	}
 
 	// TODO: This should be re-usable API somewhere.
-	b32
+	b8
 	String_FromCLR(LHMString lhmString, CLRString^ clrString)
 	{
 		c8* cstring = (c8*) Marshal::StringToHGlobalAnsi(clrString).ToPointer();
 
 		u32 length = (u32) clrString->Length + 1;
-		b32 success = String_Reserve(lhmString, length);
+		b8 success = String_Reserve(lhmString, length);
 		if (!success) return false;
 
 		lhmString.length = length;
@@ -55,7 +55,7 @@ public ref struct State : ISensorPlugin, ISensorPluginInitialize, ISensorPluginU
 		return true;
 	}
 
-	virtual b32
+	virtual b8
 	Initialize(PluginContext& context, SensorPluginAPI::Initialize api)
 	{
 		computer       = gcnew Computer();

@@ -42,7 +42,7 @@ struct PluginLoaderState
 	ComPtr<ILHMPluginLoader> lhmPluginLoader;
 };
 
-b32
+b8
 PluginLoader_Initialize(PluginLoaderState& s)
 {
 	// Managed
@@ -95,7 +95,7 @@ PluginLoader_Initialize(PluginLoaderState& s)
 
 	// Unmanaged
 	{
-		b32 success = SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
+		b8 success = SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
 		LOG_LAST_ERROR_IF(!success, return false,
 			Severity::Fatal, "Failed to set DLL directories");
 	}
@@ -121,7 +121,7 @@ PluginLoader_Teardown(PluginLoaderState& s)
 	}
 }
 
-static b32
+static b8
 DetectPluginLanguage(PluginHeader& pluginHeader)
 {
 	// TODO: Move memory mapping to platform API?
@@ -129,7 +129,7 @@ DetectPluginLanguage(PluginHeader& pluginHeader)
 	String pluginPath = {};
 	defer { String_Free(pluginPath); };
 
-	b32 success = String_Format(pluginPath, "%\\%", pluginHeader.directory, pluginHeader.fileName);
+	b8 success = String_Format(pluginPath, "%\\%", pluginHeader.directory, pluginHeader.fileName);
 	if (!success) return false;
 
 	HANDLE pluginFile = CreateFileA(
@@ -171,7 +171,7 @@ DetectPluginLanguage(PluginHeader& pluginHeader)
 		{
 			// BUG: Failures here will not propagate back to the calling function
 			// TODO: What happens if Unmap is called with null? Can we drop the check?
-			b32 success = UnmapViewOfFile(pluginFileMemory);
+			b8 success = UnmapViewOfFile(pluginFileMemory);
 			LOG_IF(!success, IGNORE,
 				Severity::Error, "Failed to unmap view of plugin file '%'", pluginHeader.fileName);
 		}
@@ -208,20 +208,20 @@ DetectPluginLanguage(PluginHeader& pluginHeader)
 	return true;
 }
 
-static b32
+static b8
 ValidatePluginInfo(PluginInfo& pluginInfo)
 {
-	b32 valid = true;
+	b8 valid = true;
 	valid = valid && pluginInfo.name.length > 0;
 	valid = valid && pluginInfo.author.length > 0;
 	valid = valid && pluginInfo.version;
 	return valid;
 }
 
-b32
+b8
 PluginLoader_LoadSensorPlugin(PluginLoaderState& s, SensorPlugin& sensorPlugin)
 {
-	b32 success;
+	b8 success;
 
 	PluginHeader& pluginHeader = sensorPlugin.header;
 	auto pluginGuard = guard { pluginHeader.loadState = PluginLoadState::Broken; };
@@ -284,10 +284,10 @@ PluginLoader_LoadSensorPlugin(PluginLoaderState& s, SensorPlugin& sensorPlugin)
 	return true;
 }
 
-b32
+b8
 PluginLoader_UnloadSensorPlugin(PluginLoaderState& s, SensorPlugin& sensorPlugin)
 {
-	b32 success = false;
+	b8 success = false;
 
 	PluginHeader& pluginHeader = sensorPlugin.header;
 	auto pluginGuard = guard { pluginHeader.loadState = PluginLoadState::Broken; };
@@ -318,10 +318,10 @@ PluginLoader_UnloadSensorPlugin(PluginLoaderState& s, SensorPlugin& sensorPlugin
 	return true;
 }
 
-b32
+b8
 PluginLoader_LoadWidgetPlugin(PluginLoaderState& s, WidgetPlugin& widgetPlugin)
 {
-	b32 success;
+	b8 success;
 
 	PluginHeader& pluginHeader = widgetPlugin.header;
 	auto pluginGuard = guard { pluginHeader.loadState = PluginLoadState::Broken; };
@@ -384,10 +384,10 @@ PluginLoader_LoadWidgetPlugin(PluginLoaderState& s, WidgetPlugin& widgetPlugin)
 	return true;
 }
 
-b32
+b8
 PluginLoader_UnloadWidgetPlugin(PluginLoaderState& s, WidgetPlugin& widgetPlugin)
 {
-	b32 success = false;
+	b8 success = false;
 
 	PluginHeader& pluginHeader = widgetPlugin.header;
 	auto pluginGuard = guard { pluginHeader.loadState = PluginLoadState::Broken; };

@@ -15,7 +15,7 @@
 // Currently, the GUI will occasionally see the render target after clear but before rendering. The
 // issue can be exaggerated by clearing with a bright color.
 
-b32
+b8
 D3D9_Initialize(
 	HWND                 hwnd,
 	IDirect3D9Ex*&       d3d9,
@@ -66,7 +66,7 @@ D3D9_Teardown(
 	}
 }
 
-b32
+b8
 D3D9_CreateSharedSurface(
 	IDirect3DDevice9Ex& d3d9Device,
 	IDirect3DTexture9*& d3d9RenderTexture,

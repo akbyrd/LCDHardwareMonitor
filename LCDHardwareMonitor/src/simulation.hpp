@@ -7,18 +7,18 @@ struct FullWidgetRef
 	WidgetRef       ref;
 };
 
-inline b32 operator== (FullWidgetRef lhs, FullWidgetRef rhs)
+inline b8 operator== (FullWidgetRef lhs, FullWidgetRef rhs)
 {
-	b32 result = true;
+	b8 result = true;
 	result &= lhs.pluginRef == rhs.pluginRef;
 	result &= lhs.dataRef == rhs.dataRef;
 	result &= lhs.ref == rhs.ref;
 	return result;
 }
 
-inline b32 operator!= (FullWidgetRef lhs, FullWidgetRef rhs)
+inline b8 operator!= (FullWidgetRef lhs, FullWidgetRef rhs)
 {
-	b32 result = false;
+	b8 result = false;
 	result |= lhs.pluginRef != rhs.pluginRef;
 	result |= lhs.dataRef != rhs.dataRef;
 	result |= lhs.ref != rhs.ref;
@@ -43,7 +43,7 @@ struct SimulationState
 	i64                startTime;
 	r32                currentTime;
 
-	b32                mouseLook;
+	b8                 mouseLook;
 	v2                 mousePos;
 	v2i                mousePosStart;
 	v2                 cameraRot;
@@ -57,7 +57,7 @@ struct PluginContext
 	SimulationState* s;
 	SensorPlugin*    sensorPlugin;
 	WidgetPlugin*    widgetPlugin;
-	b32              success;
+	b8               success;
 };
 
 static Widget*
@@ -67,7 +67,7 @@ CreateWidget(WidgetPlugin& widgetPlugin, WidgetData& widgetData)
 	LOG_IF(!widget, return nullptr,
 		Severity::Error, "Failed to allocate Widget");
 
-	b32 success = List_Reserve(widgetData.widgetsUserData, widgetData.desc.userDataSize);
+	b8 success = List_Reserve(widgetData.widgetsUserData, widgetData.desc.userDataSize);
 	LOG_IF(!success, return nullptr,
 		Severity::Error, "Failed to allocate space for % bytes of Widget user data '%'",
 		widgetData.desc.userDataSize, widgetPlugin.info.name);
@@ -103,7 +103,7 @@ RemoveSensorRefs(SimulationState& s, SensorPluginRef sensorPluginRef, Slice<Sens
 	}
 }
 
-static b32
+static b8
 GetNameFromPath(String& name, StringView path)
 {
 	if (path.length == 0) return false;
@@ -120,7 +120,7 @@ GetNameFromPath(String& name, StringView path)
 
 	StringSlice nameSlice = StringSlice_Create(path, first, last);
 
-	b32 success = String_FromSlice(name, nameSlice);
+	b8 success = String_FromSlice(name, nameSlice);
 	LOG_IF(!success, return false,
 		Severity::Error, "Failed to allocate space for name");
 	return true;
@@ -144,7 +144,7 @@ RegisterSensors(PluginContext& context, Slice<Sensor> sensors)
 		sensor.ref = { sensorPlugin.sensors.length + i };
 	}
 
-	b32 success = List_AppendRange(sensorPlugin.sensors, sensors);
+	b8 success = List_AppendRange(sensorPlugin.sensors, sensors);
 	LOG_IF(!success, return,
 		Severity::Error, "Failed to allocate space for % Sensors '%'",
 		sensors.length, sensorPlugin.info.name);
@@ -166,7 +166,7 @@ UnregisterSensors(PluginContext& context, Slice<SensorRef> sensorRefs)
 	{
 		SensorRef sensorRef = sensorRefs[i];
 
-		b32 valid = true;
+		b8 valid = true;
 		valid = valid && List_IsRefValid(sensorPlugin.sensors, sensorRef);
 		valid = valid && sensorPlugin.sensors[sensorRef].ref == sensorRef;
 		LOG_IF(!valid, return,
@@ -197,7 +197,7 @@ RegisterWidgets(PluginContext& context, Slice<WidgetDesc> widgetDescs)
 
 	WidgetPlugin& widgetPlugin = *context.widgetPlugin;
 
-	b32 success;
+	b8 success;
 	for (u32 i = 0; i < widgetDescs.length; i++)
 	{
 		WidgetDesc& widgetDesc = widgetDescs[i];
@@ -242,7 +242,7 @@ LoadPixelShader(PluginContext& context, StringView relPath, Slice<u32> cBufSizes
 	if (!context.success) return PixelShader::Null;
 	context.success = false;
 
-	b32 success;
+	b8 success;
 
 	WidgetPlugin& widgetPlugin = *context.widgetPlugin;
 	RendererState& rendererState = *context.s->renderer;
@@ -337,7 +337,7 @@ PushDrawCall(PluginContext& context, Material material)
 static void
 OnConnect(SimulationState& s, ConnectionState& con)
 {
-	b32 success;
+	b8 success;
 	using namespace Message;
 
 	{
@@ -551,7 +551,7 @@ GetWidget(SimulationState& s, FullWidgetRef ref)
 static SensorPlugin*
 LoadSensorPlugin(SimulationState& s, StringView directory, StringView fileName)
 {
-	b32 success;
+	b8 success;
 
 	SensorPlugin* sensorPlugin = List_Append(s.sensorPlugins);
 	LOG_IF(!sensorPlugin, return nullptr,
@@ -599,7 +599,7 @@ LoadSensorPlugin(SimulationState& s, StringView directory, StringView fileName)
 	return sensorPlugin;
 }
 
-static b32
+static b8
 UnloadSensorPlugin(SimulationState& s, SensorPlugin& sensorPlugin)
 {
 	auto pluginGuard = guard { sensorPlugin.header.loadState = PluginLoadState::Broken; };
@@ -624,7 +624,7 @@ UnloadSensorPlugin(SimulationState& s, SensorPlugin& sensorPlugin)
 		RemoveSensorRefs(s, sensorPlugin.ref, sensorRef);
 	}
 
-	b32 success = PluginLoader_UnloadSensorPlugin(*s.pluginLoader, sensorPlugin);
+	b8 success = PluginLoader_UnloadSensorPlugin(*s.pluginLoader, sensorPlugin);
 	List_Free(sensorPlugin.sensors);
 	LOG_IF(!success, return false,
 		Severity::Error, "Failed to unload Sensor plugin '%'", sensorPlugin.info.name);
@@ -640,7 +640,7 @@ UnloadSensorPlugin(SimulationState& s, SensorPlugin& sensorPlugin)
 static WidgetPlugin*
 LoadWidgetPlugin(SimulationState& s, StringView directory, StringView fileName)
 {
-	b32 success;
+	b8 success;
 
 	WidgetPlugin* widgetPlugin = List_Append(s.widgetPlugins);
 	auto pluginGuard = guard { widgetPlugin->header.loadState = PluginLoadState::Broken; };
@@ -693,7 +693,7 @@ LoadWidgetPlugin(SimulationState& s, StringView directory, StringView fileName)
 	return widgetPlugin;
 }
 
-static b32
+static b8
 UnloadWidgetPlugin(SimulationState& s, WidgetPlugin& widgetPlugin)
 {
 	auto pluginGuard = guard { widgetPlugin.header.loadState = PluginLoadState::Broken; };
@@ -728,7 +728,7 @@ UnloadWidgetPlugin(SimulationState& s, WidgetPlugin& widgetPlugin)
 
 	UnregisterAllWidgets(context);
 
-	b32 success = PluginLoader_UnloadWidgetPlugin(*s.pluginLoader, widgetPlugin);
+	b8 success = PluginLoader_UnloadWidgetPlugin(*s.pluginLoader, widgetPlugin);
 	LOG_IF(!success, return false,
 		Severity::Error, "Failed to unload Widget plugin '%'", widgetPlugin.info.name);
 
@@ -740,10 +740,10 @@ UnloadWidgetPlugin(SimulationState& s, WidgetPlugin& widgetPlugin)
 	return true;
 }
 
-b32
+b8
 Simulation_Initialize(SimulationState& s, PluginLoaderState& pluginLoader, RendererState& renderer)
 {
-	b32 success;
+	b8 success;
 
 	s.pluginLoader = &pluginLoader;
 	s.renderer     = &renderer;
@@ -1060,11 +1060,11 @@ Simulation_Update(SimulationState& s)
 	{
 		// Connection handling
 		{
-			b32 wasConnected = guiCon.pipe.state == PipeState::Connected;
+			b8 wasConnected = guiCon.pipe.state == PipeState::Connected;
 			PipeResult result = Platform_UpdatePipeConnection(guiCon.pipe);
 			HandleMessageResult(guiCon, result);
 
-			b32 isConnected = guiCon.pipe.state == PipeState::Connected;
+			b8 isConnected = guiCon.pipe.state == PipeState::Connected;
 			if (isConnected && !wasConnected) OnConnect(s, guiCon);
 			if (!isConnected && wasConnected) OnDisconnect(s, guiCon);
 		}
@@ -1077,7 +1077,7 @@ Simulation_Update(SimulationState& s)
 		i64 startTicks = Platform_GetTicks();
 		while (MessageTimeLeft(startTicks))
 		{
-			b32 success = ReceiveMessage(guiCon, bytes);
+			b8 success = ReceiveMessage(guiCon, bytes);
 			if (!success) break;
 
 			using namespace Message;
@@ -1144,7 +1144,7 @@ Simulation_Update(SimulationState& s)
 		// Send
 		while (MessageTimeLeft(startTicks))
 		{
-			b32 success = SendMessage(guiCon);
+			b8 success = SendMessage(guiCon);
 			if (!success) break;
 		}
 

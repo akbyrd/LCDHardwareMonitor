@@ -59,7 +59,7 @@ using WidgetDescRef = List<WidgetDesc>::RefT;
 
 struct WidgetDesc
 {
-	using InitializeFn = b32 (PluginContext&, WidgetAPI::Initialize);
+	using InitializeFn = b8  (PluginContext&, WidgetAPI::Initialize);
 	using UpdateFn     = void(PluginContext&, WidgetAPI::Update);
 	using TeardownFn   = void(PluginContext&, WidgetAPI::Teardown);
 
@@ -91,7 +91,7 @@ struct WidgetPluginAPI
 struct WidgetPluginFunctions
 {
 	using GetPluginInfoFn = void(PluginInfo& info, WidgetPluginFunctions& functions);
-	using InitializeFn    = b32 (PluginContext& context, WidgetPluginAPI::Initialize api);
+	using InitializeFn    = b8  (PluginContext& context, WidgetPluginAPI::Initialize api);
 	using UpdateFn        = void(PluginContext& context, WidgetPluginAPI::Update     api);
 	using TeardownFn      = void(PluginContext& context, WidgetPluginAPI::Teardown   api);
 

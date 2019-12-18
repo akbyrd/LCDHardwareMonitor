@@ -13,7 +13,7 @@ struct BarWidget
 
 static Material filledBarMat = {};
 
-static b32
+static b8
 InitializeBarWidgets(PluginContext& context, WidgetAPI::Initialize api)
 {
 	for (u32 i = 0; i < api.widgets.length; i++)
@@ -77,12 +77,12 @@ UpdateBarWidgets(PluginContext& context, WidgetAPI::Update api)
 	}
 }
 
-static b32
+static b8
 Initialize(PluginContext& context, WidgetPluginAPI::Initialize api)
 {
 	// TODO: Shouldn't have to do this on the user side
 	String name = {};
-	b32 success = String_FromView(name, "Filled Bar");
+	b8 success = String_FromView(name, "Filled Bar");
 	if (!success) return false;
 
 	WidgetDesc widgetDesc = {};
@@ -105,7 +105,7 @@ Initialize(PluginContext& context, WidgetPluginAPI::Initialize api)
 EXPORT void
 GetWidgetPluginInfo(PluginInfo& info, WidgetPluginFunctions& functions)
 {
-	b32 success;
+	b8 success;
 	success = String_FromView(info.name,   "Filled Bar"); Assert(success);
 	success = String_FromView(info.author, "akbyrd");     Assert(success);
 	info.version = 1;

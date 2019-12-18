@@ -109,7 +109,7 @@ struct RendererState
 	DXGI_FORMAT                    renderFormat;
 	u32                            multisampleCount;
 	u32                            qualityLevelCount;
-	b32                            isWireframeEnabled;
+	b8                             isWireframeEnabled;
 
 	List<VertexShaderData>         vertexShaders;
 	List<PixelShaderData>          pixelShaders;
@@ -138,7 +138,7 @@ SetDebugObjectNameImpl(const ComPtr<T>& resource, StringView format, Args... arg
 	String string = {};
 	defer { String_Free(string); };
 
-	b32 success = String_FormatImpl(string, format, args...);
+	b8 success = String_FormatImpl(string, format, args...);
 	LOG_IF(!success, IGNORE,
 		Severity::Warning, "Failed to format D3D object name");
 
@@ -153,7 +153,7 @@ SetDebugObjectNameImpl(const ComPtr<T>& resource, StringView format, Args... arg
 
 static void UpdateRasterizerState(RendererState& s);
 
-b32
+b8
 Renderer_Initialize(RendererState& s, v2u renderSize)
 {
 	Assert(renderSize.x < i32Max && renderSize.y < i32Max);
@@ -378,7 +378,7 @@ Renderer_Initialize(RendererState& s, v2u renderSize)
 		// quadrilateral AA on and off in this demo. Alpha AA on the other hand is more obvious. It
 		// causes the wireframe to draw lines 2 px wide instead of 1. See remarks:
 		// https://msdn.microsoft.com/en-us/library/windows/desktop/ff476198(v=vs.85).aspx
-		const b32 useQuadrilateralLineAA = true;
+		const b8 useQuadrilateralLineAA = true;
 
 		// Solid
 		D3D11_RASTERIZER_DESC rasterizerDesc = {};
@@ -413,7 +413,7 @@ Renderer_Initialize(RendererState& s, v2u renderSize)
 	return true;
 }
 
-b32
+b8
 Renderer_RebuildSharedGeometryBuffers(RendererState&s)
 {
 	// Finalize vertex buffer
@@ -560,14 +560,14 @@ Renderer_CreateMesh(RendererState& s, StringView name, Slice<Vertex> vertices, S
 
 	// Copy Name
 	{
-		b32 success = String_FromView(mesh.name, name);
+		b8 success = String_FromView(mesh.name, name);
 		LOG_IF(!success, IGNORE,
 			Severity::Warning, "Failed to copy mesh name '%'", name);
 	}
 
 	// Copy Data
 	{
-		b32 success;
+		b8 success;
 
 		mesh.vOffset = s.vertexBuffer.length;
 		mesh.iOffset = s.indexBuffer.length;
@@ -597,7 +597,7 @@ Renderer_CreateMesh(RendererState& s, StringView name, Slice<Vertex> vertices, S
 	return List_GetLastRef(s.meshes);
 }
 
-static b32
+static b8
 Renderer_CreateConstantBuffer(RendererState& s, ConstantBuffer& cBuf)
 {
 	// TODO: Add more cbuf info to logging
@@ -641,7 +641,7 @@ Renderer_LoadVertexShader(RendererState& s, StringView name, StringView path, Sl
 
 	// Copy Name
 	{
-		b32 success = String_FromView(vs.name, name);
+		b8 success = String_FromView(vs.name, name);
 		LOG_IF(!success, IGNORE,
 			Severity::Warning, "Failed to copy vertex shader name '%'", path);
 	}
@@ -665,7 +665,7 @@ Renderer_LoadVertexShader(RendererState& s, StringView name, StringView path, Sl
 	// Constant Buffers
 	if (cBufSizes.length)
 	{
-		b32 success;
+		b8 success;
 
 		success = List_Reserve(vs.constantBuffers, cBufSizes.length);
 		LOG_IF(!success, return VertexShader::Null,
@@ -685,7 +685,7 @@ Renderer_LoadVertexShader(RendererState& s, StringView name, StringView path, Sl
 	// Input layout
 	{
 		List<D3D11_INPUT_ELEMENT_DESC> vsInputDescs = {};
-		b32 success = List_Reserve(vsInputDescs, attributes.length);
+		b8 success = List_Reserve(vsInputDescs, attributes.length);
 		LOG_IF(!success, return VertexShader::Null,
 			Severity::Error, "Failed to allocate space for % VS input descriptions '%'", attributes.length, path);
 		for (u32 i = 0; i < attributes.length; i++)
@@ -765,7 +765,7 @@ Renderer_LoadPixelShader(RendererState& s, StringView name, StringView path, Sli
 
 	// Copy Name
 	{
-		b32 success = String_FromView(ps.name, name);
+		b8 success = String_FromView(ps.name, name);
 		LOG_IF(!success, IGNORE,
 			Severity::Warning, "Failed to copy pixel shader name '%'", path);
 	}
@@ -789,7 +789,7 @@ Renderer_LoadPixelShader(RendererState& s, StringView name, StringView path, Sli
 	// Constant Buffers
 	if (cBufSizes.length)
 	{
-		b32 success;
+		b8 success;
 
 		success = List_Reserve(ps.constantBuffers, cBufSizes.length);
 		LOG_IF(!success, return PixelShader::Null,
@@ -849,7 +849,7 @@ Renderer_PushDrawCall(RendererState& s)
 	return &renderCommand->drawCall;
 }
 
-static b32
+static b8
 Renderer_UpdateConstantBuffer(RendererState& s, ConstantBuffer& cBuf, void* data)
 {
 	D3D11_MAPPED_SUBRESOURCE map = {};
@@ -863,7 +863,7 @@ Renderer_UpdateConstantBuffer(RendererState& s, ConstantBuffer& cBuf, void* data
 	return true;
 }
 
-b32
+b8
 Renderer_Render(RendererState& s)
 {
 	s.d3dContext->ClearRenderTargetView(s.d3dRenderTargetView.Get(), DirectX::Colors::Black);
@@ -908,7 +908,7 @@ Renderer_Render(RendererState& s)
 					}
 				}
 
-				b32 success = Renderer_UpdateConstantBuffer(s, *cBuf, cBufUpdate.data);
+				b8 success = Renderer_UpdateConstantBuffer(s, *cBuf, cBufUpdate.data);
 				if (!success) break;
 				break;
 			}
@@ -970,7 +970,7 @@ Renderer_Render(RendererState& s)
 	return true;
 }
 
-b32
+b8
 Renderer_CreateRenderTextureSharedHandle(RendererState& s)
 {
 	HRESULT hr;

@@ -49,7 +49,7 @@ struct SensorPluginAPI
 struct SensorPluginFunctions
 {
 	using GetPluginInfoFn = void(PluginInfo& info, SensorPluginFunctions& functions);
-	using InitializeFn    = b32 (PluginContext& context, SensorPluginAPI::Initialize api);
+	using InitializeFn    = b8  (PluginContext& context, SensorPluginAPI::Initialize api);
 	using UpdateFn        = void(PluginContext& context, SensorPluginAPI::Update     api);
 	using TeardownFn      = void(PluginContext& context, SensorPluginAPI::Teardown   api);
 

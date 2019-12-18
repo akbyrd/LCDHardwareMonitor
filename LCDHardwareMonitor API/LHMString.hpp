@@ -16,9 +16,9 @@ struct StrPos
 
 	static const StrPos Null;
 
-	operator b32() { return *this != Null; }
-	b32 operator== (StrPos rhs) { return index == rhs.index; }
-	b32 operator!= (StrPos rhs) { return index != rhs.index; }
+	operator b8() { return *this != Null; }
+	b8 operator== (StrPos rhs) { return index == rhs.index; }
+	b8 operator!= (StrPos rhs) { return index != rhs.index; }
 };
 
 const StrPos StrPos::Null = {};
@@ -75,7 +75,7 @@ String_Free(String& string)
 	string = {};
 }
 
-inline b32
+inline b8
 String_Reserve(String& string, u32 capacity)
 {
 	if (string.capacity < capacity)
@@ -98,13 +98,13 @@ String_Reserve(String& string, u32 capacity)
 #define String_Format(string, format, ...) \
 	String_FormatChecked<CountPlaceholders(format)>(string, format, ##__VA_ARGS__)
 
-b32
+b8
 String_FromView(String& string, StringView view)
 {
-	bool preallocated = string.data != nullptr;
+	b8 preallocated = string.data != nullptr;
 	auto allocGuard = guard { if (!preallocated) String_Free(string); };
 
-	b32 success = String_Reserve(string, view.length + 1);
+	b8 success = String_Reserve(string, view.length + 1);
 	if (!success) return false;
 
 	strncpy_s(&string[string.length], string.capacity - string.length, &view[0], view.length);
@@ -114,10 +114,10 @@ String_FromView(String& string, StringView view)
 	return true;
 }
 
-b32
+b8
 String_FromSlice(String& string, StringSlice slice)
 {
-	b32 success = String_Reserve(string, slice.length);
+	b8 success = String_Reserve(string, slice.length);
 	if (!success) return false;
 
 	string.length = slice.length;
@@ -210,7 +210,7 @@ template<typename... Args>
 inline u32
 FormatImpl(String& string, StringView format, u32 iFmt, Args&&... args)
 {
-	b32 lengthOnly = !string.data;
+	b8 lengthOnly = !string.data;
 	u32 written = 0;
 
 	auto Step = [&](u32 strCount, u32 fmtCount) {
@@ -267,13 +267,13 @@ FormatImpl(String& string, StringView format, u32 iFmt, Args&&... args)
 }
 
 template<typename... Args>
-b32
+b8
 String_FormatImpl(String& string, StringView format, Args&&... args)
 {
 	auto allocGuard = guard { String_Free(string); };
 
 	u32 stringLen = FormatImpl(string, format, 0, args...);
-	b32 success = String_Reserve(string, stringLen + 1);
+	b8 success = String_Reserve(string, stringLen + 1);
 	if (!success) return false;
 
 	FormatImpl(string, format, 0, args...);
@@ -284,7 +284,7 @@ String_FormatImpl(String& string, StringView format, Args&&... args)
 }
 
 template<u32 PlaceholderCount, typename... Args>
-inline b32
+inline b8
 String_FormatChecked(String& string, StringView format, Args&&... args)
 {
 	static_assert(PlaceholderCount == sizeof...(args));
@@ -298,7 +298,7 @@ template<typename T>
 inline u32
 ToStringImpl_Format(String& string, StringView format, T value)
 {
-	b32 lengthOnly = !string.data;
+	b8 lengthOnly = !string.data;
 	u32 written = 0;
 	// TODO: Check return value!
 	written += (u32) snprintf(&string[string.length], string.capacity - string.length, &format[0], value);
@@ -319,12 +319,11 @@ u32 ToString(String& string, r32 value) { return ToStringImpl_Format(string, "%f
 u32 ToString(String& string, r64 value) { return ToStringImpl_Format(string, "%f",   value); }
 u32 ToString(String& string, c8  value) { return ToStringImpl_Format(string, "%c",   value); }
 u32 ToString(String& string, b8  value) { return ToStringImpl_Format(string, "%s",   value ? "true" : "false"); }
-//u32 ToString(String& string, b32 value) { return ToStringImpl(string, "%s",   value ? "true" : "false"); }
 
 u32
 ToString(String& string, StringView value)
 {
-	b32 lengthOnly = !string.data;
+	b8 lengthOnly = !string.data;
 	u32 written = value.length;
 	if (!lengthOnly) strncpy_s(&string[string.length], string.capacity - string.length, &value[0], value.length);
 	string.length += written * !lengthOnly;

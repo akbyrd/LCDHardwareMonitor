@@ -191,7 +191,7 @@ namespace LCDHardwareMonitor::GUI
 			SetProcessState(simState, ProcessState::Terminating);
 
 			Message::TerminateSimulation terminate = {};
-			b32 success = SerializeAndQueueMessage(state.simConnection, terminate);
+			b8 success = SerializeAndQueueMessage(state.simConnection, terminate);
 			return (bool) success;
 		}
 
@@ -213,7 +213,7 @@ namespace LCDHardwareMonitor::GUI
 
 			Message::MouseMove move = {};
 			move.pos = { (int) pos.X, (int) pos.Y };
-			b32 success = SerializeAndQueueMessage(state.simConnection, move);
+			b8 success = SerializeAndQueueMessage(state.simConnection, move);
 			return (bool) success;
 		}
 
@@ -224,7 +224,7 @@ namespace LCDHardwareMonitor::GUI
 			buttonChange.pos = { (int) pos.X, (int) pos.Y };
 			buttonChange.button = ToMouseButton(button);
 			buttonChange.state = ToButtonState(buttonState);
-			b32 success = SerializeAndQueueMessage(state.simConnection, buttonChange);
+			b8 success = SerializeAndQueueMessage(state.simConnection, buttonChange);
 			return (bool) success;
 		}
 
@@ -242,7 +242,7 @@ namespace LCDHardwareMonitor::GUI
 		{
 			simState.Version = connect.version;
 
-			b32 success = D3D9_CreateSharedSurface(
+			b8 success = D3D9_CreateSharedSurface(
 				*state.d3d9Device,
 				state.d3d9RenderTexture,
 				state.d3d9RenderSurface0,
@@ -364,7 +364,7 @@ namespace LCDHardwareMonitor::GUI
 			LOG_IF(result == PipeResult::UnexpectedFailure, return false,
 				Severity::Error, "Failed to create pipe for sim communication");
 
-			b32 success = D3D9_Initialize((HWND) (void*) hwnd, s.d3d9, s.d3d9Device);
+			b8 success = D3D9_Initialize((HWND) (void*) hwnd, s.d3d9, s.d3d9Device);
 			if (!success) return false;
 
 			return true;
@@ -400,7 +400,7 @@ namespace LCDHardwareMonitor::GUI
 				i64 startTicks = Platform_GetTicks();
 				while (MessageTimeLeft(startTicks))
 				{
-					b32 success = ReceiveMessage(simCon, bytes);
+					b8 success = ReceiveMessage(simCon, bytes);
 					if (!success) break;
 
 					Header& header = (Header&) bytes[0];
@@ -461,7 +461,7 @@ namespace LCDHardwareMonitor::GUI
 				// Send
 				while (MessageTimeLeft(startTicks))
 				{
-					b32 success = SendMessage(simCon);
+					b8 success = SendMessage(simCon);
 					if (!success) break;
 				}
 

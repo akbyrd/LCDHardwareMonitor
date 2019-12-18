@@ -29,10 +29,10 @@ using CLRString = System::String;
 public interface class
 ILHMPluginLoader
 {
-	b32 LoadSensorPlugin   (SensorPlugin& sensorPlugin);
-	b32 UnloadSensorPlugin (SensorPlugin& sensorPlugin);
-	b32 LoadWidgetPlugin   (WidgetPlugin& widgetPlugin);
-	b32 UnloadWidgetPlugin (WidgetPlugin& widgetPlugin);
+	b8 LoadSensorPlugin   (SensorPlugin& sensorPlugin);
+	b8 UnloadSensorPlugin (SensorPlugin& sensorPlugin);
+	b8 LoadWidgetPlugin   (WidgetPlugin& widgetPlugin);
+	b8 UnloadWidgetPlugin (WidgetPlugin& widgetPlugin);
 };
 
 [ComVisible(false)]
@@ -40,7 +40,7 @@ public value struct
 SensorPlugin_CLR
 {
 	#define Attributes UnmanagedFunctionPointer(CallingConvention::Cdecl)
-	[Attributes] delegate b32  InitializeDelegate (PluginContext& context, SensorPluginAPI::Initialize api);
+	[Attributes] delegate b8   InitializeDelegate (PluginContext& context, SensorPluginAPI::Initialize api);
 	[Attributes] delegate void UpdateDelegate     (PluginContext& context, SensorPluginAPI::Update     api);
 	[Attributes] delegate void TeardownDelegate   (PluginContext& context, SensorPluginAPI::Teardown   api);
 	#undef Attributes
@@ -56,7 +56,7 @@ public value struct
 WidgetPlugin_CLR
 {
 	#define Attributes UnmanagedFunctionPointer(CallingConvention::Cdecl)
-	[Attributes] delegate b32  InitializeDelegate (PluginContext& context, WidgetPluginAPI::Initialize api);
+	[Attributes] delegate b8   InitializeDelegate (PluginContext& context, WidgetPluginAPI::Initialize api);
 	[Attributes] delegate void UpdateDelegate     (PluginContext& context, WidgetPluginAPI::Update     api);
 	[Attributes] delegate void TeardownDelegate   (PluginContext& context, WidgetPluginAPI::Teardown   api);
 	#undef Attributes
@@ -81,10 +81,10 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 		InitializationFlags = AppDomainManagerInitializationOptions::RegisterWithHost;
 	}
 
-	virtual b32
+	virtual b8
 	LoadSensorPlugin(SensorPlugin& sensorPlugin)
 	{
-		b32 success;
+		b8 success;
 
 		success = LoadPlugin(sensorPlugin.header);
 		if (!success) return false;
@@ -96,10 +96,10 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 		return true;
 	}
 
-	virtual b32
+	virtual b8
 	UnloadSensorPlugin(SensorPlugin& sensorPlugin)
 	{
-		b32 success;
+		b8 success;
 
 		LHMPluginLoader% pluginLoader = GetDomainResidentLoader(sensorPlugin.header);
 		success = pluginLoader.TeardownSensorPlugin(sensorPlugin);
@@ -111,10 +111,10 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 		return true;
 	}
 
-	virtual b32
+	virtual b8
 	LoadWidgetPlugin(WidgetPlugin& widgetPlugin)
 	{
-		b32 success;
+		b8 success;
 
 		success = LoadPlugin(widgetPlugin.header);
 		if (!success) return false;
@@ -126,10 +126,10 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 		return true;
 	}
 
-	virtual b32
+	virtual b8
 	UnloadWidgetPlugin(WidgetPlugin& widgetPlugin)
 	{
-		b32 success;
+		b8 success;
 
 		LHMPluginLoader% pluginLoader = GetDomainResidentLoader(widgetPlugin.header);
 		success = pluginLoader.TeardownWidgetPlugin(widgetPlugin);
@@ -150,7 +150,7 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 		return pluginLoader;
 	}
 
-	b32
+	b8
 	LoadPlugin(PluginHeader& pluginHeader)
 	{
 		auto name      = gcnew CLRString(pluginHeader.fileName.data);
@@ -174,7 +174,7 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 		return true;
 	}
 
-	b32
+	b8
 	UnloadPlugin(PluginHeader& pluginHeader)
 	{
 		GCHandle appDomainHandle = (GCHandle) (IntPtr) pluginHeader.userData;
@@ -192,7 +192,7 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	WidgetPlugin_CLR widgetPluginCLR;
 
 	generic <typename T>
-	static b32
+	static b8
 	LoadAssemblyAndInstantiateType(::String _fileName, T% instance)
 	{
 		// NOTE: T^ and T^% map back to plain T
@@ -202,7 +202,7 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 		auto assembly = Assembly::Load(fileName);
 		for each (Type^ type in assembly->GetExportedTypes())
 		{
-			b32 isPlugin = type->GetInterface(typeName) != nullptr;
+			b8 isPlugin = type->GetInterface(typeName) != nullptr;
 			if (isPlugin)
 			{
 				if (!instance)
@@ -224,10 +224,10 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 		return true;
 	}
 
-	b32
+	b8
 	InitializeSensorPlugin(SensorPlugin& sensorPlugin)
 	{
-		b32 success = LoadAssemblyAndInstantiateType(sensorPlugin.header.fileName, sensorPluginCLR.pluginInstance);
+		b8 success = LoadAssemblyAndInstantiateType(sensorPlugin.header.fileName, sensorPluginCLR.pluginInstance);
 		if (!success) return false;
 
 		sensorPluginCLR.pluginInstance->GetPluginInfo(sensorPlugin.info);
@@ -261,7 +261,7 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 		return true;
 	}
 
-	b32
+	b8
 	TeardownSensorPlugin(SensorPlugin& sensorPlugin)
 	{
 		sensorPlugin.functions = {};
@@ -270,10 +270,10 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 		return true;
 	}
 
-	b32
+	b8
 	InitializeWidgetPlugin(WidgetPlugin& widgetPlugin)
 	{
-		b32 success = LoadAssemblyAndInstantiateType(widgetPlugin.header.fileName, widgetPluginCLR.pluginInstance);
+		b8 success = LoadAssemblyAndInstantiateType(widgetPlugin.header.fileName, widgetPluginCLR.pluginInstance);
 		if (!success) return false;
 
 		widgetPluginCLR.pluginInstance->GetPluginInfo(widgetPlugin.info);
@@ -302,7 +302,7 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 		return true;
 	}
 
-	b32
+	b8
 	TeardownWidgetPlugin(WidgetPlugin& widgetPlugin)
 	{
 		widgetPlugin.functions = {};

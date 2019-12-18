@@ -17,7 +17,7 @@ Bytes_ReadObject(Bytes& bytes, u32 offset, T& object)
 }
 
 template<typename T>
-b32
+b8
 Bytes_WriteObject(Bytes& bytes, u32 offset, T& object)
 {
 	if (!List_Reserve(bytes, offset + sizeof(T)))
@@ -31,7 +31,7 @@ Bytes_WriteObject(Bytes& bytes, u32 offset, T& object)
 }
 
 template<typename T>
-b32
+b8
 Bytes_FromObject(T& object, Bytes bytes)
 {
 	if (!List_Reserve(bytes, sizeof(T)))

@@ -35,10 +35,10 @@ Abs(T value)
 	return value < 0 ? -value : value;
 }
 
-inline b32
+inline b8
 ApproximatelyZero(r32 value)
 {
-	b32 result = Abs(value) < r32Epsilon;
+	b8 result = Abs(value) < r32Epsilon;
 	return result;
 }
 
@@ -53,7 +53,7 @@ Clamp(T value, U min, V max)
 }
 
 template<typename T, typename U>
-inline b32
+inline b8
 IsMultipleOf(T size, U multiple)
 {
 	T mod = size % multiple;
@@ -122,18 +122,18 @@ using v2u = v2t<u32>;
 
 // Operators
 template<typename T, typename U>
-inline b32
+inline b8
 operator== (v2t<T> lhs, v2t<U> rhs)
 {
-	b32 result = lhs.x == rhs.x && lhs.y == rhs.y;
+	b8 result = lhs.x == rhs.x && lhs.y == rhs.y;
 	return result;
 }
 
 template<typename T, typename U>
-inline b32
+inline b8
 operator!= (v2t<T> lhs, v2t<U> rhs)
 {
-	b32 result = !(lhs.x == rhs.x && lhs.y == rhs.y);
+	b8 result = !(lhs.x == rhs.x && lhs.y == rhs.y);
 	return result;
 }
 
@@ -369,18 +369,18 @@ using v3u = v3t<u32>;
 
 // Operators
 template<typename T, typename U>
-inline b32
+inline b8
 operator== (v3t<T> lhs, v3t<U> rhs)
 {
-	b32 result = lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z;
+	b8 result = lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z;
 	return result;
 }
 
 template<typename T, typename U>
-inline b32
+inline b8
 operator!= (v3t<T> lhs, v3t<U> rhs)
 {
-	b32 result = !(lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z);
+	b8 result = !(lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z);
 	return result;
 }
 
@@ -641,15 +641,15 @@ using v4u = v4t<u32>;
 
 // Operators
 template<typename T, typename U>
-inline b32
+inline b8
 operator== (v4t<T> lhs, v4t<U> rhs)
 {
-	b32 result = lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z && lhs.w == rhs.w;
+	b8 result = lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z && lhs.w == rhs.w;
 	return result;
 }
 
 template<typename T, typename U>
-inline b32
+inline b8
 operator!= (v4t<T> lhs, v4t<U> rhs)
 {
 	v4t<T> result = !(lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z && lhs.w == rhs.w);
@@ -878,10 +878,10 @@ Normalize(v4t<T> v)
 }
 
 template<typename T, typename U>
-inline bool
+inline b8
 RectContains(v4t<T> rect, v2t<U> pos)
 {
-	bool result = true;
+	b8 result = true;
 	result &= pos.x >= rect.pos.x;
 	result &= pos.x <  rect.pos.x + rect.size.x;
 	result &= pos.y >= rect.pos.y;

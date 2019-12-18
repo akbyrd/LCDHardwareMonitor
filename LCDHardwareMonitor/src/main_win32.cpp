@@ -61,7 +61,7 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 		#define DEFER_TEARDOWN [&]
 	#endif
 
-	b32 success;
+	b8 success;
 	RendererState      rendererState     = {};
 	SimulationState    simulationState   = {};
 	PluginLoaderState  pluginLoaderState = {};
