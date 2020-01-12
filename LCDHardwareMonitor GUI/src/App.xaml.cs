@@ -75,6 +75,7 @@ namespace LCDHardwareMonitor.GUI
 					if (running)
 						Interop.SetProcessState(SimulationState, ProcessState.Launched);
 					else if (elapsed >= 1000)
+						// TODO: Log a warning for unexpected shutdown
 						Interop.SetProcessState(SimulationState, ProcessState.Terminated);
 					break;
 
@@ -87,6 +88,7 @@ namespace LCDHardwareMonitor.GUI
 					if (!running)
 						Interop.SetProcessState(SimulationState, ProcessState.Terminated);
 					else if (elapsed >= 1000)
+						// TODO: Log a warning for failure to shutdown
 						Interop.SetProcessState(SimulationState, ProcessState.Launched);
 					break;
 

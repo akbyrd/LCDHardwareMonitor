@@ -255,7 +255,7 @@ LoadPixelShader(PluginContext& context, StringView relPath, Slice<u32> cBufSizes
 
 	// TODO: This is super awkward
 	StringView psName = {};
-	String psNameTemp;
+	String psNameTemp = {};
 	defer { String_Free(psNameTemp); };
 	success = GetNameFromPath(psNameTemp, path);
 	psName = success ? psNameTemp : path;
