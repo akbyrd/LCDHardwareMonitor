@@ -9,6 +9,8 @@
 #pragma pop_macro("IGNORE")
 #pragma warning(pop)
 
+namespace LCDHardwareMonitor {
+
 template<u32 PlaceholderCount, typename... Args>
 inline void
 Platform_PrintChecked(StringView format, Args... args)
@@ -901,4 +903,6 @@ Platform_FlushPipe(Pipe& pipe)
 		Severity::Error, "Failed to flush pipe '%'", pipe.name);
 
 	return PipeResult::Success;
+}
+
 }

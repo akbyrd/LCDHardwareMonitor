@@ -8,6 +8,7 @@
 using namespace System;
 using namespace System::Collections::Generic;
 using namespace System::Runtime::InteropServices;
+using namespace LCDHardwareMonitor;
 using namespace OpenHardwareMonitor;
 using namespace OpenHardwareMonitor::Hardware;
 
@@ -15,7 +16,7 @@ template<typename T>
 using CLRList = System::Collections::Generic::List<T>;
 using CLRString = System::String;
 
-using LHMString = ::String;
+using LHMString = LCDHardwareMonitor::String;
 
 public ref struct State : ISensorPlugin, ISensorPluginInitialize, ISensorPluginUpdate
 {

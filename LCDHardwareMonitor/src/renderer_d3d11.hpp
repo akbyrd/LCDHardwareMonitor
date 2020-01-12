@@ -30,6 +30,8 @@ using Microsoft::WRL::ComPtr;
 
 #pragma warning(pop)
 
+namespace LCDHardwareMonitor {
+
 namespace HLSLSemantic
 {
 	const c8* Position = "POSITION";
@@ -992,4 +994,6 @@ void*
 Renderer_GetSharedRenderSurface(RendererState& s)
 {
 	return s.d3dRenderTextureSharedHandle;
+}
+
 }

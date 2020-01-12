@@ -1,5 +1,7 @@
 #include "Solid Colored.ps.h"
 
+namespace LCDHardwareMonitor {
+
 struct FullWidgetRef
 {
 	WidgetPluginRef pluginRef;
@@ -1292,4 +1294,6 @@ Simulation_Teardown(SimulationState& s)
 	List_Free(s.sensorPlugins);
 
 	PluginLoader_Teardown(*s.pluginLoader);
+}
+
 }

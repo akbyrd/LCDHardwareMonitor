@@ -1,3 +1,5 @@
+namespace LCDHardwareMonitor {
+
 enum struct Severity
 {
 	Null,
@@ -80,3 +82,5 @@ PipeResult Platform_FlushPipe              (Pipe&);
 #define LOG(severity, format, ...)
 #define LOG_IF(expression, action, severity, format, ...)
 #endif
+
+}

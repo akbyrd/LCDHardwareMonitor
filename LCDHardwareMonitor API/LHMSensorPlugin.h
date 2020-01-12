@@ -1,5 +1,6 @@
 #ifndef LHM_SENSORPLUGIN
 #define LHM_SENSORPLUGIN
+namespace LCDHardwareMonitor {
 
 struct SensorPlugin;
 using SensorPluginRef = List<SensorPlugin>::RefT;
@@ -59,4 +60,5 @@ struct SensorPluginFunctions
 	TeardownFn*      teardown;
 };
 
+}
 #endif

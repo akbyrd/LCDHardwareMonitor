@@ -1,5 +1,7 @@
 #include <Windowsx.h>
 
+namespace LCDHardwareMonitor {
+
 const c8  previewWindowClass[] = "LCDHardwareMonitor Preview Class";
 const u32 WM_PREVIEWWINDOWCLOSED = WM_USER + 0;
 
@@ -18,6 +20,9 @@ struct PreviewWindowState
 	RendererState*          rendererState;
 };
 
+LRESULT CALLBACK
+PreviewWndProc(HWND, u32, WPARAM, LPARAM);
+
 b8
 PreviewWindow_Initialize(
 	PreviewWindowState& s,
@@ -35,9 +40,6 @@ PreviewWindow_Initialize(
 	// Create Window
 	{
 		b8 success;
-
-		LRESULT CALLBACK
-		PreviewWndProc(HWND, u32, WPARAM, LPARAM);
 
 		WNDCLASSA windowClass = {};
 		windowClass.style         = 0;
@@ -421,4 +423,6 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 	}
 
 	return DefWindowProcA(hwnd, uMsg, wParam, lParam);
+}
+
 }

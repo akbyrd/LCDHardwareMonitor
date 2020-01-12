@@ -1,0 +1,59 @@
+Native
+LHM
+{
+	List
+	String
+
+	PluginContext
+
+	PluginKind
+	PluginLoadState
+	PluginInfo
+	Sensor
+	WidgetDesc
+
+	GUI
+	{
+		Interop
+		SimulationState
+		ProcessState
+
+		PluginKind
+		PluginLoadState
+		PluginInfo
+		Sensor
+		WidgetDesc
+	}
+
+	Interop
+	{
+	}
+
+	Message
+	{
+		Header
+		Null
+		Connect
+		Disconnect
+		PluginsAdded
+		PluginStatesChanged
+		SensorsAdded
+		WidgetDescsAdded
+		TerminateSimulation
+		MouseMove
+		ButtonState
+		MouseButton
+		MouseButtonChange
+		SetPluginLoadStates
+	}
+}
+
+System
+{
+	String
+
+	Collections::Generic
+	{
+		List
+	}
+}

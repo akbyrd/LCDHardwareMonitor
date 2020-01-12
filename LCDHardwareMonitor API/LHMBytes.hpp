@@ -1,5 +1,6 @@
 #ifndef LHM_BYTES
 #define LHM_BYTES
+namespace LCDHardwareMonitor {
 
 // TODO: Create real types for Bytes & ByteSlice
 // TODO: Allow conversion from List & Slice types
@@ -55,4 +56,5 @@ ByteSlice_FromObject(T& object)
 	return result;
 }
 
+}
 #endif

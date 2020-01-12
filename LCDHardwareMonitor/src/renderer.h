@@ -1,3 +1,5 @@
+namespace LCDHardwareMonitor {
+
 struct RendererState;
 
 enum struct VertexAttributeSemantic
@@ -50,3 +52,5 @@ ConstantBufferUpdate* Renderer_PushConstantBufferUpdate     (RendererState&);
 DrawCall*             Renderer_PushDrawCall                 (RendererState&);
 b8                    Renderer_Render                       (RendererState&);
 void*                 Renderer_GetSharedRenderSurface       (RendererState&);
+
+}

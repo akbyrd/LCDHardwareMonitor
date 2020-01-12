@@ -1,5 +1,6 @@
 #ifndef LHM_LIST
 #define LHM_LIST
+namespace LCDHardwareMonitor {
 
 // NOTE:
 // - Memory is zero-initialized during allocations and when items are removed.
@@ -500,4 +501,5 @@ Slice_MemberSlice(Slice<T>& slice, U T::* memberPtr)
 // TODO: Allow range-for usage
 // TODO: Use placement new to avoid calling destructors on garbage objects?
 
+}
 #endif

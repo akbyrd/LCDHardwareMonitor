@@ -1,7 +1,9 @@
+Namespaces
+	Native namespace for interop?
+	Con: Names are longer in error messages and such
+
 Figure out what happens when memory allocations fail
 Start using Scoped
-Namespaces
-Native namespace for interop?
 String_FromView vs Create vs Copy
 
 Try removing WidgetData

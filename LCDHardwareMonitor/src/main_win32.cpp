@@ -12,6 +12,8 @@
 #include "renderer_d3d11.hpp"
 #include "previewwindow_win32_d3d11.hpp"
 
+using namespace LCDHardwareMonitor;
+
 // TODO: Should probably push renderer and plugin manager administration into the simulation.
 // TODO: Support x86 and x64
 // TODO: Reduce link dependencies

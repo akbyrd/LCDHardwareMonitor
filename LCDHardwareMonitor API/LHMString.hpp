@@ -1,5 +1,6 @@
 #ifndef LHM_STRING
 #define LHM_STRING
+namespace LCDHardwareMonitor {
 
 // NOTE: Strings and StringViews are null terminated for C compatibility.
 // NOTE: StringSlices are NOT GUARANTEED to be null terminated.
@@ -376,4 +377,5 @@ ToString(String& string, Slice<T>& list)
 	return written;
 }
 
+}
 #endif

@@ -2,6 +2,8 @@
 #include "WVP.vs.h"
 #include "Filled Bar.ps.h"
 
+using namespace LCDHardwareMonitor;
+
 struct BarWidget
 {
 	r32          borderSize;

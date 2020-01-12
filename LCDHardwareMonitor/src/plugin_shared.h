@@ -1,3 +1,5 @@
+namespace LCDHardwareMonitor {
+
 enum struct PluginKind
 {
 	Null,
@@ -60,3 +62,5 @@ struct WidgetPlugin
 
 	List<WidgetData>      widgetDatas;
 };
+
+}

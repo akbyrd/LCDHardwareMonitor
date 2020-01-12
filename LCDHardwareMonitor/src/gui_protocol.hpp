@@ -1,3 +1,5 @@
+namespace LCDHardwareMonitor {
+
 namespace Message
 {
 	struct Header
@@ -619,3 +621,5 @@ Serialize(ByteStream& stream, WidgetDesc& widgetDesc)
 
 // TODO: Code gen the actual Serialize functions
 // TODO: Maybe we can catch missed fields by counting bytes from serialize calls?
+
+}

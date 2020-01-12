@@ -1,5 +1,6 @@
 #ifndef LHM_WIDGETPLUGIN
 #define LHM_WIDGETPLUGIN
+namespace LCDHardwareMonitor {
 
 struct WidgetPlugin;
 using WidgetPluginRef = List<WidgetPlugin>::RefT;
@@ -120,4 +121,5 @@ WidgetRect(Widget widget)
 	return result;
 }
 
+}
 #endif

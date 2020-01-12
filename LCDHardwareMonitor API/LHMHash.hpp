@@ -1,5 +1,6 @@
 #ifndef LHM_HASH
 #define LHM_HASH
+namespace LCDHardwareMonitor {
 
 // NOTE: This is somewhat weak for short, similar strings. Consider FNV or Murmur.
 constexpr u32 Adler32(const c8* data, size length)
@@ -33,4 +34,5 @@ constexpr u32 _IdOf()
 template<class T>
 constexpr u32 IdOf = _IdOf<T>();
 
+}
 #endif

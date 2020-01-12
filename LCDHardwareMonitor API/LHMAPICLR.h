@@ -2,19 +2,24 @@
 #define LHM_APICLR
 
 #pragma unmanaged
+namespace LCDHardwareMonitor {
+
 struct PluginContext {};
 
+}
 #include "LHMAPI.h"
 
 #pragma managed
-#pragma make_public(PluginContext)
-#pragma make_public(PluginInfo)
-#pragma make_public(SensorPluginAPI)
-#pragma make_public(WidgetPluginAPI)
-#pragma make_public(WidgetAPI)
+#pragma make_public(LCDHardwareMonitor::PluginContext)
+#pragma make_public(LCDHardwareMonitor::PluginInfo)
+#pragma make_public(LCDHardwareMonitor::SensorPluginAPI)
+#pragma make_public(LCDHardwareMonitor::WidgetPluginAPI)
+#pragma make_public(LCDHardwareMonitor::WidgetAPI)
+
+namespace LCDHardwareMonitor {
 
 using CLRString = System::String;
-using LHMString = ::String;
+using LHMString = LCDHardwareMonitor::String;
 
 b8
 String_FromCLR(LHMString lhmString, CLRString^ clrString)
@@ -35,5 +40,5 @@ String_FromCLR(LHMString lhmString, CLRString^ clrString)
 	return true;
 }
 
-
+}
 #endif

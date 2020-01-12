@@ -16,6 +16,8 @@
 
 #include <WinUser.h>
 
+namespace LCDHardwareMonitor::GUI {
+
 struct State
 {
 	ConnectionState     simConnection;
@@ -25,6 +27,8 @@ struct State
 	IDirect3DSurface9*  d3d9RenderSurface0;
 };
 static State state = {};
+
+}
 
 #pragma managed
 namespace LCDHardwareMonitor::GUI
@@ -39,7 +43,7 @@ namespace LCDHardwareMonitor::GUI
 
 	using CLRString = System::String;
 	using CLRMouseButton = System::Windows::Input::MouseButton;
-	using LHMString = ::String;
+	using LHMString = LCDHardwareMonitor::String;
 
 	public enum struct PluginKind
 	{
@@ -300,7 +304,7 @@ namespace LCDHardwareMonitor::GUI
 				for (u32 j = 0; j < (u32) simState.Plugins->Count; j++)
 				{
 					PluginInfo p = simState.Plugins[(i32) j];
-					if ((::PluginKind) p.Kind == statesChanged.kind && p.Ref == statesChanged.refs[i].index)
+					if ((LCDHardwareMonitor::PluginKind) p.Kind == statesChanged.kind && p.Ref == statesChanged.refs[i].index)
 					{
 						p.LoadState = (PluginLoadState) statesChanged.loadStates[i];
 						simState.Plugins[(i32) j] = p;
@@ -315,10 +319,10 @@ namespace LCDHardwareMonitor::GUI
 		{
 			for (u32 i = 0; i < sensorsAdded.sensors.length; i++)
 			{
-				Slice<::Sensor> sensors = sensorsAdded.sensors[i];
+				Slice<LCDHardwareMonitor::Sensor> sensors = sensorsAdded.sensors[i];
 				for (u32 j = 0; j < sensors.length; j++)
 				{
-					::Sensor& sensor = sensors[j];
+					LCDHardwareMonitor::Sensor& sensor = sensors[j];
 
 					Sensor mSensor = {};
 					mSensor.PluginRef  = sensorsAdded.pluginRefs[i].index;
@@ -337,10 +341,10 @@ namespace LCDHardwareMonitor::GUI
 		{
 			for (u32 i = 0; i < widgetDescsAdded.descs.length; i++)
 			{
-				Slice<::WidgetDesc> widgetDescs = widgetDescsAdded.descs[i];
+				Slice<LCDHardwareMonitor::WidgetDesc> widgetDescs = widgetDescsAdded.descs[i];
 				for (u32 j = 0; j < widgetDescs.length; j++)
 				{
-					::WidgetDesc& desc = widgetDescs[j];
+					LCDHardwareMonitor::WidgetDesc& desc = widgetDescs[j];
 
 					WidgetDesc mWidgetDesc = {};
 					mWidgetDesc.PluginRef = widgetDescsAdded.pluginRefs[i].index;

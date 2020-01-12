@@ -1,5 +1,6 @@
 #ifndef LHM_RENDERER
 #define LHM_RENDERER
+namespace LCDHardwareMonitor {
 
 using Mesh         = List<struct MeshData>::RefT;
 using VertexShader = List<struct VertexShaderData>::RefT;
@@ -51,4 +52,5 @@ namespace StandardPixelShader
 	static const PixelShader DebugCoordinates = { 3 };
 };
 
+}
 #endif

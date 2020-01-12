@@ -15,6 +15,8 @@
 // Currently, the GUI will occasionally see the render target after clear but before rendering. The
 // issue can be exaggerated by clearing with a bright color.
 
+namespace LCDHardwareMonitor {
+
 b8
 D3D9_Initialize(
 	HWND                 hwnd,
@@ -113,4 +115,6 @@ D3D9_DestroySharedSurface(
 		(*d3d9RenderSurface0).Release();
 		d3d9RenderSurface0 = nullptr;
 	}
+}
+
 }

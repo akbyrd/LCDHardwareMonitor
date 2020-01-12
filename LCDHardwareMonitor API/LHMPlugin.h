@@ -1,5 +1,6 @@
 #ifndef LHM_Plugin
 #define LHM_Plugin
+namespace LCDHardwareMonitor {
 
 struct PluginInfo
 {
@@ -13,4 +14,5 @@ struct PluginInfo
 
 struct PluginContext;
 
+}
 #endif
