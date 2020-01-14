@@ -13,9 +13,6 @@ using namespace OpenHardwareMonitor::Hardware;
 
 template<typename T>
 using CLRList = System::Collections::Generic::List<T>;
-using CLRString = System::String;
-
-using LHMString = ::String;
 
 public ref struct State : ISensorPlugin, ISensorPluginInitialize, ISensorPluginUpdate
 {

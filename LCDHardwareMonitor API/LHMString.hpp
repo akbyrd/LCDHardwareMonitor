@@ -107,7 +107,7 @@ String_FromView(String& string, StringView view)
 	b8 success = String_Reserve(string, view.length + 1);
 	if (!success) return false;
 
-	strncpy_s(&string[string.length], string.capacity - string.length, &view[0], view.length);
+	strncpy_s(&string[0], string.capacity, &view[0], view.length);
 	string.length = view.length;
 
 	allocGuard.dismiss = true;

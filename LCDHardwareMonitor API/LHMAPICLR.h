@@ -35,5 +35,4 @@ String_FromCLR(LHMString lhmString, CLRString^ clrString)
 	return true;
 }
 
-
 #endif

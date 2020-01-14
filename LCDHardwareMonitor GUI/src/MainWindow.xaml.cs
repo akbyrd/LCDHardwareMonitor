@@ -63,25 +63,25 @@ namespace LCDHardwareMonitor.GUI
 			Button button = (Button) sender;
 			PluginInfo item = (PluginInfo) button.DataContext;
 
-			PluginLoadState requestState;
 			switch (item.LoadState)
 			{
 				default: Debug.Assert(false); return;
 
-				case PluginLoadState.Broken:
-					// TODO: Proper logging?
-					return;
-
 				case PluginLoadState.Loaded:
-					requestState = PluginLoadState.Unloaded;
+					Interop.SetPluginLoadState(simState, item.Index, PluginLoadState.Unloaded);
 					break;
 
 				case PluginLoadState.Unloaded:
-					requestState = PluginLoadState.Loaded;
+					Interop.SetPluginLoadState(simState, item.Index, PluginLoadState.Loaded);
 					break;
-			}
 
-			Interop.SetPluginLoadState(item.Kind, item.Ref, requestState);
+				// Button is disabled for these states
+				case PluginLoadState.Loading:
+				case PluginLoadState.Unloading:
+				case PluginLoadState.Broken:
+					Debug.Assert(false);
+					return;
+			}
 		}
 
 		private void Window_KeyDown(object sender, KeyEventArgs e)

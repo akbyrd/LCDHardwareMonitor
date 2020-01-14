@@ -253,11 +253,11 @@ PluginLoader_LoadSensorPlugin(PluginLoaderState& s, SensorPlugin& sensorPlugin)
 				Severity::Error, "Failed to unset Sensor plugin DLL directory '%'", pluginHeader.directory);
 
 			HMODULE pluginModule = (HMODULE) pluginHeader.userData;
-			sensorPlugin.functions.getPluginInfo = (SensorPluginFunctions::GetPluginInfoFn*) (void*) GetProcAddress(pluginModule, "GetSensorPluginInfo");
-			LOG_IF(!sensorPlugin.functions.getPluginInfo, break,
+			sensorPlugin.functions.GetPluginInfo = (SensorPluginFunctions::GetPluginInfoFn*) (void*) GetProcAddress(pluginModule, "GetSensorPluginInfo");
+			LOG_IF(!sensorPlugin.functions.GetPluginInfo, break,
 				Severity::Error, "Failed to find unmanaged GetSensorPluginInfo '%'", pluginHeader.fileName);
 
-			sensorPlugin.functions.getPluginInfo(sensorPlugin.info, sensorPlugin.functions);
+			sensorPlugin.functions.GetPluginInfo(sensorPlugin.info, sensorPlugin.functions);
 
 			success = true;
 			break;

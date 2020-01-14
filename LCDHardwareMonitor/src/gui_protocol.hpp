@@ -26,31 +26,24 @@ namespace Message
 		Header header;
 	};
 
+	// TODO: PluginsRemoved
 	struct PluginsAdded
 	{
 		Header             header;
-		PluginKind         kind;
-		Slice<ListRefBase> refs;
+		PluginKind         kind; // TODO: Remove
+		Slice<PluginRef>   refs;
 		Slice<PluginInfo>  infos;
 	};
 
 	struct PluginStatesChanged
 	{
 		Header                 header;
-		PluginKind             kind;
-		Slice<ListRefBase>     refs;
+		PluginKind             kind; // TODO: Remove
+		Slice<PluginRef>       refs;
 		Slice<PluginLoadState> loadStates;
 	};
 
-	#if false
-	struct PluginsRemoved
-	{
-		Header             header;
-		PluginKind         kind;
-		Slice<ListRefBase> refs;
-	};
-	#endif
-
+	// TODO: SensorsRemoved
 	struct SensorsAdded
 	{
 		Header                 header;
@@ -58,30 +51,13 @@ namespace Message
 		Slice<List<Sensor>>    sensors;
 	};
 
-	#if false
-	struct SensorsRemoved
-	{
-		Header           header;
-		SensorPluginRef  pluginRef;
-		Slice<SensorRef> refs;
-	};
-	#endif
-
+	// TODO: WidgetDescsRemoved
 	struct WidgetDescsAdded
 	{
 		Header                   header;
 		Slice<WidgetPluginRef>   pluginRefs;
 		Slice<Slice<WidgetDesc>> descs;
 	};
-
-	#if false
-	struct WidgetDescsRemoved
-	{
-		Header                 header;
-		WidgetPluginRef        pluginRef;
-		Slice<WidgetDesc::Ref> refs;
-	};
-	#endif
 
 	// GUI -> Sim
 	struct TerminateSimulation
@@ -101,7 +77,7 @@ namespace Message
 		Down,
 		Up,
 	};
-	bool operator!(ButtonState state) { return state == ButtonState::Null; }
+	b8 operator!(ButtonState state) { return state == ButtonState::Null; }
 
 	enum struct MouseButton
 	{
@@ -110,7 +86,7 @@ namespace Message
 		Right,
 		Middle,
 	};
-	bool operator!(MouseButton button) { return button == MouseButton::Null; }
+	b8 operator!(MouseButton button) { return button == MouseButton::Null; }
 
 	struct MouseButtonChange
 	{
@@ -123,8 +99,8 @@ namespace Message
 	struct SetPluginLoadStates
 	{
 		Header                 header;
-		PluginKind             kind;
-		Slice<ListRefBase>     refs;
+		PluginKind             kind; // TODO: Remove
+		Slice<PluginRef>       refs;
 		Slice<PluginLoadState> loadStates;
 	};
 }

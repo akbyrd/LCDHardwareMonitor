@@ -53,10 +53,10 @@ struct SensorPluginFunctions
 	using UpdateFn        = void(PluginContext& context, SensorPluginAPI::Update     api);
 	using TeardownFn      = void(PluginContext& context, SensorPluginAPI::Teardown   api);
 
-	GetPluginInfoFn* getPluginInfo;
-	InitializeFn*    initialize;
-	UpdateFn*        update;
-	TeardownFn*      teardown;
+	GetPluginInfoFn* GetPluginInfo;
+	InitializeFn*    Initialize;
+	UpdateFn*        Update;
+	TeardownFn*      Teardown;
 };
 
 #endif

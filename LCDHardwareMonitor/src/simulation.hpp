@@ -354,14 +354,14 @@ OnConnect(SimulationState& s, ConnectionState& con)
 		// TODO: Send PluginHeader along with PluginInfo
 		PluginsAdded pluginsAdded = {};
 		pluginsAdded.kind  = PluginKind::Sensor;
-		pluginsAdded.refs  = List_MemberSlice(s.sensorPlugins, &SensorPlugin::ref);
+		pluginsAdded.refs  = (Slice<PluginRef>) List_MemberSlice(s.sensorPlugins, &SensorPlugin::ref);
 		pluginsAdded.infos = List_MemberSlice(s.sensorPlugins, &SensorPlugin::info);
 		success = SerializeAndQueueMessage(con, pluginsAdded);
 		if (!success) return;
 
 		PluginStatesChanged statesChanged = {};
 		statesChanged.kind       = PluginKind::Sensor;
-		statesChanged.refs       = List_MemberSlice(s.sensorPlugins, &SensorPlugin::ref);
+		statesChanged.refs       = (Slice<PluginRef>) List_MemberSlice(s.sensorPlugins, &SensorPlugin::ref);
 		statesChanged.loadStates = List_MemberSlice(s.sensorPlugins, &SensorPlugin::header, &PluginHeader::loadState);
 		success = SerializeAndQueueMessage(con, statesChanged);
 		if (!success) return;
@@ -370,14 +370,14 @@ OnConnect(SimulationState& s, ConnectionState& con)
 	{
 		PluginsAdded pluginsAdded = {};
 		pluginsAdded.kind  = PluginKind::Widget;
-		pluginsAdded.refs  = List_MemberSlice(s.widgetPlugins, &WidgetPlugin::ref);
+		pluginsAdded.refs  = (Slice<PluginRef>) List_MemberSlice(s.widgetPlugins, &WidgetPlugin::ref);
 		pluginsAdded.infos = List_MemberSlice(s.widgetPlugins, &WidgetPlugin::info);
 		success = SerializeAndQueueMessage(con, pluginsAdded);
 		if (!success) return;
 
 		PluginStatesChanged statesChanged = {};
 		statesChanged.kind       = PluginKind::Widget;
-		statesChanged.refs       = List_MemberSlice(s.widgetPlugins, &WidgetPlugin::ref);
+		statesChanged.refs       = (Slice<PluginRef>) List_MemberSlice(s.widgetPlugins, &WidgetPlugin::ref);
 		statesChanged.loadStates = List_MemberSlice(s.widgetPlugins, &WidgetPlugin::header, &PluginHeader::loadState);
 		success = SerializeAndQueueMessage(con, statesChanged);
 		if (!success) return;
@@ -529,6 +529,71 @@ OnRightMouseUp(SimulationState& s, v2i mousePos)
 	s.cameraRotStart  = {};
 }
 
+// TODO: Lame.
+static b8 LoadSensorPlugin(SimulationState&, SensorPlugin&);
+static b8 UnloadSensorPlugin(SimulationState&, SensorPlugin&);
+static b8 LoadWidgetPlugin(SimulationState&, WidgetPlugin&);
+static b8 UnloadWidgetPlugin(SimulationState&, WidgetPlugin&);
+
+static void
+OnSetSensorPluginStates(SimulationState& s, Slice<SensorPluginRef> plugins, Slice<PluginLoadState> states)
+{
+	Assert(plugins.length == states.length);
+	for (u32 i = 0; i < plugins.length; i++)
+	{
+		SensorPlugin& sensorPlugin = s.sensorPlugins[plugins[i]];
+		switch (states[i])
+		{
+			default: Assert(false); break;
+
+			case PluginLoadState::Loaded:
+				LoadSensorPlugin(s, sensorPlugin);
+				break;
+
+			case PluginLoadState::Unloaded:
+				UnloadSensorPlugin(s, sensorPlugin);
+				break;
+		}
+	}
+}
+
+static void
+OnSetWidgetPluginStates(SimulationState& s, Slice<WidgetPluginRef> plugins, Slice<PluginLoadState> states)
+{
+	Assert(plugins.length == states.length);
+	for (u32 i = 0; i < plugins.length; i++)
+	{
+		WidgetPlugin& widgetPlugin = s.widgetPlugins[plugins[i]];
+		switch (states[i])
+		{
+			default: Assert(false); break;
+
+			case PluginLoadState::Loaded:
+				LoadWidgetPlugin(s, widgetPlugin);
+				break;
+
+			case PluginLoadState::Unloaded:
+				UnloadWidgetPlugin(s, widgetPlugin);
+				break;
+		}
+	}
+}
+
+// TODO: Pass a Slice<PluginHeader> pluginHeaders
+static void
+OnPluginStatesChanged(SimulationState& s, PluginRef ref, PluginHeader& pluginHeader)
+{
+	using namespace Message;
+	if (s.guiConnection.pipe.state != PipeState::Connected) return;
+
+	PluginStatesChanged statesChanged = {};
+	statesChanged.kind       = pluginHeader.kind;
+	statesChanged.refs       = ref;
+	statesChanged.loadStates = pluginHeader.loadState;
+	b8 success = SerializeAndQueueMessage(s.guiConnection, statesChanged);
+	if (!success) return;
+}
+
 static void
 OnWidgetSelect(SimulationState& s, FullWidgetRef ref)
 {
@@ -539,24 +604,40 @@ OnWidgetSelect(SimulationState& s, FullWidgetRef ref)
 
 // -------------------------------------------------------------------------------------------------
 
-static Widget&
-GetWidget(SimulationState& s, FullWidgetRef ref)
+static void
+FreePlugin(PluginHeader& header, PluginInfo& info)
 {
-	WidgetPlugin& plugin = s.widgetPlugins[ref.pluginRef];
-	WidgetData& data = plugin.widgetDatas[ref.dataRef];
-	Widget& widget = data.widgets[ref.ref];
-	return widget;
+	String_Free(header.fileName);
+	String_Free(header.directory);
+	String_Free(info.name);
+	String_Free(info.author);
 }
 
 static SensorPlugin*
-LoadSensorPlugin(SimulationState& s, StringView directory, StringView fileName)
+RegisterSensorPlugin(SimulationState& s, StringView directory, StringView fileName)
 {
 	b8 success;
 
-	SensorPlugin* sensorPlugin = List_Append(s.sensorPlugins);
-	LOG_IF(!sensorPlugin, return nullptr,
-		Severity::Error, "Failed to allocate Sensor plugin");
+	// Attempt to re-use empty slots from unregistered plugins
+	SensorPlugin* sensorPlugin = nullptr;
+	for (u32 i = 0; i < s.sensorPlugins.length; i++)
+	{
+		SensorPlugin& slot = s.sensorPlugins[i];
+		if (!slot.ref)
+		{
+			sensorPlugin = &slot;
+			break;
+		}
+	}
 
+	if (!sensorPlugin)
+	{
+		sensorPlugin = List_Append(s.sensorPlugins);
+		LOG_IF(!sensorPlugin, return nullptr,
+			Severity::Error, "Failed to allocate Sensor plugin");
+	}
+
+	defer { OnPluginStatesChanged(s, { sensorPlugin->ref.index }, sensorPlugin->header); };
 	auto pluginGuard = guard { sensorPlugin->header.loadState = PluginLoadState::Broken; };
 
 	sensorPlugin->ref         = List_GetLastRef(s.sensorPlugins);
@@ -570,42 +651,67 @@ LoadSensorPlugin(SimulationState& s, StringView directory, StringView fileName)
 	LOG_IF(!success, return nullptr,
 		Severity::Error, "Failed to copy Sensor plugin directory");
 
-	success = PluginLoader_LoadSensorPlugin(*s.pluginLoader, *sensorPlugin);
-	LOG_IF(!success, return nullptr,
-		Severity::Error, "Failed to load Sensor plugin '%'", fileName);
+	pluginGuard.dismiss = true;
+	return sensorPlugin;
+}
 
-	success = List_Reserve(sensorPlugin->sensors, 32);
-	LOG_IF(!success, return nullptr,
+static void
+UnregisterSensorPlugin(SimulationState& s, SensorPlugin& sensorPlugin)
+{
+	Assert(sensorPlugin.header.loadState != PluginLoadState::Loaded);
+	defer { OnPluginStatesChanged(s, { sensorPlugin.ref.index }, sensorPlugin.header); };
+	FreePlugin(sensorPlugin.header, sensorPlugin.info);
+	sensorPlugin = {};
+}
+
+// TODO: Reloading a plugin should free the existing info.name and version
+static b8
+LoadSensorPlugin(SimulationState& s, SensorPlugin& sensorPlugin)
+{
+	Assert(sensorPlugin.header.loadState != PluginLoadState::Loaded);
+	defer { OnPluginStatesChanged(s, { sensorPlugin.ref.index }, sensorPlugin.header); };
+	auto pluginGuard = guard { sensorPlugin.header.loadState = PluginLoadState::Broken; };
+
+	b8 success;
+
+	success = PluginLoader_LoadSensorPlugin(*s.pluginLoader, sensorPlugin);
+	LOG_IF(!success, return false,
+		Severity::Error, "Failed to load Sensor plugin '%'", sensorPlugin.header.fileName);
+
+	success = List_Reserve(sensorPlugin.sensors, 32);
+	LOG_IF(!success, return false,
 		Severity::Error, "Failed to allocate Sensor list for Sensor plugin");
 
 	// TODO: try/catch?
-	if (sensorPlugin->functions.initialize)
+	if (sensorPlugin.functions.Initialize)
 	{
 		PluginContext context = {};
 		context.s            = &s;
-		context.sensorPlugin = sensorPlugin;
+		context.sensorPlugin = &sensorPlugin;
 		context.success      = true;
 
 		SensorPluginAPI::Initialize api = {};
 		api.RegisterSensors = RegisterSensors;
 
-		success = sensorPlugin->functions.initialize(context, api);
+		success = sensorPlugin.functions.Initialize(context, api);
 		success &= context.success;
-		LOG_IF(!success, return nullptr,
-			Severity::Error, "Failed to initialize Sensor plugin '%'", sensorPlugin->info.name);
+		LOG_IF(!success, return false,
+			Severity::Error, "Failed to initialize Sensor plugin '%'", sensorPlugin.info.name);
 	}
 
 	pluginGuard.dismiss = true;
-	return sensorPlugin;
+	return true;
 }
 
 static b8
 UnloadSensorPlugin(SimulationState& s, SensorPlugin& sensorPlugin)
 {
+	Assert(sensorPlugin.header.loadState != PluginLoadState::Unloaded);
+	defer { OnPluginStatesChanged(s, { sensorPlugin.ref.index }, sensorPlugin.header); };
 	auto pluginGuard = guard { sensorPlugin.header.loadState = PluginLoadState::Broken; };
 
 	// TODO: try/catch?
-	if (sensorPlugin.functions.teardown)
+	if (sensorPlugin.functions.Teardown)
 	{
 		PluginContext context = {};
 		context.s            = &s;
@@ -615,7 +721,7 @@ UnloadSensorPlugin(SimulationState& s, SensorPlugin& sensorPlugin)
 		SensorPluginAPI::Teardown api = {};
 		api.sensors = sensorPlugin.sensors;
 
-		sensorPlugin.functions.teardown(context, api);
+		sensorPlugin.functions.Teardown(context, api);
 	}
 
 	for (u32 i = 0; i < sensorPlugin.sensors.length; i++)
@@ -625,28 +731,43 @@ UnloadSensorPlugin(SimulationState& s, SensorPlugin& sensorPlugin)
 	}
 
 	b8 success = PluginLoader_UnloadSensorPlugin(*s.pluginLoader, sensorPlugin);
-	List_Free(sensorPlugin.sensors);
 	LOG_IF(!success, return false,
 		Severity::Error, "Failed to unload Sensor plugin '%'", sensorPlugin.info.name);
 
-	// TODO: Add and remove plugin infos based on directory contents instead of
-	// loaded state.
-	sensorPlugin = {};
+	// NOTE: Any fields added to SensorPlugin may need to be cleared here.
+	sensorPlugin.functions = {};
+	List_Free(sensorPlugin.sensors);
 
 	pluginGuard.dismiss = true;
 	return true;
 }
 
 static WidgetPlugin*
-LoadWidgetPlugin(SimulationState& s, StringView directory, StringView fileName)
+RegisterWidgetPlugin(SimulationState& s, StringView directory, StringView fileName)
 {
 	b8 success;
 
-	WidgetPlugin* widgetPlugin = List_Append(s.widgetPlugins);
-	auto pluginGuard = guard { widgetPlugin->header.loadState = PluginLoadState::Broken; };
+	// Attempt to re-use empty slots from unregistered plugins
+	WidgetPlugin* widgetPlugin = nullptr;
+	for (u32 i = 0; i < s.widgetPlugins.length; i++)
+	{
+		WidgetPlugin& slot = s.widgetPlugins[i];
+		if (!slot.ref)
+		{
+			widgetPlugin = &slot;
+			break;
+		}
+	}
 
-	LOG_IF(!widgetPlugin, return nullptr,
-		Severity::Error, "Failed to allocate WidgetPlugin");
+	if (!widgetPlugin)
+	{
+		widgetPlugin = List_Append(s.widgetPlugins);
+		LOG_IF(!widgetPlugin, return nullptr,
+			Severity::Error, "Failed to allocate WidgetPlugin");
+	}
+
+	defer { OnPluginStatesChanged(s, { widgetPlugin->ref.index }, widgetPlugin->header); };
+	auto pluginGuard = guard { widgetPlugin->header.loadState = PluginLoadState::Broken; };
 
 	widgetPlugin->ref         = List_GetLastRef(s.widgetPlugins);
 	widgetPlugin->header.kind = PluginKind::Widget;
@@ -659,16 +780,39 @@ LoadWidgetPlugin(SimulationState& s, StringView directory, StringView fileName)
 	LOG_IF(!success, return nullptr,
 		Severity::Error, "Failed to copy Widget plugin directory");
 
-	success = PluginLoader_LoadWidgetPlugin(*s.pluginLoader, *widgetPlugin);
-	LOG_IF(!success, return nullptr,
-		Severity::Error, "Failed to load Widget plugin '%'", fileName);
+	pluginGuard.dismiss = true;
+	return widgetPlugin;
+}
+
+static void
+UnregisterWidgetPlugin(SimulationState& s, WidgetPlugin& widgetPlugin)
+{
+	Assert(widgetPlugin.header.loadState != PluginLoadState::Loaded);
+	defer { OnPluginStatesChanged(s, { widgetPlugin.ref.index }, widgetPlugin.header); };
+	FreePlugin(widgetPlugin.header, widgetPlugin.info);
+	widgetPlugin = {};
+}
+
+// TODO: Reloading a plugin should free the existing info.name and version
+static b8
+LoadWidgetPlugin(SimulationState& s, WidgetPlugin& widgetPlugin)
+{
+	Assert(widgetPlugin.header.loadState != PluginLoadState::Loaded);
+	defer { OnPluginStatesChanged(s, { widgetPlugin.ref.index }, widgetPlugin.header); };
+	auto pluginGuard = guard { widgetPlugin.header.loadState = PluginLoadState::Broken; };
+
+	b8 success;
+
+	success = PluginLoader_LoadWidgetPlugin(*s.pluginLoader, widgetPlugin);
+	LOG_IF(!success, return false,
+		Severity::Error, "Failed to load Widget plugin '%'", widgetPlugin.header.fileName);
 
 	// TODO: try/catch?
-	if (widgetPlugin->functions.Initialize)
+	if (widgetPlugin.functions.Initialize)
 	{
 		PluginContext context = {};
 		context.s            = &s;
-		context.widgetPlugin = widgetPlugin;
+		context.widgetPlugin = &widgetPlugin;
 		context.success      = true;
 
 		WidgetPluginAPI::Initialize api = {};
@@ -676,7 +820,7 @@ LoadWidgetPlugin(SimulationState& s, StringView directory, StringView fileName)
 		api.LoadPixelShader = LoadPixelShader;
 		api.CreateMaterial  = CreateMaterial;
 
-		success = widgetPlugin->functions.Initialize(context, api);
+		success = widgetPlugin.functions.Initialize(context, api);
 		success &= context.success;
 		if (!success)
 		{
@@ -685,17 +829,19 @@ LoadWidgetPlugin(SimulationState& s, StringView directory, StringView fileName)
 			// TODO: There's a decent chance we'll want to keep widget descs
 			// around for unloaded plugins
 			UnregisterAllWidgets(context);
-			return nullptr;
+			return false;
 		}
 	}
 
 	pluginGuard.dismiss = true;
-	return widgetPlugin;
+	return true;
 }
 
 static b8
 UnloadWidgetPlugin(SimulationState& s, WidgetPlugin& widgetPlugin)
 {
+	Assert(widgetPlugin.header.loadState != PluginLoadState::Unloaded);
+	defer { OnPluginStatesChanged(s, { widgetPlugin.ref.index }, widgetPlugin.header); };
 	auto pluginGuard = guard { widgetPlugin.header.loadState = PluginLoadState::Broken; };
 
 	PluginContext context = {};
@@ -732,12 +878,27 @@ UnloadWidgetPlugin(SimulationState& s, WidgetPlugin& widgetPlugin)
 	LOG_IF(!success, return false,
 		Severity::Error, "Failed to unload Widget plugin '%'", widgetPlugin.info.name);
 
-	// TODO: Add and remove plugin infos based on directory contents instead
-	// of loaded state.
-	widgetPlugin = {};
+	// NOTE: Any fields added to WidgetPlugin may need to be cleared here.
+	widgetPlugin.functions = {};
+	for (u32 i = 0; i < widgetPlugin.widgetDatas.length; i++)
+	{
+		WidgetData& widgetData = widgetPlugin.widgetDatas[i];
+		List_Free(widgetData.widgets);
+		List_Free(widgetData.widgetsUserData);
+	}
+	List_Free(widgetPlugin.widgetDatas);
 
 	pluginGuard.dismiss = true;
 	return true;
+}
+
+static Widget&
+GetWidget(SimulationState& s, FullWidgetRef ref)
+{
+	WidgetPlugin& plugin = s.widgetPlugins[ref.pluginRef];
+	WidgetData& data = plugin.widgetDatas[ref.dataRef];
+	Widget& widget = data.widgets[ref.ref];
+	return widget;
 }
 
 b8
@@ -917,13 +1078,22 @@ Simulation_Initialize(SimulationState& s, PluginLoaderState& pluginLoader, Rende
 		}
 	}
 
+	// TODO: Watch directory contents for registering, unregistering, and
+	// reloading plugins.
+
 	// DEBUG: Testing
 	{
-		SensorPlugin* ohmPlugin = LoadSensorPlugin(s, "Sensor Plugins\\OpenHardwareMonitor", "Sensor.OpenHardwareMonitor.dll");
+		SensorPlugin* ohmPlugin = RegisterSensorPlugin(s, "Sensor Plugins\\OpenHardwareMonitor", "Sensor.OpenHardwareMonitor.dll");
 		if (!ohmPlugin) return false;
 
-		WidgetPlugin* filledBarPlugin = LoadWidgetPlugin(s, "Widget Plugins\\Filled Bar", "Widget.FilledBar.dll");
+		success = LoadSensorPlugin(s, *ohmPlugin);
+		if (!success) return false;
+
+		WidgetPlugin* filledBarPlugin = RegisterWidgetPlugin(s, "Widget Plugins\\Filled Bar", "Widget.FilledBar.dll");
 		if (!filledBarPlugin) return false;
+
+		success = LoadWidgetPlugin(s, *filledBarPlugin);
+		if (!success) return false;
 
 		//u32 debugSensorIndices[] = { 0, 1, 2, 3, 21 }; // Desktop 2080 Ti
 		//u32 debugSensorIndices[] = { 6, 7, 8, 9, 33 }; // Desktop 780 Tis
@@ -992,13 +1162,13 @@ Simulation_Update(SimulationState& s)
 			SensorPlugin& sensorPlugin = s.sensorPlugins[i];
 
 			// TODO: try/catch?
-			if (sensorPlugin.functions.update)
+			if (sensorPlugin.functions.Update)
 			{
 				context.sensorPlugin = &sensorPlugin;
 				context.success      = true;
 
 				api.sensors = sensorPlugin.sensors;
-				sensorPlugin.functions.update(context, api);
+				sensorPlugin.functions.Update(context, api);
 			}
 		}
 	}
@@ -1136,6 +1306,21 @@ Simulation_Update(SimulationState& s)
 							break;
 						}
 					}
+					break;
+				}
+
+				case IdOf<SetPluginLoadStates>:
+				{
+					DeserializeMessage<SetPluginLoadStates>(bytes);
+					SetPluginLoadStates& setState = (SetPluginLoadStates&) bytes[0];
+					Assert(setState.kind);
+					if (setState.kind == PluginKind::Sensor)
+					{
+						Slice<SensorPluginRef> refs = (Slice<SensorPluginRef>) (setState.refs);
+						OnSetSensorPluginStates(s, refs, setState.loadStates);
+					}
+					else
+						OnSetWidgetPluginStates(s, (Slice<WidgetPluginRef>) setState.refs, setState.loadStates);
 					break;
 				}
 			}
@@ -1276,7 +1461,8 @@ Simulation_Teardown(SimulationState& s)
 	// TODO: Decide how much we really care about simulation level teardown.
 	// Remove this once plugin loading and unloading is solidified. It's good to
 	// do this for testing, but it's unnecessary work in the normal teardown
-	// case.
+	// case. (We still need to teardown plugins though to give them a chance to
+	// save changes and whatnot.)
 
 	ConnectionState& guiCon = s.guiConnection;
 	if (guiCon.pipe.state == PipeState::Connected)
@@ -1284,11 +1470,21 @@ Simulation_Teardown(SimulationState& s)
 	Connection_Teardown(guiCon);
 
 	for (u32 i = 0; i < s.widgetPlugins.length; i++)
-		UnloadWidgetPlugin(s, s.widgetPlugins[i]);
+	{
+		WidgetPlugin& widgetPlugin = s.widgetPlugins[i];
+		if (widgetPlugin.header.loadState == PluginLoadState::Loaded)
+			UnloadWidgetPlugin(s, widgetPlugin);
+		UnregisterWidgetPlugin(s, widgetPlugin);
+	}
 	List_Free(s.widgetPlugins);
 
 	for (u32 i = 0; i < s.sensorPlugins.length; i++)
-		UnloadSensorPlugin(s, s.sensorPlugins[i]);
+	{
+		SensorPlugin& sensorPlugin = s.sensorPlugins[i];
+		if (sensorPlugin.header.loadState == PluginLoadState::Loaded)
+			UnloadSensorPlugin(s, sensorPlugin);
+		UnregisterSensorPlugin(s, sensorPlugin);
+	}
 	List_Free(s.sensorPlugins);
 
 	PluginLoader_Teardown(*s.pluginLoader);

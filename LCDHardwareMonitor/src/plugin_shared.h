@@ -4,6 +4,9 @@ enum struct PluginKind
 	Sensor,
 	Widget,
 };
+b8 operator!(PluginKind kind) { return kind == PluginKind::Null; }
+
+using PluginRef = ListRef<void>;
 
 enum struct PluginLanguage
 {
@@ -15,7 +18,9 @@ enum struct PluginLanguage
 enum struct PluginLoadState
 {
 	Null,
+	Loading,
 	Loaded,
+	Unloading,
 	Unloaded,
 	Broken,
 };

@@ -269,24 +269,34 @@
 								<Button
 									x:Name="btn"
 									Content="Load"
-									Click="LoadPlugin_Click" />
-
-								<!-- TODO: Ensure IsEnabled resets -->
-								<!-- TODO: Ensure this updates when plugin state changes -->
-								<!-- TODO: Add states for Loading and Unloading so we can disable the button while waiting. Same for the load/kill process button -->
+									Style="{StaticResource MetroFlatButton}"
+									Click="LoadPlugin_Click">
+								</Button>
 
 								<DataTemplate.Triggers>
 									<DataTrigger Binding="{Binding LoadState}" Value="{x:Static lhmi:PluginLoadState.Null}">
 										<Setter TargetName="btn" Property="IsEnabled" Value="false"/>
+										<Setter TargetName="btn" Property="Content" Value="Null"/>
+									</DataTrigger>
+									<DataTrigger Binding="{Binding LoadState}" Value="{x:Static lhmi:PluginLoadState.Loading}">
+										<Setter TargetName="btn" Property="IsEnabled" Value="false"/>
+										<Setter TargetName="btn" Property="Content" Value="Load"/>
 									</DataTrigger>
 									<DataTrigger Binding="{Binding LoadState}" Value="{x:Static lhmi:PluginLoadState.Loaded}">
+										<Setter TargetName="btn" Property="IsEnabled" Value="true"/>
+										<Setter TargetName="btn" Property="Content" Value="Unload"/>
+									</DataTrigger>
+									<DataTrigger Binding="{Binding LoadState}" Value="{x:Static lhmi:PluginLoadState.Unloading}">
+										<Setter TargetName="btn" Property="IsEnabled" Value="false"/>
 										<Setter TargetName="btn" Property="Content" Value="Unload"/>
 									</DataTrigger>
 									<DataTrigger Binding="{Binding LoadState}" Value="{x:Static lhmi:PluginLoadState.Unloaded}">
+										<Setter TargetName="btn" Property="IsEnabled" Value="true"/>
 										<Setter TargetName="btn" Property="Content" Value="Load"/>
 									</DataTrigger>
 									<DataTrigger Binding="{Binding LoadState}" Value="{x:Static lhmi:PluginLoadState.Broken}">
 										<Setter TargetName="btn" Property="IsEnabled" Value="false"/>
+										<Setter TargetName="btn" Property="Content" Value="Broken"/>
 									</DataTrigger>
 								</DataTemplate.Triggers>
 							</DataTemplate>
@@ -320,6 +330,10 @@
 							<Button.Style>
 								<Style TargetType="Button" BasedOn="{StaticResource MetroFlatButton}">
 									<Style.Triggers>
+										<DataTrigger Binding="{Binding ProcessState}" Value="{x:Static lhmi:ProcessState.Null}">
+											<Setter Property="IsEnabled" Value="false"/>
+											<Setter Property="Content" Value="Null"/>
+										</DataTrigger>
 										<DataTrigger Binding="{Binding ProcessState}" Value="{x:Static lhmi:ProcessState.Launching}">
 											<Setter Property="IsEnabled" Value="false"/>
 											<Setter Property="Content" Value="Launch"/>

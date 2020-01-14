@@ -12,7 +12,6 @@ using namespace System;
 using namespace System::IO;
 using namespace System::Reflection;
 using namespace System::Runtime::InteropServices;
-using CLRString = System::String;
 
 // NOTE: Cross domain function calls average 200ns with the delegate pattern.
 // Try playing with security settings if optimizing this
@@ -193,7 +192,7 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 
 	generic <typename T>
 	static b8
-	LoadAssemblyAndInstantiateType(::String _fileName, T% instance)
+	LoadAssemblyAndInstantiateType(LHMString _fileName, T% instance)
 	{
 		// NOTE: T^ and T^% map back to plain T
 		CLRString^ typeName = T::typeid->FullName;

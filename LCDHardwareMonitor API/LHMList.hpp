@@ -21,14 +21,12 @@
 //   Append returns a nullptr instead of a pointer to the new slot.
 
 // TODO: Consider renaming this to Handle or something. Ref is overloaded
-struct ListRefBase
-{
-	u32 index;
-};
-
 template<typename T>
-struct ListRef : ListRefBase
+struct ListRef
 {
+	// TODO: Rename to value. This is not an index
+	u32 index;
+
 	static const ListRef<T> Null;
 	operator b8() { return *this != Null; }
 };
@@ -70,16 +68,15 @@ struct Slice
 	u32 stride;
 	T*  data;
 
-	                                 Slice()                                   { length = 0;                    stride = sizeof(T);            data = nullptr;            }
-	template<typename U>             Slice(u32 _length, U* _data)              { length = _length;              stride = sizeof(U);            data = _data;              }
-	template<typename U>             Slice(u32 _length, u32 _stride, U* _data) { length = _length;              stride = _stride;              data = _data;              }
-	template<typename U>             Slice(const List<U>& list)                { length = list.length;          stride = sizeof(U);            data = list.data;          }
-	template<typename U>             Slice(const Slice<U>& slice)              { length = slice.length;         stride = slice.stride;         data = slice.data;         }
-	template<typename U>             Slice(const U& element)                   { length = 1;                    stride = sizeof(U);            data = (U*) &element;      }
-	template<typename U, u32 Length> Slice(const U(&arr)[Length])              { length = Length;               stride = sizeof(U);            data = (U*) arr;           }
-	//template<typename U>             Slice(ScopedList<U>& list)                { length = list.resource.length; stride = list.resource.stride; data = list.resource.data; }
+	                     Slice()                      { length = 0;           stride = sizeof(T); data = nullptr;        }
+	                     Slice(const T& element)      { length = 1;           stride = sizeof(T); data = (T*) &element;  }
+	                     Slice(const List<T>& list)   { length = list.length; stride = sizeof(T); data = (T*) list.data; }
+	template<u32 Length> Slice(const T(&arr)[Length]) { length = Length;      stride = sizeof(T); data = (T*) arr;       }
 
-	operator Slice<Slice<T>>() { return { 1, sizeof(Slice<T>), this }; }
+	//operator Slice<Slice<T>>() { return { 1, sizeof(Slice<T>), this }; }
+
+	template<typename U>
+	explicit operator Slice<U>() { return *(Slice<U>*) this; }
 
 	using RefT = ListRef<T>;
 	inline T& operator[] (RefT r) { return (T&) ((u8*) data)[stride*(r.index - 1)]; }
@@ -400,26 +397,26 @@ List_Shrink(List<T>& list)
 
 // TODO: Consider renaming to List_SizeOfData
 template<typename T>
-inline size
+inline u32
 List_SizeOf(List<T>& list)
 {
-	size result = list.length * sizeof(T);
+	u32 result = list.length * sizeof(T);
 	return result;
 }
 
 template<typename T>
-inline size
+inline u32
 List_SizeOf(Slice<T>& slice)
 {
-	size result = slice.length * sizeof(T);
+	u32 result = slice.length * sizeof(T);
 	return result;
 }
 
 template<typename T>
-inline size
+inline u32
 List_SizeOfRemaining(List<T>& list)
 {
-	size result = (list.capacity - list.length) * sizeof(T);
+	u32 result = (list.capacity - list.length) * sizeof(T);
 	return result;
 }
 

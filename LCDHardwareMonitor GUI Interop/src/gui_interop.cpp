@@ -37,6 +37,7 @@ namespace LCDHardwareMonitor::GUI
 	using namespace System::Windows;
 	using namespace System::Windows::Input;
 
+	// TODO: Should this file use LHMAPICLR?
 	using CLRString = System::String;
 	using CLRMouseButton = System::Windows::Input::MouseButton;
 	using LHMString = ::String;
@@ -51,13 +52,16 @@ namespace LCDHardwareMonitor::GUI
 	public enum struct PluginLoadState
 	{
 		Null,
+		Loading,
 		Loaded,
+		Unloading,
 		Unloaded,
 		Broken,
 	};
 
 	public value struct PluginInfo
 	{
+		property UInt32     Index; // HACK: Remove this
 		property UInt32     Ref;
 		property CLRString^ Name;
 		property PluginKind Kind;
@@ -228,10 +232,26 @@ namespace LCDHardwareMonitor::GUI
 			return (bool) success;
 		}
 
-		static void
-		SetPluginLoadState(PluginKind, UInt32, PluginLoadState)
+		static bool
+		SetPluginLoadState(SimulationState^ simState, UInt32 index, PluginLoadState loadState)
 		{
-			// TODO: Implement
+			PluginInfo pluginInfo = simState->Plugins[index];
+			Assert(pluginInfo.Index == index);
+
+			// TODO: Try using PluginRef in managed land
+			PluginRef nRef = { pluginInfo.Ref };
+			::PluginLoadState nLoadState = (::PluginLoadState) loadState;
+
+			Message::SetPluginLoadStates setLoadStates = {};
+			setLoadStates.kind = (::PluginKind) pluginInfo.Kind;
+			setLoadStates.refs = nRef;
+			setLoadStates.loadStates = nLoadState;
+			b8 success = SerializeAndQueueMessage(state.simConnection, setLoadStates);
+
+			pluginInfo.LoadState = loadState == PluginLoadState::Unloaded ? PluginLoadState::Unloading : PluginLoadState::Loading;
+			simState->Plugins[index] = pluginInfo;
+			simState->NotifyPropertyChanged("");
+			return (bool) success;
 		}
 
 		// -------------------------------------------------------------------------------------------
@@ -283,6 +303,7 @@ namespace LCDHardwareMonitor::GUI
 			for (u32 i = 0; i < pluginsAdded.infos.length; i++)
 			{
 				PluginInfo mPluginInfo = {};
+				mPluginInfo.Index   = (UInt32) simState.Plugins->Count;
 				mPluginInfo.Ref     = pluginsAdded.refs[i].index;
 				mPluginInfo.Name    = ToManagedString(pluginsAdded.infos[i].name);
 				mPluginInfo.Kind    = (PluginKind) pluginsAdded.kind;
@@ -290,6 +311,7 @@ namespace LCDHardwareMonitor::GUI
 				mPluginInfo.Version = pluginsAdded.infos[i].version;
 				simState.Plugins->Add(mPluginInfo);
 			}
+			simState.NotifyPropertyChanged("");
 		}
 
 		static void
@@ -330,6 +352,7 @@ namespace LCDHardwareMonitor::GUI
 					simState.Sensors->Add(mSensor);
 				}
 			}
+			simState.NotifyPropertyChanged("");
 		}
 
 		static void
@@ -349,6 +372,7 @@ namespace LCDHardwareMonitor::GUI
 					simState.WidgetDescs->Add(mWidgetDesc);
 				}
 			}
+			simState.NotifyPropertyChanged("");
 		}
 
 		// -------------------------------------------------------------------------------------------

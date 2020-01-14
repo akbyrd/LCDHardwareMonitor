@@ -1,3 +1,15 @@
+Load/Unload plugins
+	[x] Separate plugin registration from loading and unloading
+	[x] Get response working
+	[x] State machine
+	[x] Stuff ref in managed struct
+	[ ] Split PluginInfo and PluginHeader out of specific plugins
+	[ ] Change PluginRef to be a proper type
+	[ ] Fix up OnPluginStatesChanged
+	[ ] // TODO: Try using PluginRef in managed land
+	[ ] // TODO: Lame.
+
+Normalize Sim-GUI function naming (On* vs *)
 Figure out what happens when memory allocations fail
 Start using Scoped
 Namespaces
@@ -5,7 +17,7 @@ Native namespace for interop?
 String_FromView vs Create vs Copy
 
 Try removing WidgetData
-Remove default: Assert(false); break;
+Remove default: Assert(false); break; Ensure warnings catch missing cases
 Need to handle mouse position when preview isn't visible
 
 Interesting...
@@ -16,7 +28,6 @@ Interesting...
 	#endif
 
 GUI Control
-	Load/Unload plugins
 	Add/Remove widgets
 	Configure widgets
 	Configure global settings (update rate)
