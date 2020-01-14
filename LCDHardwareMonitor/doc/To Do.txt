@@ -3,9 +3,13 @@ Load/Unload plugins
 	[x] Get response working
 	[x] State machine
 	[x] Stuff ref in managed struct
-	[ ] Split PluginInfo and PluginHeader out of specific plugins
-	[ ] Change PluginRef to be a proper type
-	[ ] Fix up OnPluginStatesChanged
+	[x] Split PluginInfo and PluginHeader out of specific plugins
+	[x] Change PluginRef to be a proper type
+	[x] Fix up OnPluginStatesChanged
+	[x] Inline PluginHeader
+	[x] Double check serialization functions
+	[ ] Mimic struct layout on managed side
+	[ ] Update natvis
 	[ ] // TODO: Try using PluginRef in managed land
 	[ ] // TODO: Lame.
 
@@ -15,10 +19,12 @@ Start using Scoped
 Namespaces
 Native namespace for interop?
 String_FromView vs Create vs Copy
+Move success next to first usage
 
 Try removing WidgetData
 Remove default: Assert(false); break; Ensure warnings catch missing cases
 Need to handle mouse position when preview isn't visible
+Need to actually avoid processing broken plugins
 
 Interesting...
 	#if __WIN

@@ -61,7 +61,6 @@ namespace LCDHardwareMonitor::GUI
 
 	public value struct PluginInfo
 	{
-		property UInt32     Index; // HACK: Remove this
 		property UInt32     Ref;
 		property CLRString^ Name;
 		property PluginKind Kind;
@@ -233,23 +232,22 @@ namespace LCDHardwareMonitor::GUI
 		}
 
 		static bool
-		SetPluginLoadState(SimulationState^ simState, UInt32 index, PluginLoadState loadState)
+		SetPluginLoadState(SimulationState^ simState, UInt32 ref, PluginLoadState loadState)
 		{
-			PluginInfo pluginInfo = simState->Plugins[index];
-			Assert(pluginInfo.Index == index);
+			PluginInfo pluginInfo = simState->Plugins[ref - 1];
+			Assert(pluginInfo.Ref == ref);
 
 			// TODO: Try using PluginRef in managed land
 			PluginRef nRef = { pluginInfo.Ref };
 			::PluginLoadState nLoadState = (::PluginLoadState) loadState;
 
 			Message::SetPluginLoadStates setLoadStates = {};
-			setLoadStates.kind = (::PluginKind) pluginInfo.Kind;
 			setLoadStates.refs = nRef;
 			setLoadStates.loadStates = nLoadState;
 			b8 success = SerializeAndQueueMessage(state.simConnection, setLoadStates);
 
 			pluginInfo.LoadState = loadState == PluginLoadState::Unloaded ? PluginLoadState::Unloading : PluginLoadState::Loading;
-			simState->Plugins[index] = pluginInfo;
+			simState->Plugins[ref - 1] = pluginInfo;
 			simState->NotifyPropertyChanged("");
 			return (bool) success;
 		}
@@ -303,12 +301,12 @@ namespace LCDHardwareMonitor::GUI
 			for (u32 i = 0; i < pluginsAdded.infos.length; i++)
 			{
 				PluginInfo mPluginInfo = {};
-				mPluginInfo.Index   = (UInt32) simState.Plugins->Count;
 				mPluginInfo.Ref     = pluginsAdded.refs[i].index;
 				mPluginInfo.Name    = ToManagedString(pluginsAdded.infos[i].name);
-				mPluginInfo.Kind    = (PluginKind) pluginsAdded.kind;
+				mPluginInfo.Kind    = (PluginKind) pluginsAdded.kinds[i];
 				mPluginInfo.Author  = ToManagedString(pluginsAdded.infos[i].author);
 				mPluginInfo.Version = pluginsAdded.infos[i].version;
+				// TODO: Re-use empty plugin slots
 				simState.Plugins->Add(mPluginInfo);
 			}
 			simState.NotifyPropertyChanged("");
@@ -322,7 +320,7 @@ namespace LCDHardwareMonitor::GUI
 				for (u32 j = 0; j < (u32) simState.Plugins->Count; j++)
 				{
 					PluginInfo p = simState.Plugins[(i32) j];
-					if ((::PluginKind) p.Kind == statesChanged.kind && p.Ref == statesChanged.refs[i].index)
+					if ((::PluginKind) p.Kind == statesChanged.kinds[i] && p.Ref == statesChanged.refs[i].index)
 					{
 						p.LoadState = (PluginLoadState) statesChanged.loadStates[i];
 						simState.Plugins[(i32) j] = p;
@@ -343,7 +341,7 @@ namespace LCDHardwareMonitor::GUI
 					::Sensor& sensor = sensors[j];
 
 					Sensor mSensor = {};
-					mSensor.PluginRef  = sensorsAdded.pluginRefs[i].index;
+					mSensor.PluginRef  = sensorsAdded.sensorPluginRefs[i].index;
 					mSensor.Ref        = sensor.ref.index;
 					mSensor.Name       = ToManagedString(sensor.name);
 					mSensor.Identifier = ToManagedString(sensor.identifier);
@@ -366,7 +364,7 @@ namespace LCDHardwareMonitor::GUI
 					::WidgetDesc& desc = widgetDescs[j];
 
 					WidgetDesc mWidgetDesc = {};
-					mWidgetDesc.PluginRef = widgetDescsAdded.pluginRefs[i].index;
+					mWidgetDesc.PluginRef = widgetDescsAdded.widgetPluginRefs[i].index;
 					mWidgetDesc.Ref       = desc.ref.index;
 					mWidgetDesc.Name      = ToManagedString(desc.name);
 					simState.WidgetDescs->Add(mWidgetDesc);

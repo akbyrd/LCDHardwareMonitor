@@ -5,6 +5,7 @@
 #include "plugin_shared.h"
 
 #pragma managed
+#pragma make_public(Plugin)
 #pragma make_public(SensorPlugin)
 #pragma make_public(WidgetPlugin)
 
@@ -28,10 +29,10 @@ using namespace System::Runtime::InteropServices;
 public interface class
 ILHMPluginLoader
 {
-	b8 LoadSensorPlugin   (SensorPlugin& sensorPlugin);
-	b8 UnloadSensorPlugin (SensorPlugin& sensorPlugin);
-	b8 LoadWidgetPlugin   (WidgetPlugin& widgetPlugin);
-	b8 UnloadWidgetPlugin (WidgetPlugin& widgetPlugin);
+	b8 LoadSensorPlugin   (Plugin& plugin, SensorPlugin& sensorPlugin);
+	b8 UnloadSensorPlugin (Plugin& plugin, SensorPlugin& sensorPlugin);
+	b8 LoadWidgetPlugin   (Plugin& plugin, WidgetPlugin& widgetPlugin);
+	b8 UnloadWidgetPlugin (Plugin& plugin, WidgetPlugin& widgetPlugin);
 };
 
 [ComVisible(false)]
@@ -81,79 +82,79 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	}
 
 	virtual b8
-	LoadSensorPlugin(SensorPlugin& sensorPlugin)
+	LoadSensorPlugin(Plugin& plugin, SensorPlugin& sensorPlugin)
 	{
 		b8 success;
 
-		success = LoadPlugin(sensorPlugin.header);
+		success = LoadPlugin(plugin);
 		if (!success) return false;
 
-		LHMPluginLoader% pluginLoader = GetDomainResidentLoader(sensorPlugin.header);
-		success = pluginLoader.InitializeSensorPlugin(sensorPlugin);
+		LHMPluginLoader% pluginLoader = GetDomainResidentLoader(plugin);
+		success = pluginLoader.InitializeSensorPlugin(plugin, sensorPlugin);
 		if (!success) return false;
 
 		return true;
 	}
 
 	virtual b8
-	UnloadSensorPlugin(SensorPlugin& sensorPlugin)
+	UnloadSensorPlugin(Plugin& plugin, SensorPlugin& sensorPlugin)
 	{
 		b8 success;
 
-		LHMPluginLoader% pluginLoader = GetDomainResidentLoader(sensorPlugin.header);
+		LHMPluginLoader% pluginLoader = GetDomainResidentLoader(plugin);
 		success = pluginLoader.TeardownSensorPlugin(sensorPlugin);
 		if (!success) return false;
 
-		success = UnloadPlugin(sensorPlugin.header);
+		success = UnloadPlugin(plugin);
 		if (!success) return false;
 
 		return true;
 	}
 
 	virtual b8
-	LoadWidgetPlugin(WidgetPlugin& widgetPlugin)
+	LoadWidgetPlugin(Plugin& plugin, WidgetPlugin& widgetPlugin)
 	{
 		b8 success;
 
-		success = LoadPlugin(widgetPlugin.header);
+		success = LoadPlugin(plugin);
 		if (!success) return false;
 
-		LHMPluginLoader% pluginLoader = GetDomainResidentLoader(widgetPlugin.header);
-		success = pluginLoader.InitializeWidgetPlugin(widgetPlugin);
+		LHMPluginLoader% pluginLoader = GetDomainResidentLoader(plugin);
+		success = pluginLoader.InitializeWidgetPlugin(plugin, widgetPlugin);
 		if (!success) return false;
 
 		return true;
 	}
 
 	virtual b8
-	UnloadWidgetPlugin(WidgetPlugin& widgetPlugin)
+	UnloadWidgetPlugin(Plugin& plugin, WidgetPlugin& widgetPlugin)
 	{
 		b8 success;
 
-		LHMPluginLoader% pluginLoader = GetDomainResidentLoader(widgetPlugin.header);
+		LHMPluginLoader% pluginLoader = GetDomainResidentLoader(plugin);
 		success = pluginLoader.TeardownWidgetPlugin(widgetPlugin);
 		if (!success) return false;
 
-		success = UnloadPlugin(widgetPlugin.header);
+		success = UnloadPlugin(plugin);
 		if (!success) return false;
 
 		return true;
 	}
 
 	LHMPluginLoader%
-	GetDomainResidentLoader(PluginHeader pluginHeader)
+	GetDomainResidentLoader(Plugin plugin)
 	{
-		GCHandle         appDomainHandle = (GCHandle) (IntPtr) pluginHeader.userData;
+		GCHandle         appDomainHandle = (GCHandle) (IntPtr) plugin.userData;
 		AppDomain%       appDomain       = *(AppDomain^) appDomainHandle.Target;
 		LHMPluginLoader% pluginLoader    = *(LHMPluginLoader^) appDomain.DomainManager;
 		return pluginLoader;
 	}
 
 	b8
-	LoadPlugin(PluginHeader& pluginHeader)
+	LoadPlugin(Plugin& plugin)
 	{
-		auto name      = gcnew CLRString(pluginHeader.fileName.data);
-		auto directory = gcnew CLRString(pluginHeader.directory.data);
+		auto name      = gcnew CLRString(plugin.fileName.data);
+		auto directory = gcnew CLRString(plugin.directory.data);
 
 		// NOTE: LHMAppDomainManager is going to get loaded into each new
 		// AppDomain so we need to let ApplicationBase get inherited from the
@@ -169,18 +170,18 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 		//domainSetup.ShadowCopyFiles       = true
 
 		AppDomain^ appDomain = CreateDomain(name, nullptr, %domainSetup);
-		pluginHeader.userData = (void*) (IntPtr) GCHandle::Alloc(appDomain);
+		plugin.userData = (void*) (IntPtr) GCHandle::Alloc(appDomain);
 		return true;
 	}
 
 	b8
-	UnloadPlugin(PluginHeader& pluginHeader)
+	UnloadPlugin(Plugin& plugin)
 	{
-		GCHandle appDomainHandle = (GCHandle) (IntPtr) pluginHeader.userData;
+		GCHandle appDomainHandle = (GCHandle) (IntPtr) plugin.userData;
 
 		AppDomain::Unload((AppDomain^) appDomainHandle.Target);
 		appDomainHandle.Free();
-		pluginHeader.userData = nullptr;
+		plugin.userData = nullptr;
 		return true;
 	}
 
@@ -224,16 +225,17 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	}
 
 	b8
-	InitializeSensorPlugin(SensorPlugin& sensorPlugin)
+	InitializeSensorPlugin(Plugin& plugin, SensorPlugin& sensorPlugin)
 	{
-		b8 success = LoadAssemblyAndInstantiateType(sensorPlugin.header.fileName, sensorPluginCLR.pluginInstance);
+		b8 success = LoadAssemblyAndInstantiateType(plugin.fileName, sensorPluginCLR.pluginInstance);
 		if (!success) return false;
 
-		sensorPluginCLR.pluginInstance->GetPluginInfo(sensorPlugin.info);
+		sensorPluginCLR.pluginInstance->GetPluginInfo(plugin.info);
 
 		// DEBUG: Remove me (just for fast loading)
 		#if true
 		#pragma message("warning: Sensor plugin init temporarily disabled for faster loading")
+		UNUSED(sensorPlugin);
 		#else
 		auto iInitialize = dynamic_cast<ISensorInitialize^>(sensorPluginCLR.pluginInstance);
 		if (iInitialize)
@@ -270,12 +272,12 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	}
 
 	b8
-	InitializeWidgetPlugin(WidgetPlugin& widgetPlugin)
+	InitializeWidgetPlugin(Plugin& plugin, WidgetPlugin& widgetPlugin)
 	{
-		b8 success = LoadAssemblyAndInstantiateType(widgetPlugin.header.fileName, widgetPluginCLR.pluginInstance);
+		b8 success = LoadAssemblyAndInstantiateType(plugin.fileName, widgetPluginCLR.pluginInstance);
 		if (!success) return false;
 
-		widgetPluginCLR.pluginInstance->GetPluginInfo(widgetPlugin.info);
+		widgetPluginCLR.pluginInstance->GetPluginInfo(plugin.info);
 
 		auto iInitialize = dynamic_cast<IWidgetPluginInitialize^>(widgetPluginCLR.pluginInstance);
 		if (iInitialize)

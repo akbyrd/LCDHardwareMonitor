@@ -77,6 +77,7 @@
 		<DisplayString>{{ {index} }}</DisplayString>
 	</Type>
 
+	<!-- TODO: Broken -->
 	<Type Name="SensorPlugin">
 		<DisplayString>{{ {info.name,sb} }}</DisplayString>
 	</Type>
@@ -89,6 +90,7 @@
 		<DisplayString>{{ {name,s} = {value,g} }}</DisplayString>
 	</Type>
 
+	<!-- TODO: Broken -->
 	<Type Name="WidgetPlugin">
 		<DisplayString>{{ {info.name,sb} }}</DisplayString>
 	</Type>
@@ -97,7 +99,7 @@
 		<DisplayString>{{ {(size_t) getPluginInfo,x}    {(size_t) initialize,x}    {(size_t) update,x}    {(size_t) teardown,x} }}</DisplayString>
 	</Type>
 
-	<Type Name="PluginHeader">
+	<Type Name="Plugin">
 		<DisplayString>{{ {fileName,sb} }}</DisplayString>
 	</Type>
 

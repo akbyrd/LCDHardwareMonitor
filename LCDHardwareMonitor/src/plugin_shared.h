@@ -6,8 +6,6 @@ enum struct PluginKind
 };
 b8 operator!(PluginKind kind) { return kind == PluginKind::Null; }
 
-using PluginRef = ListRef<void>;
-
 enum struct PluginLanguage
 {
 	Null,
@@ -25,23 +23,27 @@ enum struct PluginLoadState
 	Broken,
 };
 
-struct PluginHeader
+struct Plugin;
+using PluginRef = List<Plugin>::RefT;
+
+struct Plugin
 {
+	PluginRef       ref;
+	u32             rawRefToKind;
+	PluginInfo      info;
+	PluginKind      kind;
+	PluginLanguage  language;
 	PluginLoadState loadState;
 	String          fileName;
 	String          directory;
-	PluginKind      kind;
-	PluginLanguage  language;
 	void*           userData;
 };
 
 struct SensorPlugin
 {
 	SensorPluginRef       ref;
-	PluginHeader          header;
-	PluginInfo            info;
+	PluginRef             pluginRef;
 	SensorPluginFunctions functions;
-
 	List<Sensor>          sensors;
 	//List<SensorRef> activeSensors;
 };
@@ -59,9 +61,7 @@ struct WidgetData
 struct WidgetPlugin
 {
 	WidgetPluginRef       ref;
-	PluginHeader          header;
-	PluginInfo            info;
+	PluginRef             pluginRef;
 	WidgetPluginFunctions functions;
-
 	List<WidgetData>      widgetDatas;
 };

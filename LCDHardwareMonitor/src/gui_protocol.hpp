@@ -30,16 +30,16 @@ namespace Message
 	struct PluginsAdded
 	{
 		Header             header;
-		PluginKind         kind; // TODO: Remove
 		Slice<PluginRef>   refs;
+		Slice<PluginKind>  kinds;
 		Slice<PluginInfo>  infos;
 	};
 
 	struct PluginStatesChanged
 	{
 		Header                 header;
-		PluginKind             kind; // TODO: Remove
 		Slice<PluginRef>       refs;
+		Slice<PluginKind>      kinds;
 		Slice<PluginLoadState> loadStates;
 	};
 
@@ -47,7 +47,7 @@ namespace Message
 	struct SensorsAdded
 	{
 		Header                 header;
-		Slice<SensorPluginRef> pluginRefs;
+		Slice<SensorPluginRef> sensorPluginRefs;
 		Slice<List<Sensor>>    sensors;
 	};
 
@@ -55,7 +55,7 @@ namespace Message
 	struct WidgetDescsAdded
 	{
 		Header                   header;
-		Slice<WidgetPluginRef>   pluginRefs;
+		Slice<WidgetPluginRef>   widgetPluginRefs;
 		Slice<Slice<WidgetDesc>> descs;
 	};
 
@@ -68,7 +68,7 @@ namespace Message
 	struct MouseMove
 	{
 		Header header;
-		v2i pos;
+		v2i    pos;
 	};
 
 	enum struct ButtonState
@@ -90,8 +90,8 @@ namespace Message
 
 	struct MouseButtonChange
 	{
-		Header header;
-		v2i pos;
+		Header      header;
+		v2i         pos;
 		MouseButton button;
 		ButtonState state;
 	};
@@ -99,7 +99,6 @@ namespace Message
 	struct SetPluginLoadStates
 	{
 		Header                 header;
-		PluginKind             kind; // TODO: Remove
 		Slice<PluginRef>       refs;
 		Slice<PluginLoadState> loadStates;
 	};
@@ -522,8 +521,8 @@ void
 Serialize(ByteStream& stream, Message::PluginsAdded& pluginsAdded)
 {
 	Serialize(stream, pluginsAdded.header);
-	Serialize(stream, pluginsAdded.kind);
 	Serialize(stream, pluginsAdded.refs);
+	Serialize(stream, pluginsAdded.kinds);
 	Serialize(stream, pluginsAdded.infos);
 }
 
@@ -531,8 +530,8 @@ void
 Serialize(ByteStream& stream, Message::PluginStatesChanged& statesChanged)
 {
 	Serialize(stream, statesChanged.header);
-	Serialize(stream, statesChanged.kind);
 	Serialize(stream, statesChanged.refs);
+	Serialize(stream, statesChanged.kinds);
 	Serialize(stream, statesChanged.loadStates);
 }
 
@@ -540,7 +539,6 @@ void
 Serialize(ByteStream& stream, Message::SetPluginLoadStates& pluginloadStates)
 {
 	Serialize(stream, pluginloadStates.header);
-	Serialize(stream, pluginloadStates.kind);
 	Serialize(stream, pluginloadStates.refs);
 	Serialize(stream, pluginloadStates.loadStates);
 }
@@ -557,7 +555,7 @@ void
 Serialize(ByteStream& stream, Message::SensorsAdded& sensorsAdded)
 {
 	Serialize(stream, sensorsAdded.header);
-	Serialize(stream, sensorsAdded.pluginRefs);
+	Serialize(stream, sensorsAdded.sensorPluginRefs);
 	Serialize(stream, sensorsAdded.sensors);
 }
 
@@ -575,7 +573,7 @@ void
 Serialize(ByteStream& stream, Message::WidgetDescsAdded& widgetDescsAdded)
 {
 	Serialize(stream, widgetDescsAdded.header);
-	Serialize(stream, widgetDescsAdded.pluginRefs);
+	Serialize(stream, widgetDescsAdded.widgetPluginRefs);
 	Serialize(stream, widgetDescsAdded.descs);
 }
 

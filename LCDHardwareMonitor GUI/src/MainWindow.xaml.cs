@@ -68,11 +68,11 @@ namespace LCDHardwareMonitor.GUI
 				default: Debug.Assert(false); return;
 
 				case PluginLoadState.Loaded:
-					Interop.SetPluginLoadState(simState, item.Index, PluginLoadState.Unloaded);
+					Interop.SetPluginLoadState(simState, item.Ref, PluginLoadState.Unloaded);
 					break;
 
 				case PluginLoadState.Unloaded:
-					Interop.SetPluginLoadState(simState, item.Index, PluginLoadState.Loaded);
+					Interop.SetPluginLoadState(simState, item.Ref, PluginLoadState.Loaded);
 					break;
 
 				// Button is disabled for these states
