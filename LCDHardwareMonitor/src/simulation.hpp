@@ -1450,13 +1450,13 @@ Simulation_Teardown(SimulationState& s)
 		if (plugin.kind == PluginKind::Widget)
 		{
 			// TODO: Can probably make this cleaner
-			SensorPluginRef ref = { plugin.rawRefToKind };
-			UnloadSensorPlugin(s, s.sensorPlugins[ref]);
+			WidgetPluginRef ref = { plugin.rawRefToKind };
+			UnloadWidgetPlugin(s, s.widgetPlugins[ref]);
 		}
 		if (plugin.kind == PluginKind::Sensor)
 		{
-			WidgetPluginRef ref = { plugin.rawRefToKind };
-			UnloadWidgetPlugin(s, s.widgetPlugins[ref]);
+			SensorPluginRef ref = { plugin.rawRefToKind };
+			UnloadSensorPlugin(s, s.sensorPlugins[ref]);
 		}
 		UnregisterPlugin(s, plugin);
 	}
