@@ -61,13 +61,18 @@ namespace LCDHardwareMonitor::GUI
 
 	public value struct PluginInfo
 	{
-		property UInt32     Ref;
 		property CLRString^ Name;
-		property PluginKind Kind;
 		property CLRString^ Author;
 		property UInt32     Version;
 
-		property PluginLoadState LoadState; // TODO: Probably belongs in another struct
+	};
+
+	public value struct Plugin
+	{
+		property UInt32          Ref;
+		property PluginLoadState LoadState;
+		property PluginInfo      Info;
+		property PluginKind      Kind;
 	};
 
 	public value struct Sensor
@@ -101,7 +106,7 @@ namespace LCDHardwareMonitor::GUI
 	public:
 		property UInt32                            Version;
 		property IntPtr                            RenderSurface;
-		property ObservableCollection<PluginInfo>^ Plugins;
+		property ObservableCollection<Plugin>^     Plugins;
 		property ObservableCollection<Sensor>^     Sensors;
 		property ObservableCollection<WidgetDesc>^ WidgetDescs;
 
@@ -114,7 +119,7 @@ namespace LCDHardwareMonitor::GUI
 		// Cruft
 		SimulationState()
 		{
-			Plugins           = gcnew ObservableCollection<PluginInfo>();
+			Plugins           = gcnew ObservableCollection<Plugin>();
 			Sensors           = gcnew ObservableCollection<Sensor>();
 			WidgetDescs       = gcnew ObservableCollection<WidgetDesc>();
 			ProcessStateTimer = gcnew Stopwatch();
@@ -234,11 +239,10 @@ namespace LCDHardwareMonitor::GUI
 		static bool
 		SetPluginLoadState(SimulationState^ simState, UInt32 ref, PluginLoadState loadState)
 		{
-			PluginInfo pluginInfo = simState->Plugins[ref - 1];
-			Assert(pluginInfo.Ref == ref);
+			Plugin plugin = simState->Plugins[ref - 1];
+			Assert(plugin.Ref == ref);
 
-			// TODO: Try using PluginRef in managed land
-			PluginRef nRef = { pluginInfo.Ref };
+			PluginRef nRef = { plugin.Ref };
 			::PluginLoadState nLoadState = (::PluginLoadState) loadState;
 
 			Message::SetPluginLoadStates setLoadStates = {};
@@ -246,8 +250,8 @@ namespace LCDHardwareMonitor::GUI
 			setLoadStates.loadStates = nLoadState;
 			b8 success = SerializeAndQueueMessage(state.simConnection, setLoadStates);
 
-			pluginInfo.LoadState = loadState == PluginLoadState::Unloaded ? PluginLoadState::Unloading : PluginLoadState::Loading;
-			simState->Plugins[ref - 1] = pluginInfo;
+			plugin.LoadState = loadState == PluginLoadState::Unloaded ? PluginLoadState::Unloading : PluginLoadState::Loading;
+			simState->Plugins[ref - 1] = plugin;
 			simState->NotifyPropertyChanged("");
 			return (bool) success;
 		}
@@ -300,14 +304,18 @@ namespace LCDHardwareMonitor::GUI
 		{
 			for (u32 i = 0; i < pluginsAdded.infos.length; i++)
 			{
+				Plugin mPlugin = {};
+				mPlugin.Ref  = pluginsAdded.refs[i].index;
+				mPlugin.Kind = (PluginKind) pluginsAdded.kinds[i];
+
 				PluginInfo mPluginInfo = {};
-				mPluginInfo.Ref     = pluginsAdded.refs[i].index;
 				mPluginInfo.Name    = ToManagedString(pluginsAdded.infos[i].name);
-				mPluginInfo.Kind    = (PluginKind) pluginsAdded.kinds[i];
 				mPluginInfo.Author  = ToManagedString(pluginsAdded.infos[i].author);
 				mPluginInfo.Version = pluginsAdded.infos[i].version;
+				mPlugin.Info = mPluginInfo;
+
 				// TODO: Re-use empty plugin slots
-				simState.Plugins->Add(mPluginInfo);
+				simState.Plugins->Add(mPlugin);
 			}
 			simState.NotifyPropertyChanged("");
 		}
@@ -319,7 +327,7 @@ namespace LCDHardwareMonitor::GUI
 			{
 				for (u32 j = 0; j < (u32) simState.Plugins->Count; j++)
 				{
-					PluginInfo p = simState.Plugins[(i32) j];
+					Plugin p = simState.Plugins[(i32) j];
 					if ((::PluginKind) p.Kind == statesChanged.kinds[i] && p.Ref == statesChanged.refs[i].index)
 					{
 						p.LoadState = (PluginLoadState) statesChanged.loadStates[i];

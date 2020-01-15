@@ -240,7 +240,7 @@
 				AutoGenerateColumns="false">
 				<DataGrid.Columns>
 					<DataGridTextColumn
-						Header="Name" Binding="{Binding Name}"
+						Header="Name" Binding="{Binding Info.Name}"
 						Width="*"
 						IsReadOnly="true" />
 					<DataGridTextColumn
@@ -248,11 +248,11 @@
 						Width="*"
 						IsReadOnly="true" />
 					<DataGridTextColumn
-						Header="Author" Binding="{Binding Author}"
+						Header="Author" Binding="{Binding Info.Author}"
 						Width="*"
 						IsReadOnly="true" />
 					<DataGridTextColumn
-						Header="Version" Binding="{Binding Version}"
+						Header="Version" Binding="{Binding Info.Version}"
 						Width="*"
 						IsReadOnly="true" />
 					<DataGridTextColumn

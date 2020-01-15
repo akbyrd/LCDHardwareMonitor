@@ -43,6 +43,7 @@ struct SensorPlugin
 {
 	SensorPluginRef       ref;
 	PluginRef             pluginRef;
+	StringSlice           name;
 	SensorPluginFunctions functions;
 	List<Sensor>          sensors;
 	//List<SensorRef> activeSensors;
@@ -62,6 +63,7 @@ struct WidgetPlugin
 {
 	WidgetPluginRef       ref;
 	PluginRef             pluginRef;
+	StringSlice           name;
 	WidgetPluginFunctions functions;
 	List<WidgetData>      widgetDatas;
 };

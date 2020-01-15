@@ -677,6 +677,8 @@ LoadSensorPlugin(SimulationState& s, Plugin& plugin)
 	LOG_IF(!success, return false,
 		Severity::Error, "Failed to load Sensor plugin '%'", plugin.fileName);
 
+	sensorPlugin->name = plugin.info.name;
+
 	success = List_Reserve(sensorPlugin->sensors, 32);
 	LOG_IF(!success, return false,
 		Severity::Error, "Failed to allocate Sensor list for Sensor plugin");
@@ -782,6 +784,8 @@ LoadWidgetPlugin(SimulationState& s, Plugin& plugin)
 	success = PluginLoader_LoadWidgetPlugin(*s.pluginLoader, plugin, *widgetPlugin);
 	LOG_IF(!success, return false,
 		Severity::Error, "Failed to load Widget plugin '%'", plugin.fileName);
+
+	widgetPlugin->name = plugin.info.name;
 
 	// TODO: try/catch?
 	if (widgetPlugin->functions.Initialize)

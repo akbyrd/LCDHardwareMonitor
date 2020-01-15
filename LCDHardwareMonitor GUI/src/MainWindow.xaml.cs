@@ -61,7 +61,7 @@ namespace LCDHardwareMonitor.GUI
 		private void LoadPlugin_Click(object sender, RoutedEventArgs e)
 		{
 			Button button = (Button) sender;
-			PluginInfo item = (PluginInfo) button.DataContext;
+			Plugin item = (Plugin) button.DataContext;
 
 			switch (item.LoadState)
 			{

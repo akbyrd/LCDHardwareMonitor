@@ -4,7 +4,7 @@
 		<DisplayString>{{ {data,sb} }}</DisplayString>
 	</Type>
 
-	<Type Name="StringView">
+	<Type Name="StringSlice">
 		<DisplayString>{{ {data,sb} }}</DisplayString>
 	</Type>
 
@@ -77,33 +77,31 @@
 		<DisplayString>{{ {index} }}</DisplayString>
 	</Type>
 
-	<!-- TODO: Broken -->
 	<Type Name="SensorPlugin">
-		<DisplayString>{{ {info.name,sb} }}</DisplayString>
+		<DisplayString>{{ {name} }}</DisplayString>
 	</Type>
 
 	<Type Name="SensorPluginFunctions">
-		<DisplayString>{{ {(size_t) getPluginInfo,x}    {(size_t) initialize,x}    {(size_t) update,x}    {(size_t) teardown,x} }}</DisplayString>
+		<DisplayString>{{ {(size_t) GetPluginInfo,x}    {(size_t) Initialize,x}    {(size_t) Update,x}    {(size_t) Teardown,x} }}</DisplayString>
 	</Type>
 
 	<Type Name="Sensor">
-		<DisplayString>{{ {name,s} = {value,g} }}</DisplayString>
+		<DisplayString>{{ {name} = {value,g} }}</DisplayString>
 	</Type>
 
-	<!-- TODO: Broken -->
 	<Type Name="WidgetPlugin">
-		<DisplayString>{{ {info.name,sb} }}</DisplayString>
+		<DisplayString>{{ {name} }}</DisplayString>
 	</Type>
 
 	<Type Name="WidgetPluginFunctions">
-		<DisplayString>{{ {(size_t) getPluginInfo,x}    {(size_t) initialize,x}    {(size_t) update,x}    {(size_t) teardown,x} }}</DisplayString>
+		<DisplayString>{{ {(size_t) GetPluginInfo,x}    {(size_t) Initialize,x}    {(size_t) Update,x}    {(size_t) Teardown,x} }}</DisplayString>
 	</Type>
 
 	<Type Name="Plugin">
-		<DisplayString>{{ {fileName,sb} }}</DisplayString>
+		<DisplayString>{{ {fileName} }}</DisplayString>
 	</Type>
 
 	<Type Name="PluginInfo">
-		<DisplayString>{{ {name,s} {author,s} v{version} }}</DisplayString>
+		<DisplayString>{{ {name} {author} v{version} }}</DisplayString>
 	</Type>
 </AutoVisualizer>

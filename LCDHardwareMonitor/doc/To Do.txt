@@ -1,18 +1,3 @@
-Load/Unload plugins
-	[x] Separate plugin registration from loading and unloading
-	[x] Get response working
-	[x] State machine
-	[x] Stuff ref in managed struct
-	[x] Split PluginInfo and PluginHeader out of specific plugins
-	[x] Change PluginRef to be a proper type
-	[x] Fix up OnPluginStatesChanged
-	[x] Inline PluginHeader
-	[x] Double check serialization functions
-	[ ] Mimic struct layout on managed side
-	[ ] Update natvis
-	[ ] // TODO: Try using PluginRef in managed land
-	[ ] // TODO: Lame.
-
 Normalize Sim-GUI function naming (On* vs *)
 Figure out what happens when memory allocations fail
 Start using Scoped
