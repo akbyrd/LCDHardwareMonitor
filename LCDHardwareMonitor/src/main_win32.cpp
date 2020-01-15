@@ -61,7 +61,6 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 		#define DEFER_TEARDOWN [&]
 	#endif
 
-	b8 success;
 	RendererState      rendererState     = {};
 	SimulationState    simulationState   = {};
 	PluginLoaderState  pluginLoaderState = {};
@@ -71,7 +70,7 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 	simulationState.renderSize = { 320, 240 };
 
 	// Renderer
-	success = Renderer_Initialize(rendererState, simulationState.renderSize);
+	b8 success = Renderer_Initialize(rendererState, simulationState.renderSize);
 	LOG_IF(!success, return -1, Severity::Fatal, "Failed to initialize the renderer");
 	DEFER_TEARDOWN { Renderer_Teardown(rendererState); };
 

@@ -567,14 +567,12 @@ Renderer_CreateMesh(RendererState& s, StringView name, Slice<Vertex> vertices, S
 
 	// Copy Data
 	{
-		b8 success;
-
 		mesh.vOffset = s.vertexBuffer.length;
 		mesh.iOffset = s.indexBuffer.length;
 		mesh.iCount  = indices.length;
 		mesh.iFormat = DXGI_FORMAT_R32_UINT;
 
-		success = List_AppendRange(s.vertexBuffer, vertices);
+		b8 success = List_AppendRange(s.vertexBuffer, vertices);
 		LOG_IF(!success, return Mesh::Null,
 			Severity::Error, "Failed to allocate space for % mesh vertices '%'", vertices.length, name);
 
@@ -665,9 +663,7 @@ Renderer_LoadVertexShader(RendererState& s, StringView name, StringView path, Sl
 	// Constant Buffers
 	if (cBufSizes.length)
 	{
-		b8 success;
-
-		success = List_Reserve(vs.constantBuffers, cBufSizes.length);
+		b8 success = List_Reserve(vs.constantBuffers, cBufSizes.length);
 		LOG_IF(!success, return VertexShader::Null,
 			Severity::Error, "Failed to allocate space for % VS constant buffers '%'", cBufSizes.length, path);
 
@@ -789,9 +785,7 @@ Renderer_LoadPixelShader(RendererState& s, StringView name, StringView path, Sli
 	// Constant Buffers
 	if (cBufSizes.length)
 	{
-		b8 success;
-
-		success = List_Reserve(ps.constantBuffers, cBufSizes.length);
+		b8 success = List_Reserve(ps.constantBuffers, cBufSizes.length);
 		LOG_IF(!success, return PixelShader::Null,
 			Severity::Error, "Failed to allocate space for % PS constant buffers '%'", cBufSizes.length, path);
 

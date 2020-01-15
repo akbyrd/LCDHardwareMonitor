@@ -229,7 +229,6 @@ GetWorkingDirectory()
 static Bytes
 LoadFile(StringView path, u32 padding = 0)
 {
-	b8 success;
 	Bytes result = {};
 	{
 		auto resultGuard = guard { List_Free(result); };
@@ -255,7 +254,7 @@ LoadFile(StringView path, u32 padding = 0)
 		}
 
 		LARGE_INTEGER size_win32;
-		success = GetFileSizeEx(file, &size_win32);
+		b8 success = GetFileSizeEx(file, &size_win32);
 		LOG_LAST_ERROR_IF(!success, return result,
 			Severity::Warning, "Failed to get file size '%'", path);
 		LOG_IF(size_win32.QuadPart > u32Max - padding, return result,
@@ -817,14 +816,12 @@ Platform_WritePipe(Pipe& pipe, Bytes bytes)
 PipeResult
 Platform_ReadPipe(Pipe& pipe, Bytes& bytes)
 {
-	b8 success;
-
 	bytes.length = 0;
 
 	if (pipe.state != PipeState::Connected) return PipeResult::TransientFailure;
 
 	u32 available = 0;
-	success = PeekNamedPipe(
+	b8 success = PeekNamedPipe(
 		pipe.impl->handle,
 		nullptr,
 		0,

@@ -221,11 +221,9 @@ ValidatePluginInfo(PluginInfo& pluginInfo)
 b8
 PluginLoader_LoadSensorPlugin(PluginLoaderState& s, Plugin& plugin, SensorPlugin& sensorPlugin)
 {
-	b8 success;
-
 	auto pluginGuard = guard { plugin.loadState = PluginLoadState::Broken; };
 
-	success = DetectPluginLanguage(plugin);
+	b8 success = DetectPluginLanguage(plugin);
 	if (!success) return false;
 
 	switch (plugin.language)
@@ -319,11 +317,9 @@ PluginLoader_UnloadSensorPlugin(PluginLoaderState& s, Plugin& plugin, SensorPlug
 b8
 PluginLoader_LoadWidgetPlugin(PluginLoaderState& s, Plugin& plugin, WidgetPlugin& widgetPlugin)
 {
-	b8 success;
-
 	auto pluginGuard = guard { plugin.loadState = PluginLoadState::Broken; };
 
-	success = DetectPluginLanguage(plugin);
+	b8 success = DetectPluginLanguage(plugin);
 	if (!success) return false;
 
 	switch (plugin.language)

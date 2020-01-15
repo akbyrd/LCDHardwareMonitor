@@ -274,12 +274,10 @@ template<typename T>
 b8
 SerializeAndQueueMessage(ConnectionState& con, T& message)
 {
-	b8 success;
-
 	Bytes bytes = {};
 	auto cleanupGuard = guard { List_Free(bytes); };
 
-	success = SerializeMessage(bytes, message, con.sendIndex);
+	b8 success = SerializeMessage(bytes, message, con.sendIndex);
 	LOG_IF(!success, return HandleMessageResult(con, false),
 		Severity::Fatal, "Failed to serialize message");
 

@@ -34,8 +34,6 @@ PreviewWindow_Initialize(
 
 	// Create Window
 	{
-		b8 success;
-
 		LRESULT CALLBACK
 		PreviewWndProc(HWND, u32, WPARAM, LPARAM);
 
@@ -58,7 +56,7 @@ PreviewWindow_Initialize(
 		u32 windowStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE;
 
 		RECT windowRect = { 0, 0, (i32) rendererState.renderSize.x, (i32) rendererState.renderSize.y };
-		success = AdjustWindowRect(&windowRect, (u32) windowStyle, false);
+		b8 success = AdjustWindowRect(&windowRect, (u32) windowStyle, false);
 		LOG_LAST_ERROR_IF(!success, IGNORE,
 			Severity::Error, "Failed to set preview window size or style");
 
@@ -178,9 +176,7 @@ PreviewWindow_Teardown(PreviewWindowState& s)
 
 	// Destroy Window
 	{
-		b8 success;
-
-		success = DestroyWindow(s.hwnd);
+		b8 success = DestroyWindow(s.hwnd);
 		LOG_LAST_ERROR_IF(!success, return false,
 			Severity::Error, "Failed to destroy preview window");
 
@@ -342,10 +338,8 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 
 			if (newZoomFactor != s->zoomFactor)
 			{
-				b8 success;
-
 				RECT windowRect;
-				success = GetWindowRect(s->hwnd, &windowRect);
+				b8 success = GetWindowRect(s->hwnd, &windowRect);
 				LOG_LAST_ERROR_IF(!success, return 0,
 					Severity::Warning, "Failed to get preview window rect");
 

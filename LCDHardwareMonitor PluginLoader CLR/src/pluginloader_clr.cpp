@@ -84,9 +84,7 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	virtual b8
 	LoadSensorPlugin(Plugin& plugin, SensorPlugin& sensorPlugin)
 	{
-		b8 success;
-
-		success = LoadPlugin(plugin);
+		b8 success = LoadPlugin(plugin);
 		if (!success) return false;
 
 		LHMPluginLoader% pluginLoader = GetDomainResidentLoader(plugin);
@@ -99,10 +97,8 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	virtual b8
 	UnloadSensorPlugin(Plugin& plugin, SensorPlugin& sensorPlugin)
 	{
-		b8 success;
-
 		LHMPluginLoader% pluginLoader = GetDomainResidentLoader(plugin);
-		success = pluginLoader.TeardownSensorPlugin(sensorPlugin);
+		b8 success = pluginLoader.TeardownSensorPlugin(sensorPlugin);
 		if (!success) return false;
 
 		success = UnloadPlugin(plugin);
@@ -114,9 +110,7 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	virtual b8
 	LoadWidgetPlugin(Plugin& plugin, WidgetPlugin& widgetPlugin)
 	{
-		b8 success;
-
-		success = LoadPlugin(plugin);
+		b8 success = LoadPlugin(plugin);
 		if (!success) return false;
 
 		LHMPluginLoader% pluginLoader = GetDomainResidentLoader(plugin);
@@ -129,10 +123,8 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	virtual b8
 	UnloadWidgetPlugin(Plugin& plugin, WidgetPlugin& widgetPlugin)
 	{
-		b8 success;
-
 		LHMPluginLoader% pluginLoader = GetDomainResidentLoader(plugin);
-		success = pluginLoader.TeardownWidgetPlugin(widgetPlugin);
+		b8 success = pluginLoader.TeardownWidgetPlugin(widgetPlugin);
 		if (!success) return false;
 
 		success = UnloadPlugin(plugin);

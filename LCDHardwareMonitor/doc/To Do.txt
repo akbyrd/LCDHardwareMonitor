@@ -1,22 +1,19 @@
+Memory handling
+	Figure out what happens when memory allocations fail
+	Re-use memory when formatting
+	Use an arena for logging
+	Add a proper OOM crash flow
+
+
 Normalize Sim-GUI function naming (On* vs *)
-Figure out what happens when memory allocations fail
 Start using Scoped
 Namespaces
 Native namespace for interop?
-String_FromView vs Create vs Copy
-Move success next to first usage
 
 Try removing WidgetData
 Remove default: Assert(false); break; Ensure warnings catch missing cases
 Need to handle mouse position when preview isn't visible
 Need to actually avoid processing broken plugins
-
-Interesting...
-	#if __WIN
-		constexpr static bool IsWindows = true;
-	#else
-		constexpr static bool IsWindows = false;
-	#endif
 
 GUI Control
 	Add/Remove widgets
@@ -25,9 +22,9 @@ GUI Control
 	Reconcile input when connecting (buttons already down) and disconnecting (release down buttons).
 
 Stuff
+	Implement settings to remember e.g. which plugins should be loaded
 	Look at tlbgen and references vs pointers
 	Maybe get 64 bit working?
-	Add a proper OOM crash flow
 	I think pipes want to be no-wait
 	Users probably need to be able to create custom UI for plugin settings
 	Ensure we're handling CloseHandle failures correctly
@@ -75,14 +72,11 @@ Back Burner
 	Is it cleaner to use the auto-COM-interface of LHMPluginLoader?
 	Handle multiple plugins in the same file (probably just a detailed error)
 	Use #import instead of project references?
-	Add UTF-8 support
+	Add UTF-8 support?
 	Runtime shader compilation
 	Shader hot-reloading
-	Put plugins in an error state when API calls fail
 	There's a frame of flicker where the old image size is drawn when zooming. Is this fixable?
 	There's some sort of mouse position jump on my laptop when rotating the camera
-	Re-use memory when formatting
-	Use an arena for logging
 	We don't support XP. Don't allow running on it.
 	Decide on static or dynamic linking to e.g. the CRT. Bundle redistributables if dynamically
 		linking.
@@ -90,6 +84,13 @@ Back Burner
 
 
 Refactoring
+	String_FromView vs Create vs Copy
+	Interesting...
+		#if __WIN
+			constexpr static bool IsWindows = true;
+		#else
+			constexpr static bool IsWindows = false;
+		#endif
 	Rewrite List<T>
 	Try out range based for loops
 	Ensure Platform function naming is uniform
@@ -108,7 +109,7 @@ Error Handling
 		most handler. LoadFile can't know if it's loading a cache file or a critical resource.
 	Implement a Result<T> that can hold a return value or error information
 	I'm sure there are places where we're going to end up in a partially initialized state when
-		errors occur. We need to double down on transactional changes check all existing code.
+		errors occur. We need to double down on transactional changes. Check all existing code.
 
 
 
