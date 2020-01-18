@@ -53,7 +53,7 @@ struct guarded final
 {
 	const TLambda lambda;
 	b8 dismiss;
-	guarded(TLambda&& _lambda) : lambda(_lambda), dismiss(false) { }
+	guarded(TLambda&& lambda) : lambda(lambda), dismiss(false) {}
 	~guarded() { if (!dismiss) lambda(); }
 };
 
@@ -63,7 +63,7 @@ struct
 	guarded<TLambda>
 	operator<< (TLambda&& lambda)
 	{
-		return guarded<TLambda>(std::forward<TLambda>(lambda));
+		return guarded<TLambda>((TLambda&&) lambda);
 	}
 } make_guard;
 

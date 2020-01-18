@@ -1,7 +1,18 @@
 #ifndef LHM_COMMON
 #define LHM_COMMON
 
-#include <cstdint>
+#include <stdint.h>
+#include <string.h>
+#include <math.h>
+
+// Fuck you, Microsoft
+#pragma warning(push, 0)
+// signed unsigned mismatch
+#pragma warning(disable : 4365)
+// TODO: Why can't this be <memory.h>?
+#include <memory>
+#pragma warning(pop)
+
 using u8  = uint8_t;
 using u16 = uint16_t;
 using u32 = uint32_t;
@@ -46,12 +57,5 @@ inline void UnusedArgs(Args const& ...) {}
 #define HAS_FLAG(x, f) ((x & f) == f)
 #define IF(expression, ...) if (expression) { __VA_ARGS__; }
 #define LHMVersion 0x00000001
-
-// Fuck you, Microsoft
-#pragma warning(push, 0)
-// signed unsigned mismatch
-#pragma warning(disable : 4365)
-#include <memory>
-#pragma warning(pop)
 
 #endif
