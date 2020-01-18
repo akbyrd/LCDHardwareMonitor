@@ -16,7 +16,7 @@ struct PluginContext {};
 using CLRString = System::String;
 using LHMString = ::String;
 
-b8
+void
 String_FromCLR(LHMString lhmString, CLRString^ clrString)
 {
 	using namespace System;
@@ -25,14 +25,12 @@ String_FromCLR(LHMString lhmString, CLRString^ clrString)
 	c8* cstring = (c8*) Marshal::StringToHGlobalAnsi(clrString).ToPointer();
 
 	u32 length = (u32) clrString->Length + 1;
-	b8 success = String_Reserve(lhmString, length);
-	if (!success) return false;
+	String_Reserve(lhmString, length);
 
 	lhmString.length = length;
 	strncpy_s(&lhmString[0], lhmString.capacity, cstring, length);
 
 	Marshal::FreeHGlobal((IntPtr) cstring);
-	return true;
 }
 
 #endif

@@ -3,6 +3,13 @@ Memory handling
 	Re-use memory when formatting
 	Use an arena for logging
 	Add a proper OOM crash flow
+	Add a StackAllocator (with debugging)
+	Add a HeapAllocator (with debugging)
+	Push context onto a stack and dump during OOM crash
+	Style 1: Soft abort (log, save, close resources, exit)
+	Style 2: Hard Abort (exit)
+	Probably a function instead of a signal handler
+	Manual failure points
 
 
 Normalize Sim-GUI function naming (On* vs *)

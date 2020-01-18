@@ -126,11 +126,8 @@ DetectPluginLanguage(Plugin& plugin)
 {
 	// TODO: Move memory mapping to platform API?
 
-	String pluginPath = {};
+	String pluginPath = String_Format("%\\%", plugin.directory, plugin.fileName);
 	defer { String_Free(pluginPath); };
-
-	b8 success = String_Format(pluginPath, "%\\%", plugin.directory, plugin.fileName);
-	if (!success) return false;
 
 	HANDLE pluginFile = CreateFileA(
 		pluginPath.data,

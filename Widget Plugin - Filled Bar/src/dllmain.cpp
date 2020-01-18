@@ -80,13 +80,8 @@ UpdateBarWidgets(PluginContext& context, WidgetAPI::Update api)
 static b8
 Initialize(PluginContext& context, WidgetPluginAPI::Initialize api)
 {
-	// TODO: Shouldn't have to do this on the user side
-	String name = {};
-	b8 success = String_FromView(name, "Filled Bar");
-	if (!success) return false;
-
 	WidgetDesc widgetDesc = {};
-	widgetDesc.name         = name;
+	widgetDesc.name         = String_FromView("Filled Bar");
 	widgetDesc.userDataSize = sizeof(BarWidget);
 	widgetDesc.Initialize   = InitializeBarWidgets;
 	widgetDesc.Update       = UpdateBarWidgets;
@@ -105,9 +100,8 @@ Initialize(PluginContext& context, WidgetPluginAPI::Initialize api)
 EXPORT void
 GetWidgetPluginInfo(PluginInfo& info, WidgetPluginFunctions& functions)
 {
-	b8 success;
-	success = String_FromView(info.name,   "Filled Bar"); Assert(success);
-	success = String_FromView(info.author, "akbyrd");     Assert(success);
+	info.name    = String_FromView( "Filled Bar");
+	info.author  = String_FromView( "akbyrd");
 	info.version = 1;
 
 	functions.Initialize = Initialize;

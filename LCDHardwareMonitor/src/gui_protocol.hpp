@@ -182,7 +182,7 @@ MessageTimeLeft(i64 startTicks)
 }
 
 template<typename T>
-b8
+void
 SerializeMessage(Bytes& bytes, T& message, u32 messageIndex)
 {
 	using namespace Message;
@@ -193,9 +193,7 @@ SerializeMessage(Bytes& bytes, T& message, u32 messageIndex)
 	stream.mode = ByteStreamMode::Size;
 	Serialize(stream, &message);
 
-	b8 success = List_Reserve(stream.bytes, stream.cursor);
-	LOG_IF(!success, return false,
-		Severity::Fatal, "Failed to allocate message");
+	List_Reserve(stream.bytes, stream.cursor);
 	stream.bytes.length = stream.cursor;
 
 	message.header.id    = IdOf<T>;
@@ -210,7 +208,6 @@ SerializeMessage(Bytes& bytes, T& message, u32 messageIndex)
 
 	bytes = stream.bytes;
 	stream.bytes = {};
-	return true;
 }
 
 template<typename T>
@@ -259,34 +256,21 @@ HandleMessageResult(ConnectionState& con, PipeResult result)
 	return result;
 }
 
-b8
+void
 QueueMessage(ConnectionState& con, Bytes& bytes)
 {
-	Bytes* result = List_Append(con.queue, bytes);
-	LOG_IF(!result, return false,
-		Severity::Warning, "Failed to allocate message queue space");
-
+	List_Append(con.queue, bytes);
 	con.sendIndex++;
-	return true;
 }
 
+// TODO: Can probably simplify this now that it's no-fail
 template<typename T>
-b8
+void
 SerializeAndQueueMessage(ConnectionState& con, T& message)
 {
 	Bytes bytes = {};
-	auto cleanupGuard = guard { List_Free(bytes); };
-
-	b8 success = SerializeMessage(bytes, message, con.sendIndex);
-	LOG_IF(!success, return HandleMessageResult(con, false),
-		Severity::Fatal, "Failed to serialize message");
-
-	success = QueueMessage(con, bytes);
-	LOG_IF(!success, return HandleMessageResult(con, false),
-		Severity::Warning, "Failed to queue message");
-
-	cleanupGuard.dismiss = true;
-	return true;
+	SerializeMessage(bytes, message, con.sendIndex);
+	QueueMessage(con, bytes);
 }
 
 b8

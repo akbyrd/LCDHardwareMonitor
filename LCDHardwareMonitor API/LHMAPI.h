@@ -6,6 +6,7 @@
 #include "LHMCommon.h"
 #include "LHMMath.hpp"
 #include "LHMDefer.hpp"
+#include "LHMMemory.hpp"
 #include "LHMList.hpp"
 #include "LHMBytes.hpp"
 #include "LHMString.hpp"

@@ -46,7 +46,7 @@ VertexShader          Renderer_LoadVertexShader             (RendererState&, Str
 PixelShader           Renderer_LoadPixelShader              (RendererState&, StringView name, StringView path, Slice<u32> cBufSizes);
 // TODO: Combine with CreateMesh, LoadVertexShader, and LoadPixelShader
 Material              Renderer_CreateMaterial               (RendererState&, Mesh mesh, VertexShader vs, PixelShader ps);
-ConstantBufferUpdate* Renderer_PushConstantBufferUpdate     (RendererState&);
-DrawCall*             Renderer_PushDrawCall                 (RendererState&);
+ConstantBufferUpdate& Renderer_PushConstantBufferUpdate     (RendererState&);
+DrawCall&             Renderer_PushDrawCall                 (RendererState&);
 b8                    Renderer_Render                       (RendererState&);
 void*                 Renderer_GetSharedRenderSurface       (RendererState&);

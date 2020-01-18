@@ -29,9 +29,8 @@ public ref struct State : ISensorPlugin, ISensorPluginInitialize, ISensorPluginU
 	virtual void
 	GetPluginInfo(PluginInfo& info)
 	{
-		b8 success;
-		success = String_FromView(info.name,   "OHM Sensors"); Assert(success);
-		success = String_FromView(info.author, "akbyrd");      Assert(success);
+		info.name    = String_FromView("OHM Sensors");
+		info.author  = String_FromView("akbyrd");
 		info.version = 1;
 	}
 

@@ -193,14 +193,12 @@ namespace LCDHardwareMonitor::GUI
 			Process::Start("LCDHardwareMonitor.exe");
 		}
 
-		static bool
+		static void
 		TerminateSim(SimulationState^ simState)
 		{
 			SetProcessState(simState, ProcessState::Terminating);
-
 			Message::TerminateSimulation terminate = {};
-			b8 success = SerializeAndQueueMessage(state.simConnection, terminate);
-			return (bool) success;
+			SerializeAndQueueMessage(state.simConnection, terminate);
 		}
 
 		static void
@@ -212,31 +210,29 @@ namespace LCDHardwareMonitor::GUI
 				p->Kill();
 		}
 
-		static bool
+		static void
 		MouseMove(SimulationState^ simState, Point pos)
 		{
-			if (pos == simState->MousePos) return true;
+			if (pos == simState->MousePos) return;
 			simState->MousePos = pos;
 			simState->NotifyPropertyChanged("");
 
 			Message::MouseMove move = {};
 			move.pos = { (int) pos.X, (int) pos.Y };
-			b8 success = SerializeAndQueueMessage(state.simConnection, move);
-			return (bool) success;
+			SerializeAndQueueMessage(state.simConnection, move);
 		}
 
-		static bool
+		static void
 		MouseButtonChange(SimulationState^, Point pos, CLRMouseButton button, MouseButtonState buttonState)
 		{
 			Message::MouseButtonChange buttonChange = {};
 			buttonChange.pos = { (int) pos.X, (int) pos.Y };
 			buttonChange.button = ToMouseButton(button);
 			buttonChange.state = ToButtonState(buttonState);
-			b8 success = SerializeAndQueueMessage(state.simConnection, buttonChange);
-			return (bool) success;
+			SerializeAndQueueMessage(state.simConnection, buttonChange);
 		}
 
-		static bool
+		static void
 		SetPluginLoadState(SimulationState^ simState, UInt32 ref, PluginLoadState loadState)
 		{
 			Plugin plugin = simState->Plugins[ref - 1];
@@ -248,12 +244,11 @@ namespace LCDHardwareMonitor::GUI
 			Message::SetPluginLoadStates setLoadStates = {};
 			setLoadStates.refs = nRef;
 			setLoadStates.loadStates = nLoadState;
-			b8 success = SerializeAndQueueMessage(state.simConnection, setLoadStates);
+			SerializeAndQueueMessage(state.simConnection, setLoadStates);
 
 			plugin.LoadState = loadState == PluginLoadState::Unloaded ? PluginLoadState::Unloading : PluginLoadState::Loading;
 			simState->Plugins[ref - 1] = plugin;
 			simState->NotifyPropertyChanged("");
-			return (bool) success;
 		}
 
 		// -------------------------------------------------------------------------------------------

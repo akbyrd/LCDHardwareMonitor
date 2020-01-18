@@ -1,5 +1,7 @@
 #include "LHMAPI.h"
 
+#include <stdio.h>
+
 #include "platform.h"
 #include "pluginloader.h"
 #include "renderer.h"

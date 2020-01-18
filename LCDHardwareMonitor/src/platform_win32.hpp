@@ -30,16 +30,8 @@ template<typename... Args>
 inline void
 Platform_PrintImpl(StringView format, Args... args)
 {
-	String message = {};
+	String message = String_FormatImpl(format, args...);
 	defer { List_Free(message); };
-
-	b8 success = String_FormatImpl(message, format, args...);
-	if (!success)
-	{
-		Platform_PrintImpl("String_Format failed. Unformatted message:\n\t");
-		Platform_PrintImpl(format);
-		return;
-	}
 
 	Platform_PrintImpl(message);
 }
@@ -57,20 +49,7 @@ Platform_LogImpl(Severity severity, Location location, StringView message)
 {
 	Assert(severity != Severity::Null);
 
-	String fullMessage = {};
-	defer { String_Free(fullMessage); };
-
-	b8 success = String_FormatImpl(fullMessage, "% - %\n\t%(%)\n", location.function, message, location.file, location.line);
-	if (!success)
-	{
-		Platform_PrintImpl("String_Format failed. Unformatted message:\n\t");
-		Platform_PrintImpl(location.function);
-		Platform_PrintImpl(" - ");
-		Platform_PrintImpl(message);
-		Platform_PrintImpl("\n\t");
-		Platform_PrintImpl(location.file);
-		Platform_PrintImpl("\n");
-	}
+	String fullMessage = String_FormatImpl("% - %\n\t%(%)\n", location.function, message, location.file, location.line);
 
 	Platform_PrintImpl(fullMessage);
 	if (severity > Severity::Info)
@@ -81,16 +60,8 @@ template<typename... Args>
 inline void
 Platform_LogImpl(Severity severity, Location location, StringView format, Args... args)
 {
-	String message = {};
+	String message = String_FormatImpl(format, args...);
 	defer { String_Free(message); };
-
-	b8 success = String_FormatImpl(message, format, args...);
-	if (!success)
-	{
-		Platform_PrintImpl("String_Format failed. Unformatted message:\n\t");
-		Platform_PrintImpl(format);
-		return;
-	}
 
 	Platform_LogImpl(severity, location, message);
 }
@@ -129,15 +100,8 @@ template<typename... Args>
 inline void
 LogFormatMessage(u32 messageID, Severity severity, Location location, StringView format, Args... args)
 {
-	String message = {};
+	String message = String_FormatImpl(format, args...);
 	defer { List_Free(message); };
-
-	b8 success = String_FormatImpl(message, format, args...);
-	if (!success)
-	{
-		LogFormatMessage(messageID, severity, location, format);
-		return;
-	}
 
 	LogFormatMessage(messageID, severity, location, message);
 }
@@ -157,16 +121,8 @@ template<typename... Args>
 inline void
 LogHRESULT(HRESULT hr, Severity severity, Location location, StringView format, Args... args)
 {
-	String message = {};
+	String message = String_FormatImpl(format, args...);
 	defer { String_Free(message); };
-
-	b8 success = String_FormatImpl(message, format, args...);
-	if (!success)
-	{
-		Platform_PrintImpl("String_Format failed. Unformatted message:\n\t");
-		LogHRESULT(hr, severity, location, format);
-		return;
-	}
 
 	LogHRESULT(hr, severity, location, message);
 }
@@ -184,16 +140,8 @@ template<typename... Args>
 inline void
 LogLastError(Severity severity, Location location, StringView format, Args... args)
 {
-	String message = {};
+	String message = String_FormatImpl(format, args...);
 	defer { String_Free(message); };
-
-	b8 success = String_FormatImpl(message, format, args...);
-	if (!success)
-	{
-		Platform_PrintImpl("String_Format failed. Unformatted message:\n\t");
-		LogLastError(severity, location, format);
-		return;
-	}
 
 	LogLastError(severity, location, message);
 }
@@ -210,9 +158,7 @@ GetWorkingDirectory()
 	LOG_LAST_ERROR_IF(!length, return result,
 		Severity::Warning, "Failed to get working directory length");
 
-	b8 success = String_Reserve(result, length);
-	LOG_IF(!success, return result,
-		Severity::Warning, "Failed to allocate working directory");
+	String_Reserve(result, length);
 
 	u32 written = GetCurrentDirectoryA(length, result.data);
 	LOG_LAST_ERROR_IF(!written, return result,
@@ -230,11 +176,9 @@ static Bytes
 LoadFile(StringView path, u32 padding = 0)
 {
 	Bytes result = {};
-	{
-		auto resultGuard = guard { List_Free(result); };
+	auto resultGuard = guard { List_Free(result); };
 
-		// TODO BUG: Reading off the end of the buffer
-		Assert(path.length && path[path.length] == '\0');
+	{
 		HANDLE file = CreateFileA(
 			path.data,
 			GENERIC_READ,
@@ -261,16 +205,14 @@ LoadFile(StringView path, u32 padding = 0)
 			Severity::Warning, "File is too large to load '%'", path);
 
 		u32 size = (u32) size_win32.QuadPart;
-		success = List_Reserve(result, size + padding);
-		LOG_IF(!success, return result,
-			Severity::Warning, "Failed to allocate file memory '%'", path);
+		List_Reserve(result, size + padding);
 
 		success = ReadFile(file, result.data, size, (DWORD*) &result.length, nullptr);
 		LOG_LAST_ERROR_IF(!success, return result,
 			Severity::Warning, "Failed to read file '%'", path);
-
-		resultGuard.dismiss = true;
 	}
+
+	resultGuard.dismiss = true;
 	return result;
 }
 
@@ -673,25 +615,17 @@ Platform_CreatePipeServer(StringView name, Pipe& pipe)
 	// Initialize
 	{
 		pipe = {};
-		pipe.state = PipeState::Disconnected;
+		pipe.name     = String_FromView(name);
+		pipe.state    = PipeState::Disconnected;
 		pipe.isServer = true;
-
-		b8 success = String_FromView(pipe.name, name);
-		LOG_IF(!success, return PipeResult::UnexpectedFailure,
-			Severity::Warning, "Failed to allocate pipe");
 	}
 
 	// Allocate platform data
 	{
-		pipe.impl = (PipeImpl*) malloc(sizeof(PipeImpl));
-		LOG_IF(!pipe.impl, return PipeResult::UnexpectedFailure,
-			Severity::Warning, "Failed to allocate pipe '%'", pipe.name);
-
+		pipe.impl = (PipeImpl*) AllocChecked(sizeof(PipeImpl));
 		*pipe.impl = {};
 
-		b8 success = String_Format(pipe.impl->fullName, "\\\\.\\pipe\\%", pipe.name);
-		LOG_IF(!success, return PipeResult::UnexpectedFailure,
-			Severity::Warning, "Failed to format string for pipe name '%'", pipe.name);
+		pipe.impl->fullName = String_Format("\\\\.\\pipe\\%", pipe.name);
 	}
 
 	// Create connection event
@@ -719,25 +653,17 @@ Platform_CreatePipeClient(StringView name, Pipe& pipe)
 	// Initialize
 	{
 		pipe = {};
-		pipe.state = PipeState::Disconnected;
+		pipe.name     = String_FromView(name);
+		pipe.state    = PipeState::Disconnected;
 		pipe.isServer = false;
-
-		b8 success = String_FromView(pipe.name, name);
-		LOG_IF(!success, return PipeResult::UnexpectedFailure,
-			Severity::Warning, "Failed to allocate pipe");
 	}
 
 	// Allocate platform data
 	{
-		pipe.impl = (PipeImpl*) malloc(sizeof(PipeImpl));
-		LOG_IF(!pipe.impl, return PipeResult::UnexpectedFailure,
-			Severity::Warning, "Failed to allocate pipe");
-
+		pipe.impl = (PipeImpl*) AllocChecked(sizeof(PipeImpl));
 		*pipe.impl = {};
 
-		b8 success = String_Format(pipe.impl->fullName, "\\\\.\\pipe\\%", pipe.name);
-		LOG_IF(!success, return PipeResult::UnexpectedFailure,
-			Severity::Warning, "Failed to format string for pipe name '%'", pipe.name);
+		pipe.impl->fullName = String_Format("\\\\.\\pipe\\%", pipe.name);
 	}
 
 	// Attempt to connect
@@ -759,7 +685,7 @@ Platform_DestroyPipe(Pipe& pipe)
 	// TODO: Handle failure?
 	CloseHandle(pipe.impl->handle);
 	CloseHandle(pipe.impl->connect.hEvent);
-	free(pipe.impl);
+	Free(pipe.impl);
 	pipe = {};
 }
 
@@ -851,10 +777,7 @@ Platform_ReadPipe(Pipe& pipe, Bytes& bytes)
 	}
 
 	if (available == 0) return PipeResult::Success;
-
-	success = List_Reserve(bytes, available);
-	LOG_IF(!success, return PipeResult::TransientFailure,
-		Severity::Warning, "Failed to reserve pipe read buffer '%'", pipe.name);
+	List_Reserve(bytes, available);
 
 	u32 read;
 	success = ReadFile(

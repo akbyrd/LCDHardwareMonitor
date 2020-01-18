@@ -135,16 +135,11 @@ static inline void
 SetDebugObjectNameImpl(const ComPtr<T>& resource, StringView format, Args... args)
 {
 	#if defined(DEBUG)
-	String string = {};
-	defer { String_Free(string); };
+	String name = String_FormatImpl(format, args...);
+	defer { String_Free(name); };
 
-	b8 success = String_FormatImpl(string, format, args...);
-	LOG_IF(!success, IGNORE,
-		Severity::Warning, "Failed to format D3D object name");
-
-	StringView name = success ? string : format;
+	// TODO: Pretty sure this is an off-by-one
 	Assert(name.length > 0);
-
 	resource->SetPrivateData(WKPDID_D3DDebugObjectName, name.length - 1, name.data);
 	#else
 		UNUSED(resource); UNUSED(format); UNUSED_ARGS(args...);
@@ -552,18 +547,11 @@ Renderer_Teardown(RendererState& s)
 Mesh
 Renderer_CreateMesh(RendererState& s, StringView name, Slice<Vertex> vertices, Slice<Index> indices)
 {
-	MeshData mesh = {};
-	defer {
-		// TODO: Can end up with orphaned vertices/indices allocated
-		String_Free(mesh.name);
-	};
+	// TODO: Eventually lists will reuse slots
+	MeshData& mesh = List_Append(s.meshes);
 
-	// Copy Name
-	{
-		b8 success = String_FromView(mesh.name, name);
-		LOG_IF(!success, IGNORE,
-			Severity::Warning, "Failed to copy mesh name '%'", name);
-	}
+	mesh.ref  = List_GetLastRef(s.meshes);
+	mesh.name = String_FromView(name);
 
 	// Copy Data
 	{
@@ -572,27 +560,11 @@ Renderer_CreateMesh(RendererState& s, StringView name, Slice<Vertex> vertices, S
 		mesh.iCount  = indices.length;
 		mesh.iFormat = DXGI_FORMAT_R32_UINT;
 
-		b8 success = List_AppendRange(s.vertexBuffer, vertices);
-		LOG_IF(!success, return Mesh::Null,
-			Severity::Error, "Failed to allocate space for % mesh vertices '%'", vertices.length, name);
-
-		success = List_AppendRange(s.indexBuffer, indices);
-		LOG_IF(!success, return Mesh::Null,
-			Severity::Error, "Failed to allocate space for % mesh indices '%'", indices.length, name);
+		List_AppendRange(s.vertexBuffer, vertices);
+		List_AppendRange(s.indexBuffer, indices);
 	}
 
-	// Commit
-	{
-		MeshData* mesh2 = List_Append(s.meshes, mesh);
-		LOG_IF(!mesh2, return Mesh::Null,
-			Severity::Error, "Failed to allocate space for mesh '%'", name);
-		mesh = {};
-
-		// TODO: Eventually lists will reuse slots
-		mesh2->ref = List_GetLastRef(s.meshes);
-	}
-
-	return List_GetLastRef(s.meshes);
+	return mesh.ref;
 }
 
 static b8
@@ -626,8 +598,9 @@ VertexShader
 Renderer_LoadVertexShader(RendererState& s, StringView name, StringView path, Slice<VertexAttribute> attributes, Slice<u32> cBufSizes)
 {
 	// Vertex Shader
-	VertexShaderData vs = {};
-	defer {
+	// TODO: Eventually lists will reuse slots
+	VertexShaderData vs = List_Append(s.vertexShaders);
+	auto vsGuard = guard {
 		vs.d3dVertexShader.Reset();
 		vs.d3dInputLayout.Reset();
 
@@ -635,14 +608,10 @@ Renderer_LoadVertexShader(RendererState& s, StringView name, StringView path, Sl
 			vs.constantBuffers[i].d3dConstantBuffer.Reset();
 		List_Free(vs.constantBuffers);
 		String_Free(vs.name);
+		s.vertexShaders.length -= 1;
 	};
 
-	// Copy Name
-	{
-		b8 success = String_FromView(vs.name, name);
-		LOG_IF(!success, IGNORE,
-			Severity::Warning, "Failed to copy vertex shader name '%'", path);
-	}
+	vs.name = String_FromView(name);
 
 	// Load
 	Bytes vsBytes = {};
@@ -663,16 +632,13 @@ Renderer_LoadVertexShader(RendererState& s, StringView name, StringView path, Sl
 	// Constant Buffers
 	if (cBufSizes.length)
 	{
-		b8 success = List_Reserve(vs.constantBuffers, cBufSizes.length);
-		LOG_IF(!success, return VertexShader::Null,
-			Severity::Error, "Failed to allocate space for % VS constant buffers '%'", cBufSizes.length, path);
-
+		List_Reserve(vs.constantBuffers, cBufSizes.length);
 		for (u32 i = 0; i < cBufSizes.length; i++)
 		{
-			ConstantBuffer* cBuf = List_Append(vs.constantBuffers);
-			cBuf->size = cBufSizes[i];
+			ConstantBuffer& cBuf = List_Append(vs.constantBuffers);
+			cBuf.size = cBufSizes[i];
 
-			success = Renderer_CreateConstantBuffer(s, *cBuf);
+			b8 success = Renderer_CreateConstantBuffer(s, cBuf);
 			LOG_IF(!success, return VertexShader::Null,
 				Severity::Error, "Failed to create VS constant buffer % for '%'", i, path);
 		}
@@ -681,9 +647,7 @@ Renderer_LoadVertexShader(RendererState& s, StringView name, StringView path, Sl
 	// Input layout
 	{
 		List<D3D11_INPUT_ELEMENT_DESC> vsInputDescs = {};
-		b8 success = List_Reserve(vsInputDescs, attributes.length);
-		LOG_IF(!success, return VertexShader::Null,
-			Severity::Error, "Failed to allocate space for % VS input descriptions '%'", attributes.length, path);
+		List_Reserve(vsInputDescs, attributes.length);
 		for (u32 i = 0; i < attributes.length; i++)
 		{
 			const c8* semantic;
@@ -729,42 +693,28 @@ Renderer_LoadVertexShader(RendererState& s, StringView name, StringView path, Sl
 		vs.d3dPrimitveTopology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	}
 
-	// Commit
-	// TODO: Maybe it'd be better to add and defer remove instead?
-	VertexShaderData* vs2 = nullptr;
-	{
-		vs2 = List_Append(s.vertexShaders, vs);
-		LOG_IF(!vs2, return VertexShader::Null,
-			Severity::Error, "Failed to allocate space for vertex shader '%'", path);
-		vs = {};
-
-		// TODO: Eventually lists will reuse slots
-		vs2->ref = List_GetLastRef(s.vertexShaders);
-	}
-
-	return vs2->ref;
+	vsGuard.dismiss = true;
+	vs.ref = List_GetLastRef(s.vertexShaders);
+	return vs.ref;
 }
 
 // TODO: Unload functions
 PixelShader
 Renderer_LoadPixelShader(RendererState& s, StringView name, StringView path, Slice<u32> cBufSizes)
 {
-	PixelShaderData ps = {};
-	defer {
+	// TODO: Eventually lists will reuse slots
+	PixelShaderData ps = List_Append(s.pixelShaders);
+	auto psGuard = guard {
 		ps.d3dPixelShader.Reset();
 
 		for (u32 i = 0; i < ps.constantBuffers.length; i++)
 			ps.constantBuffers[i].d3dConstantBuffer.Reset();
 		List_Free(ps.constantBuffers);
 		String_Free(ps.name);
+		s.pixelShaders.length -= 1;
 	};
 
-	// Copy Name
-	{
-		b8 success = String_FromView(ps.name, name);
-		LOG_IF(!success, IGNORE,
-			Severity::Warning, "Failed to copy pixel shader name '%'", path);
-	}
+	ps.name = String_FromView(name);
 
 	// Load
 	Bytes psBytes = {};
@@ -785,34 +735,21 @@ Renderer_LoadPixelShader(RendererState& s, StringView name, StringView path, Sli
 	// Constant Buffers
 	if (cBufSizes.length)
 	{
-		b8 success = List_Reserve(ps.constantBuffers, cBufSizes.length);
-		LOG_IF(!success, return PixelShader::Null,
-			Severity::Error, "Failed to allocate space for % PS constant buffers '%'", cBufSizes.length, path);
-
+		List_Reserve(ps.constantBuffers, cBufSizes.length);
 		for (u32 i = 0; i < cBufSizes.length; i++)
 		{
-			ConstantBuffer* cBuf = List_Append(ps.constantBuffers);
-			cBuf->size = cBufSizes[i];
+			ConstantBuffer& cBuf = List_Append(ps.constantBuffers);
+			cBuf.size = cBufSizes[i];
 
-			success = Renderer_CreateConstantBuffer(s, *cBuf);
+			b8 success = Renderer_CreateConstantBuffer(s, cBuf);
 			LOG_IF(!success, return PixelShader::Null,
 				Severity::Error, "Failed to create PS constant buffer % for '%'", i, path);
 		}
 	}
 
-	// Commit
-	PixelShaderData* ps2 = nullptr;
-	{
-		ps2 = List_Append(s.pixelShaders, ps);
-		LOG_IF(!ps2, return PixelShader::Null,
-			Severity::Error, "Failed to allocate space for pixel shader '%'", path);
-		ps = {};
-
-		// TODO: Eventually lists will reuse slots
-		ps2->ref = List_GetLastRef(s.pixelShaders);
-	}
-
-	return ps2->ref;
+	psGuard.dismiss = true;
+	ps.ref = List_GetLastRef(s.pixelShaders);
+	return ps.ref;
 }
 
 Material
@@ -827,20 +764,20 @@ Renderer_CreateMaterial(RendererState& s, Mesh mesh, VertexShader vs, PixelShade
 	return material;
 }
 
-ConstantBufferUpdate*
+ConstantBufferUpdate&
 Renderer_PushConstantBufferUpdate(RendererState& s)
 {
-	RenderCommand* renderCommand = List_Append(s.commandList);
-	renderCommand->type = RenderCommandType::ConstantBufferUpdate;
-	return &renderCommand->cBufUpdate;
+	RenderCommand& renderCommand = List_Append(s.commandList);
+	renderCommand.type = RenderCommandType::ConstantBufferUpdate;
+	return renderCommand.cBufUpdate;
 }
 
-DrawCall*
+DrawCall&
 Renderer_PushDrawCall(RendererState& s)
 {
-	RenderCommand* renderCommand = List_Append(s.commandList);
-	renderCommand->type = RenderCommandType::DrawCall;
-	return &renderCommand->drawCall;
+	RenderCommand& renderCommand = List_Append(s.commandList);
+	renderCommand.type = RenderCommandType::DrawCall;
+	return renderCommand.drawCall;
 }
 
 static b8

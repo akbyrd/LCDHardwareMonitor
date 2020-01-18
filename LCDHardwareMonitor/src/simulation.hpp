@@ -61,17 +61,12 @@ struct PluginContext
 	b8               success;
 };
 
-static Widget*
-CreateWidget(Plugin& plugin, WidgetData& widgetData)
+static Widget&
+CreateWidget(WidgetData& widgetData)
 {
-	Widget* widget = List_Append(widgetData.widgets);
-	LOG_IF(!widget, return nullptr,
-		Severity::Error, "Failed to allocate Widget");
+	Widget& widget = List_Append(widgetData.widgets);
 
-	b8 success = List_Reserve(widgetData.widgetsUserData, widgetData.desc.userDataSize);
-	LOG_IF(!success, return nullptr,
-		Severity::Error, "Failed to allocate space for % bytes of Widget user data '%'",
-		widgetData.desc.userDataSize, plugin.info.name);
+	List_Reserve(widgetData.widgetsUserData, widgetData.widgetsUserData.length + widgetData.desc.userDataSize);
 	widgetData.widgetsUserData.length += widgetData.desc.userDataSize;
 
 	return widget;
@@ -104,10 +99,10 @@ RemoveSensorRefs(SimulationState& s, SensorPluginRef sensorPluginRef, Slice<Sens
 	}
 }
 
-static b8
-GetNameFromPath(String& name, StringView path)
+static String
+GetNameFromPath(StringView path)
 {
-	if (path.length == 0) return false;
+	if (path.length == 0) return {};
 
 	StrPos first = String_FindLast(path, '/');
 	if (first == StrPos::Null)
@@ -117,14 +112,10 @@ GetNameFromPath(String& name, StringView path)
 	if (last == StrPos::Null)
 		last = String_GetLastPos(path);
 
-	if (first == last) return false;
+	if (first == last) return {};
 
 	StringSlice nameSlice = StringSlice_Create(path, first, last);
-
-	b8 success = String_FromSlice(name, nameSlice);
-	LOG_IF(!success, return false,
-		Severity::Error, "Failed to allocate space for name");
-	return true;
+	return String_FromSlice(nameSlice);
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -135,24 +126,16 @@ static void
 RegisterSensors(PluginContext& context, Slice<Sensor> sensors)
 {
 	if (!context.success) return;
-	context.success = false;
 
 	SensorPlugin& sensorPlugin = *context.sensorPlugin;
-
 	for (u32 i = 0; i < sensors.length; i++)
 	{
 		Sensor& sensor = sensors[i];
 		sensor.ref = { sensorPlugin.sensors.length + i };
 	}
 
-	b8 success = List_AppendRange(sensorPlugin.sensors, sensors);
-	LOG_IF(!success, return,
-		Severity::Error, "Failed to allocate space for % Sensors '%'",
-		sensors.length, context.s->plugins[sensorPlugin.pluginRef].info.name);
-
 	// TODO: Re-use empty slots in the list (from removes)
-
-	context.success = true;
+	List_AppendRange(sensorPlugin.sensors, sensors);
 }
 
 static void
@@ -204,21 +187,11 @@ RegisterWidgets(PluginContext& context, Slice<WidgetDesc> widgetDescs)
 		WidgetDesc& widgetDesc = widgetDescs[i];
 		widgetDesc.ref = { widgetPlugin.widgetDatas.length + i };
 
-		WidgetData widgetData = {};
+		WidgetData& widgetData = List_Append(widgetPlugin.widgetDatas);
 		widgetData.desc = widgetDesc;
 
-		b8 success = List_Reserve(widgetData.widgets, 8);
-		LOG_IF(!success, return,
-			Severity::Error, "Failed to allocate space for Widgets list");
-
-		success = List_Reserve(widgetData.widgetsUserData, 8 * widgetDesc.userDataSize);
-		LOG_IF(!success, return,
-			Severity::Error, "Failed to allocate space for Widget user data list. % bytes each '%'",
-			widgetDesc.userDataSize, context.s->plugins[widgetPlugin.pluginRef].info.name);
-
-		WidgetData* widgetData2 = List_Append(widgetPlugin.widgetDatas, widgetData);
-		LOG_IF(!widgetData2, return,
-			Severity::Error, "Failed to allocate WidgetData");
+		List_Reserve(widgetData.widgets, 8);
+		List_Reserve(widgetData.widgetsUserData, 8 * widgetDesc.userDataSize);
 	}
 
 	context.success = true;
@@ -246,18 +219,11 @@ LoadPixelShader(PluginContext& context, StringView relPath, Slice<u32> cBufSizes
 	Plugin& plugin = context.s->plugins[context.widgetPlugin->pluginRef];
 	RendererState& rendererState = *context.s->renderer;
 
-	String path = {};
+	String path = String_Format("%/%", plugin.directory, relPath);
 	defer { String_Free(path); };
-	b8 success = String_Format(path, "%/%", plugin.directory, relPath);
-	LOG_IF(!success, return PixelShader::Null,
-		Severity::Error, "Failed to format pixel shader path '%'", relPath);
 
-	// TODO: This is super awkward
-	StringView psName = {};
-	String psNameTemp = {};
-	defer { String_Free(psNameTemp); };
-	success = GetNameFromPath(psNameTemp, path);
-	psName = success ? psNameTemp : path;
+	String psName = GetNameFromPath(path);
+	defer { String_Free(psName); };
 
 	PixelShader ps = Renderer_LoadPixelShader(rendererState, psName, path, cBufSizes);
 	LOG_IF(!ps, return PixelShader::Null,
@@ -296,35 +262,25 @@ static void
 PushConstantBufferUpdate(PluginContext& context, Material material, ShaderStage shaderStage, u32 index, void* data)
 {
 	if (!context.success) return;
-	context.success = false;
 
 	RendererState& rendererState = *context.s->renderer;
 
-	ConstantBufferUpdate* cBufUpdate = Renderer_PushConstantBufferUpdate(rendererState);
-	LOG_IF(!cBufUpdate, return,
-		Severity::Error, "Failed to allocate space for constant buffer update");
-	cBufUpdate->material    = material;
-	cBufUpdate->shaderStage = shaderStage;
-	cBufUpdate->index       = index;
-	cBufUpdate->data        = data;
-
-	context.success = true;
+	ConstantBufferUpdate& cBufUpdate = Renderer_PushConstantBufferUpdate(rendererState);
+	cBufUpdate.material    = material;
+	cBufUpdate.shaderStage = shaderStage;
+	cBufUpdate.index       = index;
+	cBufUpdate.data        = data;
 }
 
 static void
 PushDrawCall(PluginContext& context, Material material)
 {
 	if (!context.success) return;
-	context.success = false;
 
 	RendererState& rendererState = *context.s->renderer;
 
-	DrawCall* drawCall = Renderer_PushDrawCall(rendererState);
-	LOG_IF(!drawCall, return,
-		Severity::Error, "Failed to allocate space for draw call");
-	drawCall->material = material;
-
-	context.success = true;
+	DrawCall& drawCall = Renderer_PushDrawCall(rendererState);
+	drawCall.material = material;
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -344,8 +300,7 @@ OnConnect(SimulationState& s, ConnectionState& con)
 		connect.renderSurface = (size) Renderer_GetSharedRenderSurface(*s.renderer);
 		connect.renderSize.x  = s.renderSize.x;
 		connect.renderSize.y  = s.renderSize.y;
-		b8 success = SerializeAndQueueMessage(con, connect);
-		if (!success) return;
+		SerializeAndQueueMessage(con, connect);
 	}
 
 	{
@@ -353,23 +308,20 @@ OnConnect(SimulationState& s, ConnectionState& con)
 		pluginsAdded.refs  = List_MemberSlice(s.plugins, &Plugin::ref);
 		pluginsAdded.kinds = List_MemberSlice(s.plugins, &Plugin::kind);
 		pluginsAdded.infos = List_MemberSlice(s.plugins, &Plugin::info);
-		b8 success = SerializeAndQueueMessage(con, pluginsAdded);
-		if (!success) return;
+		SerializeAndQueueMessage(con, pluginsAdded);
 
 		PluginStatesChanged statesChanged = {};
 		statesChanged.refs       = List_MemberSlice(s.plugins, &Plugin::ref);
 		statesChanged.kinds      = List_MemberSlice(s.plugins, &Plugin::kind);
 		statesChanged.loadStates = List_MemberSlice(s.plugins, &Plugin::loadState);
-		b8 success = SerializeAndQueueMessage(con, statesChanged);
-		if (!success) return;
+		SerializeAndQueueMessage(con, statesChanged);
 	}
 
 	{
 		SensorsAdded sensorsAdded = {};
 		sensorsAdded.sensorPluginRefs = List_MemberSlice(s.sensorPlugins, &SensorPlugin::ref);
 		sensorsAdded.sensors          = List_MemberSlice(s.sensorPlugins, &SensorPlugin::sensors);
-		b8 success = SerializeAndQueueMessage(con, sensorsAdded);
-		if (!success) return;
+		SerializeAndQueueMessage(con, sensorsAdded);
 	}
 
 	{
@@ -384,8 +336,7 @@ OnConnect(SimulationState& s, ConnectionState& con)
 			WidgetDescsAdded widgetDescsAdded = {};
 			widgetDescsAdded.widgetPluginRefs = widgetPlugin.ref;
 			widgetDescsAdded.descs            = descs;
-			b8 success = SerializeAndQueueMessage(con, widgetDescsAdded);
-			if (!success) return;
+			SerializeAndQueueMessage(con, widgetDescsAdded);
 		}
 	}
 }
@@ -566,8 +517,7 @@ OnPluginStatesChanged(SimulationState& s, Slice<Plugin> plugins)
 		statesChanged.refs       = plugin.ref;
 		statesChanged.kinds      = plugin.kind;
 		statesChanged.loadStates = plugin.loadState;
-		b8 success = SerializeAndQueueMessage(s.guiConnection, statesChanged);
-		if (!success) return;
+		SerializeAndQueueMessage(s.guiConnection, statesChanged);
 	}
 }
 
@@ -581,7 +531,7 @@ OnWidgetSelect(SimulationState& s, FullWidgetRef ref)
 
 // -------------------------------------------------------------------------------------------------
 
-static Plugin*
+static Plugin&
 RegisterPlugin(SimulationState& s, StringView directory, StringView fileName)
 {
 	// Re-use empty slots from unregistered plugins
@@ -597,27 +547,17 @@ RegisterPlugin(SimulationState& s, StringView directory, StringView fileName)
 	}
 
 	if (!plugin)
-	{
-		plugin = List_Append(s.plugins);
-		LOG_IF(!plugin, return nullptr,
-			Severity::Error, "Failed to allocate Plugin");
-	}
+		plugin = &List_Append(s.plugins);
 
 	defer { OnPluginStatesChanged(s, *plugin); };
 	auto pluginGuard = guard { plugin->loadState = PluginLoadState::Broken; };
 
-	plugin->ref = List_GetLastRef(s.plugins);
-
-	b8 success = String_FromView(plugin->fileName, fileName);
-	LOG_IF(!success, return nullptr,
-		Severity::Error, "Failed to copy Plugin file name");
-
-	success = String_FromView(plugin->directory, directory);
-	LOG_IF(!success, return nullptr,
-		Severity::Error, "Failed to copy Plugin directory");
+	plugin->ref       = List_GetLastRef(s.plugins);
+	plugin->fileName  = String_FromView(fileName);
+	plugin->directory = String_FromView(directory);
 
 	pluginGuard.dismiss = true;
-	return plugin;
+	return *plugin;
 }
 
 static void
@@ -650,11 +590,7 @@ LoadSensorPlugin(SimulationState& s, Plugin& plugin)
 	}
 
 	if (!sensorPlugin)
-	{
-		sensorPlugin = List_Append(s.sensorPlugins);
-		LOG_IF(!sensorPlugin, return nullptr,
-			Severity::Error, "Failed to allocate Sensor plugin");
-	}
+		sensorPlugin = &List_Append(s.sensorPlugins);
 
 	sensorPlugin->ref = List_GetLastRef(s.sensorPlugins);
 	sensorPlugin->pluginRef = plugin.ref;
@@ -670,10 +606,8 @@ LoadSensorPlugin(SimulationState& s, Plugin& plugin)
 		Severity::Error, "Failed to load Sensor plugin '%'", plugin.fileName);
 
 	sensorPlugin->name = plugin.info.name;
-
-	success = List_Reserve(sensorPlugin->sensors, 32);
-	LOG_IF(!success, return false,
-		Severity::Error, "Failed to allocate Sensor list for Sensor plugin");
+	// TODO: Leak on failure?
+	List_Reserve(sensorPlugin->sensors, 32);
 
 	// TODO: try/catch?
 	if (sensorPlugin->functions.Initialize)
@@ -756,11 +690,7 @@ LoadWidgetPlugin(SimulationState& s, Plugin& plugin)
 	}
 
 	if (!widgetPlugin)
-	{
-		widgetPlugin = List_Append(s.widgetPlugins);
-		LOG_IF(!widgetPlugin, return nullptr,
-			Severity::Error, "Failed to allocate Widget plugin");
-	}
+		widgetPlugin = &List_Append(s.widgetPlugins);
 
 	widgetPlugin->ref = List_GetLastRef(s.widgetPlugins);
 	widgetPlugin->pluginRef = plugin.ref;
@@ -886,13 +816,8 @@ Simulation_Initialize(SimulationState& s, PluginLoaderState& pluginLoader, Rende
 	b8 success = PluginLoader_Initialize(*s.pluginLoader);
 	if (!success) return false;
 
-	success = List_Reserve(s.sensorPlugins, 8);
-	LOG_IF(!success, return false,
-		Severity::Error, "Failed to allocate Sensor plugins list");
-
-	success = List_Reserve(s.widgetPlugins, 8);
-	LOG_IF(!success, return false,
-		Severity::Error, "Failed to allocate Widget plugins list");
+	List_Reserve(s.sensorPlugins, 8);
+	List_Reserve(s.widgetPlugins, 8);
 
 	// Setup Camera
 	OnMiddleMouseDown(s, {});
@@ -1055,34 +980,29 @@ Simulation_Initialize(SimulationState& s, PluginLoaderState& pluginLoader, Rende
 
 	// DEBUG: Testing
 	{
-		Plugin* ohmPlugin = RegisterPlugin(s, "Sensor Plugins\\OpenHardwareMonitor", "Sensor.OpenHardwareMonitor.dll");
-		if (!ohmPlugin) return false;
-
-		success = LoadSensorPlugin(s, *ohmPlugin);
+		Plugin& ohmPlugin = RegisterPlugin(s, "Sensor Plugins\\OpenHardwareMonitor", "Sensor.OpenHardwareMonitor.dll");
+		success = LoadSensorPlugin(s, ohmPlugin);
 		if (!success) return false;
 
-		Plugin* filledBarPlugin = RegisterPlugin(s, "Widget Plugins\\Filled Bar", "Widget.FilledBar.dll");
-		if (!filledBarPlugin) return false;
-
-		success = LoadWidgetPlugin(s, *filledBarPlugin);
+		Plugin& filledBarPlugin = RegisterPlugin(s, "Widget Plugins\\Filled Bar", "Widget.FilledBar.dll");
+		success = LoadWidgetPlugin(s, filledBarPlugin);
 		if (!success) return false;
 
 		//u32 debugSensorIndices[] = { 0, 1, 2, 3, 21 }; // Desktop 2080 Ti
 		//u32 debugSensorIndices[] = { 6, 7, 8, 9, 33 }; // Desktop 780 Tis
 		//u32 debugSensorIndices[] = { 0, 1, 2, 3, 12 }; // Laptop
 		u32 debugSensorIndices[] = { u32Max, u32Max, u32Max, u32Max, u32Max }; // Empty
-		WidgetPluginRef ref = { filledBarPlugin->rawRefToKind };
+		WidgetPluginRef ref = { filledBarPlugin.rawRefToKind };
 		WidgetPlugin& filledBarWidgetPlugin = s.widgetPlugins[ref];
 		WidgetData& widgetData = filledBarWidgetPlugin.widgetDatas[0];
 		for (u32 i = 0; i < ArrayLength(debugSensorIndices); i++)
 		{
-			Widget* widget = CreateWidget(*filledBarPlugin, widgetData);
-			if (!widget) return false;
+			Widget& widget = CreateWidget(widgetData);
 
-			widget->position         = ((v2) s.renderSize - v2{ 240, 12 }) / 2.0f;
-			widget->position.y      += ((i32) i - 2) * 15.0f;
-			widget->sensorPluginRef  = List_GetRef(s.sensorPlugins, 0);
-			widget->sensorRef        = List_GetRef(s.sensorPlugins[0].sensors, debugSensorIndices[i]);
+			widget.position         = ((v2) s.renderSize - v2{ 240, 12 }) / 2.0f;
+			widget.position.y      += ((i32) i - 2) * 15.0f;
+			widget.sensorPluginRef  = List_GetRef(s.sensorPlugins, 0);
+			widget.sensorRef        = List_GetRef(s.sensorPlugins[0].sensors, debugSensorIndices[i]);
 
 			PluginContext context = {};
 			context.s            = &s;

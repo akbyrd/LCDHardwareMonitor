@@ -71,11 +71,11 @@ struct StringSlice
 inline void
 String_Free(String& string)
 {
-	free(string.data);
+	Free(string.data);
 	string = {};
 }
 
-inline b8
+inline void
 String_Reserve(String& string, u32 capacity)
 {
 	if (string.capacity < capacity)
@@ -83,47 +83,38 @@ String_Reserve(String& string, u32 capacity)
 		u64 totalSize = capacity;
 		u64 emptySize = (capacity - string.length);
 
-		c8* data = (c8*) realloc(string.data, (size) totalSize);
-		if (!data) return false;
-
 		string.capacity = capacity;
-		string.data     = data;
+		string.data     = (c8*) ReallocChecked(string.data, (size) totalSize);
 		memset(&string[string.length], 0, (size) emptySize);
 	}
-
-	return true;
 }
 
 // TODO: See what the errors are like when format isn't a c8[] or isn't constexpr
-#define String_Format(string, format, ...) \
-	String_FormatChecked<CountPlaceholders(format)>(string, format, ##__VA_ARGS__)
+#define String_Format(format, ...) \
+	String_FormatChecked<CountPlaceholders(format)>(format, ##__VA_ARGS__)
 
-b8
-String_FromView(String& string, StringView view)
+String
+String_FromView(StringView view)
 {
-	b8 preallocated = string.data != nullptr;
-	auto allocGuard = guard { if (!preallocated) String_Free(string); };
-
-	b8 success = String_Reserve(string, view.length + 1);
-	if (!success) return false;
+	String string = {};
+	String_Reserve(string, view.length + 1);
 
 	strncpy_s(&string[0], string.capacity, &view[0], view.length);
 	string.length = view.length;
 
-	allocGuard.dismiss = true;
-	return true;
+	return string;
 }
 
-b8
-String_FromSlice(String& string, StringSlice slice)
+String
+String_FromSlice(StringSlice slice)
 {
-	b8 success = String_Reserve(string, slice.length);
-	if (!success) return false;
+	String string = {};
+	String_Reserve(string, slice.length);
 
 	string.length = slice.length;
 	strncpy_s(&string[0], string.capacity, &slice[0], slice.length);
 
-	return true;
+	return string;
 }
 
 inline StrPos
@@ -267,28 +258,26 @@ FormatImpl(String& string, StringView format, u32 iFmt, Args&&... args)
 }
 
 template<typename... Args>
-b8
-String_FormatImpl(String& string, StringView format, Args&&... args)
+String
+String_FormatImpl(StringView format, Args&&... args)
 {
-	auto allocGuard = guard { String_Free(string); };
+	String string = {};
 
 	u32 stringLen = FormatImpl(string, format, 0, args...);
-	b8 success = String_Reserve(string, stringLen + 1);
-	if (!success) return false;
+	String_Reserve(string, stringLen + 1);
 
 	FormatImpl(string, format, 0, args...);
 	Assert(string.length == stringLen);
 
-	allocGuard.dismiss = true;
-	return true;
+	return string;
 }
 
 template<u32 PlaceholderCount, typename... Args>
-inline b8
-String_FormatChecked(String& string, StringView format, Args&&... args)
+inline String
+String_FormatChecked(StringView format, Args&&... args)
 {
 	static_assert(PlaceholderCount == sizeof...(args));
-	return String_FormatImpl(string, format, args...);
+	return String_FormatImpl(format, args...);
 }
 
 // -------------------------------------------------------------------------------------------------

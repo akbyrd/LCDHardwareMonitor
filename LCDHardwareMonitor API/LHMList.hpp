@@ -84,7 +84,7 @@ struct Slice
 };
 
 template<typename T>
-inline b8
+inline void
 List_Reserve(List<T>& list, u32 capacity)
 {
 	if (list.capacity < capacity)
@@ -92,19 +92,14 @@ List_Reserve(List<T>& list, u32 capacity)
 		u64 totalSize = sizeof(T) * capacity;
 		u64 emptySize = sizeof(T) * (capacity - list.length);
 
-		T* data = (T*) realloc(list.data, (size) totalSize);
-		if (!data) return false;
-
 		list.capacity = capacity;
-		list.data     = data;
+		list.data     = (T*) ReallocChecked(list.data, (size) totalSize);
 		memset(&list.data[list.length], 0, (size) emptySize);
 	}
-
-	return true;
 }
 
 template<typename T>
-inline b8
+inline void
 List_Grow(List<T>& list)
 {
 	if (list.length == list.capacity)
@@ -113,47 +108,36 @@ List_Grow(List<T>& list)
 		u64 totalSize = sizeof(T) * capacity;
 		u64 emptySize = sizeof(T) * (capacity - list.length);
 
-		T* data = (T*) realloc(list.data, (size) totalSize);
-		if (!data) return false;
-
 		list.capacity = capacity;
-		list.data     = data;
+		list.data     = (T*) ReallocChecked(list.data, (size) totalSize);
 		memset(&list.data[list.length], 0, (size) emptySize);
 	}
-
-	return true;
 }
 
 template<typename T>
-inline T*
+inline T&
 List_Append(List<T>& list, T item)
 {
-	if (!List_Grow(list))
-		return nullptr;
-
+	List_Grow(list);
 	T& slot = list.data[list.length++];
 	slot = item;
-	return &slot;
+	return slot;
 }
 
 template<typename T>
-inline T*
+inline T&
 List_Append(List<T>& list)
 {
-	if (!List_Grow(list))
-		return nullptr;
-
+	List_Grow(list);
 	T& slot = list.data[list.length++];
-	return &slot;
+	return slot;
 }
 
 template<typename T>
-inline b8
+inline void
 List_AppendRange(List<T>& list, Slice<T> items)
 {
-	if (!List_Reserve(list, list.length + items.length))
-		return false;
-
+	List_Reserve(list, list.length + items.length);
 	if (items.stride == sizeof(T))
 	{
 		memcpy(&list.data[list.length], items.data, items.length * sizeof(T));
@@ -164,8 +148,6 @@ List_AppendRange(List<T>& list, Slice<T> items)
 		for (u32 i = 0; i < items.length; i++)
 			list.data[list.length++] = items[i];
 	}
-
-	return true;
 }
 
 template<typename T>
@@ -212,19 +194,12 @@ List_ContainsValue(List<T>& list, T item)
 }
 
 template<typename T>
-inline b8
-List_Duplicate(Slice<T>& slice, List<T>& duplicate)
+inline List<T>
+List_Duplicate(Slice<T>& slice)
 {
-	if (!List_Reserve(duplicate, slice.length))
-		return false;
-
-	duplicate.length   = slice.length;
-	duplicate.capacity = slice.length;
-
-	for (u32 i = 0; i < slice.length; i++)
-		duplicate[i] = slice[i];
-
-	return true;
+	List<T> duplicate = {};
+	List_AppendRange(duplicate, slice);
+	return duplicate;
 }
 
 template<typename T>
@@ -269,7 +244,7 @@ template<typename T>
 inline void
 List_Free(List<T>& list)
 {
-	free(list.data);
+	Free(list.data);
 	list = {};
 }
 
@@ -378,18 +353,15 @@ List_RemoveLast(List<T>& list)
 }
 
 template<typename T>
-inline b8
+inline void
 List_Shrink(List<T>& list)
 {
 	u32 capacity = list.capacity / 2;
 	if (list.length < capacity)
 	{
 		u64 totalSize = sizeof(T) * capacity;
-		T* data = (T*) realloc(list.data, (size) totalSize);
-		if (!data) return false;
-
 		list.capacity = capacity;
-		list.data     = data;
+		list.data     = (T*) ReallocChecked(list.data, (size) totalSize);
 	}
 
 	return true;
