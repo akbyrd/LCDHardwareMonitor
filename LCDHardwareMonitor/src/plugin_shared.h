@@ -36,7 +36,7 @@ struct Plugin
 	PluginLoadState loadState;
 	String          fileName;
 	String          directory;
-	void*           userData;
+	void*           loaderData;
 };
 
 struct SensorPlugin

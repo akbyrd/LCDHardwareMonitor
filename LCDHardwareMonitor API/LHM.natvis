@@ -98,7 +98,7 @@
 	</Type>
 
 	<Type Name="Plugin">
-		<DisplayString>{{ {fileName} }}</DisplayString>
+		<DisplayString>{{ {info.name} }}</DisplayString>
 	</Type>
 
 	<Type Name="PluginInfo">

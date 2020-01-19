@@ -569,7 +569,7 @@ UnregisterPlugin(SimulationState& s, Plugin& plugin)
 	String_Free(plugin.fileName);
 	String_Free(plugin.directory);
 	String_Free(plugin.info.name);
-	String_Free(plugin.info.author);;
+	String_Free(plugin.info.author);
 	plugin = {};
 }
 

@@ -212,6 +212,7 @@ ValidatePluginInfo(PluginInfo& pluginInfo)
 	valid = valid && pluginInfo.name.length > 0;
 	valid = valid && pluginInfo.author.length > 0;
 	valid = valid && pluginInfo.version;
+	valid = valid && pluginInfo.lhmVersion == LHMVersion;
 	return valid;
 }
 
@@ -238,15 +239,15 @@ PluginLoader_LoadSensorPlugin(PluginLoaderState& s, Plugin& plugin, SensorPlugin
 			LOG_IF(!success, break,
 				Severity::Error, "Failed to set Sensor plugin DLL directory '%'", plugin.directory);
 
-			plugin.userData = LoadLibraryA(plugin.fileName.data);
-			LOG_IF(!plugin.userData, break,
+			plugin.loaderData = LoadLibraryA(plugin.fileName.data);
+			LOG_IF(!plugin.loaderData, break,
 				Severity::Error, "Failed to load unmanaged Sensor plugin '%'", plugin.fileName);
 
 			success = SetDllDirectoryA("");
 			LOG_IF(!success, break,
 				Severity::Error, "Failed to unset Sensor plugin DLL directory '%'", plugin.directory);
 
-			HMODULE pluginModule = (HMODULE) plugin.userData;
+			HMODULE pluginModule = (HMODULE) plugin.loaderData;
 			sensorPlugin.functions.GetPluginInfo = (SensorPluginFunctions::GetPluginInfoFn*) (void*) GetProcAddress(pluginModule, "GetSensorPluginInfo");
 			LOG_IF(!sensorPlugin.functions.GetPluginInfo, break,
 				Severity::Error, "Failed to find unmanaged GetSensorPluginInfo '%'", plugin.fileName);
@@ -292,10 +293,10 @@ PluginLoader_UnloadSensorPlugin(PluginLoaderState& s, Plugin& plugin, SensorPlug
 			break;
 
 		case PluginLanguage::Native:
-			success = FreeLibrary((HMODULE) plugin.userData);
+			success = FreeLibrary((HMODULE) plugin.loaderData);
 			LOG_IF(!success, break,
 				Severity::Error, "Failed to unload unmanaged Sensor plugin '%'", plugin.info.name);
-			plugin.userData = nullptr;
+			plugin.loaderData = nullptr;
 			break;
 
 		case PluginLanguage::Managed:
@@ -334,15 +335,15 @@ PluginLoader_LoadWidgetPlugin(PluginLoaderState& s, Plugin& plugin, WidgetPlugin
 			LOG_IF(!success, break,
 				Severity::Error, "Failed to set Widget plugin DLL directory '%'", plugin.directory);
 
-			plugin.userData = LoadLibraryA(plugin.fileName.data);
-			LOG_IF(!plugin.userData, break,
+			plugin.loaderData = LoadLibraryA(plugin.fileName.data);
+			LOG_IF(!plugin.loaderData, break,
 				Severity::Error, "Failed to load unmanaged Widget plugin '%'", plugin.fileName);
 
 			success = SetDllDirectoryA("");
 			LOG_IF(!success, break,
 				Severity::Error, "Failed to set Widget plugin DLL directory '%'", plugin.directory);
 
-			HMODULE pluginModule = (HMODULE) plugin.userData;
+			HMODULE pluginModule = (HMODULE) plugin.loaderData;
 			widgetPlugin.functions.GetPluginInfo = (WidgetPluginFunctions::GetPluginInfoFn*) (void*) GetProcAddress(pluginModule, "GetWidgetPluginInfo");
 			LOG_IF(!widgetPlugin.functions.GetPluginInfo, break,
 				Severity::Error, "Failed to find unmanaged GetWidgetPluginInfo '%'", plugin.fileName);
@@ -388,10 +389,10 @@ PluginLoader_UnloadWidgetPlugin(PluginLoaderState& s, Plugin& plugin, WidgetPlug
 			break;
 
 		case PluginLanguage::Native:
-			success = FreeLibrary((HMODULE) plugin.userData);
+			success = FreeLibrary((HMODULE) plugin.loaderData);
 			LOG_IF(!success, break,
 				Severity::Error, "Failed to unload unmanaged Widget plugin '%'", plugin.info.name);
-			plugin.userData = nullptr;
+			plugin.loaderData = nullptr;
 			break;
 
 		case PluginLanguage::Managed:

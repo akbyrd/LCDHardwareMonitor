@@ -136,7 +136,7 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	LHMPluginLoader%
 	GetDomainResidentLoader(Plugin plugin)
 	{
-		GCHandle         appDomainHandle = (GCHandle) (IntPtr) plugin.userData;
+		GCHandle         appDomainHandle = (GCHandle) (IntPtr) plugin.loaderData;
 		AppDomain%       appDomain       = *(AppDomain^) appDomainHandle.Target;
 		LHMPluginLoader% pluginLoader    = *(LHMPluginLoader^) appDomain.DomainManager;
 		return pluginLoader;
@@ -162,18 +162,18 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 		//domainSetup.ShadowCopyFiles       = true
 
 		AppDomain^ appDomain = CreateDomain(name, nullptr, %domainSetup);
-		plugin.userData = (void*) (IntPtr) GCHandle::Alloc(appDomain);
+		plugin.loaderData = (void*) (IntPtr) GCHandle::Alloc(appDomain);
 		return true;
 	}
 
 	b8
 	UnloadPlugin(Plugin& plugin)
 	{
-		GCHandle appDomainHandle = (GCHandle) (IntPtr) plugin.userData;
+		GCHandle appDomainHandle = (GCHandle) (IntPtr) plugin.loaderData;
 
 		AppDomain::Unload((AppDomain^) appDomainHandle.Target);
 		appDomainHandle.Free();
-		plugin.userData = nullptr;
+		plugin.loaderData = nullptr;
 		return true;
 	}
 
@@ -222,32 +222,36 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 		b8 success = LoadAssemblyAndInstantiateType(plugin.fileName, sensorPluginCLR.pluginInstance);
 		if (!success) return false;
 
+		String_Free(plugin.info.name);
+		String_Free(plugin.info.author);
+
 		sensorPluginCLR.pluginInstance->GetPluginInfo(plugin.info);
+		sensorPlugin.functions.GetPluginInfo = nullptr;
 
 		// DEBUG: Remove me (just for fast loading)
 		#if true
 		#pragma message("warning: Sensor plugin init temporarily disabled for faster loading")
 		UNUSED(sensorPlugin);
 		#else
-		auto iInitialize = dynamic_cast<ISensorInitialize^>(sensorPluginCLR.pluginInstance);
+		auto iInitialize = dynamic_cast<ISensorPluginInitialize^>(sensorPluginCLR.pluginInstance);
 		if (iInitialize)
 		{
-			sensorPluginCLR.initializeDelegate = gcnew SensorPlugin_CLR::InitializeDelegate(iInitialize, &ISensorInitialize::Initialize);
-			sensorPlugin.functions.initialize = (SensorPluginFunctions::InitializeFn*) (void*) Marshal::GetFunctionPointerForDelegate(sensorPluginCLR.initializeDelegate);
+			sensorPluginCLR.initializeDelegate = gcnew SensorPlugin_CLR::InitializeDelegate(iInitialize, &ISensorPluginInitialize::Initialize);
+			sensorPlugin.functions.Initialize = (SensorPluginFunctions::InitializeFn*) (void*) Marshal::GetFunctionPointerForDelegate(sensorPluginCLR.initializeDelegate);
 		}
 
-		auto iUpdate = dynamic_cast<ISensorUpdate^>(sensorPluginCLR.pluginInstance);
+		auto iUpdate = dynamic_cast<ISensorPluginUpdate^>(sensorPluginCLR.pluginInstance);
 		if (iUpdate)
 		{
-			sensorPluginCLR.updateDelegate = gcnew SensorPlugin_CLR::UpdateDelegate(iUpdate, &ISensorUpdate::Update);
-			sensorPlugin.functions.update = (SensorPluginFunctions::UpdateFn*) (void*) Marshal::GetFunctionPointerForDelegate(sensorPluginCLR.updateDelegate);
+			sensorPluginCLR.updateDelegate = gcnew SensorPlugin_CLR::UpdateDelegate(iUpdate, &ISensorPluginUpdate::Update);
+			sensorPlugin.functions.Update = (SensorPluginFunctions::UpdateFn*) (void*) Marshal::GetFunctionPointerForDelegate(sensorPluginCLR.updateDelegate);
 		}
 
-		auto iTeardown = dynamic_cast<ISensorTeardown^>(sensorPluginCLR.pluginInstance);
+		auto iTeardown = dynamic_cast<ISensorPluginTeardown^>(sensorPluginCLR.pluginInstance);
 		if (iTeardown)
 		{
-			sensorPluginCLR.teardownDelegate = gcnew SensorPlugin_CLR::TeardownDelegate(iTeardown, &ISensorTeardown::Teardown);
-			sensorPlugin.functions.teardown = (SensorPluginFunctions::TeardownFn*) (void*) Marshal::GetFunctionPointerForDelegate(sensorPluginCLR.teardownDelegate);
+			sensorPluginCLR.teardownDelegate = gcnew SensorPlugin_CLR::TeardownDelegate(iTeardown, &ISensorPluginTeardown::Teardown);
+			sensorPlugin.functions.Teardown = (SensorPluginFunctions::TeardownFn*) (void*) Marshal::GetFunctionPointerForDelegate(sensorPluginCLR.teardownDelegate);
 		}
 		#endif
 
@@ -269,7 +273,11 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 		b8 success = LoadAssemblyAndInstantiateType(plugin.fileName, widgetPluginCLR.pluginInstance);
 		if (!success) return false;
 
+		String_Free(plugin.info.name);
+		String_Free(plugin.info.author);
+
 		widgetPluginCLR.pluginInstance->GetPluginInfo(plugin.info);
+		widgetPlugin.functions.GetPluginInfo = nullptr;
 
 		auto iInitialize = dynamic_cast<IWidgetPluginInitialize^>(widgetPluginCLR.pluginInstance);
 		if (iInitialize)
