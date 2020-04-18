@@ -50,3 +50,10 @@ ConstantBufferUpdate& Renderer_PushConstantBufferUpdate     (RendererState&);
 DrawCall&             Renderer_PushDrawCall                 (RendererState&);
 b8                    Renderer_Render                       (RendererState&);
 void*                 Renderer_GetSharedRenderSurface       (RendererState&);
+
+void                  Renderer_ValidateMesh                 (RendererState&, Mesh mesh);
+void                  Renderer_ValidateVertexShader         (RendererState&, VertexShader vs);
+void                  Renderer_ValidatePixelShader          (RendererState&, PixelShader ps);
+void                  Renderer_ValidateMaterial             (RendererState&, Material material);
+void                  Renderer_ValidateConstantBufferUpdate (RendererState&, ConstantBufferUpdate& cBufUpdate);
+void                  Renderer_ValidateDrawCall             (RendererState&, DrawCall& drawCall);

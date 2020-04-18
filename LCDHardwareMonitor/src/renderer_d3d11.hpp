@@ -599,7 +599,7 @@ Renderer_LoadVertexShader(RendererState& s, StringView name, StringView path, Sl
 {
 	// Vertex Shader
 	// TODO: Eventually lists will reuse slots
-	VertexShaderData vs = List_Append(s.vertexShaders);
+	VertexShaderData& vs = List_Append(s.vertexShaders);
 	auto vsGuard = guard {
 		vs.d3dVertexShader.Reset();
 		vs.d3dInputLayout.Reset();
@@ -703,7 +703,7 @@ PixelShader
 Renderer_LoadPixelShader(RendererState& s, StringView name, StringView path, Slice<u32> cBufSizes)
 {
 	// TODO: Eventually lists will reuse slots
-	PixelShaderData ps = List_Append(s.pixelShaders);
+	PixelShaderData& ps = List_Append(s.pixelShaders);
 	auto psGuard = guard {
 		ps.d3dPixelShader.Reset();
 
@@ -923,4 +923,57 @@ void*
 Renderer_GetSharedRenderSurface(RendererState& s)
 {
 	return s.d3dRenderTextureSharedHandle;
+}
+
+void Renderer_ValidateMesh(RendererState& s, Mesh mesh)
+{
+	Assert(List_IsRefValid(s.meshes, mesh));
+}
+
+void Renderer_ValidateVertexShader(RendererState& s, VertexShader vs)
+{
+	Assert(List_IsRefValid(s.vertexShaders, vs));
+}
+
+void Renderer_ValidatePixelShader(RendererState& s, PixelShader ps)
+{
+	Assert(List_IsRefValid(s.pixelShaders, ps));
+}
+
+void
+Renderer_ValidateMaterial(RendererState& s, Material material)
+{
+	Renderer_ValidateMesh(s, material.mesh);
+	Renderer_ValidateVertexShader(s, material.vs);
+	Renderer_ValidatePixelShader(s, material.ps);
+}
+
+void
+Renderer_ValidateConstantBufferUpdate(RendererState& s, ConstantBufferUpdate& cBufUpdate)
+{
+	Renderer_ValidateMaterial(s, cBufUpdate.material);
+
+	switch (cBufUpdate.shaderStage)
+	{
+		default: Assert(false); break;
+
+		case ShaderStage::Vertex:
+		{
+			VertexShaderData& vs = s.vertexShaders[cBufUpdate.material.vs];
+			Assert(cBufUpdate.index < vs.constantBuffers.length);
+			break;
+		}
+
+		case ShaderStage::Pixel:
+		{
+			PixelShaderData& ps = s.pixelShaders[cBufUpdate.material.ps];
+			Assert(cBufUpdate.index < ps.constantBuffers.length);
+			break;
+		}
+	}
+}
+
+void Renderer_ValidateDrawCall(RendererState& s, DrawCall& drawCall)
+{
+	Renderer_ValidateMaterial(s, drawCall.material);
 }

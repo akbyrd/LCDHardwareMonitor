@@ -241,7 +241,9 @@ static Material
 CreateMaterial(PluginContext& context, Mesh mesh, VertexShader vs, PixelShader ps)
 {
 	RendererState& rendererState = *context.s->renderer;
-	return Renderer_CreateMaterial(rendererState, mesh, vs, ps);
+	Material material = Renderer_CreateMaterial(rendererState, mesh, vs, ps);
+	Renderer_ValidateMaterial(rendererState, material);
+	return material;
 }
 
 static Matrix
@@ -274,6 +276,7 @@ PushConstantBufferUpdate(PluginContext& context, Material material, ShaderStage 
 	cBufUpdate.shaderStage = shaderStage;
 	cBufUpdate.index       = index;
 	cBufUpdate.data        = data;
+	Renderer_ValidateConstantBufferUpdate(rendererState, cBufUpdate);
 }
 
 static void
@@ -285,6 +288,7 @@ PushDrawCall(PluginContext& context, Material material)
 
 	DrawCall& drawCall = Renderer_PushDrawCall(rendererState);
 	drawCall.material = material;
+	Renderer_ValidateDrawCall(rendererState, drawCall);
 }
 
 // -------------------------------------------------------------------------------------------------
