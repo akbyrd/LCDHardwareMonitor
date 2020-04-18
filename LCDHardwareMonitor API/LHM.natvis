@@ -5,7 +5,7 @@
 	</Type>
 
 	<Type Name="StringSlice">
-		<DisplayString>{{ {data,sb} }}</DisplayString>
+		<DisplayString>{{ {data,[length]sb} }}</DisplayString>
 	</Type>
 
 	<Type Name="List&lt;*&gt;">

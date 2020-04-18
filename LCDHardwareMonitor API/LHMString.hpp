@@ -8,6 +8,7 @@
 // NOTE: The length of a StringView DOES NOT include the null terminator
 // NOTE: The length of a StringSlice DOES NOT include the null terminator (if present)
 
+// TODO: Maybe capacity should not include the null terminator
 // TODO: How do we handle immutable strings? Since there's no const transitivity, do we need separate types?
 
 struct StrPos
@@ -17,8 +18,10 @@ struct StrPos
 	static const StrPos Null;
 
 	operator b8() { return *this != Null; }
-	b8 operator== (StrPos rhs) { return index == rhs.index; }
-	b8 operator!= (StrPos rhs) { return index != rhs.index; }
+	b8     operator== (StrPos rhs) { return index == rhs.index; }
+	b8     operator!= (StrPos rhs) { return index != rhs.index; }
+	StrPos operator+  (int rhs)    { return { index + rhs }; }
+	StrPos operator-  (int rhs)    { return { index - rhs }; }
 };
 
 const StrPos StrPos::Null = {};
@@ -81,7 +84,7 @@ String_Reserve(String& string, u32 capacity)
 	if (string.capacity < capacity)
 	{
 		u64 totalSize = capacity;
-		u64 emptySize = (capacity - string.length);
+		u64 emptySize = (capacity - string.length - 1);
 
 		string.capacity = capacity;
 		string.data     = (c8*) ReallocChecked(string.data, (size) totalSize);
@@ -109,7 +112,7 @@ String
 String_FromSlice(StringSlice slice)
 {
 	String string = {};
-	String_Reserve(string, slice.length);
+	String_Reserve(string, slice.length + 1);
 
 	string.length = slice.length;
 	strncpy_s(&string[0], string.capacity, &slice[0], slice.length);
@@ -154,7 +157,7 @@ String_FindLast(StringView string, c8 item)
 {
 	for (u32 i = string.length; i > 0; i--)
 		if (string.data[i - 1] == item)
-			return String_GetPos(string, i);
+			return String_GetPos(string, i - 1);
 
 	return StrPos::Null;
 }
@@ -167,7 +170,7 @@ StringSlice_Create(StringView string, StrPos first, StrPos last)
 {
 	StringSlice slice = {};
 	slice.data    = &string[first];
-	string.length = last.index - first.index + 1;
+	slice.length = last.index - first.index + 1;
 	return slice;
 }
 

@@ -107,10 +107,14 @@ GetNameFromPath(StringView path)
 	StrPos first = String_FindLast(path, '/');
 	if (first == StrPos::Null)
 		first = String_GetFirstPos(path);
+	Assert(first != String_GetLastPos(path));
+	first = first + 1;
 
 	StrPos last = String_FindLast(path, '.');
 	if (last == StrPos::Null)
 		last = String_GetLastPos(path);
+	Assert(last != String_GetFirstPos(path));
+	last = last - 1;
 
 	if (first == last) return {};
 
