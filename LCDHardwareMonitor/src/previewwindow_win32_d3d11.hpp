@@ -270,7 +270,7 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 		case WM_MOUSEMOVE:
 		{
 			v2i pos = GetMousePosition(lParam, s->zoomFactor, s->renderSize);
-			OnMouseMove(*s->simulationState, pos);
+			Input_MouseMove(*s->simulationState, pos);
 			break;
 		}
 
@@ -279,7 +279,7 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 			SetCapture(s->hwnd);
 
 			v2i pos = GetMousePosition(lParam, s->zoomFactor, s->renderSize);
-			OnLeftMouseDown(*s->simulationState, pos);
+			Input_LeftMouseDown(*s->simulationState, pos);
 			break;
 		}
 
@@ -289,7 +289,7 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 			LOG_LAST_ERROR_IF(!success, IGNORE, Severity::Warning, "Failed to release mouse capture");
 
 			v2i pos = GetMousePosition(lParam, s->zoomFactor, s->renderSize);
-			OnLeftMouseUp(*s->simulationState, pos);
+			Input_LeftMouseUp(*s->simulationState, pos);
 			break;
 		}
 
@@ -298,7 +298,7 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 			SetCapture(s->hwnd);
 
 			v2i pos = GetMousePosition(lParam, s->zoomFactor, s->renderSize);
-			OnRightMouseDown(*s->simulationState, pos);
+			Input_RightMouseDown(*s->simulationState, pos);
 			break;
 		}
 
@@ -308,14 +308,14 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 			LOG_LAST_ERROR_IF(!success, IGNORE, Severity::Warning, "Failed to release mouse capture");
 
 			v2i pos = GetMousePosition(lParam, s->zoomFactor, s->renderSize);
-			OnRightMouseUp(*s->simulationState, pos);
+			Input_RightMouseUp(*s->simulationState, pos);
 			break;
 		}
 
 		case WM_MBUTTONDOWN:
 		{
 			v2i pos = GetMousePosition(lParam, s->zoomFactor, s->renderSize);
-			OnMiddleMouseDown(*s->simulationState, pos);
+			Input_MiddleMouseDown(*s->simulationState, pos);
 			break;
 		}
 

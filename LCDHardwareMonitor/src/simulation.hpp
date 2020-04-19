@@ -1,30 +1,5 @@
 #include "Solid Colored.ps.h"
 
-struct FullWidgetRef
-{
-	WidgetPluginRef pluginRef;
-	WidgetDataRef   dataRef;
-	WidgetRef       ref;
-};
-
-inline b8 operator== (FullWidgetRef lhs, FullWidgetRef rhs)
-{
-	b8 result = true;
-	result &= lhs.pluginRef == rhs.pluginRef;
-	result &= lhs.dataRef == rhs.dataRef;
-	result &= lhs.ref == rhs.ref;
-	return result;
-}
-
-inline b8 operator!= (FullWidgetRef lhs, FullWidgetRef rhs)
-{
-	b8 result = false;
-	result |= lhs.pluginRef != rhs.pluginRef;
-	result |= lhs.dataRef != rhs.dataRef;
-	result |= lhs.ref != rhs.ref;
-	return result;
-}
-
 struct SimulationState
 {
 	PluginLoaderState* pluginLoader;
@@ -61,54 +36,219 @@ struct PluginContext
 	b8               success;
 };
 
+// -------------------------------------------------------------------------------------------------
+// C++ is Stupid.
+
+static void SelectWidget(SimulationState& s, FullWidgetRef ref);
+static void RemoveSensorRefs(SimulationState& s, SensorPluginRef sensorPluginRef, Slice<SensorRef> sensorRefs);
+static String GetNameFromPath(StringView path);
+
+// -------------------------------------------------------------------------------------------------
+// GUI State Changes
+
 static void
-RemoveSensorRefs(SimulationState& s, SensorPluginRef sensorPluginRef, Slice<SensorRef> sensorRefs)
+OnConnect(SimulationState& s, ConnectionState& con)
 {
-	for (u32 i = 0; i < sensorRefs.length; i++)
+	using namespace Message;
+
 	{
-		SensorRef sensorRef = sensorRefs[i];
-		// TODO: Widget iterator!
-		for (u32 j = 0; j < s.widgetPlugins.length; j++)
+		Connect connect = {};
+		connect.version       = LHMVersion;
+		connect.renderSurface = (size) Renderer_GetSharedRenderSurface(*s.renderer);
+		connect.renderSize.x  = s.renderSize.x;
+		connect.renderSize.y  = s.renderSize.y;
+		SerializeAndQueueMessage(con, connect);
+	}
+
+	{
+		PluginsAdded pluginsAdded = {};
+		pluginsAdded.refs  = List_MemberSlice(s.plugins, &Plugin::ref);
+		pluginsAdded.kinds = List_MemberSlice(s.plugins, &Plugin::kind);
+		pluginsAdded.infos = List_MemberSlice(s.plugins, &Plugin::info);
+		SerializeAndQueueMessage(con, pluginsAdded);
+
+		PluginStatesChanged statesChanged = {};
+		statesChanged.refs       = List_MemberSlice(s.plugins, &Plugin::ref);
+		statesChanged.kinds      = List_MemberSlice(s.plugins, &Plugin::kind);
+		statesChanged.loadStates = List_MemberSlice(s.plugins, &Plugin::loadState);
+		SerializeAndQueueMessage(con, statesChanged);
+	}
+
+	{
+		SensorsAdded sensorsAdded = {};
+		sensorsAdded.sensorPluginRefs = List_MemberSlice(s.sensorPlugins, &SensorPlugin::ref);
+		sensorsAdded.sensors          = List_MemberSlice(s.sensorPlugins, &SensorPlugin::sensors);
+		SerializeAndQueueMessage(con, sensorsAdded);
+	}
+
+	{
+		for (u32 i = 0; i < s.widgetPlugins.length; i++)
 		{
-			WidgetPlugin& widgetPlugin = s.widgetPlugins[j];
-			for (u32 k = 0; k < widgetPlugin.widgetDatas.length; k++)
-			{
-				WidgetData& widgetData = widgetPlugin.widgetDatas[k];
-				for (u32 l = 0; l < widgetData.widgets.length; l++)
-				{
-					Widget& widget = widgetData.widgets[l];
-					if (widget.sensorPluginRef == sensorPluginRef && widget.sensorRef == sensorRef)
-					{
-						widget.sensorPluginRef = SensorPluginRef::Null;
-						widget.sensorRef       = SensorRef::Null;
-					}
-				}
-			}
+			WidgetPlugin& widgetPlugin = s.widgetPlugins[i];
+
+			// NOTE: It's surprisingly tricky to send a Slice<Slice<T>> when it's backed by
+			// a set of List<T>. The inner slices are temporaries and need to be stored.
+			Slice<WidgetDesc> descs = List_MemberSlice(widgetPlugin.widgetDatas, &WidgetData::desc);
+
+			WidgetDescsAdded widgetDescsAdded = {};
+			widgetDescsAdded.widgetPluginRefs = widgetPlugin.ref;
+			widgetDescsAdded.descs            = descs;
+			SerializeAndQueueMessage(con, widgetDescsAdded);
 		}
 	}
 }
 
-static String
-GetNameFromPath(StringView path)
+static void
+OnDisconnect(SimulationState& s, ConnectionState& con)
 {
-	if (path.length == 0) return {};
+	s.hovered = {};
+	s.selected = {};
 
-	StrPos first = String_FindLast(path, '/');
-	if (first == StrPos::Null)
-		first = String_GetFirstPos(path);
-	Assert(first != String_GetLastPos(path));
-	first = first + 1;
+	con.sendIndex = 0;
+	con.recvIndex = 0;
+}
 
-	StrPos last = String_FindLast(path, '.');
-	if (last == StrPos::Null)
-		last = String_GetLastPos(path);
-	Assert(last != String_GetFirstPos(path));
-	last = last - 1;
+static void
+OnTeardown(ConnectionState& con)
+{
+	using namespace Message;
+	PipeResult result;
 
-	if (first == last) return {};
+	Disconnect disconnect = {};
+	disconnect.header.id    = IdOf<Disconnect>;
+	disconnect.header.index = con.sendIndex - (con.queue.length - con.queueIndex);
+	disconnect.header.size  = sizeof(Disconnect);
 
-	StringSlice nameSlice = StringSlice_Create(path, first, last);
-	return String_FromSlice(nameSlice);
+	Bytes bytes = {};
+	bytes.length   = sizeof(Disconnect);
+	bytes.capacity = bytes.length;
+	bytes.data     = (u8*) &disconnect;
+
+	result = Platform_WritePipe(con.pipe, bytes);
+	// TODO: WritePipe should probably update the connection state to make this checking more correct
+	LOG_IF(result == PipeResult::TransientFailure, return,
+		Severity::Info, "Unable to send GUI disconnect signal");
+	LOG_IF(result == PipeResult::UnexpectedFailure, return,
+		Severity::Error, "Failed to send GUI disconnect signal");
+
+	result = Platform_FlushPipe(con.pipe);
+	LOG_IF(result == PipeResult::UnexpectedFailure, return,
+		Severity::Error, "Failed to flush GUI communication pipe");
+}
+
+// -------------------------------------------------------------------------------------------------
+// Messages To GUI
+
+// NOTE: None of these functions return error codes because the messaging system handles errors
+// internally. It will disconnect and stop attempting to send messages when a failure occurs.
+
+static void
+ToGUI_PluginStatesChanged(SimulationState& s, Slice<Plugin> plugins)
+{
+	using namespace Message;
+	if (s.guiConnection.pipe.state != PipeState::Connected) return;
+
+	for (u32 i = 0; i < plugins.length; i++)
+	{
+		Plugin& plugin = plugins[i];
+
+		PluginStatesChanged statesChanged = {};
+		statesChanged.refs       = plugin.ref;
+		statesChanged.kinds      = plugin.kind;
+		statesChanged.loadStates = plugin.loadState;
+		SerializeAndQueueMessage(s.guiConnection, statesChanged);
+	}
+}
+
+// TODO: Implement
+static void
+ToGUI_WidgetSelectionChanged(SimulationState& s, FullWidgetRef ref)
+{
+}
+
+// -------------------------------------------------------------------------------------------------
+// Input Messages From GUI
+
+static void
+Input_MouseMove(SimulationState& s, v2i mousePos)
+{
+	s.mousePos = (v2) mousePos;
+	if (!s.mouseLook) return;
+
+	v2i deltaPos = mousePos - s.mousePosStart;
+	s.cameraRot = 0.0005f * (v2) deltaPos * 2*r32Pi;
+
+	v2 rot = s.cameraRotStart + s.cameraRot;
+	rot.pitch = Clamp(rot.pitch, -0.49f*r32Pi, 0.49f*r32Pi);
+
+	// TODO: Get render size out of here
+	v2 offset = (v2) s.renderSize / 2.0f;
+	v3 target = { offset.x, offset.y, 0 };
+	v3 pos    = GetOrbitPos(target, rot, 500);
+
+	s.cameraPos = pos;
+	s.view      = LookAt(pos, target);
+	s.vp        = s.view * s.proj;
+
+	s.iview = InvertRT(s.view);
+}
+
+static void
+Input_LeftMouseDown(SimulationState& s, v2i mousePos)
+{
+	UNUSED(mousePos);
+	SelectWidget(s, s.hovered);
+}
+
+static void
+Input_LeftMouseUp(SimulationState& s, v2i mousePos)
+{
+	UNUSED(s);
+	UNUSED(mousePos);
+}
+
+static void
+Input_MiddleMouseDown(SimulationState& s, v2i mousePos)
+{
+	UNUSED(mousePos);
+
+	v2 offset = (v2) s.renderSize / 2.0f;
+	v3 pos    = { offset.x, offset.y, 500 };
+	v3 target = { offset.x, offset.y, 0 };
+
+	s.cameraPos = pos;
+	s.cameraRot = {};
+
+	s.view = LookAt(pos, target);
+	s.proj = Orthographic((v2) s.renderSize, 0, 10000);
+	s.vp   = s.view * s.proj;
+
+	s.iview = InvertRT(s.view);
+}
+
+static void
+Input_MiddleMouseUp(SimulationState& s, v2i mousePos)
+{
+	UNUSED(s);
+	UNUSED(mousePos);
+}
+
+static void
+Input_RightMouseDown(SimulationState& s, v2i mousePos)
+{
+	s.mouseLook      = true;
+	s.mousePosStart  = mousePos;
+	s.cameraRotStart = s.cameraRot;
+}
+
+static void
+Input_RightMouseUp(SimulationState& s, v2i mousePos)
+{
+	UNUSED(mousePos);
+	s.cameraRot      += s.cameraRotStart;
+	s.mouseLook       = false;
+	s.mousePosStart   = {};
+	s.cameraRotStart  = {};
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -282,290 +422,7 @@ PushDrawCall(PluginContext& context, Material material)
 }
 
 // -------------------------------------------------------------------------------------------------
-// GUI Messages
-
-// NOTE: None of these functions return error codes because the messaging system handles errors
-// internally. It will disconnect and stop attempting to send messages when a failure occurs.
-
-static void
-OnConnect(SimulationState& s, ConnectionState& con)
-{
-	using namespace Message;
-
-	{
-		Connect connect = {};
-		connect.version       = LHMVersion;
-		connect.renderSurface = (size) Renderer_GetSharedRenderSurface(*s.renderer);
-		connect.renderSize.x  = s.renderSize.x;
-		connect.renderSize.y  = s.renderSize.y;
-		SerializeAndQueueMessage(con, connect);
-	}
-
-	{
-		PluginsAdded pluginsAdded = {};
-		pluginsAdded.refs  = List_MemberSlice(s.plugins, &Plugin::ref);
-		pluginsAdded.kinds = List_MemberSlice(s.plugins, &Plugin::kind);
-		pluginsAdded.infos = List_MemberSlice(s.plugins, &Plugin::info);
-		SerializeAndQueueMessage(con, pluginsAdded);
-
-		PluginStatesChanged statesChanged = {};
-		statesChanged.refs       = List_MemberSlice(s.plugins, &Plugin::ref);
-		statesChanged.kinds      = List_MemberSlice(s.plugins, &Plugin::kind);
-		statesChanged.loadStates = List_MemberSlice(s.plugins, &Plugin::loadState);
-		SerializeAndQueueMessage(con, statesChanged);
-	}
-
-	{
-		SensorsAdded sensorsAdded = {};
-		sensorsAdded.sensorPluginRefs = List_MemberSlice(s.sensorPlugins, &SensorPlugin::ref);
-		sensorsAdded.sensors          = List_MemberSlice(s.sensorPlugins, &SensorPlugin::sensors);
-		SerializeAndQueueMessage(con, sensorsAdded);
-	}
-
-	{
-		for (u32 i = 0; i < s.widgetPlugins.length; i++)
-		{
-			WidgetPlugin& widgetPlugin = s.widgetPlugins[i];
-
-			// NOTE: It's surprisingly tricky to send a Slice<Slice<T>> when it's backed by
-			// a set of List<T>. The inner slices are temporaries and need to be stored.
-			Slice<WidgetDesc> descs = List_MemberSlice(widgetPlugin.widgetDatas, &WidgetData::desc);
-
-			WidgetDescsAdded widgetDescsAdded = {};
-			widgetDescsAdded.widgetPluginRefs = widgetPlugin.ref;
-			widgetDescsAdded.descs            = descs;
-			SerializeAndQueueMessage(con, widgetDescsAdded);
-		}
-	}
-}
-
-static void
-OnDisconnect(SimulationState& s, ConnectionState& con)
-{
-	s.hovered = {};
-	s.selected = {};
-
-	con.sendIndex = 0;
-	con.recvIndex = 0;
-}
-
-static void
-OnTeardown(ConnectionState& con)
-{
-	using namespace Message;
-	PipeResult result;
-
-	Disconnect disconnect = {};
-	disconnect.header.id    = IdOf<Disconnect>;
-	disconnect.header.index = con.sendIndex - (con.queue.length - con.queueIndex);
-	disconnect.header.size  = sizeof(Disconnect);
-
-	Bytes bytes = {};
-	bytes.length   = sizeof(Disconnect);
-	bytes.capacity = bytes.length;
-	bytes.data     = (u8*) &disconnect;
-
-	result = Platform_WritePipe(con.pipe, bytes);
-	// TODO: WritePipe should probably update the connection state to make this checking more correct
-	LOG_IF(result == PipeResult::TransientFailure, return,
-		Severity::Info, "Unable to send GUI disconnect signal");
-	LOG_IF(result == PipeResult::UnexpectedFailure, return,
-		Severity::Error, "Failed to send GUI disconnect signal");
-
-	result = Platform_FlushPipe(con.pipe);
-	LOG_IF(result == PipeResult::UnexpectedFailure, return,
-		Severity::Error, "Failed to flush GUI communication pipe");
-}
-
-static void
-OnMouseMove(SimulationState& s, v2i mousePos)
-{
-	s.mousePos = (v2) mousePos;
-	if (!s.mouseLook) return;
-
-	v2i deltaPos = mousePos - s.mousePosStart;
-	s.cameraRot = 0.0005f * (v2) deltaPos * 2*r32Pi;
-
-	v2 rot = s.cameraRotStart + s.cameraRot;
-	rot.pitch = Clamp(rot.pitch, -0.49f*r32Pi, 0.49f*r32Pi);
-
-	// TODO: Get render size out of here
-	v2 offset = (v2) s.renderSize / 2.0f;
-	v3 target = { offset.x, offset.y, 0 };
-	v3 pos    = GetOrbitPos(target, rot, 500);
-
-	s.cameraPos = pos;
-	s.view      = LookAt(pos, target);
-	s.vp        = s.view * s.proj;
-
-	s.iview = InvertRT(s.view);
-}
-
-static void
-OnLeftMouseDown(SimulationState& s, v2i mousePos)
-{
-	UNUSED(mousePos);
-	s.selected = s.hovered;
-}
-
-static void
-OnLeftMouseUp(SimulationState& s, v2i mousePos)
-{
-	UNUSED(s);
-	UNUSED(mousePos);
-}
-
-static void
-OnMiddleMouseDown(SimulationState& s, v2i mousePos)
-{
-	UNUSED(mousePos);
-
-	v2 offset = (v2) s.renderSize / 2.0f;
-	v3 pos    = { offset.x, offset.y, 500 };
-	v3 target = { offset.x, offset.y, 0 };
-
-	s.cameraPos = pos;
-	s.cameraRot = {};
-
-	s.view = LookAt(pos, target);
-	s.proj = Orthographic((v2) s.renderSize, 0, 10000);
-	s.vp   = s.view * s.proj;
-
-	s.iview = InvertRT(s.view);
-}
-
-static void
-OnMiddleMouseUp(SimulationState& s, v2i mousePos)
-{
-	UNUSED(s);
-	UNUSED(mousePos);
-}
-
-static void
-OnRightMouseDown(SimulationState& s, v2i mousePos)
-{
-	s.mouseLook      = true;
-	s.mousePosStart  = mousePos;
-	s.cameraRotStart = s.cameraRot;
-}
-
-static void
-OnRightMouseUp(SimulationState& s, v2i mousePos)
-{
-	UNUSED(mousePos);
-	s.cameraRot      += s.cameraRotStart;
-	s.mouseLook       = false;
-	s.mousePosStart   = {};
-	s.cameraRotStart  = {};
-}
-
-// TODO: Lame.
-static b8 LoadSensorPlugin(SimulationState&, Plugin&);
-static b8 UnloadSensorPlugin(SimulationState&, SensorPlugin&);
-static b8 LoadWidgetPlugin(SimulationState&, Plugin&);
-static b8 UnloadWidgetPlugin(SimulationState&, WidgetPlugin&);
-
-static void
-OnSetPluginStates(SimulationState& s, Slice<PluginRef> refs, Slice<PluginLoadState> states)
-{
-	Assert(refs.length == states.length);
-	for (u32 i = 0; i < refs.length; i++)
-	{
-		Plugin& plugin = s.plugins[refs[i]];
-		switch (states[i])
-		{
-			default: Assert(false); break;
-
-			case PluginLoadState::Loaded:
-				if (plugin.kind == PluginKind::Sensor)
-					LoadSensorPlugin(s, plugin);
-				else
-					LoadWidgetPlugin(s, plugin);
-				break;
-
-			case PluginLoadState::Unloaded:
-				if (plugin.kind == PluginKind::Sensor)
-				{
-					SensorPluginRef ref = { plugin.rawRefToKind };
-					SensorPlugin& sensorPlugin = s.sensorPlugins[ref];
-					UnloadSensorPlugin(s, sensorPlugin);
-				}
-				else
-				{
-					WidgetPluginRef ref = { plugin.rawRefToKind };
-					WidgetPlugin& widgetPlugin = s.widgetPlugins[ref];
-					UnloadWidgetPlugin(s, widgetPlugin);
-				}
-				break;
-		}
-	}
-}
-
-static void
-OnPluginStatesChanged(SimulationState& s, Slice<Plugin> plugins)
-{
-	using namespace Message;
-	if (s.guiConnection.pipe.state != PipeState::Connected) return;
-
-	for (u32 i = 0; i < plugins.length; i++)
-	{
-		Plugin& plugin = plugins[i];
-
-		PluginStatesChanged statesChanged = {};
-		statesChanged.refs       = plugin.ref;
-		statesChanged.kinds      = plugin.kind;
-		statesChanged.loadStates = plugin.loadState;
-		SerializeAndQueueMessage(s.guiConnection, statesChanged);
-	}
-}
-
-static void
-OnWidgetSelect(SimulationState& s, FullWidgetRef ref)
-{
-	// TODO: Validate
-	// TODO: Clear on widget remove
-	s.selected = ref;
-}
-
-static void
-OnCreateWidgets(SimulationState& s, FullWidgetDataRef ref, Slice<v2> positions)
-{
-	WidgetPlugin& widgetPlugin = s.widgetPlugins[ref.pluginRef];
-	WidgetData& widgetData = widgetPlugin.widgetDatas[ref.dataRef];
-	u32 prevWidgetLen = widgetData.widgets.length;
-
-	auto createGuard = guard {
-		widgetData.widgets.length = prevWidgetLen;
-		widgetData.widgetsUserData.length = widgetData.desc.userDataSize * prevWidgetLen;
-	};
-
-	List_AppendRangeZeroed(widgetData.widgets, positions.length);
-	List_AppendRangeZeroed(widgetData.widgetsUserData, widgetData.desc.userDataSize * positions.length);
-
-	PluginContext context = {};
-	context.s            = &s;
-	context.widgetPlugin = &widgetPlugin;
-	context.success      = true;
-
-	WidgetAPI::Initialize api = {};
-	api.widgets                  = List_Slice(widgetData.widgets, prevWidgetLen);
-	api.widgetsUserData          = List_Slice(widgetData.widgetsUserData, widgetData.desc.userDataSize * prevWidgetLen);
-	api.PushConstantBufferUpdate = PushConstantBufferUpdate;
-
-	widgetData.desc.Initialize(context, api);
-	if (!context.success) return;
-
-	for (u32 i = 0; i < positions.length; i++)
-	{
-		v2 position = positions[i];
-		Widget& widget = widgetData.widgets[prevWidgetLen + i];
-		widget.position = position;
-	}
-
-	createGuard.dismiss = true;
-}
-
-// -------------------------------------------------------------------------------------------------
+// Plugin Loading
 
 static Plugin&
 RegisterPlugin(SimulationState& s, StringView directory, StringView fileName)
@@ -585,7 +442,7 @@ RegisterPlugin(SimulationState& s, StringView directory, StringView fileName)
 	if (!plugin)
 		plugin = &List_Append(s.plugins);
 
-	defer { OnPluginStatesChanged(s, *plugin); };
+	defer { ToGUI_PluginStatesChanged(s, *plugin); };
 	auto pluginGuard = guard { plugin->loadState = PluginLoadState::Broken; };
 
 	plugin->ref       = List_GetLastRef(s.plugins);
@@ -600,7 +457,7 @@ static void
 UnregisterPlugin(SimulationState& s, Plugin& plugin)
 {
 	Assert(plugin.loadState != PluginLoadState::Loaded);
-	defer { OnPluginStatesChanged(s, plugin); };
+	defer { ToGUI_PluginStatesChanged(s, plugin); };
 
 	String_Free(plugin.fileName);
 	String_Free(plugin.directory);
@@ -634,7 +491,7 @@ LoadSensorPlugin(SimulationState& s, Plugin& plugin)
 	plugin.rawRefToKind = sensorPlugin->ref;
 	plugin.kind = PluginKind::Sensor;
 
-	defer { OnPluginStatesChanged(s, plugin); };
+	defer { ToGUI_PluginStatesChanged(s, plugin); };
 	auto pluginGuard = guard { plugin.loadState = PluginLoadState::Broken; };
 
 	b8 success = PluginLoader_LoadSensorPlugin(*s.pluginLoader, plugin, *sensorPlugin);
@@ -672,7 +529,7 @@ UnloadSensorPlugin(SimulationState& s, SensorPlugin& sensorPlugin)
 	Plugin& plugin = s.plugins[sensorPlugin.pluginRef];
 	Assert(plugin.loadState != PluginLoadState::Unloaded);
 
-	defer { OnPluginStatesChanged(s, plugin); };
+	defer { ToGUI_PluginStatesChanged(s, plugin); };
 	auto pluginGuard = guard { plugin.loadState = PluginLoadState::Broken; };
 
 	// TODO: try/catch?
@@ -734,7 +591,7 @@ LoadWidgetPlugin(SimulationState& s, Plugin& plugin)
 	plugin.rawRefToKind = widgetPlugin->ref;
 	plugin.kind = PluginKind::Widget;
 
-	defer { OnPluginStatesChanged(s, plugin); };
+	defer { ToGUI_PluginStatesChanged(s, plugin); };
 	auto pluginGuard = guard { plugin.loadState = PluginLoadState::Broken; };
 
 	b8 success = PluginLoader_LoadWidgetPlugin(*s.pluginLoader, plugin, *widgetPlugin);
@@ -779,7 +636,7 @@ UnloadWidgetPlugin(SimulationState& s, WidgetPlugin& widgetPlugin)
 	Plugin& plugin = s.plugins[widgetPlugin.pluginRef];
 	Assert(plugin.loadState != PluginLoadState::Unloaded);
 
-	defer { OnPluginStatesChanged(s, plugin); };
+	defer { ToGUI_PluginStatesChanged(s, plugin); };
 	auto pluginGuard = guard { plugin.loadState = PluginLoadState::Broken; };
 
 	PluginContext context = {};
@@ -832,6 +689,133 @@ UnloadWidgetPlugin(SimulationState& s, WidgetPlugin& widgetPlugin)
 	return true;
 }
 
+// -------------------------------------------------------------------------------------------------
+
+static void
+SetPluginStates(SimulationState& s, Slice<PluginRef> refs, Slice<PluginLoadState> states)
+{
+	Assert(refs.length == states.length);
+	for (u32 i = 0; i < refs.length; i++)
+	{
+		Plugin& plugin = s.plugins[refs[i]];
+		switch (states[i])
+		{
+			default: Assert(false); break;
+
+			case PluginLoadState::Loaded:
+				if (plugin.kind == PluginKind::Sensor)
+					LoadSensorPlugin(s, plugin);
+				else
+					LoadWidgetPlugin(s, plugin);
+				break;
+
+			case PluginLoadState::Unloaded:
+				if (plugin.kind == PluginKind::Sensor)
+				{
+					SensorPluginRef ref = { plugin.rawRefToKind };
+					SensorPlugin& sensorPlugin = s.sensorPlugins[ref];
+					UnloadSensorPlugin(s, sensorPlugin);
+				}
+				else
+				{
+					WidgetPluginRef ref = { plugin.rawRefToKind };
+					WidgetPlugin& widgetPlugin = s.widgetPlugins[ref];
+					UnloadWidgetPlugin(s, widgetPlugin);
+				}
+				break;
+		}
+	}
+}
+
+static void
+RemoveSensorRefs(SimulationState& s, SensorPluginRef sensorPluginRef, Slice<SensorRef> sensorRefs)
+{
+	for (u32 i = 0; i < sensorRefs.length; i++)
+	{
+		SensorRef sensorRef = sensorRefs[i];
+		// TODO: Widget iterator!
+		for (u32 j = 0; j < s.widgetPlugins.length; j++)
+		{
+			WidgetPlugin& widgetPlugin = s.widgetPlugins[j];
+			for (u32 k = 0; k < widgetPlugin.widgetDatas.length; k++)
+			{
+				WidgetData& widgetData = widgetPlugin.widgetDatas[k];
+				for (u32 l = 0; l < widgetData.widgets.length; l++)
+				{
+					Widget& widget = widgetData.widgets[l];
+					if (widget.sensorPluginRef == sensorPluginRef && widget.sensorRef == sensorRef)
+					{
+						widget.sensorPluginRef = SensorPluginRef::Null;
+						widget.sensorRef       = SensorRef::Null;
+					}
+				}
+			}
+		}
+	}
+}
+
+static String
+GetNameFromPath(StringView path)
+{
+	if (path.length == 0) return {};
+
+	StrPos first = String_FindLast(path, '/');
+	if (first == StrPos::Null)
+		first = String_GetFirstPos(path);
+	Assert(first != String_GetLastPos(path));
+	first = first + 1;
+
+	StrPos last = String_FindLast(path, '.');
+	if (last == StrPos::Null)
+		last = String_GetLastPos(path);
+	Assert(last != String_GetFirstPos(path));
+	last = last - 1;
+
+	if (first == last) return {};
+
+	StringSlice nameSlice = StringSlice_Create(path, first, last);
+	return String_FromSlice(nameSlice);
+}
+
+// TODO: Fix name
+static void
+DoCreateWidgets(SimulationState& s, FullWidgetDataRef ref, Slice<v2> positions)
+{
+	WidgetPlugin& widgetPlugin = s.widgetPlugins[ref.pluginRef];
+	WidgetData& widgetData = widgetPlugin.widgetDatas[ref.dataRef];
+	u32 prevWidgetLen = widgetData.widgets.length;
+
+	auto createGuard = guard {
+		widgetData.widgets.length = prevWidgetLen;
+		widgetData.widgetsUserData.length = widgetData.desc.userDataSize * prevWidgetLen;
+	};
+
+	List_AppendRangeZeroed(widgetData.widgets, positions.length);
+	List_AppendRangeZeroed(widgetData.widgetsUserData, widgetData.desc.userDataSize * positions.length);
+
+	PluginContext context = {};
+	context.s            = &s;
+	context.widgetPlugin = &widgetPlugin;
+	context.success      = true;
+
+	WidgetAPI::Initialize api = {};
+	api.widgets                  = List_Slice(widgetData.widgets, prevWidgetLen);
+	api.widgetsUserData          = List_Slice(widgetData.widgetsUserData, widgetData.desc.userDataSize * prevWidgetLen);
+	api.PushConstantBufferUpdate = PushConstantBufferUpdate;
+
+	widgetData.desc.Initialize(context, api);
+	if (!context.success) return;
+
+	for (u32 i = 0; i < positions.length; i++)
+	{
+		v2 position = positions[i];
+		Widget& widget = widgetData.widgets[prevWidgetLen + i];
+		widget.position = position;
+	}
+
+	createGuard.dismiss = true;
+}
+
 static Widget&
 GetWidget(SimulationState& s, FullWidgetRef ref)
 {
@@ -840,6 +824,17 @@ GetWidget(SimulationState& s, FullWidgetRef ref)
 	Widget& widget = data.widgets[ref.ref];
 	return widget;
 }
+
+static void
+SelectWidget(SimulationState& s, FullWidgetRef ref)
+{
+	// TODO: Validate
+	// TODO: Clear on widget remove
+	s.selected = ref;
+	ToGUI_WidgetSelectionChanged(s, ref);
+}
+
+// -------------------------------------------------------------------------------------------------
 
 b8
 Simulation_Initialize(SimulationState& s, PluginLoaderState& pluginLoader, RendererState& renderer)
@@ -856,7 +851,7 @@ Simulation_Initialize(SimulationState& s, PluginLoaderState& pluginLoader, Rende
 	List_Reserve(s.widgetPlugins, 8);
 
 	// Setup Camera
-	OnMiddleMouseDown(s, {});
+	Input_MiddleMouseDown(s, {});
 
 	// Load Default Assets
 	{
@@ -1038,7 +1033,7 @@ Simulation_Initialize(SimulationState& s, PluginLoaderState& pluginLoader, Rende
 		fullRef.dataRef = widgetData.ref;
 
 		v2 positions[ArrayLength(debugSensorIndices)] = {};
-		OnCreateWidgets(s, fullRef, positions);
+		DoCreateWidgets(s, fullRef, positions);
 
 		for (u32 i = 0; i < ArrayLength(debugSensorIndices); i++)
 		{
@@ -1188,7 +1183,7 @@ Simulation_Update(SimulationState& s)
 				{
 					DeserializeMessage<MouseMove>(bytes);
 					MouseMove& mouseMove = (MouseMove&) bytes[0];
-					OnMouseMove(s, mouseMove.pos);
+					Input_MouseMove(s, mouseMove.pos);
 					break;
 				}
 
@@ -1204,9 +1199,9 @@ Simulation_Update(SimulationState& s)
 						{
 							Assert(mbChange.state);
 							if (mbChange.state == ButtonState::Down)
-								OnLeftMouseDown(s, mbChange.pos);
+								Input_LeftMouseDown(s, mbChange.pos);
 							else
-								OnLeftMouseUp(s, mbChange.pos);
+								Input_LeftMouseUp(s, mbChange.pos);
 							break;
 						}
 
@@ -1214,9 +1209,9 @@ Simulation_Update(SimulationState& s)
 						{
 							Assert(mbChange.state);
 							if (mbChange.state == ButtonState::Down)
-								OnMiddleMouseDown(s, mbChange.pos);
+								Input_MiddleMouseDown(s, mbChange.pos);
 							else
-								OnMiddleMouseUp(s, mbChange.pos);
+								Input_MiddleMouseUp(s, mbChange.pos);
 							break;
 						}
 
@@ -1224,9 +1219,9 @@ Simulation_Update(SimulationState& s)
 						{
 							Assert(mbChange.state);
 							if (mbChange.state == ButtonState::Down)
-								OnRightMouseDown(s, mbChange.pos);
+								Input_RightMouseDown(s, mbChange.pos);
 							else
-								OnRightMouseUp(s, mbChange.pos);
+								Input_RightMouseUp(s, mbChange.pos);
 							break;
 						}
 					}
@@ -1238,7 +1233,7 @@ Simulation_Update(SimulationState& s)
 					// TODO: Plugins could have gone away
 					DeserializeMessage<SetPluginLoadStates>(bytes);
 					SetPluginLoadStates& setState = (SetPluginLoadStates&) bytes[0];
-					OnSetPluginStates(s, setState.refs, setState.loadStates);
+					SetPluginStates(s, setState.refs, setState.loadStates);
 					break;
 				}
 
@@ -1247,7 +1242,7 @@ Simulation_Update(SimulationState& s)
 					// TODO: Plugin or WidgetDesc could have gone away
 					DeserializeMessage<CreateWidgets>(bytes);
 					CreateWidgets& createWidgets = (CreateWidgets&) bytes[0];
-					OnCreateWidgets(s, createWidgets.ref, createWidgets.positions);
+					DoCreateWidgets(s, createWidgets.ref, createWidgets.positions);
 					break;
 				};
 			}

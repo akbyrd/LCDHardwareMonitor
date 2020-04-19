@@ -25,7 +25,6 @@ Memory handling
 	Manual failure points
 
 
-Normalize Sim-GUI function naming (On* vs *)
 Start using Scoped
 Namespaces
 Native namespace for interop?

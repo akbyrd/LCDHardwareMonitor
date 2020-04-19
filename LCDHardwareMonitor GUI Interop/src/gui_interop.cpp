@@ -173,7 +173,6 @@ namespace LCDHardwareMonitor::GUI
 		}
 
 		// -------------------------------------------------------------------------------------------
-		// Outgoing Messages
 
 		static void
 		SetProcessState(SimulationState^ simState, ProcessState processState)
@@ -194,20 +193,23 @@ namespace LCDHardwareMonitor::GUI
 		}
 
 		static void
-		TerminateSim(SimulationState^ simState)
-		{
-			SetProcessState(simState, ProcessState::Terminating);
-			Message::TerminateSimulation terminate = {};
-			SerializeAndQueueMessage(state.simConnection, terminate);
-		}
-
-		static void
 		ForceTerminateSim(SimulationState^ simState)
 		{
 			SetProcessState(simState, ProcessState::Terminating);
 			array<Process^>^ processes = Process::GetProcessesByName("LCDHardwareMonitor");
 			for each (Process^ p in processes)
 				p->Kill();
+		}
+
+		// -------------------------------------------------------------------------------------------
+		// Messages to Simulation
+
+		static void
+		TerminateSim(SimulationState^ simState)
+		{
+			SetProcessState(simState, ProcessState::Terminating);
+			Message::TerminateSimulation terminate = {};
+			SerializeAndQueueMessage(state.simConnection, terminate);
 		}
 
 		static void
@@ -269,7 +271,7 @@ namespace LCDHardwareMonitor::GUI
 		// Incoming Messages
 
 		static bool
-		OnConnect(SimulationState% simState, Message::Connect& connect)
+		FromGUI_Connect(SimulationState% simState, Message::Connect& connect)
 		{
 			simState.Version = connect.version;
 
@@ -289,7 +291,7 @@ namespace LCDHardwareMonitor::GUI
 		}
 
 		static void
-		OnDisconnect(SimulationState% simState)
+		FromGUI_Disconnect(SimulationState% simState)
 		{
 			// DEBUG: Needed for the Watch window
 			State& s = state;
@@ -309,7 +311,7 @@ namespace LCDHardwareMonitor::GUI
 		}
 
 		static void
-		OnPluginsAdded(SimulationState% simState, Message::PluginsAdded& pluginsAdded)
+		FromGUI_PluginsAdded(SimulationState% simState, Message::PluginsAdded& pluginsAdded)
 		{
 			for (u32 i = 0; i < pluginsAdded.infos.length; i++)
 			{
@@ -330,7 +332,7 @@ namespace LCDHardwareMonitor::GUI
 		}
 
 		static void
-		OnPluginStatesChanged(SimulationState% simState, Message::PluginStatesChanged& statesChanged)
+		FromGUI_PluginStatesChanged(SimulationState% simState, Message::PluginStatesChanged& statesChanged)
 		{
 			for (u32 i = 0; i < statesChanged.refs.length; i++)
 			{
@@ -348,7 +350,7 @@ namespace LCDHardwareMonitor::GUI
 		}
 
 		static void
-		OnSensorsAdded(SimulationState% simState, Message::SensorsAdded& sensorsAdded)
+		FromGUI_SensorsAdded(SimulationState% simState, Message::SensorsAdded& sensorsAdded)
 		{
 			for (u32 i = 0; i < sensorsAdded.sensors.length; i++)
 			{
@@ -371,7 +373,7 @@ namespace LCDHardwareMonitor::GUI
 		}
 
 		static void
-		OnWidgetDescsAdded(SimulationState% simState, Message::WidgetDescsAdded& widgetDescsAdded)
+		FromGUI_WidgetDescsAdded(SimulationState% simState, Message::WidgetDescsAdded& widgetDescsAdded)
 		{
 			for (u32 i = 0; i < widgetDescsAdded.descs.length; i++)
 			{
@@ -431,7 +433,7 @@ namespace LCDHardwareMonitor::GUI
 					HandleMessageResult(simCon, result);
 
 					bool isConnected = simCon.pipe.state == PipeState::Connected;
-					if (!isConnected && wasConnected) OnDisconnect(simState);
+					if (!isConnected && wasConnected) FromGUI_Disconnect(simState);
 				}
 				if (simCon.pipe.state != PipeState::Connected) break;
 
@@ -451,7 +453,7 @@ namespace LCDHardwareMonitor::GUI
 						{
 							DeserializeMessage<Connect>(bytes);
 							Connect& connect = (Connect&) bytes[0];
-							success = OnConnect(simState, connect);
+							success = FromGUI_Connect(simState, connect);
 							if (!success) return false;
 							break;
 						}
@@ -459,7 +461,7 @@ namespace LCDHardwareMonitor::GUI
 						case IdOf<Disconnect>:
 						{
 							DeserializeMessage<Disconnect>(bytes);
-							OnDisconnect(simState);
+							FromGUI_Disconnect(simState);
 							break;
 						}
 
@@ -467,7 +469,7 @@ namespace LCDHardwareMonitor::GUI
 						{
 							DeserializeMessage<PluginsAdded>(bytes);
 							PluginsAdded& pluginsAdded = (PluginsAdded&) bytes[0];
-							OnPluginsAdded(simState, pluginsAdded);
+							FromGUI_PluginsAdded(simState, pluginsAdded);
 							break;
 						}
 
@@ -475,7 +477,7 @@ namespace LCDHardwareMonitor::GUI
 						{
 							DeserializeMessage<PluginStatesChanged>(bytes);
 							PluginStatesChanged& statesChanged = (PluginStatesChanged&) bytes[0];
-							OnPluginStatesChanged(simState, statesChanged);
+							FromGUI_PluginStatesChanged(simState, statesChanged);
 							break;
 						}
 
@@ -483,7 +485,7 @@ namespace LCDHardwareMonitor::GUI
 						{
 							DeserializeMessage<SensorsAdded>(bytes);
 							SensorsAdded& sensorsAdded = (SensorsAdded&) bytes[0];
-							OnSensorsAdded(simState, sensorsAdded);
+							FromGUI_SensorsAdded(simState, sensorsAdded);
 							break;
 						}
 
@@ -491,7 +493,7 @@ namespace LCDHardwareMonitor::GUI
 						{
 							DeserializeMessage<WidgetDescsAdded>(bytes);
 							WidgetDescsAdded& widgetDescsAdded = (WidgetDescsAdded&) bytes[0];
-							OnWidgetDescsAdded(simState, widgetDescsAdded);
+							FromGUI_WidgetDescsAdded(simState, widgetDescsAdded);
 							break;
 						}
 					}

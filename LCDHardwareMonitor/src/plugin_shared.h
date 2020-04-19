@@ -52,12 +52,6 @@ struct SensorPlugin
 struct WidgetData;
 using WidgetDataRef = List<WidgetData>::RefT;
 
-struct FullWidgetDataRef
-{
-	WidgetPluginRef pluginRef;
-	WidgetDataRef   dataRef;
-};
-
 struct WidgetData
 {
 	WidgetDataRef ref;
@@ -74,3 +68,26 @@ struct WidgetPlugin
 	WidgetPluginFunctions functions;
 	List<WidgetData>      widgetDatas;
 };
+
+struct FullWidgetDataRef
+{
+	WidgetPluginRef pluginRef;
+	WidgetDataRef   dataRef;
+};
+
+struct FullWidgetRef
+{
+	WidgetPluginRef pluginRef;
+	WidgetDataRef   dataRef;
+	WidgetRef       ref;
+};
+
+inline b8 operator== (FullWidgetRef lhs, FullWidgetRef rhs)
+{
+	b8 result = true;
+	result &= lhs.pluginRef == rhs.pluginRef;
+	result &= lhs.dataRef == rhs.dataRef;
+	result &= lhs.ref == rhs.ref;
+	return result;
+}
+inline b8 operator!= (FullWidgetRef lhs, FullWidgetRef rhs) { return !(lhs == rhs); }
