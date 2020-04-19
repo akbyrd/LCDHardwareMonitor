@@ -254,26 +254,33 @@ namespace LCDHardwareMonitor::GUI
 		}
 
 		static void
-		CreateWidget(SimulationState^, UInt32 pluginRef, UInt32 descRef, Point pos)
-		{
-			FullWidgetDataRef ref = {};
-			ref.pluginRef = { pluginRef };
-			ref.dataRef = { descRef };
-			v2 position = { (float) pos.X, (float) pos.Y };
-
-			Message::CreateWidgets createWidget = {};
-			createWidget.ref = ref;
-			createWidget.positions = position;
-			SerializeAndQueueMessage(state.simConnection, createWidget);
-		}
-
-		static void
 		DragDrop(SimulationState^, PluginKind pluginKind, bool inProgress)
 		{
 			Message::DragDrop dragDrop = {};
 			dragDrop.pluginKind = (::PluginKind) pluginKind;
 			dragDrop.inProgress = inProgress;
 			SerializeAndQueueMessage(state.simConnection, dragDrop);
+		}
+
+		static void
+		AddWidget(SimulationState^, UInt32 pluginRef, UInt32 descRef, Point pos)
+		{
+			FullWidgetDataRef ref = {};
+			ref.pluginRef = { pluginRef };
+			ref.dataRef = { descRef };
+			v2 position = { (float) pos.X, (float) pos.Y };
+
+			Message::AddWidgets addWidgets = {};
+			addWidgets.ref = ref;
+			addWidgets.positions = position;
+			SerializeAndQueueMessage(state.simConnection, addWidgets);
+		}
+
+		static void
+		RemoveSelectedWidgets(SimulationState^)
+		{
+			Message::RemoveSelectedWidgets removeSelectedWidgets = {};
+			SerializeAndQueueMessage(state.simConnection, removeSelectedWidgets);
 		}
 
 		// -------------------------------------------------------------------------------------------

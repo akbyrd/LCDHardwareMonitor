@@ -169,7 +169,8 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 		PreviewWindow_Render(previewState);
 
 		// TODO: Probably not a good idea when using fibers
-		Sleep(10);
+		// BUG: This seems to lock up and causes VS to crash
+		//Sleep(10);
 	}
 
 	return 0;

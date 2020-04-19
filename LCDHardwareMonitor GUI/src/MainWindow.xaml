@@ -92,10 +92,12 @@
 					<!-- LCD Preview -->
 					<StackPanel Grid.Row="0">
 						<Label Content="LCD Preview" />
+						<!-- TODO: Focusable and IsHitTestVisible don't work -->
 						<Image
 							x:Name="preview"
 							MouseDown="Preview_MouseDown"
 							MouseUp="Preview_MouseUp"
+							KeyDown="Preview_KeyDown"
 							AllowDrop="true"
 							DragOver="Preview_DragOver"
 							DragDrop.Drop="Preview_DragDrop"
@@ -153,7 +155,8 @@
 						<DataGrid
 							BorderBrush="#333333" BorderThickness="1"
 							ItemsSource="{Binding WidgetDescs}"
-							AutoGenerateColumns="false">
+							AutoGenerateColumns="false"
+							IsReadOnly="true">
 							<DataGrid.RowStyle>
 								<Style TargetType="{x:Type DataGridRow}" BasedOn="{StaticResource MetroDataGridRow}">
 									<EventSetter Event="MouseMove" Handler="Widget_MouseMove" />
@@ -179,7 +182,8 @@
 						<DataGrid
 							BorderBrush="#333333" BorderThickness="1"
 							ItemsSource="{Binding Sensors}"
-							AutoGenerateColumns="false">
+							AutoGenerateColumns="false"
+							IsReadOnly="true">
 							<DataGrid.Columns>
 								<DataGridTextColumn
 									Binding="{Binding Ref}"

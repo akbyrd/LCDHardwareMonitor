@@ -41,9 +41,10 @@ struct PluginContext
 // -------------------------------------------------------------------------------------------------
 // C++ is Stupid.
 
-static void SelectWidget(SimulationState& s, FullWidgetRef ref);
-static void RemoveSensorRefs(SimulationState& s, SensorPluginRef sensorPluginRef, Slice<SensorRef> sensorRefs);
-static String GetNameFromPath(StringView path);
+static void SelectWidget(SimulationState&, FullWidgetRef);
+static void RemoveSensorRefs(SimulationState&, SensorPluginRef, Slice<SensorRef>);
+static String GetNameFromPath(StringView);
+static void RemoveWidgetRefs(SimulationState&, WidgetPluginRef, WidgetData&);
 
 // -------------------------------------------------------------------------------------------------
 // GUI State Changes
@@ -256,7 +257,6 @@ Input_RightMouseUp(SimulationState& s, v2i mousePos)
 // -------------------------------------------------------------------------------------------------
 // Sensor API
 
-// TODO: All these functions should be setting context.success to false when failing
 static void
 RegisterSensors(PluginContext& context, Slice<Sensor> sensors)
 {
@@ -311,7 +311,6 @@ static void
 RegisterWidgets(PluginContext& context, Slice<WidgetDesc> widgetDescs)
 {
 	if (!context.success) return;
-	context.success = false;
 
 	// TODO: Handle invalid widgetDef
 
@@ -329,21 +328,6 @@ RegisterWidgets(PluginContext& context, Slice<WidgetDesc> widgetDescs)
 		List_Reserve(widgetData.widgets, 8);
 		List_Reserve(widgetData.widgetsUserData, 8 * widgetDesc.userDataSize);
 	}
-
-	context.success = true;
-}
-
-static void
-UnregisterAllWidgets(PluginContext& context)
-{
-	WidgetPlugin& widgetPlugin = *context.widgetPlugin;
-	for (u32 i = 0; i < widgetPlugin.widgetDatas.length; i++)
-	{
-		WidgetData& widgetData = widgetPlugin.widgetDatas[i];
-		List_Free(widgetData.widgets);
-		List_Free(widgetData.widgetsUserData);
-	}
-	List_Free(widgetPlugin.widgetDatas);
 }
 
 static PixelShader
@@ -468,6 +452,26 @@ UnregisterPlugin(SimulationState& s, Plugin& plugin)
 	plugin = {};
 }
 
+static void
+TeardownSensor(Sensor& sensor)
+{
+	String_Free(sensor.name);
+	String_Free(sensor.identifier);
+	String_Free(sensor.format);
+}
+
+static void
+TeardownSensorPlugin(SensorPlugin& sensorPlugin)
+{
+	for (u32 i = 0; i < sensorPlugin.sensors.length; i++)
+	{
+		Sensor& sensor = sensorPlugin.sensors[i];
+		TeardownSensor(sensor);
+	}
+	List_Free(sensorPlugin.sensors);
+	sensorPlugin = {};
+}
+
 static b8
 LoadSensorPlugin(SimulationState& s, Plugin& plugin)
 {
@@ -517,8 +521,13 @@ LoadSensorPlugin(SimulationState& s, Plugin& plugin)
 
 		success = sensorPlugin->functions.Initialize(context, api);
 		success &= context.success;
-		LOG_IF(!success, return false,
-			Severity::Error, "Failed to initialize Sensor plugin '%'", plugin.info.name);
+		if (!success)
+		{
+			LOG(Severity::Error, "Failed to initialize Sensor plugin '%'", plugin.info.name);
+			// Remove all sensors so they don't get used
+			TeardownSensorPlugin(*sensorPlugin);
+			return false;
+		}
 	}
 
 	pluginGuard.dismiss = true;
@@ -548,11 +557,8 @@ UnloadSensorPlugin(SimulationState& s, SensorPlugin& sensorPlugin)
 		sensorPlugin.functions.Teardown(context, api);
 	}
 
-	for (u32 i = 0; i < sensorPlugin.sensors.length; i++)
-	{
-		SensorRef sensorRef = List_GetRef(sensorPlugin.sensors, i);
-		RemoveSensorRefs(s, sensorPlugin.ref, sensorRef);
-	}
+	RemoveSensorRefs(s, sensorPlugin.ref, List_MemberSlice(sensorPlugin.sensors, &Sensor::ref));
+	TeardownSensorPlugin(sensorPlugin);
 
 	b8 success = PluginLoader_UnloadSensorPlugin(*s.pluginLoader, plugin, sensorPlugin);
 	LOG_IF(!success, return false,
@@ -560,12 +566,27 @@ UnloadSensorPlugin(SimulationState& s, SensorPlugin& sensorPlugin)
 
 	plugin.rawRefToKind = 0;
 
-	// NOTE: Any fields added to SensorPlugin may need to be cleared here.
-	List_Free(sensorPlugin.sensors);
-	sensorPlugin = {};
-
 	pluginGuard.dismiss = true;
 	return true;
+}
+
+static void
+TeardownWidgetData(WidgetData& widgetData)
+{
+	List_Free(widgetData.widgets);
+	List_Free(widgetData.widgetsUserData);
+}
+
+static void
+TeardownWidgetPlugin(WidgetPlugin& widgetPlugin)
+{
+	for (u32 i = 0; i < widgetPlugin.widgetDatas.length; i++)
+	{
+		WidgetData& widgetData = widgetPlugin.widgetDatas[i];
+		TeardownWidgetData(widgetData);
+	}
+	List_Free(widgetPlugin.widgetDatas);
+	widgetPlugin = {};
 }
 
 static b8
@@ -619,11 +640,9 @@ LoadWidgetPlugin(SimulationState& s, Plugin& plugin)
 		success &= context.success;
 		if (!success)
 		{
-			LOG(Severity::Error, "Failed to initialize Widget plugin");
-
-			// TODO: There's a decent chance we'll want to keep widget descs
-			// around for unloaded plugins
-			UnregisterAllWidgets(context);
+			LOG(Severity::Error, "Failed to initialize Widget plugin '%'", plugin.info.name);
+			// Remove all widgets so they don't get used
+			TeardownWidgetPlugin(*widgetPlugin);
 			return false;
 		}
 	}
@@ -669,23 +688,18 @@ UnloadWidgetPlugin(SimulationState& s, WidgetPlugin& widgetPlugin)
 		widgetPlugin.functions.Teardown(context, pluginAPI);
 	}
 
-	UnregisterAllWidgets(context);
+	for (u32 i = 0; i < widgetPlugin.widgetDatas.length; i++)
+	{
+		WidgetData& widgetData = widgetPlugin.widgetDatas[i];
+		RemoveWidgetRefs(s, widgetPlugin.ref, widgetData);
+	}
+	TeardownWidgetPlugin(widgetPlugin);
 
 	b8 success = PluginLoader_UnloadWidgetPlugin(*s.pluginLoader, plugin, widgetPlugin);
 	LOG_IF(!success, return false,
 		Severity::Error, "Failed to unload Widget plugin '%'", plugin.info.name);
 
 	plugin.rawRefToKind = 0;
-
-	// NOTE: Any fields added to WidgetPlugin may need to be cleared here.
-	for (u32 i = 0; i < widgetPlugin.widgetDatas.length; i++)
-	{
-		WidgetData& widgetData = widgetPlugin.widgetDatas[i];
-		List_Free(widgetData.widgets);
-		List_Free(widgetData.widgetsUserData);
-	}
-	List_Free(widgetPlugin.widgetDatas);
-	widgetPlugin = {};
 
 	pluginGuard.dismiss = true;
 	return true;
@@ -730,6 +744,38 @@ SetPluginStates(SimulationState& s, Slice<PluginRef> refs, Slice<PluginLoadState
 }
 
 static void
+RemoveWidgetRefs(SimulationState& s, FullWidgetRef ref)
+{
+	if (s.hovered  == ref) s.hovered = {};
+	if (s.selected == ref) SelectWidget(s, {});
+}
+
+static void
+RemoveWidgetRefs(SimulationState& s, Slice<FullWidgetRef> refs)
+{
+	for (u32 i = 0; i < refs.length; i++)
+	{
+		FullWidgetRef ref = refs[i];
+		RemoveWidgetRefs(s, ref);
+	}
+}
+
+static void
+RemoveWidgetRefs(SimulationState& s, WidgetPluginRef pluginRef, WidgetData& widgetData)
+{
+	FullWidgetRef ref = {};
+	ref.pluginRef = pluginRef;
+	ref.dataRef = widgetData.ref;
+
+	// TODO: Should widgets have their own refs?
+	for (u32 i = 0; i < widgetData.widgets.length; i++)
+	{
+		ref.widgetRef = ToRef<Widget>(i);
+		RemoveWidgetRefs(s, ref);
+	}
+}
+
+static void
 RemoveSensorRefs(SimulationState& s, SensorPluginRef sensorPluginRef, Slice<SensorRef> sensorRefs)
 {
 	for (u32 i = 0; i < sensorRefs.length; i++)
@@ -745,6 +791,7 @@ RemoveSensorRefs(SimulationState& s, SensorPluginRef sensorPluginRef, Slice<Sens
 				for (u32 l = 0; l < widgetData.widgets.length; l++)
 				{
 					Widget& widget = widgetData.widgets[l];
+					// TODO: Add FullSensorRef
 					if (widget.sensorPluginRef == sensorPluginRef && widget.sensorRef == sensorRef)
 					{
 						widget.sensorPluginRef = SensorPluginRef::Null;
@@ -781,7 +828,7 @@ GetNameFromPath(StringView path)
 
 // TODO: Fix name
 static void
-DoCreateWidgets(SimulationState& s, FullWidgetDataRef ref, Slice<v2> positions)
+DoAddWidgets(SimulationState& s, FullWidgetDataRef ref, Slice<v2> positions)
 {
 	WidgetPlugin& widgetPlugin = s.widgetPlugins[ref.pluginRef];
 	WidgetData& widgetData = widgetPlugin.widgetDatas[ref.dataRef];
@@ -812,10 +859,37 @@ DoCreateWidgets(SimulationState& s, FullWidgetDataRef ref, Slice<v2> positions)
 	{
 		v2 position = positions[i];
 		Widget& widget = widgetData.widgets[prevWidgetLen + i];
+		widget.isValid = true;
 		widget.position = position;
 	}
 
 	createGuard.dismiss = true;
+}
+
+// TODO: Fix name
+static void
+DoRemoveWidgets(SimulationState& s, Slice<FullWidgetRef> refs)
+{
+	RemoveWidgetRefs(s, refs);
+	for (u32 i = 0; i < refs.length; i++)
+	{
+		FullWidgetRef ref = refs[i];
+
+		WidgetPlugin& plugin = s.widgetPlugins[ref.pluginRef];
+		WidgetData& data = plugin.widgetDatas[ref.dataRef];
+
+		// NOTE: Can't 'remove fast' because it invalidates refs
+		data.widgets[ref.widgetRef] = {};
+		List_ZeroRange(data.widgetsUserData, data.desc.userDataSize * ToIndex(ref.widgetRef), data.desc.userDataSize * refs.length);
+	}
+}
+
+// TODO: Fix name
+static void
+DoRemoveSelectedWidgets(SimulationState& s)
+{
+	FullWidgetRef selected = s.selected;
+	DoRemoveWidgets(s, selected);
 }
 
 static Widget&
@@ -823,7 +897,7 @@ GetWidget(SimulationState& s, FullWidgetRef ref)
 {
 	WidgetPlugin& plugin = s.widgetPlugins[ref.pluginRef];
 	WidgetData& data = plugin.widgetDatas[ref.dataRef];
-	Widget& widget = data.widgets[ref.ref];
+	Widget& widget = data.widgets[ref.widgetRef];
 	return widget;
 }
 
@@ -831,7 +905,6 @@ static void
 SelectWidget(SimulationState& s, FullWidgetRef ref)
 {
 	// TODO: Validate
-	// TODO: Clear on widget remove
 	s.selected = ref;
 	ToGUI_WidgetSelectionChanged(s, ref);
 }
@@ -1035,14 +1108,14 @@ Simulation_Initialize(SimulationState& s, PluginLoaderState& pluginLoader, Rende
 		fullRef.dataRef = widgetData.ref;
 
 		v2 positions[ArrayLength(debugSensorIndices)] = {};
-		DoCreateWidgets(s, fullRef, positions);
+		DoAddWidgets(s, fullRef, positions);
 
 		for (u32 i = 0; i < ArrayLength(debugSensorIndices); i++)
 		{
 			Widget& widget = widgetData.widgets[i];
 			widget.position    = ((v2) s.renderSize) / 2.0f;
 			widget.position.y += ((i32) i - 2) * (widget.size.y + 3.0f);
-			widget.sensorRef   = List_GetRef(s.sensorPlugins[0].sensors, debugSensorIndices[i]);
+			widget.sensorRef   = ToRef<Sensor>(debugSensorIndices[i]);
 		}
 	}
 
@@ -1239,15 +1312,6 @@ Simulation_Update(SimulationState& s)
 					break;
 				}
 
-				case IdOf<CreateWidgets>:
-				{
-					// TODO: Plugin or WidgetDesc could have gone away
-					DeserializeMessage<CreateWidgets>(bytes);
-					CreateWidgets& createWidgets = (CreateWidgets&) bytes[0];
-					DoCreateWidgets(s, createWidgets.ref, createWidgets.positions);
-					break;
-				}
-
 				case IdOf<DragDrop>:
 				{
 					DeserializeMessage<DragDrop>(bytes);
@@ -1256,6 +1320,29 @@ Simulation_Update(SimulationState& s)
 						s.dragInProgress = dragDrop.inProgress;
 					break;
 				}
+
+				// TODO: Don't like the lack of symmetry with RemoveWidgets
+				case IdOf<AddWidgets>:
+				{
+					// TODO: Plugin or WidgetDescs could have gone away
+					DeserializeMessage<AddWidgets>(bytes);
+					AddWidgets& addWidgets = (AddWidgets&) bytes[0];
+					DoAddWidgets(s, addWidgets.ref, addWidgets.positions);
+					break;
+				}
+
+				case IdOf<RemoveWidgets>:
+				{
+					// TODO: Plugins, WidgetDescs, or Widgets could have gone away
+					DeserializeMessage<RemoveWidgets>(bytes);
+					RemoveWidgets& removeWidgets = (RemoveWidgets&) bytes[0];
+					DoRemoveWidgets(s, removeWidgets.refs);
+					break;
+				}
+
+				case IdOf<RemoveSelectedWidgets>:
+					DoRemoveSelectedWidgets(s);
+					break;
 			}
 		}
 
@@ -1327,7 +1414,7 @@ Simulation_Update(SimulationState& s)
 							{
 								s.hovered.pluginRef = widgetPlugin.ref;
 								s.hovered.dataRef   = { j + 1 };
-								s.hovered.ref       = { k + 1 };
+								s.hovered.widgetRef = { k + 1 };
 							}
 						}
 					}
@@ -1338,7 +1425,7 @@ Simulation_Update(SimulationState& s)
 
 	// TODO: Outline shader? How should we handle depth?
 	// Draw Hover
-	if (s.hovered.ref && s.hovered != s.selected && !s.dragInProgress)
+	if (s.hovered.widgetRef && s.hovered != s.selected && !s.dragInProgress)
 	{
 		Widget& widget = GetWidget(s, s.hovered);
 
@@ -1363,7 +1450,7 @@ Simulation_Update(SimulationState& s)
 	}
 
 	// Draw Selection
-	if (s.selected.ref)
+	if (s.selected.widgetRef)
 	{
 		Widget& widget = GetWidget(s, s.selected);
 

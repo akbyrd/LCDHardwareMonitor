@@ -355,6 +355,26 @@ List_RemoveFast(List<T>& list, T& item)
 
 template<typename T>
 inline void
+List_RemoveFast(List<T>& list, ListRef<T> ref)
+{
+	Assert(List_IsRefValid(list, ref));
+	T& slot = list[ref];
+	slot = list.data[list.length - 1];
+	list.length--;
+}
+
+// TODO: Consider adding some special data structure for lists of untyped bytes
+template<typename T>
+inline void
+List_RemoveRangeFast(List<T>& list, u32 start, u32 count)
+{
+	Assert(start < list.length && (start + count) <= list.length);
+	memcpy(&list.data[start], &list.data[start + count], sizeof(T) * count);
+	list.length -= count;
+}
+
+template<typename T>
+inline void
 List_RemoveLast(List<T>& list)
 {
 	if (list.length > 0)
@@ -402,6 +422,14 @@ List_SizeOfRemaining(List<T>& list)
 {
 	u32 result = sizeof(T) * (list.capacity - list.length);
 	return result;
+}
+
+template<typename T>
+inline void
+List_ZeroRange(List<T>& list, u32 start, u32 count)
+{
+	Assert(start < list.length && (start + count) <= list.length);
+	memset(&list[start], 0, sizeof(T) * count);
 }
 
 template<typename T>

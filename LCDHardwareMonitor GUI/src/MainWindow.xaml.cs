@@ -92,7 +92,14 @@ namespace LCDHardwareMonitor.GUI
 				default: return;
 
 				case Key.Escape:
+					e.Handled = true;
 					Close();
+					break;
+
+				// TODO: Remove
+				case Key.Delete:
+					e.Handled = true;
+					Interop.RemoveSelectedWidgets(simState);
 					break;
 			}
 		}
@@ -155,6 +162,20 @@ namespace LCDHardwareMonitor.GUI
 			}
 		}
 
+		private void Preview_KeyDown(object sender, KeyEventArgs e)
+		{
+			switch (e.Key)
+			{
+				default: return;
+
+				// TODO: Doesn't work (Image doesn't accept focus)
+				case Key.Delete:
+					e.Handled = true;
+					Interop.RemoveSelectedWidgets(simState);
+					break;
+			}
+		}
+
 		// -------------------------------------------------------------------------------------------
 		// Drag and Drop
 
@@ -207,7 +228,7 @@ namespace LCDHardwareMonitor.GUI
 			{
 				default: Debug.Assert(false); break;
 
-				case PluginKind.Widget: Interop.CreateWidget(simState, data.pluginRef, data.widgetRef, GetMousePosition()); break;
+				case PluginKind.Widget: Interop.AddWidget(simState, data.pluginRef, data.widgetRef, GetMousePosition()); break;
 				case PluginKind.Sensor: break;
 			}
 		}

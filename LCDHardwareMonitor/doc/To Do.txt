@@ -2,9 +2,12 @@ Add/Remove widgets
 	Drag and drop
 		https://docs.microsoft.com/en-us/dotnet/framework/wpf/advanced/drag-and-drop-overview
 		https://docs.microsoft.com/en-us/dotnet/framework/wpf/advanced/data-and-data-objects
-	Drag widgets
-	Delete widgets
+	Widget and sensor lists eat delete key
+		I don't think Image is eligible for focus/interaction
+		Clicking Image doesn't take focus
+	Fix flush pipe error
 	Send widgets to GUI
+	Drag widgets
 	Preview rendering
 
 	Drag sensors

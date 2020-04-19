@@ -122,6 +122,11 @@ namespace Message
 		Header               header;
 		Slice<FullWidgetRef> refs;
 	};
+
+	struct RemoveSelectedWidgets
+	{
+		Header header;
+	};
 }
 
 template<>
