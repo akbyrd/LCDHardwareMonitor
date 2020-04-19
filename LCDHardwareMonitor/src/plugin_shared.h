@@ -52,11 +52,18 @@ struct SensorPlugin
 struct WidgetData;
 using WidgetDataRef = List<WidgetData>::RefT;
 
+struct FullWidgetDataRef
+{
+	WidgetPluginRef pluginRef;
+	WidgetDataRef   dataRef;
+};
+
 struct WidgetData
 {
-	WidgetDesc   desc;
-	List<Widget> widgets;
-	Bytes        widgetsUserData;
+	WidgetDataRef ref;
+	WidgetDesc    desc;
+	List<Widget>  widgets;
+	Bytes         widgetsUserData;
 };
 
 struct WidgetPlugin

@@ -102,6 +102,13 @@ namespace Message
 		Slice<PluginRef>       refs;
 		Slice<PluginLoadState> loadStates;
 	};
+
+	struct CreateWidgets
+	{
+		Header            header;
+		FullWidgetDataRef ref;
+		Slice<v2>         positions;
+	};
 }
 
 template<>
@@ -172,6 +179,7 @@ void Serialize(ByteStream&, Message::PluginStatesChanged&);
 void Serialize(ByteStream&, Message::SetPluginLoadStates&);
 void Serialize(ByteStream&, Message::SensorsAdded&);
 void Serialize(ByteStream&, Message::WidgetDescsAdded&);
+void Serialize(ByteStream&, Message::CreateWidgets&);
 void Serialize(ByteStream&, PluginInfo&);
 void Serialize(ByteStream&, Sensor&);
 
@@ -571,6 +579,14 @@ Serialize(ByteStream& stream, WidgetDesc& widgetDesc)
 		widgetDesc.Update     = nullptr;
 		widgetDesc.Teardown   = nullptr;
 	}
+}
+
+void
+Serialize(ByteStream& stream, Message::CreateWidgets& createWidgets)
+{
+	Serialize(stream, createWidgets.header);
+	Serialize(stream, createWidgets.ref);
+	Serialize(stream, createWidgets.positions);
 }
 
 // TODO: Code gen the actual Serialize functions

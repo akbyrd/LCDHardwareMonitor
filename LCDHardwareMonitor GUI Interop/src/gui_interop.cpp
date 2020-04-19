@@ -251,6 +251,20 @@ namespace LCDHardwareMonitor::GUI
 			simState->NotifyPropertyChanged("");
 		}
 
+		static void
+		CreateWidget(SimulationState^, UInt32 pluginRef, UInt32 descRef, Point pos)
+		{
+			FullWidgetDataRef ref = {};
+			ref.pluginRef = { pluginRef };
+			ref.dataRef = { descRef };
+			v2 position = { (float) pos.X, (float) pos.Y };
+
+			Message::CreateWidgets createWidget = {};
+			createWidget.ref = ref;
+			createWidget.positions = position;
+			SerializeAndQueueMessage(state.simConnection, createWidget);
+		}
+
 		// -------------------------------------------------------------------------------------------
 		// Incoming Messages
 

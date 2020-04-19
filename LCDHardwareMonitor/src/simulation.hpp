@@ -61,17 +61,6 @@ struct PluginContext
 	b8               success;
 };
 
-static Widget&
-CreateWidget(WidgetData& widgetData)
-{
-	Widget& widget = List_Append(widgetData.widgets);
-
-	List_Reserve(widgetData.widgetsUserData, widgetData.widgetsUserData.length + widgetData.desc.userDataSize);
-	widgetData.widgetsUserData.length += widgetData.desc.userDataSize;
-
-	return widget;
-}
-
 static void
 RemoveSensorRefs(SimulationState& s, SensorPluginRef sensorPluginRef, Slice<SensorRef> sensorRefs)
 {
@@ -189,10 +178,11 @@ RegisterWidgets(PluginContext& context, Slice<WidgetDesc> widgetDescs)
 	for (u32 i = 0; i < widgetDescs.length; i++)
 	{
 		WidgetDesc& widgetDesc = widgetDescs[i];
-		widgetDesc.ref = { widgetPlugin.widgetDatas.length + i };
 
 		WidgetData& widgetData = List_Append(widgetPlugin.widgetDatas);
+		widgetData.ref = List_GetLastRef(widgetPlugin.widgetDatas);
 		widgetData.desc = widgetDesc;
+		widgetData.desc.ref = { widgetData.ref.index };
 
 		List_Reserve(widgetData.widgets, 8);
 		List_Reserve(widgetData.widgetsUserData, 8 * widgetDesc.userDataSize);
@@ -535,6 +525,44 @@ OnWidgetSelect(SimulationState& s, FullWidgetRef ref)
 	// TODO: Validate
 	// TODO: Clear on widget remove
 	s.selected = ref;
+}
+
+static void
+OnCreateWidgets(SimulationState& s, FullWidgetDataRef ref, Slice<v2> positions)
+{
+	WidgetPlugin& widgetPlugin = s.widgetPlugins[ref.pluginRef];
+	WidgetData& widgetData = widgetPlugin.widgetDatas[ref.dataRef];
+	u32 prevWidgetLen = widgetData.widgets.length;
+
+	auto createGuard = guard {
+		widgetData.widgets.length = prevWidgetLen;
+		widgetData.widgetsUserData.length = widgetData.desc.userDataSize * prevWidgetLen;
+	};
+
+	List_AppendRangeZeroed(widgetData.widgets, positions.length);
+	List_AppendRangeZeroed(widgetData.widgetsUserData, widgetData.desc.userDataSize * positions.length);
+
+	PluginContext context = {};
+	context.s            = &s;
+	context.widgetPlugin = &widgetPlugin;
+	context.success      = true;
+
+	WidgetAPI::Initialize api = {};
+	api.widgets                  = List_Slice(widgetData.widgets, prevWidgetLen);
+	api.widgetsUserData          = List_Slice(widgetData.widgetsUserData, widgetData.desc.userDataSize * prevWidgetLen);
+	api.PushConstantBufferUpdate = PushConstantBufferUpdate;
+
+	widgetData.desc.Initialize(context, api);
+	if (!context.success) return;
+
+	for (u32 i = 0; i < positions.length; i++)
+	{
+		v2 position = positions[i];
+		Widget& widget = widgetData.widgets[prevWidgetLen + i];
+		widget.position = position;
+	}
+
+	createGuard.dismiss = true;
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -1000,30 +1028,24 @@ Simulation_Initialize(SimulationState& s, PluginLoaderState& pluginLoader, Rende
 		//u32 debugSensorIndices[] = { 6, 7, 8, 9, 33 }; // Desktop 780 Tis
 		//u32 debugSensorIndices[] = { 0, 1, 2, 3, 12 }; // Laptop
 		u32 debugSensorIndices[] = { u32Max, u32Max, u32Max, u32Max, u32Max }; // Empty
+
 		WidgetPluginRef ref = { filledBarPlugin.rawRefToKind };
 		WidgetPlugin& filledBarWidgetPlugin = s.widgetPlugins[ref];
 		WidgetData& widgetData = filledBarWidgetPlugin.widgetDatas[0];
+
+		FullWidgetDataRef fullRef = {};
+		fullRef.pluginRef = filledBarWidgetPlugin.ref;
+		fullRef.dataRef = widgetData.ref;
+
+		v2 positions[ArrayLength(debugSensorIndices)] = {};
+		OnCreateWidgets(s, fullRef, positions);
+
 		for (u32 i = 0; i < ArrayLength(debugSensorIndices); i++)
 		{
-			Widget& widget = CreateWidget(widgetData);
-
-			widget.position         = ((v2) s.renderSize - v2{ 240, 12 }) / 2.0f;
-			widget.position.y      += ((i32) i - 2) * 15.0f;
-			widget.sensorPluginRef  = List_GetRef(s.sensorPlugins, 0);
-			widget.sensorRef        = List_GetRef(s.sensorPlugins[0].sensors, debugSensorIndices[i]);
-
-			PluginContext context = {};
-			context.s            = &s;
-			context.widgetPlugin = &filledBarWidgetPlugin;
-			context.success      = true;
-
-			WidgetAPI::Initialize api = {};
-			u32 iLast = widgetData.widgets.length - 1;
-			api.widgets                  = widgetData.widgets[iLast];
-			api.widgetsUserData          = widgetData.widgetsUserData[iLast * widgetData.desc.userDataSize];
-			api.PushConstantBufferUpdate = PushConstantBufferUpdate;
-
-			widgetData.desc.Initialize(context, api);
+			Widget& widget = widgetData.widgets[i];
+			widget.position    = ((v2) s.renderSize - v2{ 240, 12 }) / 2.0f;
+			widget.position.y += ((i32) i - 2) * 15.0f;
+			widget.sensorRef   = List_GetRef(s.sensorPlugins[0].sensors, debugSensorIndices[i]);
 		}
 	}
 
@@ -1213,11 +1235,21 @@ Simulation_Update(SimulationState& s)
 
 				case IdOf<SetPluginLoadStates>:
 				{
+					// TODO: Plugins could have gone away
 					DeserializeMessage<SetPluginLoadStates>(bytes);
 					SetPluginLoadStates& setState = (SetPluginLoadStates&) bytes[0];
 					OnSetPluginStates(s, setState.refs, setState.loadStates);
 					break;
 				}
+
+				case IdOf<CreateWidgets>:
+				{
+					// TODO: Plugin or WidgetDesc could have gone away
+					DeserializeMessage<CreateWidgets>(bytes);
+					CreateWidgets& createWidgets = (CreateWidgets&) bytes[0];
+					OnCreateWidgets(s, createWidgets.ref, createWidgets.positions);
+					break;
+				};
 			}
 		}
 

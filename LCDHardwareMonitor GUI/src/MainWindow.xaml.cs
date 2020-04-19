@@ -2,6 +2,7 @@ using MahApps.Metro.Controls;
 using System;
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.Serialization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -96,6 +97,9 @@ namespace LCDHardwareMonitor.GUI
 			}
 		}
 
+		// -------------------------------------------------------------------------------------------
+		// Preview Input
+
 		internal Point GetMousePosition()
 		{
 			// TODO: Make this better
@@ -148,6 +152,62 @@ namespace LCDHardwareMonitor.GUI
 					bool success = Mouse.Capture(null);
 					if (!success) Debug.Print("Warning: Failed to release mouse capture");
 					break;
+			}
+		}
+
+		// -------------------------------------------------------------------------------------------
+		// Drag and Drop
+
+		[Serializable]
+		private struct DragDropData
+		{
+			public PluginKind pluginKind;
+			public UInt32 pluginRef;
+			public UInt32 widgetRef;
+		}
+
+		// TODO: Looks like there's a bug in .NET where dragging over Firefox, Desktop, other? crashes with DV_E_FORMATETC
+		private void Widget_MouseMove(object sender, MouseEventArgs e)
+		{
+			if (e.LeftButton == MouseButtonState.Pressed)
+			{
+				e.Handled = true;
+
+				// TODO: Test this with multiple selection. I don't trust CurrentItem
+				DataGridRow dataGridRow = (DataGridRow) sender;
+				WidgetDesc widgetDesc = (WidgetDesc) dataGridRow.Item;
+
+				DragDropData data = new DragDropData();
+				data.pluginKind = PluginKind.Widget;
+				data.pluginRef = widgetDesc.PluginRef;
+				data.widgetRef = widgetDesc.Ref;
+				DragDropEffects effect = DragDrop.DoDragDrop(dataGridRow, data, DragDropEffects.Copy);
+				Debug.WriteLine(effect);
+			}
+		}
+
+		private void Preview_DragOver(object sender, DragEventArgs e)
+		{
+			DragDropData? data = e.Data.GetData(typeof(DragDropData)) as DragDropData?;
+			if (data == null)
+			{
+				e.Handled = true;
+				e.Effects = DragDropEffects.None;
+				return;
+			}
+		}
+
+		private void Preview_DragDrop(object sender, DragEventArgs e)
+		{
+			e.Handled = true;
+
+			DragDropData data = (DragDropData) e.Data.GetData(typeof(DragDropData));
+			switch (data.pluginKind)
+			{
+				default: Debug.Assert(false); break;
+
+				case PluginKind.Widget: Interop.CreateWidget(simState, data.pluginRef, data.widgetRef, GetMousePosition()); break;
+				case PluginKind.Sensor: break;
 			}
 		}
 	}

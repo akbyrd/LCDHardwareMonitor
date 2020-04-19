@@ -1,3 +1,16 @@
+Add/Remove widgets
+	Drag and drop
+		https://docs.microsoft.com/en-us/dotnet/framework/wpf/advanced/drag-and-drop-overview
+		https://docs.microsoft.com/en-us/dotnet/framework/wpf/advanced/data-and-data-objects
+	Don't select when dragging widgets
+	Preview rendering
+	Delete widgets
+
+	Drag sensors
+	Select when dragging sensors
+	Only allow drop on widgets when dragging sensors
+
+
 Memory handling
 	Figure out what happens when memory allocations fail
 	Re-use memory when formatting
@@ -23,7 +36,6 @@ Need to handle mouse position when preview isn't visible
 Need to actually avoid processing broken plugins
 
 GUI Control
-	Add/Remove widgets
 	Configure widgets
 	Configure global settings (update rate)
 	Reconcile input when connecting (buttons already down) and disconnecting (release down buttons).

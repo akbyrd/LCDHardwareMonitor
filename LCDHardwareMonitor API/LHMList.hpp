@@ -152,6 +152,15 @@ List_AppendRange(List<T>& list, Slice<T> items)
 
 template<typename T>
 inline void
+List_AppendRangeZeroed(List<T>& list, u32 count)
+{
+	List_Reserve(list, list.length + count);
+	memset(&list.data[list.length], 0, sizeof(T) * count);
+	list.length += count;
+}
+
+template<typename T>
+inline void
 List_Clear(List<T>& list)
 {
 	list.length = 0;
@@ -389,6 +398,17 @@ inline u32
 List_SizeOfRemaining(List<T>& list)
 {
 	u32 result = (list.capacity - list.length) * sizeof(T);
+	return result;
+}
+
+template<typename T>
+inline Slice<T>
+List_Slice(List<T>& list, u32 start)
+{
+	Slice<T> result = {};
+	result.length = list.length - start;
+	result.stride = sizeof(T);
+	result.data   = &list.data[start];
 	return result;
 }
 

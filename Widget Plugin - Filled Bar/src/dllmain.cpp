@@ -33,6 +33,7 @@ InitializeBarWidgets(PluginContext& context, WidgetAPI::Initialize api)
 		barWidget.psInitialize.fillColor       = Color32(47, 112, 22, 255);
 		barWidget.psInitialize.backgroundColor = Color32( 0,   0,  0, 255);
 
+		// TODO: Why is this here?
 		api.PushConstantBufferUpdate(context, filledBarMat, ShaderStage::Pixel, 0, &barWidget.psInitialize);
 	}
 	return true;

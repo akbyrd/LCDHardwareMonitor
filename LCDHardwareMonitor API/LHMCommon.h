@@ -36,13 +36,13 @@ const u64 Megabyte = 1024LL * Kilobyte;
 const u64 Gigabyte = 1024LL * Megabyte;
 
 template<typename T, size S>
-inline size ArrayLength(const T(&)[S]) { return S; }
+constexpr inline size ArrayLength(const T(&)[S]) { return S; }
 
 template<typename T, size S>
-inline size ArraySize(const T(&)[S]) { return S * sizeof(T); }
+constexpr inline size ArraySize(const T(&)[S]) { return S * sizeof(T); }
 
 template<typename ...Args>
-inline void UnusedArgs(Args const& ...) {}
+constexpr inline void UnusedArgs(Args const& ...) {}
 
 #if DEBUG
 	#define Assert(condition) if (!(condition)) { *((u8 *) 0) = 0; }

@@ -96,6 +96,9 @@
 							x:Name="preview"
 							MouseDown="Preview_MouseDown"
 							MouseUp="Preview_MouseUp"
+							AllowDrop="true"
+							DragOver="Preview_DragOver"
+							DragDrop.Drop="Preview_DragDrop"
 							Visibility="{Binding IsSimulationConnected, Converter={StaticResource vc}}"
 							RenderOptions.BitmapScalingMode="NearestNeighbor"
 							Stretch="None">
@@ -151,6 +154,11 @@
 							BorderBrush="#333333" BorderThickness="1"
 							ItemsSource="{Binding WidgetDescs}"
 							AutoGenerateColumns="false">
+							<DataGrid.RowStyle>
+								<Style TargetType="{x:Type DataGridRow}" BasedOn="{StaticResource MetroDataGridRow}">
+									<EventSetter Event="MouseMove" Handler="Widget_MouseMove" />
+								</Style>
+							</DataGrid.RowStyle>
 							<DataGrid.Columns>
 								<DataGridTextColumn
 									Binding="{Binding Ref}"
