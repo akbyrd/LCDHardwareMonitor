@@ -13,17 +13,19 @@
 
 struct StrPos
 {
-	// TODO: Rename to value. This is not an index
-	u32 index;
+	u32 value;
 
 	static const StrPos Null;
 
 	operator b8() { return *this != Null; }
-	b8     operator== (StrPos rhs) { return index == rhs.index; }
-	b8     operator!= (StrPos rhs) { return index != rhs.index; }
-	StrPos operator+  (int rhs)    { return { index + rhs }; }
-	StrPos operator-  (int rhs)    { return { index - rhs }; }
+	b8     operator== (StrPos rhs) { return value == rhs.value; }
+	b8     operator!= (StrPos rhs) { return value != rhs.value; }
+	StrPos operator+  (i32 rhs)    { return { value + rhs }; }
+	StrPos operator-  (i32 rhs)    { return { value - rhs }; }
 };
+
+inline u32 ToIndex(StrPos pos) { return pos.value - 1; }
+inline u32 ToStrPos(u32 index) { return { index + 1 }; }
 
 const StrPos StrPos::Null = {};
 
@@ -33,7 +35,7 @@ struct String
 	u32 capacity;
 	c8* data;
 
-	c8& operator[] (StrPos p) { return data[p.index - 1]; }
+	c8& operator[] (StrPos p) { return data[ToIndex(p)]; }
 	c8& operator[] (u32 i)    { return data[i]; }
 };
 
@@ -50,7 +52,7 @@ struct StringView
 	template<u32 Length>
 	StringView(const c8(&arr)[Length]) { length = Length - 1;    data = (c8*) arr;   }
 
-	c8& operator[] (StrPos p) { return data[p.index - 1]; }
+	c8& operator[] (StrPos p) { return data[ToIndex(p)]; }
 	c8& operator[] (u32 i)    { return data[i]; }
 };
 
@@ -65,7 +67,7 @@ struct StringSlice
 	template<u32 Length>
 	StringSlice(const c8(&arr)[Length])   { length = Length - 1;    data = (c8*) arr;   }
 
-	c8& operator[] (StrPos p) { return data[p.index - 1]; }
+	c8& operator[] (StrPos p) { return data[ToIndex(p)]; }
 	c8& operator[] (u32 i)    { return data[i]; }
 };
 
@@ -127,7 +129,7 @@ String_GetPos(StringView string, u32 index)
 	UNUSED(string);
 	Assert(index < string.length);
 	StrPos pos = {};
-	pos.index = index + 1;
+	pos.value = ToStrPos(index);
 	return pos;
 }
 
@@ -171,7 +173,7 @@ StringSlice_Create(StringView string, StrPos first, StrPos last)
 {
 	StringSlice slice = {};
 	slice.data    = &string[first];
-	slice.length = last.index - first.index + 1;
+	slice.length = last.value - first.value + 1;
 	return slice;
 }
 
