@@ -104,18 +104,26 @@ struct WidgetPluginFunctions
 inline v2
 WidgetPosition(Widget widget)
 {
+	// TODO: If feels like there are 2 different desired behaviors here.
+	// 1) Cancel out the mesh pivot and use the widget pivot. Widget pivot is always relative to the same place.
+	// 2) Don't cancel out the mesh pivot. Widget pivot is always relative to the mesh pivot.
 	// TODO: Actually get this from the mesh
-	v2 meshPivot = { 0.5f, 0.5f };
+	// NOTE: This *cancels out* the mesh pivot.
+	//v2 meshPivot = { 0.5f, 0.5f };
+	v2 meshPivot = {};
 
-	v2 result = widget.position + (meshPivot - widget.pivot) * widget.size;
+	v2 result = widget.position + (meshPivot + widget.pivot) * widget.size;
 	return result;
 }
 
 inline v4
 WidgetRect(Widget widget)
 {
+	// TODO: Actually get this from the mesh
+	v2 meshPivot = { 0.5f, 0.5f };
+
 	v4 result = {};
-	result.pos = widget.position - widget.pivot * widget.size;
+	result.pos = widget.position - (meshPivot + widget.pivot) * widget.size;
 	result.size = widget.size;
 	return result;
 }

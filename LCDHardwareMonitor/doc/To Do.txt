@@ -2,8 +2,10 @@ Add/Remove widgets
 	Drag and drop
 		https://docs.microsoft.com/en-us/dotnet/framework/wpf/advanced/drag-and-drop-overview
 		https://docs.microsoft.com/en-us/dotnet/framework/wpf/advanced/data-and-data-objects
-	Preview rendering
+	Drag widgets
 	Delete widgets
+	Send widgets to GUI
+	Preview rendering
 
 	Drag sensors
 	Select when dragging sensors

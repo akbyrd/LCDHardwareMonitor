@@ -1040,8 +1040,8 @@ Simulation_Initialize(SimulationState& s, PluginLoaderState& pluginLoader, Rende
 		for (u32 i = 0; i < ArrayLength(debugSensorIndices); i++)
 		{
 			Widget& widget = widgetData.widgets[i];
-			widget.position    = ((v2) s.renderSize - v2{ 240, 12 }) / 2.0f;
-			widget.position.y += ((i32) i - 2) * 15.0f;
+			widget.position    = ((v2) s.renderSize) / 2.0f;
+			widget.position.y += ((i32) i - 2) * (widget.size.y + 3.0f);
 			widget.sensorRef   = List_GetRef(s.sensorPlugins[0].sensors, debugSensorIndices[i]);
 		}
 	}
