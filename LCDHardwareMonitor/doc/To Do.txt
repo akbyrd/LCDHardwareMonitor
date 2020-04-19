@@ -2,7 +2,6 @@ Add/Remove widgets
 	Drag and drop
 		https://docs.microsoft.com/en-us/dotnet/framework/wpf/advanced/drag-and-drop-overview
 		https://docs.microsoft.com/en-us/dotnet/framework/wpf/advanced/data-and-data-objects
-	Don't select when dragging widgets
 	Preview rendering
 	Delete widgets
 

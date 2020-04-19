@@ -24,8 +24,10 @@ struct SimulationState
 	v2i                mousePosStart;
 	v2                 cameraRot;
 	v2                 cameraRotStart;
+
 	FullWidgetRef      hovered;
 	FullWidgetRef      selected;
+	b8                 dragInProgress;
 };
 
 struct PluginContext
@@ -1244,7 +1246,16 @@ Simulation_Update(SimulationState& s)
 					CreateWidgets& createWidgets = (CreateWidgets&) bytes[0];
 					DoCreateWidgets(s, createWidgets.ref, createWidgets.positions);
 					break;
-				};
+				}
+
+				case IdOf<DragDrop>:
+				{
+					DeserializeMessage<DragDrop>(bytes);
+					DragDrop& dragDrop = (DragDrop&) bytes[0];
+					if (dragDrop.pluginKind == PluginKind::Widget)
+						s.dragInProgress = dragDrop.inProgress;
+					break;
+				}
 			}
 		}
 
@@ -1327,7 +1338,7 @@ Simulation_Update(SimulationState& s)
 
 	// TODO: Outline shader? How should we handle depth?
 	// Draw Hover
-	if (s.hovered.ref && s.hovered != s.selected)
+	if (s.hovered.ref && s.hovered != s.selected && !s.dragInProgress)
 	{
 		Widget& widget = GetWidget(s, s.hovered);
 

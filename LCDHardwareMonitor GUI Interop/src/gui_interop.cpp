@@ -267,6 +267,15 @@ namespace LCDHardwareMonitor::GUI
 			SerializeAndQueueMessage(state.simConnection, createWidget);
 		}
 
+		static void
+		DragDrop(SimulationState^, PluginKind pluginKind, bool inProgress)
+		{
+			Message::DragDrop dragDrop = {};
+			dragDrop.pluginKind = (::PluginKind) pluginKind;
+			dragDrop.inProgress = inProgress;
+			SerializeAndQueueMessage(state.simConnection, dragDrop);
+		}
+
 		// -------------------------------------------------------------------------------------------
 		// Incoming Messages
 

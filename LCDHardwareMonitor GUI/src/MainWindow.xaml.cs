@@ -181,8 +181,9 @@ namespace LCDHardwareMonitor.GUI
 				data.pluginKind = PluginKind.Widget;
 				data.pluginRef = widgetDesc.PluginRef;
 				data.widgetRef = widgetDesc.Ref;
+				Interop.DragDrop(simState, PluginKind.Widget, true);
 				DragDropEffects effect = DragDrop.DoDragDrop(dataGridRow, data, DragDropEffects.Copy);
-				Debug.WriteLine(effect);
+				Interop.DragDrop(simState, PluginKind.Widget, false);
 			}
 		}
 

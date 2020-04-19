@@ -109,6 +109,13 @@ namespace Message
 		FullWidgetDataRef ref;
 		Slice<v2>         positions;
 	};
+
+	struct DragDrop
+	{
+		Header     header;
+		PluginKind pluginKind;
+		b8         inProgress;
+	};
 }
 
 template<>
