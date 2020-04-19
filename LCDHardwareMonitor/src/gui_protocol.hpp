@@ -103,18 +103,24 @@ namespace Message
 		Slice<PluginLoadState> loadStates;
 	};
 
-	struct CreateWidgets
+	struct DragDrop
+	{
+		Header     header;
+		PluginKind pluginKind;
+		b8         inProgress;
+	};
+
+	struct AddWidgets
 	{
 		Header            header;
 		FullWidgetDataRef ref;
 		Slice<v2>         positions;
 	};
 
-	struct DragDrop
+	struct RemoveWidgets
 	{
-		Header     header;
-		PluginKind pluginKind;
-		b8         inProgress;
+		Header               header;
+		Slice<FullWidgetRef> refs;
 	};
 }
 
@@ -186,7 +192,8 @@ void Serialize(ByteStream&, Message::PluginStatesChanged&);
 void Serialize(ByteStream&, Message::SetPluginLoadStates&);
 void Serialize(ByteStream&, Message::SensorsAdded&);
 void Serialize(ByteStream&, Message::WidgetDescsAdded&);
-void Serialize(ByteStream&, Message::CreateWidgets&);
+void Serialize(ByteStream&, Message::AddWidgets&);
+void Serialize(ByteStream&, Message::RemoveWidgets&);
 void Serialize(ByteStream&, PluginInfo&);
 void Serialize(ByteStream&, Sensor&);
 
@@ -589,11 +596,18 @@ Serialize(ByteStream& stream, WidgetDesc& widgetDesc)
 }
 
 void
-Serialize(ByteStream& stream, Message::CreateWidgets& createWidgets)
+Serialize(ByteStream& stream, Message::AddWidgets& addWidgets)
 {
-	Serialize(stream, createWidgets.header);
-	Serialize(stream, createWidgets.ref);
-	Serialize(stream, createWidgets.positions);
+	Serialize(stream, addWidgets.header);
+	Serialize(stream, addWidgets.ref);
+	Serialize(stream, addWidgets.positions);
+}
+
+void
+Serialize(ByteStream& stream, Message::RemoveWidgets& removeWidgets)
+{
+	Serialize(stream, removeWidgets.header);
+	Serialize(stream, removeWidgets.refs);
 }
 
 // TODO: Code gen the actual Serialize functions

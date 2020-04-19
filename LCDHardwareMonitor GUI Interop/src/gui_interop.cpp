@@ -325,7 +325,7 @@ namespace LCDHardwareMonitor::GUI
 			for (u32 i = 0; i < pluginsAdded.infos.length; i++)
 			{
 				Plugin mPlugin = {};
-				mPlugin.Ref  = pluginsAdded.refs[i].index;
+				mPlugin.Ref  = pluginsAdded.refs[i].value;
 				mPlugin.Kind = (PluginKind) pluginsAdded.kinds[i];
 
 				PluginInfo mPluginInfo = {};
@@ -348,7 +348,7 @@ namespace LCDHardwareMonitor::GUI
 				for (u32 j = 0; j < (u32) simState.Plugins->Count; j++)
 				{
 					Plugin p = simState.Plugins[(i32) j];
-					if ((::PluginKind) p.Kind == statesChanged.kinds[i] && p.Ref == statesChanged.refs[i].index)
+					if ((::PluginKind) p.Kind == statesChanged.kinds[i] && p.Ref == statesChanged.refs[i].value)
 					{
 						p.LoadState = (PluginLoadState) statesChanged.loadStates[i];
 						simState.Plugins[(i32) j] = p;
@@ -369,8 +369,8 @@ namespace LCDHardwareMonitor::GUI
 					::Sensor& sensor = sensors[j];
 
 					Sensor mSensor = {};
-					mSensor.PluginRef  = sensorsAdded.sensorPluginRefs[i].index;
-					mSensor.Ref        = sensor.ref.index;
+					mSensor.PluginRef  = sensorsAdded.sensorPluginRefs[i].value;
+					mSensor.Ref        = sensor.ref.value;
 					mSensor.Name       = ToManagedString(sensor.name);
 					mSensor.Identifier = ToManagedString(sensor.identifier);
 					mSensor.Format     = ToManagedString(sensor.format);
@@ -392,8 +392,8 @@ namespace LCDHardwareMonitor::GUI
 					::WidgetDesc& desc = widgetDescs[j];
 
 					WidgetDesc mWidgetDesc = {};
-					mWidgetDesc.PluginRef = widgetDescsAdded.widgetPluginRefs[i].index;
-					mWidgetDesc.Ref       = desc.ref.index;
+					mWidgetDesc.PluginRef = widgetDescsAdded.widgetPluginRefs[i].value;
+					mWidgetDesc.Ref       = desc.ref.value;
 					mWidgetDesc.Name      = ToManagedString(desc.name);
 					simState.WidgetDescs->Add(mWidgetDesc);
 				}

@@ -13,6 +13,7 @@
 
 struct StrPos
 {
+	// TODO: Rename to value. This is not an index
 	u32 index;
 
 	static const StrPos Null;

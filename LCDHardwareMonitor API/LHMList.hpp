@@ -24,8 +24,7 @@
 template<typename T>
 struct ListRef
 {
-	// TODO: Rename to value. This is not an index
-	u32 index;
+	u32 value;
 
 	static const ListRef<T> Null;
 	operator b8() { return *this != Null; }
@@ -35,10 +34,16 @@ template<typename T>
 const ListRef<T> ListRef<T>::Null = {};
 
 template<typename T>
-inline b8 operator== (ListRef<T> lhs, ListRef<T> rhs) { return lhs.index == rhs.index; }
+inline b8 operator== (ListRef<T> lhs, ListRef<T> rhs) { return lhs.value == rhs.value; }
 
 template<typename T>
-inline b8 operator!= (ListRef<T> lhs, ListRef<T> rhs) { return lhs.index != rhs.index; }
+inline b8 operator!= (ListRef<T> lhs, ListRef<T> rhs) { return lhs.value != rhs.value; }
+
+template<typename T>
+inline u32 ToIndex (ListRef<T> ref) { return ref.value - 1; }
+
+template<typename T>
+inline ListRef<T> ToRef (u32 index) { return { index + 1 }; }
 
 template<typename T>
 struct List
@@ -48,7 +53,7 @@ struct List
 	T*  data;
 
 	using RefT = ListRef<T>;
-	inline T& operator[] (RefT r) { return data[r.index - 1]; }
+	inline T& operator[] (RefT r) { return data[ToIndex(r)]; }
 	inline T& operator[] (u32 i)  { return data[i]; }
 };
 
@@ -79,7 +84,7 @@ struct Slice
 	explicit operator Slice<U>() { return *(Slice<U>*) this; }
 
 	using RefT = ListRef<T>;
-	inline T& operator[] (RefT r) { return (T&) ((u8*) data)[stride*(r.index - 1)]; }
+	inline T& operator[] (RefT r) { return (T&) ((u8*) data)[stride*(ToIndex(r))]; }
 	inline T& operator[] (u32 i)  { return (T&) ((u8*) data)[stride*i]; }
 };
 
@@ -140,7 +145,7 @@ List_AppendRange(List<T>& list, Slice<T> items)
 	List_Reserve(list, list.length + items.length);
 	if (items.stride == sizeof(T))
 	{
-		memcpy(&list.data[list.length], items.data, items.length * sizeof(T));
+		memcpy(&list.data[list.length], items.data, sizeof(T) * items.length);
 		list.length += items.length;
 	}
 	else
@@ -286,10 +291,8 @@ inline ListRef<T>
 List_GetRef(List<T>& list, u32 index)
 {
 	UNUSED(list);
-	//Assert(list.length > 0);
-	ListRef<T> ref = {};
-	ref.index = index + 1;
-	return ref;
+	Assert(index < list.length);
+	return ToRef<T>(index);
 }
 
 template<typename T>
@@ -337,7 +340,7 @@ template<typename T>
 inline b8
 List_IsRefValid(List<T>& list, ListRef<T> ref)
 {
-	b8 result = (ref.index - 1) < list.length;
+	b8 result = ToIndex(ref) < list.length;
 	return result;
 }
 
@@ -381,7 +384,7 @@ template<typename T>
 inline u32
 List_SizeOf(List<T>& list)
 {
-	u32 result = list.length * sizeof(T);
+	u32 result = sizeof(T) * list.length;
 	return result;
 }
 
@@ -389,7 +392,7 @@ template<typename T>
 inline u32
 List_SizeOf(Slice<T>& slice)
 {
-	u32 result = slice.length * sizeof(T);
+	u32 result = sizeof(T) * slice.length;
 	return result;
 }
 
@@ -397,7 +400,7 @@ template<typename T>
 inline u32
 List_SizeOfRemaining(List<T>& list)
 {
-	u32 result = (list.capacity - list.length) * sizeof(T);
+	u32 result = sizeof(T) * (list.capacity - list.length);
 	return result;
 }
 

@@ -324,7 +324,7 @@ RegisterWidgets(PluginContext& context, Slice<WidgetDesc> widgetDescs)
 		WidgetData& widgetData = List_Append(widgetPlugin.widgetDatas);
 		widgetData.ref = List_GetLastRef(widgetPlugin.widgetDatas);
 		widgetData.desc = widgetDesc;
-		widgetData.desc.ref = { widgetData.ref.index };
+		widgetData.desc.ref = { widgetData.ref.value };
 
 		List_Reserve(widgetData.widgets, 8);
 		List_Reserve(widgetData.widgetsUserData, 8 * widgetDesc.userDataSize);
