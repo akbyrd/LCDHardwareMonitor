@@ -302,18 +302,19 @@ ToStringImpl_Format(String& string, StringView format, T value)
 }
 
 // TODO: Might want to add a 'context' parameter that can keep track of nested indentation
-u32 ToString(String& string, u8  value) { return ToStringImpl_Format(string, "%hu",  value); }
-u32 ToString(String& string, u16 value) { return ToStringImpl_Format(string, "%u",   value); }
-u32 ToString(String& string, u32 value) { return ToStringImpl_Format(string, "%lu",  value); }
-u32 ToString(String& string, u64 value) { return ToStringImpl_Format(string, "%llu", value); }
-u32 ToString(String& string, i8  value) { return ToStringImpl_Format(string, "%hi",  value); }
-u32 ToString(String& string, i16 value) { return ToStringImpl_Format(string, "%i",   value); }
-u32 ToString(String& string, i32 value) { return ToStringImpl_Format(string, "%li",  value); }
-u32 ToString(String& string, i64 value) { return ToStringImpl_Format(string, "%lli", value); }
-u32 ToString(String& string, r32 value) { return ToStringImpl_Format(string, "%f",   value); }
-u32 ToString(String& string, r64 value) { return ToStringImpl_Format(string, "%f",   value); }
-u32 ToString(String& string, c8  value) { return ToStringImpl_Format(string, "%c",   value); }
-u32 ToString(String& string, b8  value) { return ToStringImpl_Format(string, "%s",   value ? "true" : "false"); }
+u32 ToString(String& string, u8        value) { return ToStringImpl_Format(string, "%hu",  value); }
+u32 ToString(String& string, u16       value) { return ToStringImpl_Format(string, "%u",   value); }
+u32 ToString(String& string, u32       value) { return ToStringImpl_Format(string, "%lu",  value); }
+u32 ToString(String& string, u64       value) { return ToStringImpl_Format(string, "%llu", value); }
+u32 ToString(String& string, i8        value) { return ToStringImpl_Format(string, "%hi",  value); }
+u32 ToString(String& string, i16       value) { return ToStringImpl_Format(string, "%i",   value); }
+u32 ToString(String& string, i32       value) { return ToStringImpl_Format(string, "%li",  value); }
+u32 ToString(String& string, i64       value) { return ToStringImpl_Format(string, "%lli", value); }
+u32 ToString(String& string, r32       value) { return ToStringImpl_Format(string, "%f",   value); }
+u32 ToString(String& string, r64       value) { return ToStringImpl_Format(string, "%f",   value); }
+u32 ToString(String& string, c8        value) { return ToStringImpl_Format(string, "%c",   value); }
+u32 ToString(String& string, const c8* value) { return ToStringImpl_Format(string, "%s",   value); }
+u32 ToString(String& string, b8        value) { return ToStringImpl_Format(string, "%s",   value ? "true" : "false"); }
 
 u32
 ToString(String& string, StringView value)
