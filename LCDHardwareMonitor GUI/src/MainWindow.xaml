@@ -387,3 +387,4 @@
 <!-- TODO: Make resize group color match border -->
 <!-- TODO: Close button doesn't work when window in pinned right with mouse in corner (default works) -->
 <!-- TODO: Clicking and dragging off of a Button should not trigger the IsMouseOver state (default works) -->
+<!-- TODO: Disable the dashed outlight on focused items -->

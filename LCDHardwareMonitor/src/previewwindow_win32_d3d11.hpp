@@ -161,12 +161,15 @@ PreviewWindow_Initialize(
 			Severity::Error, "Failed to associate DXGI and preview window");
 	}
 
+	s.simulationState->previewWindow = true;
 	return true;
 }
 
 b8
 PreviewWindow_Teardown(PreviewWindowState& s)
 {
+	s.simulationState->previewWindow = false;
+
 	// Detach Renderer
 	{
 		s.backBuffer.Reset();
@@ -396,11 +399,17 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 
 		case WM_KEYDOWN:
 		{
-			if (wParam == VK_ESCAPE)
+			switch (wParam)
 			{
-				PostQuitMessage(0);
-				return 0;
+				case VK_ESCAPE:
+					PostQuitMessage(0);
+					return 0;
+
+				case VK_DELETE:
+					DoRemoveSelectedWidgets(*s->simulationState);
+					return 0;
 			}
+
 			break;
 		}
 

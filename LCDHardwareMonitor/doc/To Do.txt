@@ -2,10 +2,19 @@ Add/Remove widgets
 	Drag and drop
 		https://docs.microsoft.com/en-us/dotnet/framework/wpf/advanced/drag-and-drop-overview
 		https://docs.microsoft.com/en-us/dotnet/framework/wpf/advanced/data-and-data-objects
-	Sometimes dropping a widget it's selected, other times not
+
+	Re-org input and message handling
+		Mouse buttons become logical input
+		Handlers for every GUI event
+		Receiving messages uses a macro
+		Handlers call actual implementation functions
+		Handlers have validation
+		Maybe rename messages and remove namespace
+
 	Fix flush pipe error
 	Send widgets to GUI
 	Drag widgets
+	Multi-select
 	Preview rendering
 
 	Drag sensors
@@ -43,6 +52,7 @@ Need to handle mouse position when preview isn't visible
 Need to actually avoid processing broken plugins
 
 GUI Control
+	Attach sensors
 	Configure widgets
 	Configure global settings (update rate)
 	Reconcile input when connecting (buttons already down) and disconnecting (release down buttons).

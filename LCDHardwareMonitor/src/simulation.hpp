@@ -5,6 +5,7 @@ struct SimulationState
 	PluginLoaderState* pluginLoader;
 	RendererState*     renderer;
 	ConnectionState    guiConnection;
+	b8                 previewWindow;
 
 	List<Plugin>       plugins;
 	List<SensorPlugin> sensorPlugins;
@@ -1379,7 +1380,7 @@ Simulation_Update(SimulationState& s)
 	}
 
 	// Select mouse over widget
-	if (guiCon.pipe.state == PipeState::Connected)
+	if (guiCon.pipe.state == PipeState::Connected || s.previewWindow)
 	{
 		s.hovered = {};
 
