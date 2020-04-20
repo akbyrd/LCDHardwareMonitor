@@ -92,9 +92,9 @@
 					<!-- LCD Preview -->
 					<StackPanel Grid.Row="0">
 						<Label Content="LCD Preview" />
-						<!-- TODO: Focusable and IsHitTestVisible don't work -->
 						<Image
 							x:Name="preview"
+							Focusable="true"
 							MouseDown="Preview_MouseDown"
 							MouseUp="Preview_MouseUp"
 							KeyDown="Preview_KeyDown"

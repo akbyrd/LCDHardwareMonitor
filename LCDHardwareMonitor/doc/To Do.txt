@@ -2,9 +2,7 @@ Add/Remove widgets
 	Drag and drop
 		https://docs.microsoft.com/en-us/dotnet/framework/wpf/advanced/drag-and-drop-overview
 		https://docs.microsoft.com/en-us/dotnet/framework/wpf/advanced/data-and-data-objects
-	Widget and sensor lists eat delete key
-		I don't think Image is eligible for focus/interaction
-		Clicking Image doesn't take focus
+	Sometimes dropping a widget it's selected, other times not
 	Fix flush pipe error
 	Send widgets to GUI
 	Drag widgets
@@ -13,6 +11,12 @@ Add/Remove widgets
 	Drag sensors
 	Select when dragging sensors
 	Only allow drop on widgets when dragging sensors
+
+Fix VS crash
+	devenv crashes with Exception code: 0xc0000374 (heap corruption?)
+	LHM crashes with Exception code: 0xc0000005 (access violation, probably spurious during dev)
+	definitely happens with multiple startup projects, not sure about individual
+	LHM appears to hang in D3D creation sometimes? Unrelated?
 
 
 Memory handling

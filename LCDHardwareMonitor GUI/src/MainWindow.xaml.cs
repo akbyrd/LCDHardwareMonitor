@@ -130,12 +130,22 @@ namespace LCDHardwareMonitor.GUI
 				case MouseButton.Right:
 				{
 					var element = sender as UIElement;
-					e.Handled = !element.IsMouseCaptured;
-					Interop.MouseButtonChange(simState, GetMousePosition(), e.ChangedButton, e.ButtonState);
+
+					if (e.ButtonState == MouseButtonState.Pressed)
+					{
+						e.Handled = true;
+						element.Focus();
+					}
 
 					// TODO: Proper logging
-					bool success = Mouse.Capture(element);
-					if (!success) Debug.Print("Warning: Failed to capture mouse");
+					if (!element.IsMouseCaptured)
+					{
+						e.Handled = true;
+						bool success = Mouse.Capture(element);
+						if (!success) Debug.Print("Warning: Failed to capture mouse");
+					}
+
+					Interop.MouseButtonChange(simState, GetMousePosition(), e.ChangedButton, e.ButtonState);
 					break;
 				}
 			}
