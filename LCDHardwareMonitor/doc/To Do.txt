@@ -3,17 +3,10 @@ Add/Remove widgets
 		https://docs.microsoft.com/en-us/dotnet/framework/wpf/advanced/drag-and-drop-overview
 		https://docs.microsoft.com/en-us/dotnet/framework/wpf/advanced/data-and-data-objects
 
-	Re-org input and message handling
-		Mouse buttons become logical input
-		Handlers for every GUI event
-		Receiving messages uses a macro
-		Handlers call actual implementation functions
-		Handlers have validation
-		Maybe rename messages and remove namespace
-
-	Fix flush pipe error
-	Send widgets to GUI
+	Maybe rename messages and remove namespace
+	Split up OnConnect
 	Drag widgets
+	Send widgets to GUI
 	Multi-select
 	Preview rendering
 
@@ -21,6 +14,7 @@ Add/Remove widgets
 	Select when dragging sensors
 	Only allow drop on widgets when dragging sensors
 
+Fix flush pipe error
 Fix VS crash
 	devenv crashes with Exception code: 0xc0000374 (heap corruption?)
 	LHM crashes with Exception code: 0xc0000005 (access violation, probably spurious during dev)

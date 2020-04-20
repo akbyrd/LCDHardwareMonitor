@@ -123,6 +123,7 @@ namespace LCDHardwareMonitor.GUI
 		{
 			switch (e.ChangedButton)
 			{
+				// TODO: Is this pattern necessary? We don't get warnings for unhandled cases.
 				default: return;
 
 				case MouseButton.Left:
@@ -137,6 +138,9 @@ namespace LCDHardwareMonitor.GUI
 						element.Focus();
 					}
 
+					// TODO: I bet the errors here come from multiple mouse buttons. Maybe we should
+					// only be capturing for mouse look?
+
 					// TODO: Proper logging
 					if (!element.IsMouseCaptured)
 					{
@@ -144,10 +148,23 @@ namespace LCDHardwareMonitor.GUI
 						bool success = Mouse.Capture(element);
 						if (!success) Debug.Print("Warning: Failed to capture mouse");
 					}
-
-					Interop.MouseButtonChange(simState, GetMousePosition(), e.ChangedButton, e.ButtonState);
 					break;
 				}
+			}
+
+			switch (e.ChangedButton)
+			{
+				case MouseButton.Left:
+					Interop.SelectHovered(simState);
+					break;
+
+				case MouseButton.Right:
+					Interop.BeginMouseLook(simState);
+					break;
+
+				case MouseButton.Middle:
+					Interop.ResetCamera(simState);
+					break;
 			}
 		}
 
@@ -160,14 +177,24 @@ namespace LCDHardwareMonitor.GUI
 				case MouseButton.Left:
 				case MouseButton.Middle:
 				case MouseButton.Right:
+				{
 					var element = sender as UIElement;
-					e.Handled = element.IsMouseCaptured;
-					Interop.MouseButtonChange(simState, GetMousePosition(), e.ChangedButton, e.ButtonState);
+					if (element.IsMouseCaptured)
+					{
+						e.Handled = true;
+						// TODO: Proper logging
+						// TODO: Failure is logged when dragging from outside the window and releasing inside it
+						bool success = Mouse.Capture(null);
+						if (!success) Debug.Print("Warning: Failed to release mouse capture");
+					}
+					break;
+				}
+			}
 
-					// TODO: Proper logging
-					// TODO: Failure is logged when dragging from outside the window and releasing inside it
-					bool success = Mouse.Capture(null);
-					if (!success) Debug.Print("Warning: Failed to release mouse capture");
+			switch (e.ChangedButton)
+			{
+				case MouseButton.Right:
+					Interop.EndMouseLook(simState);
 					break;
 			}
 		}

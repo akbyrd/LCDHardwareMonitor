@@ -346,6 +346,15 @@ List_IsRefValid(List<T>& list, ListRef<T> ref)
 
 template<typename T>
 inline void
+List_Remove(List<T>& list, u32 index)
+{
+	Assert(index < list.length);
+	memmove(&list[index], &list[index + 1], sizeof(T) * (list.length - index - 1));
+	list.length--;
+}
+
+template<typename T>
+inline void
 List_RemoveFast(List<T>& list, T& item)
 {
 	Assert(List_Contains(list, &item));

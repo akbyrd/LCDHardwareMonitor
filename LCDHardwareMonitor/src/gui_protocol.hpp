@@ -71,29 +71,24 @@ namespace Message
 		v2i    pos;
 	};
 
-	enum struct ButtonState
+	struct SelectHovered
 	{
-		Null,
-		Down,
-		Up,
+		Header header;
 	};
-	b8 operator!(ButtonState state) { return state == ButtonState::Null; }
 
-	enum struct MouseButton
+	struct BeginMouseLook
 	{
-		Null,
-		Left,
-		Right,
-		Middle,
+		Header header;
 	};
-	b8 operator!(MouseButton button) { return button == MouseButton::Null; }
 
-	struct MouseButtonChange
+	struct EndMouseLook
 	{
-		Header      header;
-		v2i         pos;
-		MouseButton button;
-		ButtonState state;
+		Header header;
+	};
+
+	struct ResetCamera
+	{
+		Header header;
 	};
 
 	struct SetPluginLoadStates
@@ -110,17 +105,17 @@ namespace Message
 		b8         inProgress;
 	};
 
-	struct AddWidgets
+	struct AddWidget
 	{
 		Header            header;
 		FullWidgetDataRef ref;
-		Slice<v2>         positions;
+		v2                position;
 	};
 
-	struct RemoveWidgets
+	struct RemoveWidget
 	{
-		Header               header;
-		Slice<FullWidgetRef> refs;
+		Header        header;
+		FullWidgetRef ref;
 	};
 
 	struct RemoveSelectedWidgets
@@ -197,8 +192,6 @@ void Serialize(ByteStream&, Message::PluginStatesChanged&);
 void Serialize(ByteStream&, Message::SetPluginLoadStates&);
 void Serialize(ByteStream&, Message::SensorsAdded&);
 void Serialize(ByteStream&, Message::WidgetDescsAdded&);
-void Serialize(ByteStream&, Message::AddWidgets&);
-void Serialize(ByteStream&, Message::RemoveWidgets&);
 void Serialize(ByteStream&, PluginInfo&);
 void Serialize(ByteStream&, Sensor&);
 
@@ -598,21 +591,6 @@ Serialize(ByteStream& stream, WidgetDesc& widgetDesc)
 		widgetDesc.Update     = nullptr;
 		widgetDesc.Teardown   = nullptr;
 	}
-}
-
-void
-Serialize(ByteStream& stream, Message::AddWidgets& addWidgets)
-{
-	Serialize(stream, addWidgets.header);
-	Serialize(stream, addWidgets.ref);
-	Serialize(stream, addWidgets.positions);
-}
-
-void
-Serialize(ByteStream& stream, Message::RemoveWidgets& removeWidgets)
-{
-	Serialize(stream, removeWidgets.header);
-	Serialize(stream, removeWidgets.refs);
 }
 
 // TODO: Code gen the actual Serialize functions

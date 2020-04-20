@@ -29,7 +29,6 @@ static State state = {};
 #pragma managed
 namespace LCDHardwareMonitor::GUI
 {
-	using namespace Message;
 	using namespace System;
 	using namespace System::Collections::ObjectModel;
 	using namespace System::ComponentModel;
@@ -39,7 +38,6 @@ namespace LCDHardwareMonitor::GUI
 
 	// TODO: Should this file use LHMAPICLR?
 	using CLRString = System::String;
-	using CLRMouseButton = System::Windows::Input::MouseButton;
 	using LHMString = ::String;
 
 	public enum struct PluginKind
@@ -138,29 +136,6 @@ namespace LCDHardwareMonitor::GUI
 		// -------------------------------------------------------------------------------------------
 		// Helper Functions
 
-		static Message::MouseButton
-		ToMouseButton(CLRMouseButton button)
-		{
-			switch (button)
-			{
-				default: Assert(false);      return Message::MouseButton::Null;
-				case CLRMouseButton::Left:   return Message::MouseButton::Left;
-				case CLRMouseButton::Middle: return Message::MouseButton::Middle;
-				case CLRMouseButton::Right:  return Message::MouseButton::Right;
-			}
-		}
-
-		static Message::ButtonState
-		ToButtonState(MouseButtonState buttonState)
-		{
-			switch (buttonState)
-			{
-				default: Assert(false);          return Message::ButtonState::Null;
-				case MouseButtonState::Pressed:  return Message::ButtonState::Down;
-				case MouseButtonState::Released: return Message::ButtonState::Up;
-			}
-		}
-
 		// TODO: LHMString?
 		static CLRString^
 		ToManagedString(StringView cstring)
@@ -225,13 +200,31 @@ namespace LCDHardwareMonitor::GUI
 		}
 
 		static void
-		MouseButtonChange(SimulationState^, Point pos, CLRMouseButton button, MouseButtonState buttonState)
+		SelectHovered(SimulationState^)
 		{
-			Message::MouseButtonChange buttonChange = {};
-			buttonChange.pos = { (int) pos.X, (int) pos.Y };
-			buttonChange.button = ToMouseButton(button);
-			buttonChange.state = ToButtonState(buttonState);
-			SerializeAndQueueMessage(state.simConnection, buttonChange);
+			Message::SelectHovered selectHovered = {};
+			SerializeAndQueueMessage(state.simConnection, selectHovered);
+		}
+
+		static void
+		BeginMouseLook(SimulationState^)
+		{
+			Message::BeginMouseLook beginMouseLook = {};
+			SerializeAndQueueMessage(state.simConnection, beginMouseLook);
+		}
+
+		static void
+		EndMouseLook(SimulationState^)
+		{
+			Message::EndMouseLook endMouseLook = {};
+			SerializeAndQueueMessage(state.simConnection, endMouseLook);
+		}
+
+		static void
+		ResetCamera(SimulationState^)
+		{
+			Message::ResetCamera resetCamera = {};
+			SerializeAndQueueMessage(state.simConnection, resetCamera);
 		}
 
 		static void
@@ -268,12 +261,11 @@ namespace LCDHardwareMonitor::GUI
 			FullWidgetDataRef ref = {};
 			ref.pluginRef = { pluginRef };
 			ref.dataRef = { descRef };
-			v2 position = { (float) pos.X, (float) pos.Y };
 
-			Message::AddWidgets addWidgets = {};
-			addWidgets.ref = ref;
-			addWidgets.positions = position;
-			SerializeAndQueueMessage(state.simConnection, addWidgets);
+			Message::AddWidget addWidget = {};
+			addWidget.ref = ref;
+			addWidget.position = { (float) pos.X, (float) pos.Y };
+			SerializeAndQueueMessage(state.simConnection, addWidget);
 		}
 
 		static void
@@ -460,6 +452,7 @@ namespace LCDHardwareMonitor::GUI
 					b8 success = ReceiveMessage(simCon, bytes);
 					if (!success) break;
 
+					using namespace Message;
 					Header& header = (Header&) bytes[0];
 					switch (header.id)
 					{

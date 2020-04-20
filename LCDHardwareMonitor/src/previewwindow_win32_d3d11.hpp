@@ -273,7 +273,9 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 		case WM_MOUSEMOVE:
 		{
 			v2i pos = GetMousePosition(lParam, s->zoomFactor, s->renderSize);
-			Input_MouseMove(*s->simulationState, pos);
+			Message::MouseMove mouseMove = {};
+			mouseMove.pos = pos;
+			FromGUI_MouseMove(*s->simulationState, mouseMove);
 			break;
 		}
 
@@ -282,7 +284,9 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 			SetCapture(s->hwnd);
 
 			v2i pos = GetMousePosition(lParam, s->zoomFactor, s->renderSize);
-			Input_LeftMouseDown(*s->simulationState, pos);
+			Assert(pos == s->simulationState->mousePos);
+			Message::SelectHovered selectHovered = {};
+			FromGUI_SelectHovered(*s->simulationState, selectHovered);
 			break;
 		}
 
@@ -290,9 +294,6 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 		{
 			b8 success = ReleaseCapture();
 			LOG_LAST_ERROR_IF(!success, IGNORE, Severity::Warning, "Failed to release mouse capture");
-
-			v2i pos = GetMousePosition(lParam, s->zoomFactor, s->renderSize);
-			Input_LeftMouseUp(*s->simulationState, pos);
 			break;
 		}
 
@@ -301,7 +302,9 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 			SetCapture(s->hwnd);
 
 			v2i pos = GetMousePosition(lParam, s->zoomFactor, s->renderSize);
-			Input_RightMouseDown(*s->simulationState, pos);
+			Assert(pos == s->simulationState->mousePos);
+			Message::BeginMouseLook beginMouseLook = {};
+			FromGUI_BeginMouseLook(*s->simulationState, beginMouseLook);
 			break;
 		}
 
@@ -311,14 +314,17 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 			LOG_LAST_ERROR_IF(!success, IGNORE, Severity::Warning, "Failed to release mouse capture");
 
 			v2i pos = GetMousePosition(lParam, s->zoomFactor, s->renderSize);
-			Input_RightMouseUp(*s->simulationState, pos);
+			Assert(pos == s->simulationState->mousePos);
+			Message::EndMouseLook endMouseLook = {};
+			FromGUI_EndMouseLook(*s->simulationState, endMouseLook);
 			break;
 		}
 
 		case WM_MBUTTONDOWN:
 		{
 			v2i pos = GetMousePosition(lParam, s->zoomFactor, s->renderSize);
-			Input_MiddleMouseDown(*s->simulationState, pos);
+			Assert(pos == s->simulationState->mousePos);
+			ResetCamera(*s->simulationState);
 			break;
 		}
 
@@ -406,7 +412,7 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 					return 0;
 
 				case VK_DELETE:
-					DoRemoveSelectedWidgets(*s->simulationState);
+					RemoveSelectedWidgets(*s->simulationState);
 					return 0;
 			}
 
