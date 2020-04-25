@@ -16,6 +16,7 @@
 
 #include <WinUser.h>
 
+// TODO: Why is this separate? Seems pointless. Strong typing?
 struct State
 {
 	ConnectionState     simConnection;
@@ -99,6 +100,13 @@ namespace LCDHardwareMonitor::GUI
 		Terminated,
 	};
 
+	public enum struct Interaction
+	{
+		Null,
+		MouseLook,
+		Dragging,
+	};
+
 	public ref class SimulationState : INotifyPropertyChanged
 	{
 	public:
@@ -107,6 +115,7 @@ namespace LCDHardwareMonitor::GUI
 		property ObservableCollection<Plugin>^     Plugins;
 		property ObservableCollection<Sensor>^     Sensors;
 		property ObservableCollection<WidgetDesc>^ WidgetDescs;
+		property Interaction                       Interaction;
 
 		// UI Helpers
 		property bool         IsSimulationConnected;
@@ -188,46 +197,6 @@ namespace LCDHardwareMonitor::GUI
 		}
 
 		static void
-		MouseMove(SimulationState^ simState, Point pos)
-		{
-			if (pos == simState->MousePos) return;
-			simState->MousePos = pos;
-			simState->NotifyPropertyChanged("");
-
-			Message::MouseMove move = {};
-			move.pos = { (int) pos.X, (int) pos.Y };
-			SerializeAndQueueMessage(state.simConnection, move);
-		}
-
-		static void
-		SelectHovered(SimulationState^)
-		{
-			Message::SelectHovered selectHovered = {};
-			SerializeAndQueueMessage(state.simConnection, selectHovered);
-		}
-
-		static void
-		BeginMouseLook(SimulationState^)
-		{
-			Message::BeginMouseLook beginMouseLook = {};
-			SerializeAndQueueMessage(state.simConnection, beginMouseLook);
-		}
-
-		static void
-		EndMouseLook(SimulationState^)
-		{
-			Message::EndMouseLook endMouseLook = {};
-			SerializeAndQueueMessage(state.simConnection, endMouseLook);
-		}
-
-		static void
-		ResetCamera(SimulationState^)
-		{
-			Message::ResetCamera resetCamera = {};
-			SerializeAndQueueMessage(state.simConnection, resetCamera);
-		}
-
-		static void
 		SetPluginLoadState(SimulationState^ simState, UInt32 ref, PluginLoadState loadState)
 		{
 			Plugin plugin = simState->Plugins[ref - 1];
@@ -247,8 +216,84 @@ namespace LCDHardwareMonitor::GUI
 		}
 
 		static void
-		DragDrop(SimulationState^, PluginKind pluginKind, bool inProgress)
+		MouseMove(SimulationState^ simState, Point pos)
 		{
+			if (pos == simState->MousePos) return;
+			simState->MousePos = pos;
+			simState->NotifyPropertyChanged("");
+
+			Message::MouseMove move = {};
+			move.pos = { (int) pos.X, (int) pos.Y };
+			SerializeAndQueueMessage(state.simConnection, move);
+		}
+
+		static void
+		SelectHovered(SimulationState^ simState)
+		{
+			if (simState->Interaction != Interaction::Null) return;
+
+			Message::SelectHovered selectHovered = {};
+			SerializeAndQueueMessage(state.simConnection, selectHovered);
+		}
+
+		static void
+		BeginMouseLook(SimulationState^ simState)
+		{
+			if (simState->Interaction != Interaction::Null) return;
+			simState->Interaction = Interaction::MouseLook;
+			simState->NotifyPropertyChanged("");
+
+			Message::BeginMouseLook beginMouseLook = {};
+			SerializeAndQueueMessage(state.simConnection, beginMouseLook);
+		}
+
+		static void
+		EndMouseLook(SimulationState^ simState)
+		{
+			if (simState->Interaction != Interaction::MouseLook) return;
+			simState->Interaction = Interaction::Null;
+			simState->NotifyPropertyChanged("");
+
+			Message::EndMouseLook endMouseLook = {};
+			SerializeAndQueueMessage(state.simConnection, endMouseLook);
+		}
+
+		static void
+		ResetCamera(SimulationState^ simState)
+		{
+			if (simState->Interaction != Interaction::Null) return;
+
+			Message::ResetCamera resetCamera = {};
+			SerializeAndQueueMessage(state.simConnection, resetCamera);
+		}
+
+		static void
+		BeginDragSelection(SimulationState^ simState)
+		{
+			if (simState->Interaction != Interaction::Null) return;
+			simState->Interaction = Interaction::Dragging;
+			simState->NotifyPropertyChanged("");
+
+			Message::BeginDragSelection beginDrag = {};
+			SerializeAndQueueMessage(state.simConnection, beginDrag);
+		}
+
+		static void
+		EndDragSelection(SimulationState^ simState)
+		{
+			if (simState->Interaction != Interaction::Dragging) return;
+			simState->Interaction = Interaction::Null;
+			simState->NotifyPropertyChanged("");
+
+			Message::EndDragSelection endDrag = {};
+			SerializeAndQueueMessage(state.simConnection, endDrag);
+		}
+
+		static void
+		DragDrop(SimulationState^ simState, PluginKind pluginKind, bool inProgress)
+		{
+			Assert(simState->Interaction == Interaction::Null);
+
 			Message::DragDrop dragDrop = {};
 			dragDrop.pluginKind = (::PluginKind) pluginKind;
 			dragDrop.inProgress = inProgress;
@@ -256,8 +301,10 @@ namespace LCDHardwareMonitor::GUI
 		}
 
 		static void
-		AddWidget(SimulationState^, UInt32 pluginRef, UInt32 descRef, Point pos)
+		AddWidget(SimulationState^ simState, UInt32 pluginRef, UInt32 descRef, Point pos)
 		{
+			Assert(simState->Interaction == Interaction::Null);
+
 			FullWidgetDataRef ref = {};
 			ref.pluginRef = { pluginRef };
 			ref.dataRef = { descRef };
@@ -269,8 +316,10 @@ namespace LCDHardwareMonitor::GUI
 		}
 
 		static void
-		RemoveSelectedWidgets(SimulationState^)
+		RemoveSelectedWidgets(SimulationState^ simState)
 		{
+			if (simState->Interaction != Interaction::Null) return;
+
 			Message::RemoveSelectedWidgets removeSelectedWidgets = {};
 			SerializeAndQueueMessage(state.simConnection, removeSelectedWidgets);
 		}

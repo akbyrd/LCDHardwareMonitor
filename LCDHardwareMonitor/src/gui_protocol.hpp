@@ -65,6 +65,13 @@ namespace Message
 		Header header;
 	};
 
+	struct SetPluginLoadStates
+	{
+		Header                 header;
+		Slice<PluginRef>       refs;
+		Slice<PluginLoadState> loadStates;
+	};
+
 	struct MouseMove
 	{
 		Header header;
@@ -91,13 +98,6 @@ namespace Message
 		Header header;
 	};
 
-	struct SetPluginLoadStates
-	{
-		Header                 header;
-		Slice<PluginRef>       refs;
-		Slice<PluginLoadState> loadStates;
-	};
-
 	struct DragDrop
 	{
 		Header     header;
@@ -119,6 +119,16 @@ namespace Message
 	};
 
 	struct RemoveSelectedWidgets
+	{
+		Header header;
+	};
+
+	struct BeginDragSelection
+	{
+		Header header;
+	};
+
+	struct EndDragSelection
 	{
 		Header header;
 	};

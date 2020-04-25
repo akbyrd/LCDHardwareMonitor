@@ -1,5 +1,13 @@
 #include "Solid Colored.ps.h"
 
+enum struct GUIInteraction
+{
+	Null,
+	MouseLook,
+	DragAndDrop,
+	DragSelection,
+};
+
 struct SimulationState
 {
 	PluginLoaderState* pluginLoader;
@@ -20,7 +28,7 @@ struct SimulationState
 	i64                startTime;
 	r32                currentTime;
 
-	b8                 mouseLook;
+	GUIInteraction     guiInteraction;
 	v2i                mousePos;
 	v2i                mousePosStart;
 	v2                 cameraRot;
@@ -28,7 +36,6 @@ struct SimulationState
 
 	FullWidgetRef      hovered;
 	FullWidgetRef      selected;
-	b8                 dragInProgress;
 };
 
 struct PluginContext
@@ -827,6 +834,27 @@ ResetCamera(SimulationState& s)
 	s.iview = InvertRT(s.view);
 }
 
+// TODO: Think through how to handle left mouse going down and the exclusivity of selection and drag
+// Once to select, once to begin drag?
+static void
+DragSelection(SimulationState& s)
+{
+	if (!s.selected.widgetRef) return;
+
+	v2i deltaPos = s.mousePos - s.mousePosStart;
+	// TODO: Shit, do we need an offset for rendering selection?
+	// Maybe selection goes through a separate rendering path?
+	// For now I guess we'll just accumulate deltas and be wrong?
+	// Accumulating seems reliable.
+	// Probably won't be with clamping
+	// oooooooooh yeaaaaa
+	s.mousePosStart = s.mousePos;
+	Widget& widget = GetWidget(s, s.selected);
+	// TODO: Clamp to screen
+	// TODO: Clamp extents to screen
+	widget.position += deltaPos;
+}
+
 // -------------------------------------------------------------------------------------------------
 // Messages From GUI
 
@@ -845,8 +873,17 @@ static void
 FromGUI_MouseMove(SimulationState& s, Message::MouseMove& mouseMove)
 {
 	s.mousePos = mouseMove.pos;
-	if (s.mouseLook)
-		MouseLook(s);
+	switch (s.guiInteraction)
+	{
+		default: Assert(false); break;
+
+		// Nothing to do
+		case GUIInteraction::Null: break;
+		case GUIInteraction::DragAndDrop: break;
+
+		case GUIInteraction::MouseLook:     MouseLook(s);     break;
+		case GUIInteraction::DragSelection: DragSelection(s); break;
+	}
 }
 
 static void
@@ -858,7 +895,9 @@ FromGUI_SelectHovered(SimulationState& s, Message::SelectHovered&)
 static void
 FromGUI_BeginMouseLook(SimulationState& s, Message::BeginMouseLook&)
 {
-	s.mouseLook      = true;
+	Assert(s.guiInteraction == GUIInteraction::Null);
+	s.guiInteraction = GUIInteraction::MouseLook;
+
 	s.mousePosStart  = s.mousePos;
 	s.cameraRotStart = s.cameraRot;
 }
@@ -866,9 +905,11 @@ FromGUI_BeginMouseLook(SimulationState& s, Message::BeginMouseLook&)
 static void
 FromGUI_EndMouseLook(SimulationState& s, Message::EndMouseLook&)
 {
-	s.cameraRot      += s.cameraRotStart;
-	s.mouseLook       = false;
+	Assert(s.guiInteraction == GUIInteraction::MouseLook);
+	s.guiInteraction  = GUIInteraction::Null;
+
 	s.mousePosStart   = {};
+	s.cameraRot      += s.cameraRotStart;
 	s.cameraRotStart  = {};
 }
 
@@ -929,7 +970,18 @@ static void
 FromGUI_DragDrop(SimulationState& s, Message::DragDrop& dragDrop)
 {
 	if (dragDrop.pluginKind == PluginKind::Widget)
-		s.dragInProgress = dragDrop.inProgress;
+	{
+		if (dragDrop.inProgress)
+		{
+			Assert(s.guiInteraction == GUIInteraction::Null);
+			s.guiInteraction = GUIInteraction::DragAndDrop;
+		}
+		else
+		{
+			Assert(s.guiInteraction == GUIInteraction::DragAndDrop);
+			s.guiInteraction = GUIInteraction::Null;
+		}
+	}
 }
 
 static void
@@ -982,6 +1034,24 @@ static void
 FromGUI_RemoveSelectedWidgets(SimulationState& s, Message::RemoveSelectedWidgets&)
 {
 	RemoveSelectedWidgets(s);
+}
+
+static void
+FromGUI_BeginDragSelection(SimulationState& s, Message::BeginDragSelection&)
+{
+	Assert(s.guiInteraction == GUIInteraction::Null);
+	s.guiInteraction = GUIInteraction::DragSelection;
+
+	s.mousePosStart  = s.mousePos;
+}
+
+static void
+FromGUI_EndDragSelection(SimulationState& s, Message::EndDragSelection&)
+{
+	Assert(s.guiInteraction == GUIInteraction::DragSelection);
+	s.guiInteraction = GUIInteraction::Null;
+
+	s.mousePosStart  = {};
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -1343,6 +1413,8 @@ Simulation_Update(SimulationState& s)
 				HANDLE_MESSAGE(AddWidget);
 				HANDLE_MESSAGE(RemoveWidget);
 				HANDLE_MESSAGE(RemoveSelectedWidgets);
+				HANDLE_MESSAGE(BeginDragSelection);
+				HANDLE_MESSAGE(EndDragSelection);
 			}
 		}
 
@@ -1425,7 +1497,7 @@ Simulation_Update(SimulationState& s)
 
 	// TODO: Outline shader? How should we handle depth?
 	// Draw Hover
-	if (s.hovered.widgetRef && s.hovered != s.selected && !s.dragInProgress)
+	if (s.hovered.widgetRef && s.hovered != s.selected && s.guiInteraction == GUIInteraction::Null)
 	{
 		Widget& widget = GetWidget(s, s.hovered);
 

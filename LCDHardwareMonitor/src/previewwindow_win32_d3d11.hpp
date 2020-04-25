@@ -16,6 +16,7 @@ struct PreviewWindowState
 	i16                     mouseWheelAccumulator;
 	SimulationState*        simulationState;
 	RendererState*          rendererState;
+	i8                      mouseCaptureCount;
 };
 
 b8
@@ -281,25 +282,43 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 
 		case WM_LBUTTONDOWN:
 		{
-			SetCapture(s->hwnd);
-
 			v2i pos = GetMousePosition(lParam, s->zoomFactor, s->renderSize);
 			Assert(pos == s->simulationState->mousePos);
+
+			if (s->simulationState->guiInteraction != GUIInteraction::Null) break;
+
+			if (s->mouseCaptureCount++ == 0)
+				SetCapture(s->hwnd);
+
 			Message::SelectHovered selectHovered = {};
 			FromGUI_SelectHovered(*s->simulationState, selectHovered);
+
+			Message::BeginDragSelection beginDrag = {};
+			FromGUI_BeginDragSelection(*s->simulationState, beginDrag);
 			break;
 		}
 
 		case WM_LBUTTONUP:
 		{
-			b8 success = ReleaseCapture();
-			LOG_LAST_ERROR_IF(!success, IGNORE, Severity::Warning, "Failed to release mouse capture");
+			if (s->simulationState->guiInteraction != GUIInteraction::DragSelection) break;
+
+			if (--s->mouseCaptureCount == 0)
+			{
+				b8 success = ReleaseCapture();
+				LOG_LAST_ERROR_IF(!success, IGNORE, Severity::Warning, "Failed to release mouse capture");
+			}
+
+			Message::EndDragSelection endDrag = {};
+			FromGUI_EndDragSelection(*s->simulationState, endDrag);
 			break;
 		}
 
 		case WM_RBUTTONDOWN:
 		{
-			SetCapture(s->hwnd);
+			if (s->simulationState->guiInteraction != GUIInteraction::Null) break;
+
+			if (s->mouseCaptureCount++ == 0)
+				SetCapture(s->hwnd);
 
 			v2i pos = GetMousePosition(lParam, s->zoomFactor, s->renderSize);
 			Assert(pos == s->simulationState->mousePos);
@@ -310,8 +329,13 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 
 		case WM_RBUTTONUP:
 		{
-			b8 success = ReleaseCapture();
-			LOG_LAST_ERROR_IF(!success, IGNORE, Severity::Warning, "Failed to release mouse capture");
+			if (s->simulationState->guiInteraction != GUIInteraction::MouseLook) break;
+
+			if (--s->mouseCaptureCount == 0)
+			{
+				b8 success = ReleaseCapture();
+				LOG_LAST_ERROR_IF(!success, IGNORE, Severity::Warning, "Failed to release mouse capture");
+			}
 
 			v2i pos = GetMousePosition(lParam, s->zoomFactor, s->renderSize);
 			Assert(pos == s->simulationState->mousePos);
@@ -322,6 +346,8 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 
 		case WM_MBUTTONDOWN:
 		{
+			if (s->simulationState->guiInteraction != GUIInteraction::Null) break;
+
 			v2i pos = GetMousePosition(lParam, s->zoomFactor, s->renderSize);
 			Assert(pos == s->simulationState->mousePos);
 			ResetCamera(*s->simulationState);
@@ -408,10 +434,14 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 			switch (wParam)
 			{
 				case VK_ESCAPE:
+					if (s->simulationState->guiInteraction != GUIInteraction::Null) break;
+
 					PostQuitMessage(0);
 					return 0;
 
 				case VK_DELETE:
+					if (s->simulationState->guiInteraction != GUIInteraction::Null) break;
+
 					RemoveSelectedWidgets(*s->simulationState);
 					return 0;
 			}

@@ -2,7 +2,6 @@ using MahApps.Metro.Controls;
 using System;
 using System.Diagnostics;
 using System.Globalization;
-using System.Runtime.Serialization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -15,6 +14,7 @@ namespace LCDHardwareMonitor.GUI
 	public partial class MainWindow : MetroWindow
 	{
 		SimulationState simState;
+		int mouseCaptureCount;
 
 		public MainWindow()
 		{
@@ -92,14 +92,10 @@ namespace LCDHardwareMonitor.GUI
 				default: return;
 
 				case Key.Escape:
+					if (simState.Interaction != Interaction.Null) break;
+
 					e.Handled = true;
 					Close();
-					break;
-
-				// TODO: Remove
-				case Key.Delete:
-					e.Handled = true;
-					Interop.RemoveSelectedWidgets(simState);
 					break;
 			}
 		}
@@ -142,7 +138,7 @@ namespace LCDHardwareMonitor.GUI
 					// only be capturing for mouse look?
 
 					// TODO: Proper logging
-					if (!element.IsMouseCaptured)
+					if (mouseCaptureCount++ == 0)
 					{
 						e.Handled = true;
 						bool success = Mouse.Capture(element);
@@ -156,6 +152,7 @@ namespace LCDHardwareMonitor.GUI
 			{
 				case MouseButton.Left:
 					Interop.SelectHovered(simState);
+					Interop.BeginDragSelection(simState);
 					break;
 
 				case MouseButton.Right:
@@ -179,11 +176,10 @@ namespace LCDHardwareMonitor.GUI
 				case MouseButton.Right:
 				{
 					var element = sender as UIElement;
-					if (element.IsMouseCaptured)
+					if (--mouseCaptureCount == 0)
 					{
 						e.Handled = true;
 						// TODO: Proper logging
-						// TODO: Failure is logged when dragging from outside the window and releasing inside it
 						bool success = Mouse.Capture(null);
 						if (!success) Debug.Print("Warning: Failed to release mouse capture");
 					}
@@ -193,6 +189,10 @@ namespace LCDHardwareMonitor.GUI
 
 			switch (e.ChangedButton)
 			{
+				case MouseButton.Left:
+					Interop.EndDragSelection(simState);
+					break;
+
 				case MouseButton.Right:
 					Interop.EndMouseLook(simState);
 					break;
@@ -205,7 +205,6 @@ namespace LCDHardwareMonitor.GUI
 			{
 				default: return;
 
-				// TODO: Doesn't work (Image doesn't accept focus)
 				case Key.Delete:
 					e.Handled = true;
 					Interop.RemoveSelectedWidgets(simState);
@@ -224,14 +223,14 @@ namespace LCDHardwareMonitor.GUI
 			public UInt32 widgetRef;
 		}
 
-		// TODO: Looks like there's a bug in .NET where dragging over Firefox, Desktop, other? crashes with DV_E_FORMATETC
+		// TODO: Looks like there's a bug in .NET where dragging over Firefox, Desktop, other? Crashes with DV_E_FORMATETC
 		private void Widget_MouseMove(object sender, MouseEventArgs e)
 		{
 			if (e.LeftButton == MouseButtonState.Pressed)
 			{
 				e.Handled = true;
 
-				// TODO: Test this with multiple selection. I don't trust CurrentItem
+				// TODO: Test this with multiple selection.
 				DataGridRow dataGridRow = (DataGridRow) sender;
 				WidgetDesc widgetDesc = (WidgetDesc) dataGridRow.Item;
 

@@ -3,6 +3,16 @@ Add/Remove widgets
 		https://docs.microsoft.com/en-us/dotnet/framework/wpf/advanced/drag-and-drop-overview
 		https://docs.microsoft.com/en-us/dotnet/framework/wpf/advanced/data-and-data-objects
 
+	Who is responsible for state management wrt to gui interation?
+		If the sim: write once use everywhere, but puts the GUI complexity in sim
+		If the GUI: hard to know some state like "is something selected"
+			Maybe when we send widgets to the GUI it's easier?
+			GUI might want to show feedback for dragging widgets and
+			But GUI could just do that on it's own
+			Events don't seem well correlated, hard to handle multiple presses?
+		Starting to feel like state checking should be in the sim
+
+	Could concatenate a lot of trivial messages into an enum
 	Maybe rename messages and remove namespace
 	Split up OnConnect
 	Drag widgets
