@@ -279,7 +279,7 @@ namespace LCDHardwareMonitor::GUI
 		// Incoming Messages
 
 		static bool
-		FromGUI_Connect(SimulationState% simState, Message::Connect& connect)
+		FromSim_Connect(SimulationState% simState, Message::Connect& connect)
 		{
 			simState.Version = connect.version;
 
@@ -299,7 +299,7 @@ namespace LCDHardwareMonitor::GUI
 		}
 
 		static void
-		FromGUI_Disconnect(SimulationState% simState)
+		FromSim_Disconnect(SimulationState% simState)
 		{
 			// DEBUG: Needed for the Watch window
 			State& s = state;
@@ -319,7 +319,7 @@ namespace LCDHardwareMonitor::GUI
 		}
 
 		static void
-		FromGUI_PluginsAdded(SimulationState% simState, Message::PluginsAdded& pluginsAdded)
+		FromSim_PluginsAdded(SimulationState% simState, Message::PluginsAdded& pluginsAdded)
 		{
 			for (u32 i = 0; i < pluginsAdded.infos.length; i++)
 			{
@@ -340,7 +340,7 @@ namespace LCDHardwareMonitor::GUI
 		}
 
 		static void
-		FromGUI_PluginStatesChanged(SimulationState% simState, Message::PluginStatesChanged& statesChanged)
+		FromSim_PluginStatesChanged(SimulationState% simState, Message::PluginStatesChanged& statesChanged)
 		{
 			for (u32 i = 0; i < statesChanged.refs.length; i++)
 			{
@@ -358,7 +358,7 @@ namespace LCDHardwareMonitor::GUI
 		}
 
 		static void
-		FromGUI_SensorsAdded(SimulationState% simState, Message::SensorsAdded& sensorsAdded)
+		FromSim_SensorsAdded(SimulationState% simState, Message::SensorsAdded& sensorsAdded)
 		{
 			for (u32 i = 0; i < sensorsAdded.sensors.length; i++)
 			{
@@ -381,7 +381,7 @@ namespace LCDHardwareMonitor::GUI
 		}
 
 		static void
-		FromGUI_WidgetDescsAdded(SimulationState% simState, Message::WidgetDescsAdded& widgetDescsAdded)
+		FromSim_WidgetDescsAdded(SimulationState% simState, Message::WidgetDescsAdded& widgetDescsAdded)
 		{
 			for (u32 i = 0; i < widgetDescsAdded.descs.length; i++)
 			{
@@ -441,7 +441,7 @@ namespace LCDHardwareMonitor::GUI
 					HandleMessageResult(simCon, result);
 
 					bool isConnected = simCon.pipe.state == PipeState::Connected;
-					if (!isConnected && wasConnected) FromGUI_Disconnect(simState);
+					if (!isConnected && wasConnected) FromSim_Disconnect(simState);
 				}
 				if (simCon.pipe.state != PipeState::Connected) break;
 
@@ -462,7 +462,7 @@ namespace LCDHardwareMonitor::GUI
 						{
 							DeserializeMessage<Connect>(bytes);
 							Connect& connect = (Connect&) bytes[0];
-							success = FromGUI_Connect(simState, connect);
+							success = FromSim_Connect(simState, connect);
 							if (!success) return false;
 							break;
 						}
@@ -470,7 +470,7 @@ namespace LCDHardwareMonitor::GUI
 						case IdOf<Disconnect>:
 						{
 							DeserializeMessage<Disconnect>(bytes);
-							FromGUI_Disconnect(simState);
+							FromSim_Disconnect(simState);
 							break;
 						}
 
@@ -478,7 +478,7 @@ namespace LCDHardwareMonitor::GUI
 						{
 							DeserializeMessage<PluginsAdded>(bytes);
 							PluginsAdded& pluginsAdded = (PluginsAdded&) bytes[0];
-							FromGUI_PluginsAdded(simState, pluginsAdded);
+							FromSim_PluginsAdded(simState, pluginsAdded);
 							break;
 						}
 
@@ -486,7 +486,7 @@ namespace LCDHardwareMonitor::GUI
 						{
 							DeserializeMessage<PluginStatesChanged>(bytes);
 							PluginStatesChanged& statesChanged = (PluginStatesChanged&) bytes[0];
-							FromGUI_PluginStatesChanged(simState, statesChanged);
+							FromSim_PluginStatesChanged(simState, statesChanged);
 							break;
 						}
 
@@ -494,7 +494,7 @@ namespace LCDHardwareMonitor::GUI
 						{
 							DeserializeMessage<SensorsAdded>(bytes);
 							SensorsAdded& sensorsAdded = (SensorsAdded&) bytes[0];
-							FromGUI_SensorsAdded(simState, sensorsAdded);
+							FromSim_SensorsAdded(simState, sensorsAdded);
 							break;
 						}
 
@@ -502,7 +502,7 @@ namespace LCDHardwareMonitor::GUI
 						{
 							DeserializeMessage<WidgetDescsAdded>(bytes);
 							WidgetDescsAdded& widgetDescsAdded = (WidgetDescsAdded&) bytes[0];
-							FromGUI_WidgetDescsAdded(simState, widgetDescsAdded);
+							FromSim_WidgetDescsAdded(simState, widgetDescsAdded);
 							break;
 						}
 					}
