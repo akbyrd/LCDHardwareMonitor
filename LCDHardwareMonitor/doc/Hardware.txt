@@ -1,0 +1,84 @@
+LCDSysInfo
+----------
+Chips
+Atmega32a au 1339
+ams1117 3.3 ht313e
+winband 25q169ysig 1328
+
+Display
+tc283-166-c-p4-j-e-1 905137122c
+tft8k2254fpc-a1-e
+08090610 tft1p2464
+https://cdn-shop.adafruit.com/datasheets/ILI9325.pdf
+https://www.adafruit.com/product/335
+https://www.ebay.com/itm/2-8-IPS-LCD-module-320x240-ILI9325-9328-wide-view-angle-TFT-arduino-AVR-STM32/113152292332
+https://www.ebay.com/itm/2-8-2-4-inch-TFT-LCD-module-PCB-adapter-touch-IC-XPT2046-ads7843-arduino-/111096607326?hash=item19dddfb25e
+https://www.ebay.com/itm/121114582677?
+Controller: ILI9325 (ILI9328 Compatible)
+
+
+
+Stores
+------
+https://www.ebay.com/sch/m.html?_ssn=coldtears.electronics
+https://www.adafruit.com/
+https://www.crystalfontz.com/
+https://www.openimpulse.com/blog/
+
+
+
+Forums
+------
+https://forums.adafruit.com/
+https://www.avrfreaks.net/
+
+
+
+Software
+--------
+https://www.ramtex.dk/display-controller-driver/rgb/ili9320.htm
+http://www.rinkydinkelectronics.com/library.php
+avr-gcc
+winavr?
+libusb
+
+
+
+Desired Features
+----------------
+IPS or other display tech with good viewing angles
+Capcitive touch
+UART? I2C? SPI? JTAG? bit-bang?
+
+
+
+Parts List
+----------
+Tools
+	SMT soldering iron
+		Pen?
+		Electric?
+		Fancy?
+	SMT Solder
+	Solder Sucker
+	Helping hands
+Hardware
+	Breakout board  https://www.adafruit.com/product/2264
+	TFT Display     https://www.adafruit.com/product/2770
+	FPC Connector   https://www.adafruit.com/product/1492
+	FPC Extension
+	FPC Adapter
+
+
+
+Data
+----
+320 x 240 x 18 = 1,382,400 bits / update
+=> 172,800 bytes / update
+=> 5,184,000 bytes / second @ 30 Hz
+=> 5,062 kBps
+=> 4.94 mBps
+=> 40,500 kbps
+=> 39.55 mbps
+USB 1.0 = 12 mbps
+USB 2.0 = 480 mbps
