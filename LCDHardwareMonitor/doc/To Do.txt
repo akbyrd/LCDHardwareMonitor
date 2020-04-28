@@ -49,7 +49,6 @@ Namespaces
 Native namespace for interop?
 
 Try removing WidgetData
-Remove default: Assert(false); break; Ensure warnings catch missing cases
 Need to handle mouse position when preview isn't visible
 Need to actually avoid processing broken plugins
 

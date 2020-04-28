@@ -529,7 +529,7 @@ namespace LCDHardwareMonitor::GUI
 					Message::Header& header = (Message::Header&) bytes[0];
 					switch (header.id)
 					{
-						default: Assert(false); break;
+						case IdOf<Message::Null>: Assert(false); break;
 
 						HANDLE_MESSAGE(Connect);
 						HANDLE_MESSAGE(Disconnect);

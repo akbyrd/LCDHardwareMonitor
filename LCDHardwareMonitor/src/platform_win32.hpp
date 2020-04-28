@@ -302,7 +302,7 @@ Platform_DisconnectPipeServer(Pipe& pipe)
 
 	switch (state)
 	{
-		default: Assert(false); break;
+		case PipeState::Null: Assert(false); break;
 
 		case PipeState::Connecting:
 		{
@@ -340,7 +340,7 @@ Platform_DisconnectPipeClient(Pipe& pipe)
 
 	switch (state)
 	{
-		default: Assert(false); break;
+		case PipeState::Null: Assert(false); break;
 
 		// Not used for client pipes
 		case PipeState::Connecting:
@@ -415,7 +415,7 @@ Platform_ConnectPipeServer(Pipe& pipe)
 
 	switch (pipe.state)
 	{
-		default: Assert(false); break;
+		case PipeState::Null: Assert(false); break;
 
 		case PipeState::Connected:
 			return PipeResult::Success;
@@ -501,7 +501,7 @@ Platform_ConnectPipeClient(Pipe& pipe)
 
 	switch (pipe.state)
 	{
-		default: Assert(false); break;
+		case PipeState::Null: Assert(false); break;
 
 		// Impossible for client pipes
 		case PipeState::Connecting:

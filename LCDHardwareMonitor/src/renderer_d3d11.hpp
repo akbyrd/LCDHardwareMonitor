@@ -811,7 +811,7 @@ Renderer_Render(RendererState& s)
 		RenderCommand& renderCommand = s.commandList[i];
 		switch (renderCommand.type)
 		{
-			default: Assert(false); continue;
+			case RenderCommandType::Null: Assert(false); break;
 
 			case RenderCommandType::ConstantBufferUpdate:
 			{
@@ -822,7 +822,7 @@ Renderer_Render(RendererState& s)
 				ConstantBuffer* cBuf = nullptr;
 				switch (cBufUpdate.shaderStage)
 				{
-					default: Assert(false); continue;
+					case ShaderStage::Null: Assert(false); break;
 
 					case ShaderStage::Vertex:
 					{
@@ -955,7 +955,7 @@ Renderer_ValidateConstantBufferUpdate(RendererState& s, ConstantBufferUpdate& cB
 
 	switch (cBufUpdate.shaderStage)
 	{
-		default: Assert(false); break;
+		case ShaderStage::Null: Assert(false); break;
 
 		case ShaderStage::Vertex:
 		{

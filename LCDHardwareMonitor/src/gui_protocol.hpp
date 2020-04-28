@@ -277,8 +277,7 @@ HandleMessageResult(ConnectionState& con, PipeResult result)
 {
 	switch (result)
 	{
-		default: Assert(false); break;
-
+		case PipeResult::Null: Assert(false); break;
 		case PipeResult::Success: break;
 		case PipeResult::TransientFailure: break;
 
@@ -373,7 +372,7 @@ Serialize(ByteStream& stream, T*& pointer)
 {
 	switch (stream.mode)
 	{
-		default: Assert(false); break;
+		case ByteStreamMode::Null: Assert(false); break;
 
 		case ByteStreamMode::Size:
 			break;
@@ -418,7 +417,7 @@ Serialize(ByteStream& stream, List<T>& list)
 
 	switch (stream.mode)
 	{
-		default: Assert(false); break;
+		case ByteStreamMode::Null: Assert(false); break;
 
 		case ByteStreamMode::Size:
 			for (u32 i = 0; i < list.length; i++)
@@ -453,7 +452,7 @@ Serialize(ByteStream& stream, Slice<T>& slice)
 
 	switch (stream.mode)
 	{
-		default: Assert(false); break;
+		case ByteStreamMode::Null: Assert(false); break;
 
 		case ByteStreamMode::Size:
 			for (u32 i = 0; i < slice.length; i++)
@@ -492,7 +491,7 @@ Serialize(ByteStream& stream, String& string)
 
 	switch (stream.mode)
 	{
-		default: Assert(false); break;
+		case ByteStreamMode::Null: Assert(false); break;
 
 		case ByteStreamMode::Size:
 			break;
@@ -516,7 +515,7 @@ Serialize(ByteStream& stream, StringView& string)
 
 	switch (stream.mode)
 	{
-		default: Assert(false); break;
+		case ByteStreamMode::Null: Assert(false); break;
 
 		case ByteStreamMode::Size:
 			break;

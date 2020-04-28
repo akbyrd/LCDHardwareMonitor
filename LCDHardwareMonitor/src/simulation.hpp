@@ -872,8 +872,6 @@ FromGUI_MouseMove(SimulationState& s, FromGUI::MouseMove& mouseMove)
 	s.mousePos = mouseMove.pos;
 	switch (s.guiInteraction)
 	{
-		default: Assert(false); break;
-
 		// Nothing to do
 		case GUIInteraction::Null: break;
 		case GUIInteraction::DragAndDrop: break;
@@ -936,7 +934,12 @@ FromGUI_SetPluginLoadStates(SimulationState& s, FromGUI::SetPluginLoadStates& se
 		Plugin& plugin = s.plugins[pluginRef];
 		switch (loadState)
 		{
-			default: Assert(false); break;
+			case PluginLoadState::Null:
+			case PluginLoadState::Loading:
+			case PluginLoadState::Unloading:
+			case PluginLoadState::Broken:
+				Assert(false);
+				break;
 
 			case PluginLoadState::Loaded:
 				if (plugin.kind == PluginKind::Sensor)
@@ -1397,7 +1400,7 @@ Simulation_Update(SimulationState& s)
 			Message::Header& header = (Message::Header&) bytes[0];
 			switch (header.id)
 			{
-				default: Assert(false); break;
+				case IdOf<Message::Null>: Assert(false); break;
 
 				HANDLE_MESSAGE(TerminateSimulation);
 				HANDLE_MESSAGE(MouseMove);
