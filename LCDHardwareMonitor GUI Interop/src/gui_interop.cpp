@@ -202,7 +202,7 @@ namespace LCDHardwareMonitor::GUI
 		TerminateSim(SimulationState^ simState)
 		{
 			SetProcessState(simState, ProcessState::Terminating);
-			Message::TerminateSimulation terminate = {};
+			FromGUI::TerminateSimulation terminate = {};
 			SerializeAndQueueMessage(state.simConnection, terminate);
 		}
 
@@ -215,7 +215,7 @@ namespace LCDHardwareMonitor::GUI
 			PluginRef nRef = { plugin.Ref };
 			::PluginLoadState nLoadState = (::PluginLoadState) loadState;
 
-			Message::SetPluginLoadStates setLoadStates = {};
+			FromGUI::SetPluginLoadStates setLoadStates = {};
 			setLoadStates.refs = nRef;
 			setLoadStates.loadStates = nLoadState;
 			SerializeAndQueueMessage(state.simConnection, setLoadStates);
@@ -232,7 +232,7 @@ namespace LCDHardwareMonitor::GUI
 			simState->MousePos = pos;
 			simState->NotifyPropertyChanged("");
 
-			Message::MouseMove move = {};
+			FromGUI::MouseMove move = {};
 			move.pos = { (int) pos.X, (int) pos.Y };
 			SerializeAndQueueMessage(state.simConnection, move);
 		}
@@ -242,7 +242,7 @@ namespace LCDHardwareMonitor::GUI
 		{
 			if (simState->Interaction != Interaction::Null) return;
 
-			Message::SelectHovered selectHovered = {};
+			FromGUI::SelectHovered selectHovered = {};
 			SerializeAndQueueMessage(state.simConnection, selectHovered);
 		}
 
@@ -253,7 +253,7 @@ namespace LCDHardwareMonitor::GUI
 			simState->Interaction = Interaction::MouseLook;
 			simState->NotifyPropertyChanged("");
 
-			Message::BeginMouseLook beginMouseLook = {};
+			FromGUI::BeginMouseLook beginMouseLook = {};
 			SerializeAndQueueMessage(state.simConnection, beginMouseLook);
 		}
 
@@ -264,7 +264,7 @@ namespace LCDHardwareMonitor::GUI
 			simState->Interaction = Interaction::Null;
 			simState->NotifyPropertyChanged("");
 
-			Message::EndMouseLook endMouseLook = {};
+			FromGUI::EndMouseLook endMouseLook = {};
 			SerializeAndQueueMessage(state.simConnection, endMouseLook);
 		}
 
@@ -273,7 +273,7 @@ namespace LCDHardwareMonitor::GUI
 		{
 			if (simState->Interaction != Interaction::Null) return;
 
-			Message::ResetCamera resetCamera = {};
+			FromGUI::ResetCamera resetCamera = {};
 			SerializeAndQueueMessage(state.simConnection, resetCamera);
 		}
 
@@ -284,7 +284,7 @@ namespace LCDHardwareMonitor::GUI
 			simState->Interaction = Interaction::Dragging;
 			simState->NotifyPropertyChanged("");
 
-			Message::BeginDragSelection beginDrag = {};
+			FromGUI::BeginDragSelection beginDrag = {};
 			SerializeAndQueueMessage(state.simConnection, beginDrag);
 		}
 
@@ -295,7 +295,7 @@ namespace LCDHardwareMonitor::GUI
 			simState->Interaction = Interaction::Null;
 			simState->NotifyPropertyChanged("");
 
-			Message::EndDragSelection endDrag = {};
+			FromGUI::EndDragSelection endDrag = {};
 			SerializeAndQueueMessage(state.simConnection, endDrag);
 		}
 
@@ -304,7 +304,7 @@ namespace LCDHardwareMonitor::GUI
 		{
 			Assert(simState->Interaction == Interaction::Null);
 
-			Message::DragDrop dragDrop = {};
+			FromGUI::DragDrop dragDrop = {};
 			dragDrop.pluginKind = (::PluginKind) pluginKind;
 			dragDrop.inProgress = inProgress;
 			SerializeAndQueueMessage(state.simConnection, dragDrop);
@@ -319,7 +319,7 @@ namespace LCDHardwareMonitor::GUI
 			ref.pluginRef = { pluginRef };
 			ref.dataRef = { descRef };
 
-			Message::AddWidget addWidget = {};
+			FromGUI::AddWidget addWidget = {};
 			addWidget.ref = ref;
 			addWidget.position = { (float) pos.X, (float) pos.Y };
 			SerializeAndQueueMessage(state.simConnection, addWidget);
@@ -330,7 +330,7 @@ namespace LCDHardwareMonitor::GUI
 		{
 			if (simState->Interaction != Interaction::Null) return;
 
-			Message::RemoveSelectedWidgets removeSelectedWidgets = {};
+			FromGUI::RemoveSelectedWidgets removeSelectedWidgets = {};
 			SerializeAndQueueMessage(state.simConnection, removeSelectedWidgets);
 		}
 
@@ -338,7 +338,7 @@ namespace LCDHardwareMonitor::GUI
 		// Incoming Messages
 
 		static void
-		FromSim_Connect(SimulationState% simState, Message::Connect& connect)
+		FromSim_Connect(SimulationState% simState, ToGUI::Connect& connect)
 		{
 			simState.Version = connect.version;
 
@@ -359,7 +359,7 @@ namespace LCDHardwareMonitor::GUI
 		}
 
 		static void
-		FromSim_Disconnect(SimulationState% simState, Message::Disconnect&)
+		FromSim_Disconnect(SimulationState% simState, ToGUI::Disconnect&)
 		{
 			// DEBUG: Needed for the Watch window
 			State& s = state;
@@ -379,7 +379,7 @@ namespace LCDHardwareMonitor::GUI
 		}
 
 		static void
-		FromSim_PluginsAdded(SimulationState% simState, Message::PluginsAdded& pluginsAdded)
+		FromSim_PluginsAdded(SimulationState% simState, ToGUI::PluginsAdded& pluginsAdded)
 		{
 			for (u32 i = 0; i < pluginsAdded.infos.length; i++)
 			{
@@ -400,7 +400,7 @@ namespace LCDHardwareMonitor::GUI
 		}
 
 		static void
-		FromSim_PluginStatesChanged(SimulationState% simState, Message::PluginStatesChanged& statesChanged)
+		FromSim_PluginStatesChanged(SimulationState% simState, ToGUI::PluginStatesChanged& statesChanged)
 		{
 			for (u32 i = 0; i < statesChanged.refs.length; i++)
 			{
@@ -418,7 +418,7 @@ namespace LCDHardwareMonitor::GUI
 		}
 
 		static void
-		FromSim_SensorsAdded(SimulationState% simState, Message::SensorsAdded& sensorsAdded)
+		FromSim_SensorsAdded(SimulationState% simState, ToGUI::SensorsAdded& sensorsAdded)
 		{
 			for (u32 i = 0; i < sensorsAdded.sensors.length; i++)
 			{
@@ -441,7 +441,7 @@ namespace LCDHardwareMonitor::GUI
 		}
 
 		static void
-		FromSim_WidgetDescsAdded(SimulationState% simState, Message::WidgetDescsAdded& widgetDescsAdded)
+		FromSim_WidgetDescsAdded(SimulationState% simState, ToGUI::WidgetDescsAdded& widgetDescsAdded)
 		{
 			for (u32 i = 0; i < widgetDescsAdded.descs.length; i++)
 			{
@@ -503,7 +503,7 @@ namespace LCDHardwareMonitor::GUI
 					bool isConnected = simCon.pipe.state == PipeState::Connected;
 					if (!isConnected && wasConnected)
 					{
-						Message::Disconnect disconnect = {};
+						ToGUI::Disconnect disconnect = {};
 						FromSim_Disconnect(simState, disconnect);
 					}
 				}
@@ -517,9 +517,9 @@ namespace LCDHardwareMonitor::GUI
 					if (!success) break;
 
 					#define HANDLE_MESSAGE(Type) \
-						case IdOf<Message::Type>: \
+						case IdOf<ToGUI::Type>: \
 						{ \
-							using Type = Message::Type; \
+							using Type = ToGUI::Type; \
 							DeserializeMessage<Type>(bytes); \
 							Type& message = (Type&) bytes[0]; \
 							FromSim_##Type(simState, message); \

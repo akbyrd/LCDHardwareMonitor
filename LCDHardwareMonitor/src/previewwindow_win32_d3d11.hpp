@@ -274,7 +274,7 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 		case WM_MOUSEMOVE:
 		{
 			v2i pos = GetMousePosition(lParam, s->zoomFactor, s->renderSize);
-			Message::MouseMove mouseMove = {};
+			FromGUI::MouseMove mouseMove = {};
 			mouseMove.pos = pos;
 			FromGUI_MouseMove(*s->simulationState, mouseMove);
 			break;
@@ -290,10 +290,10 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 			if (s->mouseCaptureCount++ == 0)
 				SetCapture(s->hwnd);
 
-			Message::SelectHovered selectHovered = {};
+			FromGUI::SelectHovered selectHovered = {};
 			FromGUI_SelectHovered(*s->simulationState, selectHovered);
 
-			Message::BeginDragSelection beginDrag = {};
+			FromGUI::BeginDragSelection beginDrag = {};
 			FromGUI_BeginDragSelection(*s->simulationState, beginDrag);
 			break;
 		}
@@ -308,7 +308,7 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 				LOG_LAST_ERROR_IF(!success, IGNORE, Severity::Warning, "Failed to release mouse capture");
 			}
 
-			Message::EndDragSelection endDrag = {};
+			FromGUI::EndDragSelection endDrag = {};
 			FromGUI_EndDragSelection(*s->simulationState, endDrag);
 			break;
 		}
@@ -322,7 +322,7 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 
 			v2i pos = GetMousePosition(lParam, s->zoomFactor, s->renderSize);
 			Assert(pos == s->simulationState->mousePos);
-			Message::BeginMouseLook beginMouseLook = {};
+			FromGUI::BeginMouseLook beginMouseLook = {};
 			FromGUI_BeginMouseLook(*s->simulationState, beginMouseLook);
 			break;
 		}
@@ -339,7 +339,7 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 
 			v2i pos = GetMousePosition(lParam, s->zoomFactor, s->renderSize);
 			Assert(pos == s->simulationState->mousePos);
-			Message::EndMouseLook endMouseLook = {};
+			FromGUI::EndMouseLook endMouseLook = {};
 			FromGUI_EndMouseLook(*s->simulationState, endMouseLook);
 			break;
 		}

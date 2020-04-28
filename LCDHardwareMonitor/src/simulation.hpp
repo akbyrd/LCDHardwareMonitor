@@ -215,7 +215,7 @@ static void
 OnConnect(SimulationState& s, ConnectionState& con)
 {
 	{
-		Message::Connect connect = {};
+		ToGUI::Connect connect = {};
 		connect.version       = LHMVersion;
 		connect.renderSurface = (size) Renderer_GetSharedRenderSurface(*s.renderer);
 		connect.renderSize.x  = s.renderSize.x;
@@ -224,13 +224,13 @@ OnConnect(SimulationState& s, ConnectionState& con)
 	}
 
 	{
-		Message::PluginsAdded pluginsAdded = {};
+		ToGUI::PluginsAdded pluginsAdded = {};
 		pluginsAdded.refs  = List_MemberSlice(s.plugins, &Plugin::ref);
 		pluginsAdded.kinds = List_MemberSlice(s.plugins, &Plugin::kind);
 		pluginsAdded.infos = List_MemberSlice(s.plugins, &Plugin::info);
 		SerializeAndQueueMessage(con, pluginsAdded);
 
-		Message::PluginStatesChanged statesChanged = {};
+		ToGUI::PluginStatesChanged statesChanged = {};
 		statesChanged.refs       = List_MemberSlice(s.plugins, &Plugin::ref);
 		statesChanged.kinds      = List_MemberSlice(s.plugins, &Plugin::kind);
 		statesChanged.loadStates = List_MemberSlice(s.plugins, &Plugin::loadState);
@@ -238,7 +238,7 @@ OnConnect(SimulationState& s, ConnectionState& con)
 	}
 
 	{
-		Message::SensorsAdded sensorsAdded = {};
+		ToGUI::SensorsAdded sensorsAdded = {};
 		sensorsAdded.sensorPluginRefs = List_MemberSlice(s.sensorPlugins, &SensorPlugin::ref);
 		sensorsAdded.sensors          = List_MemberSlice(s.sensorPlugins, &SensorPlugin::sensors);
 		SerializeAndQueueMessage(con, sensorsAdded);
@@ -253,7 +253,7 @@ OnConnect(SimulationState& s, ConnectionState& con)
 			// a set of List<T>. The inner slices are temporaries and need to be stored.
 			Slice<WidgetDesc> descs = List_MemberSlice(widgetPlugin.widgetDatas, &WidgetData::desc);
 
-			Message::WidgetDescsAdded widgetDescsAdded = {};
+			ToGUI::WidgetDescsAdded widgetDescsAdded = {};
 			widgetDescsAdded.widgetPluginRefs = widgetPlugin.ref;
 			widgetDescsAdded.descs            = descs;
 			SerializeAndQueueMessage(con, widgetDescsAdded);
@@ -276,13 +276,13 @@ OnTeardown(ConnectionState& con)
 {
 	PipeResult result;
 
-	Message::Disconnect disconnect = {};
-	disconnect.header.id    = IdOf<Message::Disconnect>;
+	ToGUI::Disconnect disconnect = {};
+	disconnect.header.id    = IdOf<ToGUI::Disconnect>;
 	disconnect.header.index = con.sendIndex - (con.queue.length - con.queueIndex);
-	disconnect.header.size  = sizeof(Message::Disconnect);
+	disconnect.header.size  = sizeof(ToGUI::Disconnect);
 
 	Bytes bytes = {};
-	bytes.length   = sizeof(Message::Disconnect);
+	bytes.length   = sizeof(ToGUI::Disconnect);
 	bytes.capacity = bytes.length;
 	bytes.data     = (u8*) &disconnect;
 
@@ -313,7 +313,7 @@ ToGUI_PluginStatesChanged(SimulationState& s, Slice<Plugin> plugins)
 	{
 		Plugin& plugin = plugins[i];
 
-		Message::PluginStatesChanged statesChanged = {};
+		ToGUI::PluginStatesChanged statesChanged = {};
 		statesChanged.refs       = plugin.ref;
 		statesChanged.kinds      = plugin.kind;
 		statesChanged.loadStates = plugin.loadState;
@@ -860,14 +860,14 @@ DragSelection(SimulationState& s)
 // nature of GUI messaging. Validation for programming mistakes is limited to assertions.
 
 static void
-FromGUI_TerminateSimulation(SimulationState& s, Message::TerminateSimulation& terminateSim)
+FromGUI_TerminateSimulation(SimulationState& s, FromGUI::TerminateSimulation& terminateSim)
 {
 	UNUSED_ARGS(s, terminateSim);
 	Platform_RequestQuit();
 }
 
 static void
-FromGUI_MouseMove(SimulationState& s, Message::MouseMove& mouseMove)
+FromGUI_MouseMove(SimulationState& s, FromGUI::MouseMove& mouseMove)
 {
 	s.mousePos = mouseMove.pos;
 	switch (s.guiInteraction)
@@ -884,13 +884,13 @@ FromGUI_MouseMove(SimulationState& s, Message::MouseMove& mouseMove)
 }
 
 static void
-FromGUI_SelectHovered(SimulationState& s, Message::SelectHovered&)
+FromGUI_SelectHovered(SimulationState& s, FromGUI::SelectHovered&)
 {
 	SelectWidget(s, s.hovered);
 }
 
 static void
-FromGUI_BeginMouseLook(SimulationState& s, Message::BeginMouseLook&)
+FromGUI_BeginMouseLook(SimulationState& s, FromGUI::BeginMouseLook&)
 {
 	Assert(s.guiInteraction == GUIInteraction::Null);
 	s.guiInteraction = GUIInteraction::MouseLook;
@@ -900,7 +900,7 @@ FromGUI_BeginMouseLook(SimulationState& s, Message::BeginMouseLook&)
 }
 
 static void
-FromGUI_EndMouseLook(SimulationState& s, Message::EndMouseLook&)
+FromGUI_EndMouseLook(SimulationState& s, FromGUI::EndMouseLook&)
 {
 	Assert(s.guiInteraction == GUIInteraction::MouseLook);
 	s.guiInteraction  = GUIInteraction::Null;
@@ -911,13 +911,13 @@ FromGUI_EndMouseLook(SimulationState& s, Message::EndMouseLook&)
 }
 
 static void
-FromGUI_ResetCamera(SimulationState& s, Message::ResetCamera&)
+FromGUI_ResetCamera(SimulationState& s, FromGUI::ResetCamera&)
 {
 	ResetCamera(s);
 }
 
 static void
-FromGUI_SetPluginLoadStates(SimulationState& s, Message::SetPluginLoadStates& setStates)
+FromGUI_SetPluginLoadStates(SimulationState& s, FromGUI::SetPluginLoadStates& setStates)
 {
 	// TODO: If a plugin is unloaded and a new one is load it will take up the same slot and the ref
 	// here will be invalidated (tombstone?)
@@ -964,7 +964,7 @@ FromGUI_SetPluginLoadStates(SimulationState& s, Message::SetPluginLoadStates& se
 }
 
 static void
-FromGUI_DragDrop(SimulationState& s, Message::DragDrop& dragDrop)
+FromGUI_DragDrop(SimulationState& s, FromGUI::DragDrop& dragDrop)
 {
 	if (dragDrop.pluginKind == PluginKind::Widget)
 	{
@@ -982,7 +982,7 @@ FromGUI_DragDrop(SimulationState& s, Message::DragDrop& dragDrop)
 }
 
 static void
-FromGUI_AddWidget(SimulationState& s, Message::AddWidget& addWidget)
+FromGUI_AddWidget(SimulationState& s, FromGUI::AddWidget& addWidget)
 {
 	if (!List_IsRefValid(s.widgetPlugins, addWidget.ref.pluginRef))
 	{
@@ -1002,7 +1002,7 @@ FromGUI_AddWidget(SimulationState& s, Message::AddWidget& addWidget)
 }
 
 static void
-FromGUI_RemoveWidget(SimulationState& s, Message::RemoveWidget& removeWidget)
+FromGUI_RemoveWidget(SimulationState& s, FromGUI::RemoveWidget& removeWidget)
 {
 	if (!List_IsRefValid(s.widgetPlugins, removeWidget.ref.pluginRef))
 	{
@@ -1028,13 +1028,13 @@ FromGUI_RemoveWidget(SimulationState& s, Message::RemoveWidget& removeWidget)
 }
 
 static void
-FromGUI_RemoveSelectedWidgets(SimulationState& s, Message::RemoveSelectedWidgets&)
+FromGUI_RemoveSelectedWidgets(SimulationState& s, FromGUI::RemoveSelectedWidgets&)
 {
 	RemoveSelectedWidgets(s);
 }
 
 static void
-FromGUI_BeginDragSelection(SimulationState& s, Message::BeginDragSelection&)
+FromGUI_BeginDragSelection(SimulationState& s, FromGUI::BeginDragSelection&)
 {
 	Assert(s.guiInteraction == GUIInteraction::Null);
 	s.guiInteraction = GUIInteraction::DragSelection;
@@ -1043,7 +1043,7 @@ FromGUI_BeginDragSelection(SimulationState& s, Message::BeginDragSelection&)
 }
 
 static void
-FromGUI_EndDragSelection(SimulationState& s, Message::EndDragSelection&)
+FromGUI_EndDragSelection(SimulationState& s, FromGUI::EndDragSelection&)
 {
 	Assert(s.guiInteraction == GUIInteraction::DragSelection);
 	s.guiInteraction = GUIInteraction::Null;
@@ -1385,9 +1385,9 @@ Simulation_Update(SimulationState& s)
 			if (!success) break;
 
 			#define HANDLE_MESSAGE(Type) \
-				case IdOf<Message::Type>: \
+				case IdOf<FromGUI::Type>: \
 				{ \
-					using Type = Message::Type; \
+					using Type = FromGUI::Type; \
 					DeserializeMessage<Type>(bytes); \
 					Type& message = (Type&) bytes[0]; \
 					FromGUI_##Type(s, message); \

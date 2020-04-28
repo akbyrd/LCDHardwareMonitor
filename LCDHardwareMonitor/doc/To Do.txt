@@ -12,7 +12,6 @@ Add/Remove widgets
 			Events don't seem well correlated, hard to handle multiple presses?
 		Starting to feel like state checking should be in the sim
 
-	Maybe rename messages and remove namespace
 	Split up OnConnect
 	Drag widgets
 	Send widgets to GUI

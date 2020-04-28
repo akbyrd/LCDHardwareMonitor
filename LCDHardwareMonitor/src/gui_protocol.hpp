@@ -11,8 +11,12 @@ namespace Message
 	{
 		Header header;
 	};
+}
 
-	// Sim -> GUI
+namespace ToGUI
+{
+	using namespace Message;
+
 	struct Connect
 	{
 		Header header;
@@ -58,8 +62,12 @@ namespace Message
 		Slice<WidgetPluginRef>   widgetPluginRefs;
 		Slice<Slice<WidgetDesc>> descs;
 	};
+}
 
-	// GUI -> Sim
+namespace FromGUI
+{
+	using namespace Message;
+
 	struct TerminateSimulation
 	{
 		Header header;
@@ -197,11 +205,11 @@ void Serialize(ByteStream&, Slice<T>&);
 // TODO: String?
 void Serialize(ByteStream&, StringView&);
 
-void Serialize(ByteStream&, Message::PluginsAdded&);
-void Serialize(ByteStream&, Message::PluginStatesChanged&);
-void Serialize(ByteStream&, Message::SetPluginLoadStates&);
-void Serialize(ByteStream&, Message::SensorsAdded&);
-void Serialize(ByteStream&, Message::WidgetDescsAdded&);
+void Serialize(ByteStream&, ToGUI::PluginsAdded&);
+void Serialize(ByteStream&, ToGUI::PluginStatesChanged&);
+void Serialize(ByteStream&, ToGUI::SensorsAdded&);
+void Serialize(ByteStream&, ToGUI::WidgetDescsAdded&);
+void Serialize(ByteStream&, FromGUI::SetPluginLoadStates&);
 void Serialize(ByteStream&, PluginInfo&);
 void Serialize(ByteStream&, Sensor&);
 
@@ -525,7 +533,7 @@ Serialize(ByteStream& stream, StringView& string)
 }
 
 void
-Serialize(ByteStream& stream, Message::PluginsAdded& pluginsAdded)
+Serialize(ByteStream& stream, ToGUI::PluginsAdded& pluginsAdded)
 {
 	Serialize(stream, pluginsAdded.header);
 	Serialize(stream, pluginsAdded.refs);
@@ -534,7 +542,7 @@ Serialize(ByteStream& stream, Message::PluginsAdded& pluginsAdded)
 }
 
 void
-Serialize(ByteStream& stream, Message::PluginStatesChanged& statesChanged)
+Serialize(ByteStream& stream, ToGUI::PluginStatesChanged& statesChanged)
 {
 	Serialize(stream, statesChanged.header);
 	Serialize(stream, statesChanged.refs);
@@ -543,7 +551,7 @@ Serialize(ByteStream& stream, Message::PluginStatesChanged& statesChanged)
 }
 
 void
-Serialize(ByteStream& stream, Message::SetPluginLoadStates& pluginloadStates)
+Serialize(ByteStream& stream, FromGUI::SetPluginLoadStates& pluginloadStates)
 {
 	Serialize(stream, pluginloadStates.header);
 	Serialize(stream, pluginloadStates.refs);
@@ -559,7 +567,7 @@ Serialize(ByteStream& stream, PluginInfo& pluginInfo)
 }
 
 void
-Serialize(ByteStream& stream, Message::SensorsAdded& sensorsAdded)
+Serialize(ByteStream& stream, ToGUI::SensorsAdded& sensorsAdded)
 {
 	Serialize(stream, sensorsAdded.header);
 	Serialize(stream, sensorsAdded.sensorPluginRefs);
@@ -577,7 +585,7 @@ Serialize(ByteStream& stream, Sensor& sensor)
 }
 
 void
-Serialize(ByteStream& stream, Message::WidgetDescsAdded& widgetDescsAdded)
+Serialize(ByteStream& stream, ToGUI::WidgetDescsAdded& widgetDescsAdded)
 {
 	Serialize(stream, widgetDescsAdded.header);
 	Serialize(stream, widgetDescsAdded.widgetPluginRefs);
