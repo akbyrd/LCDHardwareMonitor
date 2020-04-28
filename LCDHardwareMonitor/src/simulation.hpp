@@ -214,10 +214,8 @@ PushDrawCall(PluginContext& context, Material material)
 static void
 OnConnect(SimulationState& s, ConnectionState& con)
 {
-	using namespace Message;
-
 	{
-		Connect connect = {};
+		Message::Connect connect = {};
 		connect.version       = LHMVersion;
 		connect.renderSurface = (size) Renderer_GetSharedRenderSurface(*s.renderer);
 		connect.renderSize.x  = s.renderSize.x;
@@ -226,13 +224,13 @@ OnConnect(SimulationState& s, ConnectionState& con)
 	}
 
 	{
-		PluginsAdded pluginsAdded = {};
+		Message::PluginsAdded pluginsAdded = {};
 		pluginsAdded.refs  = List_MemberSlice(s.plugins, &Plugin::ref);
 		pluginsAdded.kinds = List_MemberSlice(s.plugins, &Plugin::kind);
 		pluginsAdded.infos = List_MemberSlice(s.plugins, &Plugin::info);
 		SerializeAndQueueMessage(con, pluginsAdded);
 
-		PluginStatesChanged statesChanged = {};
+		Message::PluginStatesChanged statesChanged = {};
 		statesChanged.refs       = List_MemberSlice(s.plugins, &Plugin::ref);
 		statesChanged.kinds      = List_MemberSlice(s.plugins, &Plugin::kind);
 		statesChanged.loadStates = List_MemberSlice(s.plugins, &Plugin::loadState);
@@ -240,7 +238,7 @@ OnConnect(SimulationState& s, ConnectionState& con)
 	}
 
 	{
-		SensorsAdded sensorsAdded = {};
+		Message::SensorsAdded sensorsAdded = {};
 		sensorsAdded.sensorPluginRefs = List_MemberSlice(s.sensorPlugins, &SensorPlugin::ref);
 		sensorsAdded.sensors          = List_MemberSlice(s.sensorPlugins, &SensorPlugin::sensors);
 		SerializeAndQueueMessage(con, sensorsAdded);
@@ -255,7 +253,7 @@ OnConnect(SimulationState& s, ConnectionState& con)
 			// a set of List<T>. The inner slices are temporaries and need to be stored.
 			Slice<WidgetDesc> descs = List_MemberSlice(widgetPlugin.widgetDatas, &WidgetData::desc);
 
-			WidgetDescsAdded widgetDescsAdded = {};
+			Message::WidgetDescsAdded widgetDescsAdded = {};
 			widgetDescsAdded.widgetPluginRefs = widgetPlugin.ref;
 			widgetDescsAdded.descs            = descs;
 			SerializeAndQueueMessage(con, widgetDescsAdded);
@@ -276,16 +274,15 @@ OnDisconnect(SimulationState& s, ConnectionState& con)
 static void
 OnTeardown(ConnectionState& con)
 {
-	using namespace Message;
 	PipeResult result;
 
-	Disconnect disconnect = {};
-	disconnect.header.id    = IdOf<Disconnect>;
+	Message::Disconnect disconnect = {};
+	disconnect.header.id    = IdOf<Message::Disconnect>;
 	disconnect.header.index = con.sendIndex - (con.queue.length - con.queueIndex);
-	disconnect.header.size  = sizeof(Disconnect);
+	disconnect.header.size  = sizeof(Message::Disconnect);
 
 	Bytes bytes = {};
-	bytes.length   = sizeof(Disconnect);
+	bytes.length   = sizeof(Message::Disconnect);
 	bytes.capacity = bytes.length;
 	bytes.data     = (u8*) &disconnect;
 

@@ -112,6 +112,7 @@ namespace LCDHardwareMonitor::GUI
 	public:
 		property UInt32                            Version;
 		property IntPtr                            RenderSurface;
+		property Vector                            RenderSize;
 		property ObservableCollection<Plugin>^     Plugins;
 		property ObservableCollection<Sensor>^     Sensors;
 		property ObservableCollection<WidgetDesc>^ WidgetDescs;
@@ -147,12 +148,21 @@ namespace LCDHardwareMonitor::GUI
 
 		// TODO: LHMString?
 		static CLRString^
-		ToManagedString(StringView cstring)
+		ToManagedString(StringView lhmString)
 		{
-			LOG_IF((i32) cstring.length < 0, IGNORE,
+			LOG_IF((i32) lhmString.length < 0, IGNORE,
 				Severity::Warning, "Native string truncated");
 
-			CLRString^ result = gcnew CLRString(cstring.data, 0, (i32) cstring.length);
+			CLRString^ result = gcnew CLRString(lhmString.data, 0, (i32) lhmString.length);
+			return result;
+		}
+
+		static Vector
+		ToManagedVector(v2u lhmVector)
+		{
+			Vector result = {};
+			result.X = lhmVector.x;
+			result.Y = lhmVector.y;
 			return result;
 		}
 
@@ -327,7 +337,7 @@ namespace LCDHardwareMonitor::GUI
 		// -------------------------------------------------------------------------------------------
 		// Incoming Messages
 
-		static bool
+		static void
 		FromSim_Connect(SimulationState% simState, Message::Connect& connect)
 		{
 			simState.Version = connect.version;
@@ -339,16 +349,17 @@ namespace LCDHardwareMonitor::GUI
 				(HANDLE) connect.renderSurface,
 				connect.renderSize
 			);
-			if (!success) return false;
+			LOG_IF(!success, IGNORE,
+				Severity::Warning, "Failed to D3D9 shared surface");
 
 			simState.RenderSurface = (IntPtr) state.d3d9RenderSurface0;
+			simState.RenderSize = ToManagedVector(connect.renderSize);
 			simState.IsSimulationConnected = true;
 			simState.NotifyPropertyChanged("");
-			return true;
 		}
 
 		static void
-		FromSim_Disconnect(SimulationState% simState)
+		FromSim_Disconnect(SimulationState% simState, Message::Disconnect&)
 		{
 			// DEBUG: Needed for the Watch window
 			State& s = state;
@@ -490,7 +501,11 @@ namespace LCDHardwareMonitor::GUI
 					HandleMessageResult(simCon, result);
 
 					bool isConnected = simCon.pipe.state == PipeState::Connected;
-					if (!isConnected && wasConnected) FromSim_Disconnect(simState);
+					if (!isConnected && wasConnected)
+					{
+						Message::Disconnect disconnect = {};
+						FromSim_Disconnect(simState, disconnect);
+					}
 				}
 				if (simCon.pipe.state != PipeState::Connected) break;
 
@@ -501,59 +516,27 @@ namespace LCDHardwareMonitor::GUI
 					b8 success = ReceiveMessage(simCon, bytes);
 					if (!success) break;
 
-					using namespace Message;
-					Header& header = (Header&) bytes[0];
+					#define HANDLE_MESSAGE(Type) \
+						case IdOf<Message::Type>: \
+						{ \
+							using Type = Message::Type; \
+							DeserializeMessage<Type>(bytes); \
+							Type& message = (Type&) bytes[0]; \
+							FromSim_##Type(simState, message); \
+							break; \
+						}
+
+					Message::Header& header = (Message::Header&) bytes[0];
 					switch (header.id)
 					{
 						default: Assert(false); break;
 
-						case IdOf<Connect>:
-						{
-							DeserializeMessage<Connect>(bytes);
-							Connect& connect = (Connect&) bytes[0];
-							success = FromSim_Connect(simState, connect);
-							if (!success) return false;
-							break;
-						}
-
-						case IdOf<Disconnect>:
-						{
-							DeserializeMessage<Disconnect>(bytes);
-							FromSim_Disconnect(simState);
-							break;
-						}
-
-						case IdOf<PluginsAdded>:
-						{
-							DeserializeMessage<PluginsAdded>(bytes);
-							PluginsAdded& pluginsAdded = (PluginsAdded&) bytes[0];
-							FromSim_PluginsAdded(simState, pluginsAdded);
-							break;
-						}
-
-						case IdOf<PluginStatesChanged>:
-						{
-							DeserializeMessage<PluginStatesChanged>(bytes);
-							PluginStatesChanged& statesChanged = (PluginStatesChanged&) bytes[0];
-							FromSim_PluginStatesChanged(simState, statesChanged);
-							break;
-						}
-
-						case IdOf<SensorsAdded>:
-						{
-							DeserializeMessage<SensorsAdded>(bytes);
-							SensorsAdded& sensorsAdded = (SensorsAdded&) bytes[0];
-							FromSim_SensorsAdded(simState, sensorsAdded);
-							break;
-						}
-
-						case IdOf<WidgetDescsAdded>:
-						{
-							DeserializeMessage<WidgetDescsAdded>(bytes);
-							WidgetDescsAdded& widgetDescsAdded = (WidgetDescsAdded&) bytes[0];
-							FromSim_WidgetDescsAdded(simState, widgetDescsAdded);
-							break;
-						}
+						HANDLE_MESSAGE(Connect);
+						HANDLE_MESSAGE(Disconnect);
+						HANDLE_MESSAGE(PluginsAdded);
+						HANDLE_MESSAGE(PluginStatesChanged);
+						HANDLE_MESSAGE(SensorsAdded);
+						HANDLE_MESSAGE(WidgetDescsAdded);
 					}
 				}
 

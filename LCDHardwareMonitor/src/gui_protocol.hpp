@@ -215,8 +215,6 @@ template<typename T>
 void
 SerializeMessage(Bytes& bytes, T& message, u32 messageIndex)
 {
-	using namespace Message;
-
 	ByteStream stream = {};
 	defer { List_Free(stream.bytes); };
 
@@ -244,8 +242,6 @@ template<typename T>
 void
 DeserializeMessage(Bytes& bytes)
 {
-	using namespace Message;
-
 	ByteStream stream = {};
 	stream.mode  = ByteStreamMode::Read;
 	stream.bytes = bytes;
@@ -339,10 +335,9 @@ ReceiveMessage(ConnectionState& con, Bytes& bytes)
 	if (result != PipeResult::Success) return false;
 	if (bytes.length == 0) return false;
 
-	using namespace Message;
-	Header& header = (Header&) bytes[0];
+	Message::Header& header = (Message::Header&) bytes[0];
 
-	LOG_IF(bytes.length < sizeof(Header), return HandleMessageResult(con, false),
+	LOG_IF(bytes.length < sizeof(Message::Header), return HandleMessageResult(con, false),
 		Severity::Warning, "Corrupted message received");
 
 	LOG_IF(bytes.length != header.size, return HandleMessageResult(con, false),
