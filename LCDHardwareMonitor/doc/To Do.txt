@@ -11,7 +11,7 @@ Issues
 
 
 GUI Features
-	Split up OnConnect
+	Display widgets in GUI
 	Multi-select
 	Drag sensors
 	Is it worth trying to send everything at once? (Slice<List<Sensor>> feels kind of silly)

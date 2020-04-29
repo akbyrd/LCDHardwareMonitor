@@ -217,20 +217,63 @@ PushDrawCall(PluginContext& context, Material material)
 // internally. It will disconnect and stop attempting to send messages when a failure occurs.
 
 static void
+ToGUI_Connect(SimulationState& s)
+{
+	if (s.guiConnection.pipe.state != PipeState::Connected) return;
+
+	ToGUI::Connect connect = {};
+	connect.version       = LHMVersion;
+	connect.renderSurface = (size) Renderer_GetSharedRenderSurface(*s.renderer);
+	connect.renderSize.x  = s.renderSize.x;
+	connect.renderSize.y  = s.renderSize.y;
+	SerializeAndQueueMessage(s.guiConnection, connect);
+}
+
+// TODO: Can this implicitly be PluginStatesChanged also?
+static void
+ToGUI_PluginsAdded(SimulationState& s, Slice<Plugin> plugins)
+{
+	if (s.guiConnection.pipe.state != PipeState::Connected) return;
+
+	ToGUI::PluginsAdded pluginsAdded = {};
+	pluginsAdded.refs  = Slice_MemberSlice(plugins, &Plugin::ref);
+	pluginsAdded.kinds = Slice_MemberSlice(plugins, &Plugin::kind);
+	pluginsAdded.infos = Slice_MemberSlice(plugins, &Plugin::info);
+	SerializeAndQueueMessage(s.guiConnection, pluginsAdded);
+}
+
+static void
 ToGUI_PluginStatesChanged(SimulationState& s, Slice<Plugin> plugins)
 {
 	if (s.guiConnection.pipe.state != PipeState::Connected) return;
 
-	for (u32 i = 0; i < plugins.length; i++)
-	{
-		Plugin& plugin = plugins[i];
+	ToGUI::PluginStatesChanged statesChanged = {};
+	statesChanged.refs       = Slice_MemberSlice(plugins, &Plugin::ref);
+	statesChanged.kinds      = Slice_MemberSlice(plugins, &Plugin::kind);
+	statesChanged.loadStates = Slice_MemberSlice(plugins, &Plugin::loadState);
+	SerializeAndQueueMessage(s.guiConnection, statesChanged);
+}
 
-		ToGUI::PluginStatesChanged statesChanged = {};
-		statesChanged.refs       = plugin.ref;
-		statesChanged.kinds      = plugin.kind;
-		statesChanged.loadStates = plugin.loadState;
-		SerializeAndQueueMessage(s.guiConnection, statesChanged);
-	}
+static void
+ToGUI_SensorsAdded(SimulationState& s, Slice<SensorPluginRef> sensorPluginRefs, Slice<List<Sensor>> sensors)
+{
+	if (s.guiConnection.pipe.state != PipeState::Connected) return;
+
+	ToGUI::SensorsAdded sensorsAdded = {};
+	sensorsAdded.sensorPluginRefs = sensorPluginRefs;
+	sensorsAdded.sensors          = sensors;
+	SerializeAndQueueMessage(s.guiConnection, sensorsAdded);
+}
+
+static void
+ToGUI_WidgetDescsAdded(SimulationState& s, WidgetPluginRef widgetPluginRef, Slice<WidgetDesc> widgetDescs)
+{
+	if (s.guiConnection.pipe.state != PipeState::Connected) return;
+
+	ToGUI::WidgetDescsAdded widgetDescsAdded = {};
+	widgetDescsAdded.widgetPluginRefs = widgetPluginRef;
+	widgetDescsAdded.descs            = widgetDescs;
+	SerializeAndQueueMessage(s.guiConnection, widgetDescsAdded);
 }
 
 static void
@@ -254,71 +297,46 @@ ToGUI_WidgetSelectionChanged(SimulationState& s, FullWidgetRef ref)
 // -------------------------------------------------------------------------------------------------
 // GUI State Changes
 
-// TODO: Have this call regular ToGUI_* functions
 static void
-OnConnect(SimulationState& s, ConnectionState& con)
+OnConnect(SimulationState& s)
 {
+	ToGUI_Connect(s);
+	ToGUI_PluginsAdded(s, s.plugins);
+	ToGUI_PluginStatesChanged(s, s.plugins);
+
 	{
-		ToGUI::Connect connect = {};
-		connect.version       = LHMVersion;
-		connect.renderSurface = (size) Renderer_GetSharedRenderSurface(*s.renderer);
-		connect.renderSize.x  = s.renderSize.x;
-		connect.renderSize.y  = s.renderSize.y;
-		SerializeAndQueueMessage(con, connect);
+		Slice<SensorPluginRef> sensorPluginRefs = List_MemberSlice(s.sensorPlugins, &SensorPlugin::ref);
+		Slice<List<Sensor>>    sensors          = List_MemberSlice(s.sensorPlugins, &SensorPlugin::sensors);
+		ToGUI_SensorsAdded(s, sensorPluginRefs, sensors);
 	}
 
+	for (u32 i = 0; i < s.widgetPlugins.length; i++)
 	{
-		ToGUI::PluginsAdded pluginsAdded = {};
-		pluginsAdded.refs  = List_MemberSlice(s.plugins, &Plugin::ref);
-		pluginsAdded.kinds = List_MemberSlice(s.plugins, &Plugin::kind);
-		pluginsAdded.infos = List_MemberSlice(s.plugins, &Plugin::info);
-		SerializeAndQueueMessage(con, pluginsAdded);
+		WidgetPlugin& widgetPlugin = s.widgetPlugins[i];
 
-		ToGUI::PluginStatesChanged statesChanged = {};
-		statesChanged.refs       = List_MemberSlice(s.plugins, &Plugin::ref);
-		statesChanged.kinds      = List_MemberSlice(s.plugins, &Plugin::kind);
-		statesChanged.loadStates = List_MemberSlice(s.plugins, &Plugin::loadState);
-		SerializeAndQueueMessage(con, statesChanged);
-	}
+		// NOTE: It's surprisingly tricky to send a Slice<Slice<T>> when it's backed by
+		// a set of List<T>. The inner slices are temporaries and need to be stored.
+		Slice<WidgetDesc> descs = List_MemberSlice(widgetPlugin.widgetDatas, &WidgetData::desc);
+		ToGUI_WidgetDescsAdded(s, widgetPlugin.ref, descs);
 
-	{
-		ToGUI::SensorsAdded sensorsAdded = {};
-		sensorsAdded.sensorPluginRefs = List_MemberSlice(s.sensorPlugins, &SensorPlugin::ref);
-		sensorsAdded.sensors          = List_MemberSlice(s.sensorPlugins, &SensorPlugin::sensors);
-		SerializeAndQueueMessage(con, sensorsAdded);
-	}
-
-	{
-		for (u32 i = 0; i < s.widgetPlugins.length; i++)
+		for (u32 j = 0; j < widgetPlugin.widgetDatas.length; j++)
 		{
-			WidgetPlugin& widgetPlugin = s.widgetPlugins[i];
+			WidgetData& widgetData = widgetPlugin.widgetDatas[j];
 
-			// NOTE: It's surprisingly tricky to send a Slice<Slice<T>> when it's backed by
-			// a set of List<T>. The inner slices are temporaries and need to be stored.
-			Slice<WidgetDesc> descs = List_MemberSlice(widgetPlugin.widgetDatas, &WidgetData::desc);
-
-			ToGUI::WidgetDescsAdded widgetDescsAdded = {};
-			widgetDescsAdded.widgetPluginRefs = widgetPlugin.ref;
-			widgetDescsAdded.descs            = descs;
-			SerializeAndQueueMessage(con, widgetDescsAdded);
-
-			for (u32 j = 0; j < widgetPlugin.widgetDatas.length; j++)
-			{
-				WidgetData& widgetData = widgetPlugin.widgetDatas[j];
-				ToGUI_WidgetsAdded(s, widgetPlugin, widgetData, List_MemberSlice(widgetData.widgets, &Widget::ref));
-			}
+			Slice<WidgetRef> refs = List_MemberSlice(widgetData.widgets, &Widget::ref);
+			ToGUI_WidgetsAdded(s, widgetPlugin, widgetData, refs);
 		}
 	}
 }
 
 static void
-OnDisconnect(SimulationState& s, ConnectionState& con)
+OnDisconnect(SimulationState& s)
 {
 	s.hovered = {};
 	s.selected = {};
 
-	con.sendIndex = 0;
-	con.recvIndex = 0;
+	s.guiConnection.sendIndex = 0;
+	s.guiConnection.recvIndex = 0;
 }
 
 static void
@@ -1414,8 +1432,8 @@ Simulation_Update(SimulationState& s)
 			HandleMessageResult(guiCon, result);
 
 			b8 isConnected = guiCon.pipe.state == PipeState::Connected;
-			if (isConnected && !wasConnected) OnConnect(s, guiCon);
-			if (!isConnected && wasConnected) OnDisconnect(s, guiCon);
+			if (isConnected && !wasConnected) OnConnect(s);
+			if (!isConnected && wasConnected) OnDisconnect(s);
 		}
 		if (guiCon.pipe.state != PipeState::Connected) break;
 
