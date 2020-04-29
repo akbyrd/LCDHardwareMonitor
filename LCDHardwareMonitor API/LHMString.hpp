@@ -17,7 +17,7 @@ struct StrPos
 
 	static const StrPos Null;
 
-	operator b8() { return *this != Null; }
+	explicit operator b8() { return *this != Null; }
 	b8     operator== (StrPos rhs) { return value == rhs.value; }
 	b8     operator!= (StrPos rhs) { return value != rhs.value; }
 	StrPos operator+  (i32 rhs)    { return { value + rhs }; }

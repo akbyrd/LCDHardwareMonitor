@@ -417,7 +417,7 @@ LoadSensorPlugin(SimulationState& s, Plugin& plugin)
 	sensorPlugin->ref = List_GetLastRef(s.sensorPlugins);
 	sensorPlugin->pluginRef = plugin.ref;
 
-	plugin.rawRefToKind = sensorPlugin->ref;
+	plugin.rawRefToKind = sensorPlugin->ref.value;
 	plugin.kind = PluginKind::Sensor;
 
 	defer { ToGUI_PluginStatesChanged(s, plugin); };
@@ -534,7 +534,7 @@ LoadWidgetPlugin(SimulationState& s, Plugin& plugin)
 	widgetPlugin->ref = List_GetLastRef(s.widgetPlugins);
 	widgetPlugin->pluginRef = plugin.ref;
 
-	plugin.rawRefToKind = widgetPlugin->ref;
+	plugin.rawRefToKind = widgetPlugin->ref.value;
 	plugin.kind = PluginKind::Widget;
 
 	defer { ToGUI_PluginStatesChanged(s, plugin); };

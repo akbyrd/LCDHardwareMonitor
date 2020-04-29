@@ -27,7 +27,7 @@ struct ListRef
 	u32 value;
 
 	static const ListRef<T> Null;
-	operator b8() { return *this != Null; }
+	explicit operator b8() { return *this != Null; }
 };
 
 template<typename T>
