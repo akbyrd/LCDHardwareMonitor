@@ -804,6 +804,19 @@ Clamp(v4t<T> v, v4t<U> min, v4t<V> max)
 	return result;
 }
 
+template<typename T, typename U>
+inline v4t<T>
+ClampRect(v4t<T> rect, v4t<U> bounds)
+{
+	v2t<T> min = bounds.pos              + Min(v2t<T>{ 0, 0 }, bounds.size - rect.size);
+	v2t<T> max = bounds.size - rect.size - Min(v2t<T>{ 0, 0 }, bounds.size - rect.size);
+
+	v4t<T> result = {};
+	result.pos  = Clamp(rect.pos, min, max);
+	result.size = rect.size;
+	return result;
+}
+
 inline v4
 Color32(u8 r, u8 g, u8 b, u8 a)
 {

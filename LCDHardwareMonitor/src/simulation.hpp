@@ -34,6 +34,9 @@ struct SimulationState
 	v2                 cameraRot;
 	v2                 cameraRotStart;
 
+	v4i interactionRect;
+	v2i interactionRelPosStart;
+
 	FullWidgetRef      hovered;
 	FullWidgetRef      selected;
 };
@@ -831,25 +834,31 @@ ResetCamera(SimulationState& s)
 	s.iview = InvertRT(s.view);
 }
 
-// TODO: Think through how to handle left mouse going down and the exclusivity of selection and drag
-// Once to select, once to begin drag?
+// TODO: Think through how to handle left mouse going down and the exclusivity of selection and
+// drag. Once to select, once to begin drag?
+// TODO: We assume dragging happens in 'screen space'. Is that a good assumption?
 static void
 DragSelection(SimulationState& s)
 {
 	if (!s.selected.widgetRef) return;
 
-	v2i deltaPos = s.mousePos - s.mousePosStart;
-	// TODO: Shit, do we need an offset for rendering selection?
-	// Maybe selection goes through a separate rendering path?
-	// For now I guess we'll just accumulate deltas and be wrong?
-	// Accumulating seems reliable.
-	// Probably won't be with clamping
-	// oooooooooh yeaaaaa
-	s.mousePosStart = s.mousePos;
-	Widget& widget = GetWidget(s, s.selected);
-	// TODO: Clamp to screen
-	// TODO: Clamp extents to screen
-	widget.position += deltaPos;
+	v4i rect = {};
+	rect.pos  = s.mousePos + s.interactionRelPosStart;
+	rect.size = s.interactionRect.size;
+
+	v4i bounds = {};
+	bounds.pos  = v2i{ 0, 0 };
+	bounds.size = (v2i) s.renderSize;
+
+	rect = ClampRect(rect, bounds);
+	if (rect.pos != s.interactionRect.pos)
+	{
+		v2i deltaPos = rect.pos - s.interactionRect.pos;
+		s.interactionRect.pos = rect.pos;
+
+		Widget& widget = GetWidget(s, s.selected);
+		widget.position += deltaPos;
+	}
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -1042,7 +1051,19 @@ FromGUI_BeginDragSelection(SimulationState& s, FromGUI::BeginDragSelection&)
 	Assert(s.guiInteraction == GUIInteraction::Null);
 	s.guiInteraction = GUIInteraction::DragSelection;
 
-	s.mousePosStart  = s.mousePos;
+	s.mousePosStart = s.mousePos;
+
+	if (s.selected.widgetRef)
+	{
+		Widget& widget = GetWidget(s, s.selected);
+		s.interactionRect = (v4i) WidgetRect(widget);
+		s.interactionRelPosStart = s.interactionRect.pos - s.mousePosStart;
+	}
+	else
+	{
+		s.interactionRect = {};
+		s.interactionRelPosStart = {};
+	}
 }
 
 static void
