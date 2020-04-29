@@ -1,33 +1,32 @@
-Add/Remove widgets
-	Drag and drop
-		https://docs.microsoft.com/en-us/dotnet/framework/wpf/advanced/drag-and-drop-overview
-		https://docs.microsoft.com/en-us/dotnet/framework/wpf/advanced/data-and-data-objects
-
-	Who is responsible for state management wrt to gui interation?
-		If the sim: write once use everywhere, but puts the GUI complexity in sim
-		If the GUI: hard to know some state like "is something selected"
-			Maybe when we send widgets to the GUI it's easier?
-			GUI might want to show feedback for dragging widgets and
-			But GUI could just do that on it's own
-			Events don't seem well correlated, hard to handle multiple presses?
-		Starting to feel like state checking should be in the sim
-
+Current
+	https://docs.microsoft.com/en-us/dotnet/framework/wpf/advanced/drag-and-drop-overview
+	https://docs.microsoft.com/en-us/dotnet/framework/wpf/advanced/data-and-data-objects
 	Split up OnConnect
-	Drag widgets
 	Send widgets to GUI
+
+
+
+Issues
+	Fix flush pipe error
+	Fix VS crash
+		devenv crashes with Exception code: 0xc0000374 (heap corruption?)
+		LHM crashes with Exception code: 0xc0000005 (access violation, probably spurious during dev)
+		definitely happens with multiple startup projects, not sure about individual
+		LHM appears to hang in D3D creation sometimes? Unrelated?
+	Fix camera position (I think it's backwards, comment near Cube Mesh)
+	Starting to feel like state checking should be in the sim
+
+
+
+GUI Features
+	Drag widgets
 	Multi-select
 	Preview rendering
-
 	Drag sensors
 	Select when dragging sensors
 	Only allow drop on widgets when dragging sensors
+	Allow selection for objects under other objects (selection stack?)
 
-Fix flush pipe error
-Fix VS crash
-	devenv crashes with Exception code: 0xc0000374 (heap corruption?)
-	LHM crashes with Exception code: 0xc0000005 (access violation, probably spurious during dev)
-	definitely happens with multiple startup projects, not sure about individual
-	LHM appears to hang in D3D creation sometimes? Unrelated?
 
 
 Memory handling
@@ -65,6 +64,7 @@ Stuff
 	I think pipes want to be no-wait
 	Users probably need to be able to create custom UI for plugin settings
 	Ensure we're handling CloseHandle failures correctly
+	Is it worth trying to make things portable?
 	Implement update rate control
 		* How should this interact with the rate at which we send gui messages?
 		1) SetTimer: Must set system timer frequency

@@ -95,7 +95,7 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 	// Debug
 	auto previewGuard = guard { PreviewWindow_Teardown(previewState); };
 	#if false
-	PreviewWindow_Initialize(&previewState, simulationState, hInstance, nullptr);
+	PreviewWindow_Initialize(previewState, simulationState, rendererState, hInstance, nullptr);
 	#else
 	previewGuard.dismiss = true;
 	#endif

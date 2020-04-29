@@ -45,7 +45,7 @@ PreviewWindow_Initialize(
 		windowClass.cbWndExtra    = sizeof(s);
 		windowClass.hInstance     = hInstance;
 		windowClass.hIcon         = nullptr;
-		windowClass.hCursor       = nullptr;
+		windowClass.hCursor       = LoadCursorW(nullptr, IDC_ARROW);
 		windowClass.hbrBackground = nullptr;
 		windowClass.lpszMenuName  = nullptr;
 		windowClass.lpszClassName = previewWindowClass;
@@ -356,8 +356,6 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 
 		case WM_MOUSEWHEEL:
 		{
-			// TODO: Fix mouse cursor
-			// TODO: Is it worth trying to make things portable?
 			s->mouseWheelAccumulator += GET_WHEEL_DELTA_WPARAM(wParam);
 			u16 newZoomFactor = s->zoomFactor;
 			while (s->mouseWheelAccumulator >= WHEEL_DELTA)
