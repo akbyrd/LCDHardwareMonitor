@@ -48,7 +48,7 @@ UpdateBarWidgets(PluginContext& context, WidgetAPI::Update api)
 		BarWidget& barWidget = (BarWidget&) api.widgetsUserData[i];
 
 		// TODO: Not the biggest fan of this...
-		if (!widget.isValid) continue;
+		if (!widget.ref) continue;
 
 		// Update
 		if (widget.sensorRef)

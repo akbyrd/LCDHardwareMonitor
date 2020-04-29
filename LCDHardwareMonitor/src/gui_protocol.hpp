@@ -62,6 +62,15 @@ namespace ToGUI
 		Slice<WidgetPluginRef>   widgetPluginRefs;
 		Slice<Slice<WidgetDesc>> descs;
 	};
+
+	// TODO: WidgetsRemoved
+	struct WidgetsAdded
+	{
+		Header           header;
+		WidgetPluginRef  pluginRef;
+		WidgetDataRef    dataRef;
+		Slice<WidgetRef> widgetRefs;
+	};
 }
 
 namespace FromGUI
@@ -209,6 +218,7 @@ void Serialize(ByteStream&, ToGUI::PluginsAdded&);
 void Serialize(ByteStream&, ToGUI::PluginStatesChanged&);
 void Serialize(ByteStream&, ToGUI::SensorsAdded&);
 void Serialize(ByteStream&, ToGUI::WidgetDescsAdded&);
+void Serialize(ByteStream&, ToGUI::WidgetsAdded&);
 void Serialize(ByteStream&, FromGUI::SetPluginLoadStates&);
 void Serialize(ByteStream&, PluginInfo&);
 void Serialize(ByteStream&, Sensor&);
@@ -603,6 +613,15 @@ Serialize(ByteStream& stream, WidgetDesc& widgetDesc)
 		widgetDesc.Update     = nullptr;
 		widgetDesc.Teardown   = nullptr;
 	}
+}
+
+void
+Serialize(ByteStream& stream, ToGUI::WidgetsAdded& widgetsAdded)
+{
+	Serialize(stream, widgetsAdded.header);
+	Serialize(stream, widgetsAdded.pluginRef);
+	Serialize(stream, widgetsAdded.dataRef);
+	Serialize(stream, widgetsAdded.widgetRefs);
 }
 
 // TODO: Code gen the actual Serialize functions

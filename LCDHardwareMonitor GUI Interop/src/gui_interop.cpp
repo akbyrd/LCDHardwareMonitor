@@ -63,7 +63,6 @@ namespace LCDHardwareMonitor::GUI
 		property CLRString^ Name;
 		property CLRString^ Author;
 		property UInt32     Version;
-
 	};
 
 	public value struct Plugin
@@ -91,6 +90,13 @@ namespace LCDHardwareMonitor::GUI
 		property CLRString^ Name;
 	};
 
+	public value struct Widget
+	{
+		property UInt32 PluginRef;
+		property UInt32 DataRef;
+		property UInt32 Ref;
+	};
+
 	public enum struct ProcessState
 	{
 		Null,
@@ -116,6 +122,7 @@ namespace LCDHardwareMonitor::GUI
 		property ObservableCollection<Plugin>^     Plugins;
 		property ObservableCollection<Sensor>^     Sensors;
 		property ObservableCollection<WidgetDesc>^ WidgetDescs;
+		property ObservableCollection<Widget>^     Widgets;
 		property Interaction                       Interaction;
 
 		// UI Helpers
@@ -130,6 +137,7 @@ namespace LCDHardwareMonitor::GUI
 			Plugins           = gcnew ObservableCollection<Plugin>();
 			Sensors           = gcnew ObservableCollection<Sensor>();
 			WidgetDescs       = gcnew ObservableCollection<WidgetDesc>();
+			Widgets           = gcnew ObservableCollection<Widget>();
 			ProcessStateTimer = gcnew Stopwatch();
 		}
 
@@ -460,6 +468,20 @@ namespace LCDHardwareMonitor::GUI
 			simState.NotifyPropertyChanged("");
 		}
 
+		static void
+		FromSim_WidgetsAdded(SimulationState% simState, ToGUI::WidgetsAdded& widgetsAdded)
+		{
+			for (u32 i = 0; i < widgetsAdded.widgetRefs.length; i++)
+			{
+				Widget mWidget = {};
+				mWidget.PluginRef = widgetsAdded.pluginRef.value;
+				mWidget.DataRef   = widgetsAdded.dataRef.value;
+				mWidget.Ref       = widgetsAdded.widgetRefs[i].value;
+				simState.Widgets->Add(mWidget);
+			}
+			simState.NotifyPropertyChanged("");
+		}
+
 		// -------------------------------------------------------------------------------------------
 		// Main Functions
 
@@ -537,6 +559,7 @@ namespace LCDHardwareMonitor::GUI
 						HANDLE_MESSAGE(PluginStatesChanged);
 						HANDLE_MESSAGE(SensorsAdded);
 						HANDLE_MESSAGE(WidgetDescsAdded);
+						HANDLE_MESSAGE(WidgetsAdded);
 					}
 				}
 

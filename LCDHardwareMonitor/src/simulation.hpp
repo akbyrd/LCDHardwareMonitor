@@ -211,6 +211,47 @@ PushDrawCall(PluginContext& context, Material material)
 }
 
 // -------------------------------------------------------------------------------------------------
+// Messages To GUI
+
+// NOTE: None of these functions return error codes because the messaging system handles errors
+// internally. It will disconnect and stop attempting to send messages when a failure occurs.
+
+static void
+ToGUI_PluginStatesChanged(SimulationState& s, Slice<Plugin> plugins)
+{
+	if (s.guiConnection.pipe.state != PipeState::Connected) return;
+
+	for (u32 i = 0; i < plugins.length; i++)
+	{
+		Plugin& plugin = plugins[i];
+
+		ToGUI::PluginStatesChanged statesChanged = {};
+		statesChanged.refs       = plugin.ref;
+		statesChanged.kinds      = plugin.kind;
+		statesChanged.loadStates = plugin.loadState;
+		SerializeAndQueueMessage(s.guiConnection, statesChanged);
+	}
+}
+
+static void
+ToGUI_WidgetsAdded(SimulationState& s, WidgetPlugin& widgetPlugin, WidgetData widgetData, Slice<WidgetRef> widgetRefs)
+{
+	if (s.guiConnection.pipe.state != PipeState::Connected) return;
+
+	ToGUI::WidgetsAdded widgetsAdded = {};
+	widgetsAdded.pluginRef  = widgetPlugin.ref;
+	widgetsAdded.dataRef    = widgetData.ref;
+	widgetsAdded.widgetRefs = widgetRefs;
+	SerializeAndQueueMessage(s.guiConnection, widgetsAdded);
+}
+
+// TODO: Implement
+static void
+ToGUI_WidgetSelectionChanged(SimulationState& s, FullWidgetRef ref)
+{
+}
+
+// -------------------------------------------------------------------------------------------------
 // GUI State Changes
 
 // TODO: Have this call regular ToGUI_* functions
@@ -260,6 +301,12 @@ OnConnect(SimulationState& s, ConnectionState& con)
 			widgetDescsAdded.widgetPluginRefs = widgetPlugin.ref;
 			widgetDescsAdded.descs            = descs;
 			SerializeAndQueueMessage(con, widgetDescsAdded);
+
+			for (u32 j = 0; j < widgetPlugin.widgetDatas.length; j++)
+			{
+				WidgetData& widgetData = widgetPlugin.widgetDatas[j];
+				ToGUI_WidgetsAdded(s, widgetPlugin, widgetData, List_MemberSlice(widgetData.widgets, &Widget::ref));
+			}
 		}
 	}
 }
@@ -299,35 +346,6 @@ OnTeardown(ConnectionState& con)
 	result = Platform_FlushPipe(con.pipe);
 	LOG_IF(result == PipeResult::UnexpectedFailure, return,
 		Severity::Error, "Failed to flush GUI communication pipe");
-}
-
-// -------------------------------------------------------------------------------------------------
-// Messages To GUI
-
-// NOTE: None of these functions return error codes because the messaging system handles errors
-// internally. It will disconnect and stop attempting to send messages when a failure occurs.
-
-static void
-ToGUI_PluginStatesChanged(SimulationState& s, Slice<Plugin> plugins)
-{
-	if (s.guiConnection.pipe.state != PipeState::Connected) return;
-
-	for (u32 i = 0; i < plugins.length; i++)
-	{
-		Plugin& plugin = plugins[i];
-
-		ToGUI::PluginStatesChanged statesChanged = {};
-		statesChanged.refs       = plugin.ref;
-		statesChanged.kinds      = plugin.kind;
-		statesChanged.loadStates = plugin.loadState;
-		SerializeAndQueueMessage(s.guiConnection, statesChanged);
-	}
-}
-
-// TODO: Implement
-static void
-ToGUI_WidgetSelectionChanged(SimulationState& s, FullWidgetRef ref)
-{
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -683,9 +701,12 @@ AddWidgets(SimulationState& s, WidgetPlugin& widgetPlugin, WidgetData& widgetDat
 	{
 		v2 position = positions[i];
 		Widget& widget = widgetData.widgets[prevWidgetLen + i];
-		widget.isValid = true;
+		widget.ref      = List_GetRef(widgetData.widgets, prevWidgetLen + i);
 		widget.position = position;
 	}
+
+	Slice<Widget> newWidgets = List_Slice(widgetData.widgets, prevWidgetLen);
+	ToGUI_WidgetsAdded(s, widgetPlugin, widgetData, Slice_MemberSlice(newWidgets, &Widget::ref));
 
 	createGuard.dismiss = true;
 }

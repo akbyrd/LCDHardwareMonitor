@@ -9,7 +9,7 @@ using WidgetRef = List<Widget>::RefT;
 
 struct Widget
 {
-	b8              isValid;
+	WidgetRef       ref;
 	v2              position;
 	v2              size;
 	v2              pivot;

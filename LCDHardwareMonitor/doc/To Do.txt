@@ -1,11 +1,3 @@
-Current
-	https://docs.microsoft.com/en-us/dotnet/framework/wpf/advanced/drag-and-drop-overview
-	https://docs.microsoft.com/en-us/dotnet/framework/wpf/advanced/data-and-data-objects
-	Split up OnConnect
-	Send widgets to GUI
-
-
-
 Issues
 	Fix flush pipe error
 	Fix VS crash
@@ -19,13 +11,19 @@ Issues
 
 
 GUI Features
-	Drag widgets
+	Split up OnConnect
 	Multi-select
-	Preview rendering
 	Drag sensors
-	Select when dragging sensors
+	Is it worth trying to send everything at once? (Slice<List<Sensor>> feels kind of silly)
+	Decide whether we should be sending multiple refs (plugin ref + instance ref) or compound refs (FullWidgetRef)
+	Deal with PluginRef vs WidgetPluginRef on managed side
+	Implement all the remove functions
+	Fix select when dragging sensors
 	Only allow drop on widgets when dragging sensors
+	Preview rendering
 	Allow selection for objects under other objects (selection stack?)
+	https://docs.microsoft.com/en-us/dotnet/framework/wpf/advanced/drag-and-drop-overview
+	https://docs.microsoft.com/en-us/dotnet/framework/wpf/advanced/data-and-data-objects
 
 
 
