@@ -349,12 +349,18 @@ namespace LCDHardwareMonitor::GUI
 		static void
 		SetWidgetSelection(SimulationState^, System::Collections::IList^ selectedWidgets)
 		{
-			FullWidgetRef selection = {};
-			if (selectedWidgets->Count > 0)
+			List<FullWidgetRef> selection = {};
+			defer { List_Free(selection); };
+
+			for (i32 i = 0; i < selectedWidgets->Count; i++)
 			{
-				selection.pluginRef = { ((Widget%) selectedWidgets[0]).PluginRef };
-				selection.dataRef   = { ((Widget%) selectedWidgets[0]).DataRef };
-				selection.widgetRef = { ((Widget%) selectedWidgets[0]).Ref };
+				Widget% selectedWidget = (Widget%) selectedWidgets[i];
+
+				FullWidgetRef ref = {};
+				ref.pluginRef = { selectedWidget.PluginRef };
+				ref.dataRef   = { selectedWidget.DataRef };
+				ref.widgetRef = { selectedWidget.Ref };
+				List_Append(selection, ref);
 			}
 
 			FromGUI::SetWidgetSelection widgetSelection = {};

@@ -1,3 +1,7 @@
+Outline shader
+
+
+
 Issues
 	Fix flush pipe error
 	Fix VS crash
@@ -13,8 +17,8 @@ Issues
 
 
 GUI Features
-	Multi-select
 	Drag sensors
+	Reconcile input when connecting (buttons already down) and disconnecting (release down buttons).
 	Is it worth trying to send everything at once? (Slice<List<Sensor>> feels kind of silly)
 	Decide whether we should be sending multiple refs (plugin ref + instance ref) or compound refs (FullWidgetRef)
 	Deal with PluginRef vs WidgetPluginRef on managed side
@@ -22,6 +26,8 @@ GUI Features
 	Fix select when dragging sensors
 	Only allow drop on widgets when dragging sensors
 	Preview rendering
+	Configure widgets
+	Configure global settings (update rate)
 	Allow selection for objects under other objects (selection stack?)
 	https://docs.microsoft.com/en-us/dotnet/framework/wpf/advanced/drag-and-drop-overview
 	https://docs.microsoft.com/en-us/dotnet/framework/wpf/advanced/data-and-data-objects
@@ -49,12 +55,6 @@ Native namespace for interop?
 Try removing WidgetData
 Need to handle mouse position when preview isn't visible
 Need to actually avoid processing broken plugins
-
-GUI Control
-	Attach sensors
-	Configure widgets
-	Configure global settings (update rate)
-	Reconcile input when connecting (buttons already down) and disconnecting (release down buttons).
 
 Stuff
 	Implement settings to remember e.g. which plugins should be loaded

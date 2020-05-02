@@ -10,35 +10,35 @@ enum struct GUIInteraction
 
 struct SimulationState
 {
-	PluginLoaderState* pluginLoader;
-	RendererState*     renderer;
-	ConnectionState    guiConnection;
-	b8                 previewWindow;
+	PluginLoaderState*  pluginLoader;
+	RendererState*      renderer;
+	ConnectionState     guiConnection;
+	b8                  previewWindow;
 
-	List<Plugin>       plugins;
-	List<SensorPlugin> sensorPlugins;
-	List<WidgetPlugin> widgetPlugins;
+	List<Plugin>        plugins;
+	List<SensorPlugin>  sensorPlugins;
+	List<WidgetPlugin>  widgetPlugins;
 
-	v2u                renderSize;
-	v3                 cameraPos;
-	Matrix             view;
-	Matrix             proj;
-	Matrix             vp; // TODO: Remove this when simulation talks to the renderer directly
-	Matrix             iview;
-	i64                startTime;
-	r32                currentTime;
+	v2u                 renderSize;
+	v3                  cameraPos;
+	Matrix              view;
+	Matrix              proj;
+	Matrix              vp; // TODO: Remove this when simulation talks to the renderer directly
+	Matrix              iview;
+	i64                 startTime;
+	r32                 currentTime;
 
-	GUIInteraction     guiInteraction;
-	v2i                mousePos;
-	v2i                mousePosStart;
-	v2                 cameraRot;
-	v2                 cameraRotStart;
+	GUIInteraction      guiInteraction;
+	v2i                 mousePos;
+	v2i                 mousePosStart;
+	v2                  cameraRot;
+	v2                  cameraRotStart;
 
-	v4i interactionRect;
-	v2i interactionRelPosStart;
+	v4i                 interactionRect;
+	v2i                 interactionRelPosStart;
 
-	FullWidgetRef      hovered;
-	FullWidgetRef      selected;
+	FullWidgetRef       hovered;
+	List<FullWidgetRef> selected;
 };
 
 struct PluginContext
@@ -55,7 +55,7 @@ struct PluginContext
 static String GetNameFromPath(StringView);
 static void RemoveSensorRefs(SimulationState&, SensorPluginRef, Slice<SensorRef>);
 static void RemoveWidgetRefs(SimulationState&, WidgetPluginRef, WidgetData&);
-static void SelectWidget(SimulationState&, FullWidgetRef);
+static void SelectWidgets(SimulationState&, Slice<FullWidgetRef>);
 
 // -------------------------------------------------------------------------------------------------
 // Sensor API
@@ -337,7 +337,7 @@ static void
 OnDisconnect(SimulationState& s)
 {
 	s.hovered = {};
-	s.selected = {};
+	List_Free(s.selected);
 
 	s.guiConnection.sendIndex = 0;
 	s.guiConnection.recvIndex = 0;
@@ -742,23 +742,25 @@ AddWidgets(SimulationState& s, FullWidgetDataRef ref, Slice<v2> positions)
 }
 
 static void
-RemoveWidgetRefs(SimulationState& s, FullWidgetRef ref)
-{
-	if (s.hovered  == ref) s.hovered = {};
-	if (s.selected == ref) SelectWidget(s, {});
-}
-
-#if false
-static void
 RemoveWidgetRefs(SimulationState& s, Slice<FullWidgetRef> refs)
 {
 	for (u32 i = 0; i < refs.length; i++)
 	{
 		FullWidgetRef ref = refs[i];
-		RemoveWidgetRefs(s, ref);
+
+		if (s.hovered == ref) s.hovered = {};
+
+		// NOTE: Do a slow remove to maintain selection order
+		for (u32 j = 0; j < s.selected.length; j++)
+		{
+			if (s.selected[j] == ref)
+			{
+				List_Remove(s.selected, j);
+				break;
+			}
+		}
 	}
 }
-#endif
 
 static void
 RemoveWidgetRefs(SimulationState& s, WidgetPluginRef pluginRef, WidgetData& widgetData)
@@ -776,16 +778,21 @@ RemoveWidgetRefs(SimulationState& s, WidgetPluginRef pluginRef, WidgetData& widg
 }
 
 static void
-RemoveWidget(SimulationState& s, FullWidgetRef ref)
+RemoveWidgets(SimulationState& s, Slice<FullWidgetRef> refs)
 {
-	RemoveWidgetRefs(s, ref);
+	RemoveWidgetRefs(s, refs);
 
-	WidgetPlugin& plugin = s.widgetPlugins[ref.pluginRef];
-	WidgetData& data = plugin.widgetDatas[ref.dataRef];
+	for (u32 i = 0; i < refs.length; i++)
+	{
+		FullWidgetRef ref = refs[i];
 
-	// NOTE: Can't 'remove fast' because it invalidates refs
-	data.widgets[ref.widgetRef] = {};
-	List_ZeroRange(data.widgetsUserData, data.desc.userDataSize * ToIndex(ref.widgetRef), data.desc.userDataSize);
+		WidgetPlugin& plugin = s.widgetPlugins[ref.pluginRef];
+		WidgetData& data = plugin.widgetDatas[ref.dataRef];
+
+		// NOTE: Can't 'remove fast' because it invalidates refs
+		data.widgets[ref.widgetRef] = {};
+		List_ZeroRange(data.widgetsUserData, data.desc.userDataSize * ToIndex(ref.widgetRef), data.desc.userDataSize);
+	}
 }
 
 static void
@@ -819,7 +826,7 @@ RemoveSensorRefs(SimulationState& s, SensorPluginRef sensorPluginRef, Slice<Sens
 static void
 RemoveSelectedWidgets(SimulationState& s)
 {
-	RemoveWidget(s, s.selected);
+	RemoveWidgets(s, s.selected);
 }
 
 static Widget&
@@ -832,13 +839,22 @@ GetWidget(SimulationState& s, FullWidgetRef ref)
 }
 
 static void
-SelectWidget(SimulationState& s, FullWidgetRef ref)
+SelectWidgets(SimulationState& s, Slice<FullWidgetRef> widgets)
 {
 	// TODO: Validate
-	s.selected = ref;
+	List_Clear(s.selected);
+	List_AppendRange(s.selected, widgets);
 
-	// HACK: Remove this when selection is actually a list/slice
 	ToGUI_WidgetSelectionChanged(s, s.selected);
+}
+
+static b8
+IsWidgetSelected(SimulationState& s, FullWidgetRef widget)
+{
+	for (u32 i = 0; i < s.selected.length; i++)
+		if (s.selected[i] == widget)
+			return true;
+	return false;
 }
 
 static void
@@ -885,7 +901,7 @@ ResetCamera(SimulationState& s)
 static void
 DragSelection(SimulationState& s)
 {
-	if (!s.selected.widgetRef) return;
+	if (s.selected.length == 0) return;
 
 	v4i rect = {};
 	rect.pos  = s.mousePos + s.interactionRelPosStart;
@@ -901,8 +917,13 @@ DragSelection(SimulationState& s)
 		v2i deltaPos = rect.pos - s.interactionRect.pos;
 		s.interactionRect.pos = rect.pos;
 
-		Widget& widget = GetWidget(s, s.selected);
-		widget.position += deltaPos;
+		for (u32 i = 0; i < s.selected.length; i++)
+		{
+			FullWidgetRef selected = s.selected[i];
+
+			Widget& widget = GetWidget(s, selected);
+			widget.position += deltaPos;
+		}
 	}
 }
 
@@ -938,7 +959,14 @@ FromGUI_MouseMove(SimulationState& s, FromGUI::MouseMove& mouseMove)
 static void
 FromGUI_SelectHovered(SimulationState& s, FromGUI::SelectHovered&)
 {
-	SelectWidget(s, s.hovered);
+	if (s.hovered.widgetRef)
+	{
+		SelectWidgets(s, s.hovered);
+	}
+	else
+	{
+		SelectWidgets(s, {});
+	}
 }
 
 static void
@@ -1081,7 +1109,7 @@ FromGUI_RemoveWidget(SimulationState& s, FromGUI::RemoveWidget& removeWidget)
 		return;
 	}
 
-	RemoveWidget(s, removeWidget.ref);
+	RemoveWidgets(s, removeWidget.ref);
 }
 
 static void
@@ -1098,10 +1126,16 @@ FromGUI_BeginDragSelection(SimulationState& s, FromGUI::BeginDragSelection&)
 
 	s.mousePosStart = s.mousePos;
 
-	if (s.selected.widgetRef)
+	if (s.selected.length > 0)
 	{
-		Widget& widget = GetWidget(s, s.selected);
-		s.interactionRect = (v4i) WidgetRect(widget);
+		for (u32 i = 0; i < s.selected.length; i++)
+		{
+			FullWidgetRef selected = s.selected[i];
+
+			Widget& widget = GetWidget(s, selected);
+			v4i widgetRect = (v4i) WidgetRect(widget);
+			s.interactionRect = RectCombine(s.interactionRect, widgetRect);
+		}
 		s.interactionRelPosStart = s.interactionRect.pos - s.mousePosStart;
 	}
 	else
@@ -1123,15 +1157,7 @@ FromGUI_EndDragSelection(SimulationState& s, FromGUI::EndDragSelection&)
 static void
 FromGUI_SetWidgetSelection(SimulationState& s, FromGUI::SetWidgetSelection& widgetSelection)
 {
-	// TODO: Update when selection is a list/slice
-	if (widgetSelection.refs.length == 0)
-	{
-		SelectWidget(s, {});
-	}
-	else
-	{
-		SelectWidget(s, widgetSelection.refs[0]);
-	}
+	SelectWidgets(s, widgetSelection.refs);
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -1339,7 +1365,7 @@ Simulation_Initialize(SimulationState& s, PluginLoaderState& pluginLoader, Rende
 		{
 			Widget& widget = widgetData.widgets[i];
 			widget.position    = ((v2) s.renderSize) / 2.0f;
-			widget.position.y += ((i32) i - 2) * (widget.size.y + 3.0f);
+			widget.position.y += (2 - (i32) i) * (widget.size.y + 3.0f);
 			widget.sensorRef   = ToRef<Sensor>(debugSensorIndices[i]);
 		}
 	}
@@ -1578,7 +1604,7 @@ Simulation_Update(SimulationState& s)
 
 	// TODO: Outline shader? How should we handle depth?
 	// Draw Hover
-	if (s.hovered.widgetRef && s.hovered != s.selected && s.guiInteraction == GUIInteraction::Null)
+	if (s.hovered.widgetRef && IsWidgetSelected(s, s.hovered) && s.guiInteraction == GUIInteraction::Null)
 	{
 		Widget& widget = GetWidget(s, s.hovered);
 
@@ -1603,9 +1629,15 @@ Simulation_Update(SimulationState& s)
 	}
 
 	// Draw Selection
-	if (s.selected.widgetRef)
+	// TODO: Use a fancy shader to draw outlines
+	static v4 color = Color32(0, 122, 204, 255);
+	static List<Matrix> wvps = {}; // TODO: Leak
+	List_Clear(wvps);
+
+	for (u32 i = 0; i < s.selected.length; i++)
 	{
-		Widget& widget = GetWidget(s, s.selected);
+		FullWidgetRef selected = s.selected[i];
+		Widget& widget = GetWidget(s, selected);
 
 		v2 position = WidgetPosition(widget);
 		v2 size = widget.size + v2{ 8, 8 };
@@ -1613,9 +1645,9 @@ Simulation_Update(SimulationState& s)
 		Matrix world = Identity();
 		SetPosition(world, position, -(widget.depth + 5.0f));
 		SetScale   (world, size, 1.0f);
-		static Matrix wvp;
+
+		Matrix& wvp = List_Append(wvps);
 		wvp = world * s.vp;
-		static v4 color = Color32(0, 122, 204, 255);
 
 		Material material = {};
 		material.mesh = StandardMesh::Quad;

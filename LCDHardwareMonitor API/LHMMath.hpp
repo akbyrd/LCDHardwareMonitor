@@ -902,6 +902,18 @@ RectContains(v4t<T> rect, v2t<U> pos)
 	return result;
 }
 
+template<typename T, typename U>
+inline v4t<T>
+RectCombine(v4t<T> lhs, v4t<U> rhs)
+{
+	v4t<T> result = {};
+	result.pos.x  = Min(lhs.pos.x,  rhs.pos.x);
+	result.pos.y  = Min(lhs.pos.y,  rhs.pos.y);
+	result.size.x = Max(lhs.size.x, rhs.size.x);
+	result.size.y = Max(lhs.size.y, rhs.size.y);
+	return result;
+}
+
 // -------------------------------------------------------------------------------------------------
 // Matrix
 

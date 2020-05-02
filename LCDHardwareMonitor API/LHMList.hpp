@@ -346,6 +346,16 @@ List_IsRefValid(List<T>& list, ListRef<T> ref)
 
 template<typename T>
 inline void
+List_Remove(List<T>& list, ListRef<T> ref)
+{
+	Assert(List_IsRefValid(list, ref));
+	u32 index = ToIndex(ref);
+	memmove(&list[index], &list[index + 1], sizeof(T) * (list.length - index - 1));
+	list.length--;
+}
+
+template<typename T>
+inline void
 List_Remove(List<T>& list, u32 index)
 {
 	Assert(index < list.length);
@@ -355,19 +365,20 @@ List_Remove(List<T>& list, u32 index)
 
 template<typename T>
 inline void
-List_RemoveFast(List<T>& list, T& item)
+List_RemoveFast(List<T>& list, ListRef<T> ref)
 {
-	Assert(List_Contains(list, &item));
-	item = list.data[list.length - 1];
+	Assert(List_IsRefValid(list, ref));
+	T& slot = list[ref];
+	slot = list.data[list.length - 1];
 	list.length--;
 }
 
 template<typename T>
 inline void
-List_RemoveFast(List<T>& list, ListRef<T> ref)
+List_RemoveFast(List<T>& list, u32 index)
 {
-	Assert(List_IsRefValid(list, ref));
-	T& slot = list[ref];
+	Assert(index < list.length);
+	T& slot = list[index];
 	slot = list.data[list.length - 1];
 	list.length--;
 }
