@@ -1129,6 +1129,8 @@ FromGUI_BeginDragSelection(SimulationState& s, FromGUI::BeginDragSelection&)
 
 	if (s.selected.length != 0)
 	{
+		s.interactionRect = { i32Max, i32Max, i32Min, i32Min };
+
 		for (u32 i = 0; i < s.selected.length; i++)
 		{
 			FullWidgetRef selected = s.selected[i];
@@ -1137,6 +1139,7 @@ FromGUI_BeginDragSelection(SimulationState& s, FromGUI::BeginDragSelection&)
 			v4i widgetRect = (v4i) WidgetRect(widget);
 			s.interactionRect = RectCombine(s.interactionRect, widgetRect);
 		}
+
 		s.interactionRelPosStart = s.interactionRect.pos - s.mousePosStart;
 	}
 	else
@@ -1608,7 +1611,7 @@ Simulation_Update(SimulationState& s)
 
 	// TODO: Outline shader? How should we handle depth?
 	// Draw Hover
-	if (s.hovered.widgetRef && IsWidgetSelected(s, s.hovered) && s.guiInteraction == GUIInteraction::Null)
+	if (s.hovered.widgetRef && !IsWidgetSelected(s, s.hovered) && s.guiInteraction == GUIInteraction::Null)
 	{
 		Widget& widget = GetWidget(s, s.hovered);
 
