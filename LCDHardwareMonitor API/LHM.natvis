@@ -74,7 +74,7 @@
 	</Type>
 
 	<Type Name="ListRef&lt;*&gt;">
-		<DisplayString>{{ {index} }}</DisplayString>
+		<DisplayString>{{ {value} }}</DisplayString>
 	</Type>
 
 	<Type Name="SensorPlugin">

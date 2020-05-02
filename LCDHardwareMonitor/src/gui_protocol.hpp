@@ -71,6 +71,12 @@ namespace ToGUI
 		WidgetDataRef    dataRef;
 		Slice<WidgetRef> widgetRefs;
 	};
+
+	struct WidgetSelectionChanged
+	{
+		Header               header;
+		Slice<FullWidgetRef> refs;
+	};
 }
 
 namespace FromGUI
@@ -149,6 +155,12 @@ namespace FromGUI
 	{
 		Header header;
 	};
+
+	struct SetWidgetSelection
+	{
+		Header               header;
+		Slice<FullWidgetRef> refs;
+	};
 }
 
 template<>
@@ -219,7 +231,9 @@ void Serialize(ByteStream&, ToGUI::PluginStatesChanged&);
 void Serialize(ByteStream&, ToGUI::SensorsAdded&);
 void Serialize(ByteStream&, ToGUI::WidgetDescsAdded&);
 void Serialize(ByteStream&, ToGUI::WidgetsAdded&);
+void Serialize(ByteStream&, ToGUI::WidgetSelectionChanged&);
 void Serialize(ByteStream&, FromGUI::SetPluginLoadStates&);
+void Serialize(ByteStream&, FromGUI::SetWidgetSelection&);
 void Serialize(ByteStream&, PluginInfo&);
 void Serialize(ByteStream&, Sensor&);
 
@@ -568,6 +582,13 @@ Serialize(ByteStream& stream, FromGUI::SetPluginLoadStates& pluginloadStates)
 }
 
 void
+Serialize(ByteStream& stream, FromGUI::SetWidgetSelection& widgetSelection)
+{
+	Serialize(stream, widgetSelection.header);
+	Serialize(stream, widgetSelection.refs);
+}
+
+void
 Serialize(ByteStream& stream, PluginInfo& pluginInfo)
 {
 	Serialize(stream, pluginInfo.name);
@@ -622,6 +643,13 @@ Serialize(ByteStream& stream, ToGUI::WidgetsAdded& widgetsAdded)
 	Serialize(stream, widgetsAdded.pluginRef);
 	Serialize(stream, widgetsAdded.dataRef);
 	Serialize(stream, widgetsAdded.widgetRefs);
+}
+
+void
+Serialize(ByteStream& stream, ToGUI::WidgetSelectionChanged& widgetSelection)
+{
+	Serialize(stream, widgetSelection.header);
+	Serialize(stream, widgetSelection.refs);
 }
 
 // TODO: Code gen the actual Serialize functions

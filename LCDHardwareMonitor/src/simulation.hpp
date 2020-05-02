@@ -288,10 +288,14 @@ ToGUI_WidgetsAdded(SimulationState& s, WidgetPlugin& widgetPlugin, WidgetData wi
 	SerializeAndQueueMessage(s.guiConnection, widgetsAdded);
 }
 
-// TODO: Implement
 static void
-ToGUI_WidgetSelectionChanged(SimulationState& s, FullWidgetRef ref)
+ToGUI_WidgetSelectionChanged(SimulationState& s, Slice<FullWidgetRef> refs)
 {
+	if (s.guiConnection.pipe.state != PipeState::Connected) return;
+
+	ToGUI::WidgetSelectionChanged widgetSelection = {};
+	widgetSelection.refs = refs;
+	SerializeAndQueueMessage(s.guiConnection, widgetSelection);
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -832,7 +836,9 @@ SelectWidget(SimulationState& s, FullWidgetRef ref)
 {
 	// TODO: Validate
 	s.selected = ref;
-	ToGUI_WidgetSelectionChanged(s, ref);
+
+	// HACK: Remove this when selection is actually a list/slice
+	ToGUI_WidgetSelectionChanged(s, s.selected);
 }
 
 static void
@@ -1112,6 +1118,20 @@ FromGUI_EndDragSelection(SimulationState& s, FromGUI::EndDragSelection&)
 	s.guiInteraction = GUIInteraction::Null;
 
 	s.mousePosStart  = {};
+}
+
+static void
+FromGUI_SetWidgetSelection(SimulationState& s, FromGUI::SetWidgetSelection& widgetSelection)
+{
+	// TODO: Update when selection is a list/slice
+	if (widgetSelection.refs.length == 0)
+	{
+		SelectWidget(s, {});
+	}
+	else
+	{
+		SelectWidget(s, widgetSelection.refs[0]);
+	}
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -1475,6 +1495,7 @@ Simulation_Update(SimulationState& s)
 				HANDLE_MESSAGE(RemoveSelectedWidgets);
 				HANDLE_MESSAGE(BeginDragSelection);
 				HANDLE_MESSAGE(EndDragSelection);
+				HANDLE_MESSAGE(SetWidgetSelection);
 			}
 		}
 

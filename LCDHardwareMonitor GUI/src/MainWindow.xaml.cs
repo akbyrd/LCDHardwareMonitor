@@ -1,5 +1,7 @@
 using MahApps.Metro.Controls;
 using System;
+using System.Collections;
+using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Globalization;
 using System.Windows;
@@ -11,6 +13,43 @@ using System.Windows.Media;
 
 namespace LCDHardwareMonitor.GUI
 {
+	public class BindableDataGrid : DataGrid
+	{
+		public static readonly DependencyProperty SelectedItemsProperty = DependencyProperty.Register(
+			"SelectedItems",
+			typeof(IList),
+			typeof(BindableDataGrid),
+			new PropertyMetadata(OnPropertyChanged));
+
+		private static void OnPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			BindableDataGrid bdg = (BindableDataGrid) d;
+			if (bdg.initialized) return;
+			bdg.initialized = true;
+
+			bdg.source = (IList) e.NewValue;
+			bdg.target = ((DataGrid) bdg).SelectedItems;
+			((INotifyCollectionChanged) e.NewValue).CollectionChanged += bdg.OnCollectionChanged;
+		}
+
+		public new IList SelectedItems
+		{
+			get { return (IList) GetValue(SelectedItemsProperty); }
+			set { SetValue(SelectedItemsProperty, value); }
+		}
+
+		IList source;
+		IList target;
+		bool initialized;
+
+		private void OnCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+		{
+			target.Clear();
+			foreach (var item in source)
+				target.Add(item);
+		}
+	}
+
 	public partial class MainWindow : MetroWindow
 	{
 		SimulationState simState;
@@ -267,6 +306,14 @@ namespace LCDHardwareMonitor.GUI
 				case PluginKind.Widget: Interop.AddWidget(simState, data.pluginRef, data.widgetRef, GetMousePosition()); break;
 				case PluginKind.Sensor: break;
 			}
+		}
+
+		private void WidgetInstances_SelectionChanged(object sender, SelectionChangedEventArgs e)
+		{
+			if (simState.UpdatingSelection) return;
+
+			var grid = (DataGrid) sender;
+			Interop.SetWidgetSelection(simState, grid.SelectedItems);
 		}
 	}
 

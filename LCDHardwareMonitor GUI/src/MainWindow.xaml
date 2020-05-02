@@ -213,6 +213,38 @@
 							</DataGrid.Columns>
 						</DataGrid>
 					</TabItem>
+
+					<!-- Widgets Instances-->
+					<TabItem Header="Instances">
+						<lhm:BindableDataGrid
+							BorderBrush="#333333" BorderThickness="1"
+							ItemsSource="{Binding Widgets}"
+							SelectedItems="{Binding SelectedWidgets}"
+							SelectionChanged="WidgetInstances_SelectionChanged"
+							AutoGenerateColumns="false"
+							IsReadOnly="true">
+							<DataGrid.Style>
+								<Style TargetType="{x:Type DataGrid}" BasedOn="{StaticResource MetroDataGrid}" />
+							</DataGrid.Style>
+							<DataGrid.Columns>
+								<DataGridTextColumn
+									Binding="{Binding PluginRef}"
+									Header="Ref"
+									Width="*"
+									IsReadOnly="true" />
+								<DataGridTextColumn
+									Binding="{Binding DataRef}"
+									Header="Name"
+									Width="*"
+									IsReadOnly="true" />
+								<DataGridTextColumn
+									Binding="{Binding Ref}"
+									Header="Name"
+									Width="*"
+									IsReadOnly="true" />
+							</DataGrid.Columns>
+						</lhm:BindableDataGrid>
+					</TabItem>
 				</mah:MetroAnimatedTabControl>
 			</Grid>
 		</TabItem>

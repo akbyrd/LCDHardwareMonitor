@@ -7,11 +7,12 @@ Issues
 		LHM appears to hang in D3D creation sometimes? Unrelated?
 	Fix camera position (I think it's backwards, comment near Cube Mesh)
 	Starting to feel like state checking should be in the sim
+	Stop sending mouse move when mouse isn't over window
+	GUI shouldn't close the simulation if it didn't start it
 
 
 
 GUI Features
-	Display widgets in GUI
 	Multi-select
 	Drag sensors
 	Is it worth trying to send everything at once? (Slice<List<Sensor>> feels kind of silly)

@@ -282,6 +282,9 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 
 		case WM_LBUTTONDOWN:
 		{
+			// TODO: If you move the mouse quickly and click it's possible to get this without a
+			// corresponding mouse move. Maybe they come out of order? This probably applies to all
+			// mouse buttons. Maybe also keyboard? Ugh.
 			v2i pos = GetMousePosition(lParam, s->zoomFactor, s->renderSize);
 			Assert(pos == s->simulationState->mousePos);
 

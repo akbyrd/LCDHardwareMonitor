@@ -123,6 +123,7 @@ namespace LCDHardwareMonitor::GUI
 		property ObservableCollection<Sensor>^     Sensors;
 		property ObservableCollection<WidgetDesc>^ WidgetDescs;
 		property ObservableCollection<Widget>^     Widgets;
+		property ObservableCollection<Widget>^     SelectedWidgets;
 		property Interaction                       Interaction;
 
 		// UI Helpers
@@ -130,6 +131,7 @@ namespace LCDHardwareMonitor::GUI
 		property ProcessState ProcessState;
 		property Stopwatch^   ProcessStateTimer;
 		property Point        MousePos;
+		property bool         UpdatingSelection;
 
 		// Cruft
 		SimulationState()
@@ -138,6 +140,7 @@ namespace LCDHardwareMonitor::GUI
 			Sensors           = gcnew ObservableCollection<Sensor>();
 			WidgetDescs       = gcnew ObservableCollection<WidgetDesc>();
 			Widgets           = gcnew ObservableCollection<Widget>();
+			SelectedWidgets   = gcnew ObservableCollection<Widget>();
 			ProcessStateTimer = gcnew Stopwatch();
 		}
 
@@ -200,6 +203,7 @@ namespace LCDHardwareMonitor::GUI
 			SetProcessState(simState, ProcessState::Terminating);
 			array<Process^>^ processes = Process::GetProcessesByName("LCDHardwareMonitor");
 			for each (Process^ p in processes)
+				// TODO: Got an Access Is Denied exception here once
 				p->Kill();
 		}
 
@@ -342,6 +346,22 @@ namespace LCDHardwareMonitor::GUI
 			SerializeAndQueueMessage(state.simConnection, removeSelectedWidgets);
 		}
 
+		static void
+		SetWidgetSelection(SimulationState^, System::Collections::IList^ selectedWidgets)
+		{
+			FullWidgetRef selection = {};
+			if (selectedWidgets->Count > 0)
+			{
+				selection.pluginRef = { ((Widget%) selectedWidgets[0]).PluginRef };
+				selection.dataRef   = { ((Widget%) selectedWidgets[0]).DataRef };
+				selection.widgetRef = { ((Widget%) selectedWidgets[0]).Ref };
+			}
+
+			FromGUI::SetWidgetSelection widgetSelection = {};
+			widgetSelection.refs = selection;
+			SerializeAndQueueMessage(state.simConnection, widgetSelection);
+		}
+
 		// -------------------------------------------------------------------------------------------
 		// Incoming Messages
 
@@ -482,6 +502,23 @@ namespace LCDHardwareMonitor::GUI
 			simState.NotifyPropertyChanged("");
 		}
 
+		static void
+		FromSim_WidgetSelectionChanged(SimulationState% simState, ToGUI::WidgetSelectionChanged& widgetSelection)
+		{
+			simState.UpdatingSelection = true;
+			simState.SelectedWidgets->Clear();
+			for (u32 i = 0; i < widgetSelection.refs.length; i++)
+			{
+				Widget mWidget = {};
+				mWidget.PluginRef = widgetSelection.refs[i].pluginRef.value;
+				mWidget.DataRef   = widgetSelection.refs[i].dataRef.value;
+				mWidget.Ref       = widgetSelection.refs[i].widgetRef.value;
+				simState.SelectedWidgets->Add(mWidget);
+			}
+			simState.NotifyPropertyChanged("");
+			simState.UpdatingSelection = false;
+		}
+
 		// -------------------------------------------------------------------------------------------
 		// Main Functions
 
@@ -560,6 +597,7 @@ namespace LCDHardwareMonitor::GUI
 						HANDLE_MESSAGE(SensorsAdded);
 						HANDLE_MESSAGE(WidgetDescsAdded);
 						HANDLE_MESSAGE(WidgetsAdded);
+						HANDLE_MESSAGE(WidgetSelectionChanged);
 					}
 				}
 
