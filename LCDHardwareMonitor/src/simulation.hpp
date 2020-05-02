@@ -703,8 +703,8 @@ AddWidgets(SimulationState& s, WidgetPlugin& widgetPlugin, WidgetData& widgetDat
 		widgetData.widgetsUserData.length = widgetData.desc.userDataSize * prevWidgetLen;
 	};
 
-	List_AppendRangeZeroed(widgetData.widgets, positions.length);
-	List_AppendRangeZeroed(widgetData.widgetsUserData, widgetData.desc.userDataSize * positions.length);
+	List_AppendRange(widgetData.widgets, positions.length);
+	List_AppendRange(widgetData.widgetsUserData, widgetData.desc.userDataSize * positions.length);
 
 	PluginContext context = {};
 	context.s            = &s;

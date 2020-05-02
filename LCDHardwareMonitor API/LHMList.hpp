@@ -140,6 +140,14 @@ List_Append(List<T>& list)
 
 template<typename T>
 inline void
+List_AppendRange(List<T>& list, u32 count)
+{
+	List_Reserve(list, list.length + count);
+	list.length += count;
+}
+
+template<typename T>
+inline void
 List_AppendRange(List<T>& list, Slice<T> items)
 {
 	List_Reserve(list, list.length + items.length);
@@ -153,15 +161,6 @@ List_AppendRange(List<T>& list, Slice<T> items)
 		for (u32 i = 0; i < items.length; i++)
 			list.data[list.length++] = items[i];
 	}
-}
-
-template<typename T>
-inline void
-List_AppendRangeZeroed(List<T>& list, u32 count)
-{
-	List_Reserve(list, list.length + count);
-	memset(&list.data[list.length], 0, sizeof(T) * count);
-	list.length += count;
 }
 
 template<typename T>
@@ -351,6 +350,7 @@ List_Remove(List<T>& list, ListRef<T> ref)
 	Assert(List_IsRefValid(list, ref));
 	u32 index = ToIndex(ref);
 	memmove(&list[index], &list[index + 1], sizeof(T) * (list.length - index - 1));
+	List_ZeroRange(list, list.length - 1, 1);
 	list.length--;
 }
 
@@ -360,6 +360,7 @@ List_Remove(List<T>& list, u32 index)
 {
 	Assert(index < list.length);
 	memmove(&list[index], &list[index + 1], sizeof(T) * (list.length - index - 1));
+	List_ZeroRange(list, list.length - 1, 1);
 	list.length--;
 }
 
@@ -370,6 +371,7 @@ List_RemoveFast(List<T>& list, ListRef<T> ref)
 	Assert(List_IsRefValid(list, ref));
 	T& slot = list[ref];
 	slot = list.data[list.length - 1];
+	List_ZeroRange(list, list.length - 1, 1);
 	list.length--;
 }
 
@@ -380,6 +382,7 @@ List_RemoveFast(List<T>& list, u32 index)
 	Assert(index < list.length);
 	T& slot = list[index];
 	slot = list.data[list.length - 1];
+	List_ZeroRange(list, list.length - 1, 1);
 	list.length--;
 }
 
@@ -390,6 +393,7 @@ List_RemoveRangeFast(List<T>& list, u32 start, u32 count)
 {
 	Assert(start < list.length && (start + count) <= list.length);
 	memcpy(&list.data[start], &list.data[start + count], sizeof(T) * count);
+	List_ZeroRange(list, list.length - count, 1);
 	list.length -= count;
 }
 
@@ -397,11 +401,9 @@ template<typename T>
 inline void
 List_RemoveLast(List<T>& list)
 {
-	if (list.length > 0)
-	{
-		list.length--;
-		memset(&list.data[list.length], 0, sizeof(T));
-	}
+	Assert(list.length > 0);
+	memset(&list.data[list.length - 1], 0, sizeof(T));
+	list.length--;
 }
 
 template<typename T>
@@ -539,5 +541,7 @@ Slice_MemberSlice(Slice<T>& slice, U T::* memberPtr)
 // TODO: Where should memory be included?
 // TODO: Allow range-for usage
 // TODO: Use placement new to avoid calling destructors on garbage objects?
+// TODO: Use functions to zero empty slots. Use raw access to skip the zeroing. Use the function to
+// fuzz unused slots with different values.
 
 #endif
