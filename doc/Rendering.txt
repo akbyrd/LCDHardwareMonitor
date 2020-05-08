@@ -1,0 +1,11 @@
+UVs
+D3D: 0,0 is the top left. Texture memory starts at the top left.
+OGL: 0,0 is the bottom left. Texture memory starts the bottom left.
+
+Reading from the depth buffer
+https://docs.microsoft.com/en-us/windows/win32/direct3d11/d3d10-graphics-programming-guide-depth-stencil#reading-the-depth-stencil-buffer-as-a-texture
+Format must be typeless: descDepth.Format = DXGI_FORMAT_R24G8_TYPELESS;
+Must have shader resource bind flag: D3D10_BIND_SHADER_RESOURCE
+Needs a typed resource view: ID3D11Device::CreateShaderResourceView
+The resource view type must match the buffer format, with the types filled in
+DXGI_FORMAT_R24G8_TYPELESS => DXGI_FORMAT_D24_UNORM_S8_UINT/DXGI_FORMAT_R24_UNORM_X8_TYPELESS

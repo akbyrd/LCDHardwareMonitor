@@ -55,6 +55,7 @@ Start using Scoped
 Namespaces
 Native namespace for interop?
 
+Check for mismatched push/pop calls in plugins
 Try removing WidgetData
 Need to handle mouse position when preview isn't visible
 Need to actually avoid processing broken plugins

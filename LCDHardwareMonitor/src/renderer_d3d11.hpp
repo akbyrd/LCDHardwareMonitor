@@ -73,10 +73,23 @@ struct PixelShaderData
 
 struct RenderTargetData
 {
-	RenderTarget                   ref;
-	ComPtr<ID3D11Texture2D>        d3dRenderTexture;
-	ComPtr<ID3D11RenderTargetView> d3dRenderTargetView;
-	ComPtr<ID3D11DepthStencilView> d3dDepthBufferView;
+	RenderTarget                     ref;
+	ComPtr<ID3D11Texture2D>          d3dRenderTexture;
+	ComPtr<ID3D11RenderTargetView>   d3dRenderTargetView;
+	ComPtr<ID3D11ShaderResourceView> d3dRenderTargetResourceView;
+};
+
+struct DepthBufferData
+{
+	DepthBuffer                      ref;
+	ComPtr<ID3D11DepthStencilView>   d3dDepthBufferView;
+	ComPtr<ID3D11ShaderResourceView> d3dDepthBufferResourceView;
+};
+
+struct PixelShaderResource
+{
+	RenderTarget renderTarget;
+	DepthBuffer  depthBuffer;
 };
 
 enum struct RenderCommandType
@@ -86,8 +99,12 @@ enum struct RenderCommandType
 	DrawCall,
 	PushRenderTarget,
 	PopRenderTarget,
+	PushDepthBuffer,
+	PopDepthBuffer,
 	PushPixelShader,
 	PopPixelShader,
+	PushPixelShaderResource,
+	PopPixelShaderResource,
 };
 
 struct RenderCommand
@@ -98,7 +115,9 @@ struct RenderCommand
 		ConstantBufferUpdate cBufUpdate;
 		DrawCall             drawCall;
 		RenderTarget         renderTarget;
+		DepthBuffer          depthBuffer;
 		PixelShader          pixelShader;
+		PixelShaderResource  psResource;
 	};
 };
 
@@ -108,6 +127,7 @@ struct RendererState
 	ComPtr<ID3D11DeviceContext>    d3dContext;
 	ComPtr<IDXGIFactory1>          dxgiFactory;
 
+	DepthBuffer                    mainDepthBuffer;
 	RenderTarget                   mainRenderTarget;
 	RenderTarget                   mainRenderTargetCPU;
 	RenderTarget                   mainRenderTargetGUI;
@@ -135,10 +155,13 @@ struct RendererState
 	List<u32>                      indexBuffer;
 	List<RenderCommand>            commandList;
 	List<RenderTargetData>         renderTargets;
+	List<DepthBufferData>          depthBuffers;
 
 	// Only here so we don't allocate every frame
-	List<RenderTarget>             renderTargetStack;
-	List<PixelShader>              pixelShaderStack;
+	List<RenderTargetData*>        renderTargetStack;
+	List<DepthBufferData*>         depthBufferStack;
+	List<PixelShaderData*>         pixelShaderStack;
+	List<PixelShaderResource>      pixelShaderResourceStack;
 };
 
 #define SetDebugObjectName(resource, format, ...) \
@@ -170,7 +193,7 @@ static void UpdateRasterizerState(RendererState& s);
 static D3D11_TEXTURE2D_DESC GetDefaultRenderTextureDesc(RendererState& s);
 static D3D11_TEXTURE2D_DESC GetCPURenderTextureDesc(RendererState& s);
 static D3D11_TEXTURE2D_DESC GetGUIRenderTextureDesc(RendererState& s);
-static RenderTarget CreateRenderTargetImpl(RendererState& s, D3D11_TEXTURE2D_DESC& desc, b8 view, b8 depth, StringView name);
+static RenderTarget CreateRenderTargetImpl(RendererState& s, D3D11_TEXTURE2D_DESC& desc, b8 view, b8 resource, StringView name);
 
 b8
 Renderer_Initialize(RendererState& s, v2u renderSize)
@@ -310,14 +333,26 @@ Renderer_Initialize(RendererState& s, v2u renderSize)
 	}
 
 
-	// Create render target
+	// Create main render target & depth buffer
 	{
+		// Null objects
+		RenderTargetData& nullRT = List_Append(s.renderTargets);
+		nullRT.ref = List_GetLastRef(s.renderTargets);
+
+		DepthBufferData& nullDB = List_Append(s.depthBuffers);
+		nullDB.ref = List_GetLastRef(s.depthBuffers);
+
+		// Textures
 		D3D11_TEXTURE2D_DESC desc = GetDefaultRenderTextureDesc(s);
 		s.mainRenderTarget = CreateRenderTargetImpl(s, desc, true, true, {});
 		if (!s.mainRenderTarget) return false;
 
+		s.mainDepthBuffer = Renderer_CreateDepthBuffer(s, false);
+		if (!s.mainDepthBuffer) return false;
+
 		RenderTargetData mainRT = s.renderTargets[s.mainRenderTarget];
-		s.d3dContext->OMSetRenderTargets(1, mainRT.d3dRenderTargetView.GetAddressOf(), mainRT.d3dDepthBufferView.Get());
+		DepthBufferData  mainDB = s.depthBuffers[s.mainDepthBuffer];
+		s.d3dContext->OMSetRenderTargets(1, mainRT.d3dRenderTargetView.GetAddressOf(), mainDB.d3dDepthBufferView.Get());
 	}
 
 
@@ -393,6 +428,61 @@ Renderer_Initialize(RendererState& s, v2u renderSize)
 		UpdateRasterizerState(s);
 	}
 
+
+	// TODO: Need sorting if we're actually going to support alpha for users
+	// Initialize blend state
+	{
+		HRESULT hr;
+
+		D3D11_BLEND_DESC blendDesc = {};
+		blendDesc.AlphaToCoverageEnable                 = false;
+		blendDesc.IndependentBlendEnable                = false;
+		blendDesc.RenderTarget[0].BlendEnable           = true;
+		blendDesc.RenderTarget[0].SrcBlend              = D3D11_BLEND_SRC_ALPHA;
+		blendDesc.RenderTarget[0].DestBlend             = D3D11_BLEND_INV_SRC_ALPHA;
+		blendDesc.RenderTarget[0].BlendOp               = D3D11_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].SrcBlendAlpha         = D3D11_BLEND_ZERO;
+		blendDesc.RenderTarget[0].DestBlendAlpha        = D3D11_BLEND_ZERO;
+		blendDesc.RenderTarget[0].BlendOpAlpha          = D3D11_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+
+		ComPtr<ID3D11BlendState> blendState;
+		hr = s.d3dDevice->CreateBlendState(&blendDesc, &blendState);
+		LOG_HRESULT_IF_FAILED(hr, return false,
+			Severity::Fatal, "Failed to create alpha blend state");
+		SetDebugObjectName(blendState, "Blend State (Alpha)");
+
+		s.d3dContext->OMSetBlendState(blendState.Get(), nullptr, 0xFFFFFFFF);
+	}
+
+
+	// DEBUG: Default sampler
+	{
+		HRESULT hr;
+
+		D3D11_SAMPLER_DESC samplerDesc = {};
+		samplerDesc.Filter         = D3D11_FILTER_MIN_MAG_MIP_POINT;
+		samplerDesc.AddressU       = D3D11_TEXTURE_ADDRESS_CLAMP;
+		samplerDesc.AddressV       = D3D11_TEXTURE_ADDRESS_CLAMP;
+		samplerDesc.AddressW       = D3D11_TEXTURE_ADDRESS_CLAMP;
+		samplerDesc.MipLODBias     = 0;
+		samplerDesc.MaxAnisotropy  = 1;
+		samplerDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
+		samplerDesc.BorderColor[0] = 1.0f;
+		samplerDesc.BorderColor[1] = 0.0f;
+		samplerDesc.BorderColor[2] = 0.0f;
+		samplerDesc.BorderColor[3] = 1.0f;
+		samplerDesc.MinLOD         = 0;
+		samplerDesc.MaxLOD         = 0;
+
+		ComPtr<ID3D11SamplerState> samplerState;
+		hr = s.d3dDevice->CreateSamplerState(&samplerDesc, &samplerState);
+		LOG_HRESULT_IF_FAILED(hr, return false,
+			Severity::Fatal, "Failed to create default sampler state");
+
+		s.d3dContext->PSSetSamplers(0, 1, samplerState.GetAddressOf());
+	}
+
 	return true;
 }
 
@@ -453,18 +543,18 @@ GetGUIRenderTextureDesc(RendererState& s)
 }
 
 static void
-Renderer_DestroyRenderTarget(RendererState& s, RenderTargetData& renderTarget)
+Renderer_DestroyRenderTarget(RendererState& s, RenderTargetData& rt)
 {
 	UNUSED(s);
-	renderTarget.d3dDepthBufferView.Reset();
-	renderTarget.d3dRenderTargetView.Reset();
-	renderTarget.d3dRenderTexture.Reset();
+	rt.d3dRenderTargetResourceView.Reset();
+	rt.d3dRenderTargetView.Reset();
+	rt.d3dRenderTexture.Reset();
 }
 
 // TODO: Standardize RenderTexture vs RenderTarget
 // TODO: Try using the keyed mutex flag to synchronize sharing
 static RenderTarget
-CreateRenderTargetImpl(RendererState& s, D3D11_TEXTURE2D_DESC& desc, b8 view, b8 depth, StringView name)
+CreateRenderTargetImpl(RendererState& s, D3D11_TEXTURE2D_DESC& desc, b8 view, b8 resource, StringView name)
 {
 	RenderTargetData& renderTargetData = List_Append(s.renderTargets);
 	renderTargetData.ref = List_GetLastRef(s.renderTargets);
@@ -484,65 +574,122 @@ CreateRenderTargetImpl(RendererState& s, D3D11_TEXTURE2D_DESC& desc, b8 view, b8
 	}
 
 
-	// Create render texture
+	// Create texture
+	HRESULT hr;
+
+	hr = s.d3dDevice->CreateTexture2D(&desc, nullptr, &renderTargetData.d3dRenderTexture);
+	LOG_HRESULT_IF_FAILED(hr, return {},
+		Severity::Fatal, "Failed to create render texture");
+	SetDebugObjectName(renderTargetData.d3dRenderTexture, "Render Texture %", name);
+
+	if (view)
 	{
-		HRESULT hr;
-
-		hr = s.d3dDevice->CreateTexture2D(&desc, nullptr, &renderTargetData.d3dRenderTexture);
+		hr = s.d3dDevice->CreateRenderTargetView(renderTargetData.d3dRenderTexture.Get(), nullptr, &renderTargetData.d3dRenderTargetView);
 		LOG_HRESULT_IF_FAILED(hr, return {},
-			Severity::Fatal, "Failed to create render texture");
-		SetDebugObjectName(renderTargetData.d3dRenderTexture, "Render Texture %", name);
-
-		if (view)
-		{
-			hr = s.d3dDevice->CreateRenderTargetView(renderTargetData.d3dRenderTexture.Get(), nullptr, &renderTargetData.d3dRenderTargetView);
-			LOG_HRESULT_IF_FAILED(hr, return {},
-				Severity::Fatal, "Failed to create render target view");
-			SetDebugObjectName(renderTargetData.d3dRenderTargetView, "Render Target View %", name);
-		}
+			Severity::Fatal, "Failed to create render target view");
+		SetDebugObjectName(renderTargetData.d3dRenderTargetView, "Render Target View %", name);
 	}
 
 
-	// Create depth buffer
-	if (depth)
+	// Create Shader resource
+	if (resource)
 	{
-		HRESULT hr;
-
-		D3D11_TEXTURE2D_DESC depthDesc = {};
-		depthDesc.Width              = s.renderSize.x;
-		depthDesc.Height             = s.renderSize.y;
-		depthDesc.MipLevels          = 1;
-		depthDesc.ArraySize          = 1;
-		depthDesc.Format             = DXGI_FORMAT_D24_UNORM_S8_UINT;
-		depthDesc.SampleDesc.Count   = desc.SampleDesc.Count;
-		depthDesc.SampleDesc.Quality = desc.SampleDesc.Quality;
-		depthDesc.Usage              = D3D11_USAGE_DEFAULT;
-		depthDesc.BindFlags          = D3D11_BIND_DEPTH_STENCIL;
-		depthDesc.CPUAccessFlags     = 0;
-		depthDesc.MiscFlags          = 0;
-
-		// TODO: Why don't we keep the depth buffer around and free it? Is this a leak?
-		ComPtr<ID3D11Texture2D> d3dDepthBuffer;
-		hr = s.d3dDevice->CreateTexture2D(&depthDesc, nullptr, &d3dDepthBuffer);
-		LOG_HRESULT_IF_FAILED(hr, return {},
-			Severity::Fatal, "Failed to create depth buffer");
-		SetDebugObjectName(d3dDepthBuffer, "Depth Buffer %", name);
-
-		hr = s.d3dDevice->CreateDepthStencilView(d3dDepthBuffer.Get(), nullptr, &renderTargetData.d3dDepthBufferView);
-		LOG_HRESULT_IF_FAILED(hr, return {},
-			Severity::Fatal, "Failed to create depth buffer view");
-		SetDebugObjectName(renderTargetData.d3dDepthBufferView, "Depth Buffer View %", name);
+		s.d3dDevice->CreateShaderResourceView(renderTargetData.d3dRenderTexture.Get(), nullptr, &renderTargetData.d3dRenderTargetResourceView);
+		SetDebugObjectName(renderTargetData.d3dRenderTargetResourceView, "Render Target Resource View %", s.renderTargets.length);
 	}
+
 
 	renderTargetGuard.dismiss = true;
 	return renderTargetData.ref;
 }
 
+static void
+Renderer_DestroyDepthBuffer(RendererState& s, DepthBufferData& db)
+{
+	UNUSED(s);
+	db.d3dDepthBufferResourceView.Reset();
+	db.d3dDepthBufferView.Reset();
+}
+
+DepthBuffer
+Renderer_CreateDepthBuffer(RendererState& s, b8 resource)
+{
+	DepthBufferData& depthBufferData = List_Append(s.depthBuffers);
+	depthBufferData.ref = List_GetLastRef(s.depthBuffers);
+
+	auto depthBufferGuard = guard {
+		Renderer_DestroyDepthBuffer(s, depthBufferData);
+		List_RemoveLast(s.depthBuffers);
+	};
+
+
+	// Create texture
+	HRESULT hr;
+
+	D3D11_TEXTURE2D_DESC depthDesc = {};
+	depthDesc.Width              = s.renderSize.x;
+	depthDesc.Height             = s.renderSize.y;
+	depthDesc.MipLevels          = 1;
+	depthDesc.ArraySize          = 1;
+	depthDesc.Format             = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	// TODO: Doubt this is correct...
+	depthDesc.SampleDesc.Count   = s.multisampleCount;
+	depthDesc.SampleDesc.Quality = s.qualityCountRender - 1;
+	depthDesc.Usage              = D3D11_USAGE_DEFAULT;
+	depthDesc.BindFlags          = D3D11_BIND_DEPTH_STENCIL;
+	depthDesc.CPUAccessFlags     = 0;
+	depthDesc.MiscFlags          = 0;
+
+	if (resource)
+	{
+		depthDesc.Format     = DXGI_FORMAT_R24G8_TYPELESS;
+		depthDesc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
+	}
+
+	// TODO: Why don't we keep the depth buffer around and free it? Is this a leak?
+	ComPtr<ID3D11Texture2D> d3dDepthBuffer;
+	hr = s.d3dDevice->CreateTexture2D(&depthDesc, nullptr, &d3dDepthBuffer);
+	LOG_HRESULT_IF_FAILED(hr, return {},
+		Severity::Fatal, "Failed to create depth buffer");
+	SetDebugObjectName(d3dDepthBuffer, "Depth Buffer %", s.depthBuffers.length);
+
+	// TODO: Is this needed?
+	D3D11_DEPTH_STENCIL_VIEW_DESC depthViewDesc = {};
+	depthViewDesc.Format             = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	depthViewDesc.ViewDimension      = D3D11_DSV_DIMENSION_TEXTURE2D;
+	depthViewDesc.Flags              = 0;
+	depthViewDesc.Texture2D.MipSlice = 0;
+
+	hr = s.d3dDevice->CreateDepthStencilView(d3dDepthBuffer.Get(), &depthViewDesc, &depthBufferData.d3dDepthBufferView);
+	LOG_HRESULT_IF_FAILED(hr, return {},
+		Severity::Fatal, "Failed to create depth buffer view");
+	SetDebugObjectName(depthBufferData.d3dDepthBufferView, "Depth Buffer View %", s.depthBuffers.length);
+
+
+	// Create shader resource
+	if (resource)
+	{
+		// TODO: Why can't this be DXGI_FORMAT_D24_UNORM_S8_UINT? Will we be able to read stencil bits?
+		D3D11_SHADER_RESOURCE_VIEW_DESC resourceDesc = {};
+		resourceDesc.Format                    = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+		resourceDesc.ViewDimension             = D3D11_SRV_DIMENSION_TEXTURE2D;
+		resourceDesc.Texture2D.MostDetailedMip = 0;
+		resourceDesc.Texture2D.MipLevels       = UINT(-1);
+
+		s.d3dDevice->CreateShaderResourceView(d3dDepthBuffer.Get(), &resourceDesc, &depthBufferData.d3dDepthBufferResourceView);
+		SetDebugObjectName(depthBufferData.d3dDepthBufferResourceView, "Depth Buffer Resource View %", s.depthBuffers.length);
+	}
+
+
+	depthBufferGuard.dismiss = true;
+	return depthBufferData.ref;
+}
+
 RenderTarget
-Renderer_CreateRenderTarget(RendererState& s)
+Renderer_CreateRenderTarget(RendererState& s, b8 resource)
 {
 	D3D11_TEXTURE2D_DESC desc = GetDefaultRenderTextureDesc(s);
-	return CreateRenderTargetImpl(s, desc, true, false, {});
+	return CreateRenderTargetImpl(s, desc, true, resource, {});
 }
 
 b8
@@ -611,18 +758,29 @@ UpdateRasterizerState(RendererState& s)
 void
 Renderer_Teardown(RendererState& s)
 {
+	List_Free(s.pixelShaderResourceStack);
 	List_Free(s.pixelShaderStack);
+	List_Free(s.depthBufferStack);
 	List_Free(s.renderTargetStack);
 	List_Free(s.commandList);
 	List_Free(s.indexBuffer);
 	List_Free(s.vertexBuffer);
 
+	for (u32 i = 0; i < s.depthBuffers.length; i++)
+	{
+		DepthBufferData& db = s.depthBuffers[i];
+
+		db.d3dDepthBufferResourceView.Reset();
+		db.d3dDepthBufferView.Reset();
+	}
+	List_Free(s.depthBuffers);
+
 	for (u32 i = 0; i < s.renderTargets.length; i++)
 	{
 		RenderTargetData& rt = s.renderTargets[i];
 
+		rt.d3dRenderTargetResourceView.Reset();
 		rt.d3dRenderTargetView.Reset();
-		rt.d3dDepthBufferView.Reset();
 	}
 	List_Free(s.renderTargets);
 
@@ -941,6 +1099,21 @@ Renderer_PopRenderTarget(RendererState& s)
 }
 
 void
+Renderer_PushDepthBuffer(RendererState& s, DepthBuffer depthBuffer)
+{
+	RenderCommand& renderCommand = List_Append(s.commandList);
+	renderCommand.type = RenderCommandType::PushDepthBuffer;
+	renderCommand.depthBuffer = depthBuffer;
+}
+
+void
+Renderer_PopDepthBuffer(RendererState& s)
+{
+	RenderCommand& renderCommand = List_Append(s.commandList);
+	renderCommand.type = RenderCommandType::PopDepthBuffer;
+}
+
+void
 Renderer_PushPixelShader(RendererState& s, PixelShader ps)
 {
 	RenderCommand& renderCommand = List_Append(s.commandList);
@@ -953,6 +1126,29 @@ Renderer_PopPixelShader(RendererState& s)
 {
 	RenderCommand& renderCommand = List_Append(s.commandList);
 	renderCommand.type = RenderCommandType::PopPixelShader;
+}
+
+void
+Renderer_PushPixelShaderResource(RendererState& s, RenderTarget renderTarget)
+{
+	RenderCommand& renderCommand = List_Append(s.commandList);
+	renderCommand.type = RenderCommandType::PushPixelShaderResource;
+	renderCommand.psResource.renderTarget = renderTarget;
+}
+
+void
+Renderer_PushPixelShaderResource(RendererState& s, DepthBuffer depthBuffer)
+{
+	RenderCommand& renderCommand = List_Append(s.commandList);
+	renderCommand.type = RenderCommandType::PushPixelShaderResource;
+	renderCommand.psResource.depthBuffer = depthBuffer;
+}
+
+void
+Renderer_PopPixelShaderResource(RendererState& s)
+{
+	RenderCommand& renderCommand = List_Append(s.commandList);
+	renderCommand.type = RenderCommandType::PopPixelShaderResource;
 }
 
 static b8
@@ -990,24 +1186,32 @@ Renderer_Render(RendererState& s)
 	ConvertRenderForGUI(s);
 
 	// OPTIMIZE: Make clears a manual call so we don't clear unused render targets (also won't need checks)
-	for (u32 i = 0; i < s.renderTargets.length; i++)
+	for (u32 i = 1; i < s.renderTargets.length; i++)
 	{
 		RenderTargetData rt = s.renderTargets[i];
-
 		if (rt.d3dRenderTargetView)
 			s.d3dContext->ClearRenderTargetView(rt.d3dRenderTargetView.Get(), DirectX::Colors::Black);
-		if (rt.d3dDepthBufferView)
-			s.d3dContext->ClearDepthStencilView(rt.d3dDepthBufferView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
+	}
+
+	for (u32 i = 1; i < s.depthBuffers.length; i++)
+	{
+		DepthBufferData db = s.depthBuffers[i];
+		s.d3dContext->ClearDepthStencilView(db.d3dDepthBufferView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
 	}
 
 	struct BindState
 	{
-		RenderTarget rt;
-		VertexShader vs;
-		PixelShader  ps;
+		RenderTargetData*   rt;
+		DepthBufferData*    db;
+		VertexShaderData*   vs;
+		PixelShaderData*    ps;
+		PixelShaderResource psr;
 	};
 	BindState bindState = {};
-	bindState.rt = s.mainRenderTarget;
+	bindState.rt               = &s.renderTargets[s.mainRenderTarget];
+	bindState.db               = &s.depthBuffers[s.mainDepthBuffer];
+	bindState.psr.renderTarget = List_GetFirstRef(s.renderTargets);
+	bindState.psr.depthBuffer  = List_GetFirstRef(s.depthBuffers);
 
 	// OPTIMIZE: Sort draws?
 	// OPTIMIZE: Adding a "SetMaterial" command would remove some redundant shader lookups.
@@ -1058,9 +1262,9 @@ Renderer_Render(RendererState& s)
 				PixelShaderData&  ps   = s.pixelShaders[dc.material.ps];
 
 				// Vertex Shader
-				if (vs.ref != bindState.vs)
+				if (&vs != bindState.vs)
 				{
-					bindState.vs = vs.ref;
+					bindState.vs = &vs;
 
 					u32 vStride = (u32) sizeof(Vertex);
 					u32 vOffset = 0;
@@ -1079,10 +1283,10 @@ Renderer_Render(RendererState& s)
 				}
 
 				// Pixel Shader
-				if (ps.ref != bindState.ps)
+				if (&ps != bindState.ps)
 				{
 					Assert(s.pixelShaderStack.length == 0);
-					bindState.ps = ps.ref;
+					bindState.ps = &ps;
 
 					s.d3dContext->PSSetShader(ps.d3dPixelShader.Get(), nullptr, 0);
 
@@ -1103,23 +1307,52 @@ Renderer_Render(RendererState& s)
 			case RenderCommandType::PushRenderTarget:
 			{
 				RenderTargetData& rt = s.renderTargets[renderCommand.renderTarget];
+				DepthBufferData&  db = *bindState.db;
 
 				List_Append(s.renderTargetStack, bindState.rt);
-				s.d3dContext->OMSetRenderTargets(1, rt.d3dRenderTargetView.GetAddressOf(), rt.d3dDepthBufferView.Get());
+				bindState.rt = &rt;
+
+				s.d3dContext->OMSetRenderTargets(1, rt.d3dRenderTargetView.GetAddressOf(), db.d3dDepthBufferView.Get());
 				break;
 			}
 
 			case RenderCommandType::PopRenderTarget:
 			{
 				Assert(s.renderTargetStack.length != 0);
-				RenderTarget rtRef = List_GetLast(s.renderTargetStack);
-				List_RemoveLast(s.renderTargetStack);
+				RenderTargetData& rt = *List_Pop(s.renderTargetStack);
+				DepthBufferData&  db = *bindState.db;
 
-				RenderTargetData& rt = s.renderTargets[rtRef];
-				s.d3dContext->OMSetRenderTargets(1, rt.d3dRenderTargetView.GetAddressOf(), rt.d3dDepthBufferView.Get());
+				bindState.rt = &rt;
+
+				s.d3dContext->OMSetRenderTargets(1, rt.d3dRenderTargetView.GetAddressOf(), db.d3dDepthBufferView.Get());
 				break;
 			}
 
+			case RenderCommandType::PushDepthBuffer:
+			{
+				DepthBufferData&  db = s.depthBuffers[renderCommand.depthBuffer];
+				RenderTargetData& rt = *bindState.rt;
+
+				List_Append(s.depthBufferStack, bindState.db);
+				bindState.db = &db;
+
+				s.d3dContext->OMSetRenderTargets(1, rt.d3dRenderTargetView.GetAddressOf(), db.d3dDepthBufferView.Get());
+				break;
+			}
+
+			case RenderCommandType::PopDepthBuffer:
+			{
+				Assert(s.depthBufferStack.length != 0);
+				DepthBufferData&  db = *List_Pop(s.depthBufferStack);
+				RenderTargetData& rt = *bindState.rt;
+
+				bindState.db = &db;
+
+				s.d3dContext->OMSetRenderTargets(1, rt.d3dRenderTargetView.GetAddressOf(), db.d3dDepthBufferView.Get());
+				break;
+			}
+
+			// TODO: This probably isn't interacting propertly with bindState.ps and Materials!
 			case RenderCommandType::PushPixelShader:
 			{
 				PixelShaderData ps = s.pixelShaders[renderCommand.pixelShader];
@@ -1132,18 +1365,63 @@ Renderer_Render(RendererState& s)
 			case RenderCommandType::PopPixelShader:
 			{
 				Assert(s.pixelShaderStack.length != 0);
-				PixelShader psRef = List_GetLast(s.pixelShaderStack);
-				List_RemoveLast(s.pixelShaderStack);
+				PixelShaderData& ps = *List_Pop(s.pixelShaderStack);
 
-				PixelShaderData ps = s.pixelShaders[psRef];
 				s.d3dContext->PSSetShader(ps.d3dPixelShader.Get(), nullptr, 0);
+				break;
+			}
+
+			case RenderCommandType::PushPixelShaderResource:
+			{
+				PixelShaderResource& psr = renderCommand.psResource;
+				Assert(psr.renderTarget || psr.depthBuffer);
+
+				List_Append(s.pixelShaderResourceStack, bindState.psr);
+
+				if (psr.renderTarget)
+				{
+					RenderTargetData& rt = s.renderTargets[psr.renderTarget];
+					s.d3dContext->PSSetShaderResources(0, 1, rt.d3dRenderTargetResourceView.GetAddressOf());
+					bindState.psr.renderTarget = rt.ref;
+				}
+
+				if (psr.depthBuffer)
+				{
+					DepthBufferData& db = s.depthBuffers[psr.depthBuffer];
+					s.d3dContext->PSSetShaderResources(1, 1, db.d3dDepthBufferResourceView.GetAddressOf());
+					bindState.psr.depthBuffer = db.ref;
+				}
+				break;
+			}
+
+			case RenderCommandType::PopPixelShaderResource:
+			{
+				Assert(s.pixelShaderResourceStack.length != 0);
+				PixelShaderResource psr = List_Pop(s.pixelShaderResourceStack);
+
+				if (psr.renderTarget != bindState.psr.renderTarget)
+				{
+					RenderTargetData& rt  = s.renderTargets[psr.renderTarget];
+					s.d3dContext->PSSetShaderResources(0, 1, rt.d3dRenderTargetResourceView.GetAddressOf());
+					bindState.psr.renderTarget = rt.ref;
+				}
+
+				if (psr.depthBuffer != bindState.psr.depthBuffer)
+				{
+					DepthBufferData& db = s.depthBuffers[psr.depthBuffer];
+					s.d3dContext->PSSetShaderResources(1, 1, db.d3dDepthBufferResourceView.GetAddressOf());
+					bindState.psr.depthBuffer = db.ref;
+				}
 				break;
 			}
 		}
 	}
 	List_Clear(s.commandList);
+
 	Assert(s.renderTargetStack.length == 0);
+	Assert(s.depthBufferStack.length == 0);
 	Assert(s.pixelShaderStack.length == 0);
+	Assert(s.pixelShaderResourceStack.length == 0);
 
 	RenderTargetData& mainRT    = s.renderTargets[s.mainRenderTarget];
 	RenderTargetData& mainRTCPU = s.renderTargets[s.mainRenderTargetCPU];
