@@ -1,0 +1,48 @@
+// MCU 8080-II
+// CSX is active low, enables the ILI9341
+// RESX is active low, external reset signal
+// WRX is parallel data write strobe
+// RDX is parallel data read strobe
+// Latches input on rising edge of WRX
+// D[17:0] is parallel data
+// Write cycle: WRX high -> low -> high
+// Read cycle: RDX high -> low -> high
+
+// SPI
+// D[17:0] must be connected to ground (unused)
+// 3 line mode embeds a D/CX bit in the packet
+// MSB first
+// "The serial interface is initialized when CSX is high"
+// Write Flow (to ILI):
+// 	1. Host set CSX low + set D/CX (D/CX first?)
+// 	2. Rising SCL: ILI read D/CX
+// 	3. Falling SCL: Host set D7
+// 	4. Rising SCL: ILI read D7
+// 	5. Falling SCL: Host set D6
+// 	6. Rising SCL: ILI read D6
+// Looks like SCL and SDA must be low while CSX is high
+// 	Wait, docs day "invalid". I think that just means they're ignored
+// "ILI latches the SDA (input data) at the rising edgoes of SCL"
+// "then shifts SDA (output data) at falling edges of SCL"
+// "After read status command sent SDA must be set tri-state before falling SCL of last bit"
+// Need 10 us break after RESX
+// CSX stop in the middle of command/data: partial byte is discarded
+// Break in multiple parameters: accept full bytes, discard partial
+// Pauses between parameters are fine
+// 2 data transfer modes: 16 and 18 bpp
+
+// Configure 232 to match ILI requirements
+// 	[x] Select SPI mode (soldered)
+// 	[x] Write on rising or falling?
+// 	[ ] Set clock frequency (what's the valid range?)
+// 	[ ] Start clock high or low?
+// 	[ ]
+// Read something from the display
+// 	Identification information
+// 	Status
+// 	Power mode
+// 	MADCTL
+// 	Pixel format
+// 	Image format
+// 	Signal mode
+// 	Self diagnostic
