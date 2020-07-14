@@ -1,5 +1,3 @@
-ftdi.py
-
 FTDI_VENDOR = 0x403
 PRODUCT_IDS FTDI_VENDOR ('232h', 0x6014),
 DEVICE_NAME 0x0900: 'ft232h',
@@ -196,58 +194,8 @@ INT_EEPROMS = {
 
 
 
-
-
-
-Code Flow
----------
-Init pins
-	init i2c controller
-	i2c configure
-	frequency = 300,000
-	open_mpsse_from_device
-		_set_frequency 150,000
-			cmd = bytearray((Ftdi.ENABLE_CLK_DIV5,))
-			validate_mpsse
-		# Configure I/O
-		cmd = bytearray((Ftdi.SET_BITS_LOW, initial & 0xFF, direction & 0xFF))
-		self.write_data(bytearray((Ftdi.LOOPBACK_END,)))
-		validate_mpsse
-	decide gpio directions
-	self.write_data(bytearray([false and Ftdi.ENABLE_CLK_ADAPTIVE or Ftdi.DISABLE_CLK_ADAPTIVE]))
-	self.write_data(bytearray([true and Ftdi.ENABLE_CLK_3PHASE or Ftdi.DISABLE_CLK_3PHASE]))
-	self.write_data(bytearray([Ftdi.DRIVE_ZERO, lines & 0xff, (lines >> 8) & 0xff]))
-	_wide_port = true
-
-Init SPI
-	SPI()
-		spi = SpiController()
-			Ftdi()
-		spi.configure
-
-Init Display
-    _INIT = (
-        (0xEF, b"\x03\x80\x02"),         #? Can't find command!
-        (0xCF, b"\x00\xc1\x30"),         #? Power Control B
-        (0xED, b"\x64\x03\x12\x81"),     #? Power On Sequence Control
-        (0xE8, b"\x85\x00\x78"),         #? Driver Timing Control A
-        (0xCB, b"\x39\x2c\x00\x34\x02"), #? Power Control A
-        (0xF7, b"\x20"),                 #? Pump Ratio Control
-        (0xEA, b"\x00\x00"),             #? Driver Control Timing B
-        (0xC0, b"\x23"),                 # Power Control 1, VRH[5:0]
-        (0xC1, b"\x10"),                 # Power Control 2, SAP[2:0], BT[3:0]
-        (0xC5, b"\x3e\x28"),             # VCM Control 1
-        (0xC7, b"\x86"),                 # VCM Control 2
-        (0x36, b"\x48"),                 # Memory Access Control
-        (0x3A, b"\x55"),                 # Pixel Format
-        (0xB1, b"\x00\x18"),             # FRMCTR1
-        (0xB6, b"\x08\x82\x27"),         # Display Function Control
-        (0xF2, b"\x00"),                 # 3Gamma Function Disable
-        (0x26, b"\x01"),                 # Gamma Curve Selected
-        (0xE0, b"\x0f\x31\x2b\x0c\x0e\x08\x4e\xf1\x37\x07\x10\x03\x0e\x09\x00"), # Set Gamma
-        (0xE1, b"\x00\x0e\x14\x03\x11\x07\x31\xc1\x48\x08\x0f\x0c\x31\x36\x0f"), # Set Gamma
-        (0x11, None),                    #? Sleep Out
-        (0x29, None),                    #? Display On
+Screen Operations
+-----------------
 
 Pixel (Blue)
 	42 0x00 0xA0 0x00 0xA0 # Column Set
