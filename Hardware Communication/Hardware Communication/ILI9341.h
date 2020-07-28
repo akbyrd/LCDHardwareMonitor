@@ -1,7 +1,21 @@
 namespace ILI9341
 {
+	struct State
+	{
+		FT232H::State* ft232h;
+		//MADCTL_B5
+		//Column
+		//Page
+		//RamWrite
+		//nextCommandTime
+		//Sleep
+	};
+
 	struct Command
 	{
+		static const u8 SoftwareReset    = 0x01;
+		static const u8 SleepIn          = 0x10;
+		static const u8 SleepOut         = 0x11;
 		static const u8 ColumnAddressSet = 0x2A;
 		static const u8 PageAddressSet   = 0x2B;
 		static const u8 MemoryWrite      = 0x2C;
@@ -106,6 +120,37 @@ void ILI9341_SetPixel(FT232H::State* ft232h, u16 x, u16 y, u16 color)
 void ILI9341_Clear(FT232H::State* ft232h, u16 color)
 {
 	ILI9341_SetRect(ft232h, 0, 0, 240 - 1, 320 - 1, color);
+}
+
+void ILI9341_Reset(FT232H::State* ft232h)
+{
+	//NOTE: Resets device state to defaults
+	ILI9341_WriteCmd(ft232h, ILI9341::Command::SoftwareReset);
+	//sleep = true;
+	//sleepTime = now;
+	Sleep(5);
+}
+
+void ILI9341_Sleep(FT232H::State* ft232h)
+{
+	// NOTE: MCU are memory are still working. Memory maintains contents.
+	//Assert(!sleep);
+	//Sleep(120 - (now - wakeTime));
+	ILI9341_WriteCmd(ft232h, ILI9341::Command::SleepIn);
+	//sleep = true;
+	//sleepTime = now;
+	Sleep(5);
+}
+
+void ILI9341_Wake(FT232H::State* ft232h)
+{
+	//Assert(sleep);
+	//Sleep(120 - (now - sleepTime));
+	ILI9341_WriteCmd(ft232h, ILI9341::Command::SleepOut);
+	//sleep = false;
+	//wakeTime = now;
+	// NOTE: Docs contradict themselves. Is it 5 ms or 120 ms?
+	Sleep(5);
 }
 
 void DocumentationInit(FT232H::State* ft232h)

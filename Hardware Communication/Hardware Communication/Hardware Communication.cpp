@@ -89,8 +89,6 @@ int main()
 	FT232H_Initialize(&ft232h);
 	ILI9341_Initialize(&ft232h);
 
-	//ILI9341_SetPixel(&ft232h, 160, 120, Color::Red);
-
 	ILI9341_Clear(&ft232h, Color::White);
 
 	ILI9341_SetPixel(&ft232h,   0 - 0,   0 - 0, Color::Red);   // TL
@@ -125,6 +123,7 @@ int main()
 // Features for the final version
 // 	Ability to trivially toggle tracing
 // 	Ability to trivially toggle write batching
+// 	Ability to profile time spend sleeping
 // 	Commands take a slice
 
 // TODO: Confirm reads are working correctly at all (pixel format?)
