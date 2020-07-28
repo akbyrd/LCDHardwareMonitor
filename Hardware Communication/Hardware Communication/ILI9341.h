@@ -63,6 +63,7 @@ void ILI9341_Write(FT232H::State* ft232h, u8 cmd, Args... bytes)
 	ILI9341_WriteData(ft232h, bytes...);
 }
 
+// TODO: Change rects to be exclusive of max?
 void ILI9341_SetRect(FT232H::State* ft232h, u16 x1, u16 y1, u16 x2, u16 y2, u16 color)
 {
 	Assert(x1 <= x2);
@@ -76,22 +77,35 @@ void ILI9341_SetRect(FT232H::State* ft232h, u16 x1, u16 y1, u16 x2, u16 y2, u16 
 	//Assert(MADCTL == 1 && y <= 0x00EF);
 	ILI9341_Write(ft232h, ILI9341::Command::PageAddressSet, Unpack2(y1), Unpack2(y2));
 
-	// TODO: Change rects to be exclusive of max?
-	// HACK: lol allocation
-	u16 dataLen = 2 * (x2 - x1 + 1) * (y2 - y1 + 1);
-	u8* colorData = new u8[dataLen];
-	for (u16 i = 0; i < dataLen; i += 2)
+
+	const u32 maxWrite = 0xFFFE;
+	u8 colorData[maxWrite];
+	u32 dataLen = 2 * (x2 - x1 + 1) * (y2 - y1 + 1);
+	for (u32 i = 0; i < Min(dataLen, maxWrite); i += 2)
 	{
 		colorData[i + 0] = BYTE(1, color);
 		colorData[i + 1] = BYTE(0, color);
 	}
-	ILI9341_Write(ft232h, ILI9341::Command::MemoryWrite, colorData, dataLen);
-	delete[] colorData;
+
+	ILI9341_WriteCmd(ft232h, ILI9341::Command::MemoryWrite);
+
+	u32 remainingLen = dataLen;
+	while (remainingLen > 0)
+	{
+		u16 writeLen = Min(remainingLen, maxWrite);
+		ILI9341_WriteData(ft232h, colorData, writeLen);
+		remainingLen -= writeLen;
+	}
 }
 
 void ILI9341_SetPixel(FT232H::State* ft232h, u16 x, u16 y, u16 color)
 {
 	ILI9341_SetRect(ft232h, x, y, x, y, color);
+}
+
+void ILI9341_Clear(FT232H::State* ft232h, u16 color)
+{
+	ILI9341_SetRect(ft232h, 0, 0, 240 - 1, 320 - 1, color);
 }
 
 void DocumentationInit(FT232H::State* ft232h)

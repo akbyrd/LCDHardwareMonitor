@@ -7,6 +7,7 @@
 
 using u8 = unsigned char;
 using u16 = unsigned short;
+using u32 = unsigned int;
 
 #define Assert(condition) if (!(condition)) { *((int*) 0) = 0; }
 #define BYTE(n, val) u8(((val) >> ((n)*8)) & 0xFF)
@@ -90,6 +91,8 @@ int main()
 
 	//ILI9341_SetPixel(&ft232h, 160, 120, Color::Red);
 
+	ILI9341_Clear(&ft232h, Color::White);
+
 	ILI9341_SetPixel(&ft232h,   0 - 0,   0 - 0, Color::Red);   // TL
 	ILI9341_SetPixel(&ft232h, 240 - 1,   0 - 0, Color::Green); // TR
 	ILI9341_SetPixel(&ft232h,   0 - 0, 320 - 1, Color::Blue);  // BL
@@ -100,7 +103,7 @@ int main()
 		ILI9341_SetPixel(&ft232h,   0 - 0 + i,   0 - 0 + i, Color::Red);
 		ILI9341_SetPixel(&ft232h, 240 - 1 - i,   0 - 0 + i, Color::Green);
 		ILI9341_SetPixel(&ft232h,   0 - 0 + i, 320 - 1 - i, Color::Blue);
-		ILI9341_SetPixel(&ft232h, 240 - 1 - i, 320 - 1 - i, Color::White);
+		ILI9341_SetPixel(&ft232h, 240 - 1 - i, 320 - 1 - i, Color::Gray);
 	}
 
 	for (int i = 0; i < 80; i++)
@@ -122,6 +125,7 @@ int main()
 // Features for the final version
 // 	Ability to trivially toggle tracing
 // 	Ability to trivially toggle write batching
+// 	Commands take a slice
 
 // TODO: Confirm reads are working correctly at all (pixel format?)
 // TODO: Figure out why consecutive reads don't seem to work
