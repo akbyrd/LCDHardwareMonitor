@@ -8,6 +8,7 @@
 using u8 = unsigned char;
 using u16 = unsigned short;
 using u32 = unsigned int;
+using u64 = unsigned long long int;
 
 #define Assert(condition) if (!(condition)) { *((int*) 0) = 0; }
 #define BYTE(n, val) u8(((val) >> ((n)*8)) & 0xFF)
@@ -85,37 +86,38 @@ struct Color
 int main()
 {
 	FT232H::State ft232h = {};
+	ILI9341::State ili9341 = {};
 
 	FT232H_Initialize(&ft232h);
-	ILI9341_Initialize(&ft232h);
+	ILI9341_Initialize(&ili9341, &ft232h);
 
-	ILI9341_Clear(&ft232h, Color::White);
+	ILI9341_Clear(&ili9341, Color::White);
 
-	ILI9341_SetPixel(&ft232h,   0 - 0,   0 - 0, Color::Red);   // TL
-	ILI9341_SetPixel(&ft232h, 240 - 1,   0 - 0, Color::Green); // TR
-	ILI9341_SetPixel(&ft232h,   0 - 0, 320 - 1, Color::Blue);  // BL
-	ILI9341_SetPixel(&ft232h, 240 - 1, 320 - 1, Color::White); // BR
+	ILI9341_SetPixel(&ili9341,   0 - 0,   0 - 0, Color::Red);   // TL
+	ILI9341_SetPixel(&ili9341, 240 - 1,   0 - 0, Color::Green); // TR
+	ILI9341_SetPixel(&ili9341,   0 - 0, 320 - 1, Color::Blue);  // BL
+	ILI9341_SetPixel(&ili9341, 240 - 1, 320 - 1, Color::White); // BR
 
 	for (int i = 0; i < 120; i++)
 	{
-		ILI9341_SetPixel(&ft232h,   0 - 0 + i,   0 - 0 + i, Color::Red);
-		ILI9341_SetPixel(&ft232h, 240 - 1 - i,   0 - 0 + i, Color::Green);
-		ILI9341_SetPixel(&ft232h,   0 - 0 + i, 320 - 1 - i, Color::Blue);
-		ILI9341_SetPixel(&ft232h, 240 - 1 - i, 320 - 1 - i, Color::Gray);
+		ILI9341_SetPixel(&ili9341,   0 - 0 + i,   0 - 0 + i, Color::Red);
+		ILI9341_SetPixel(&ili9341, 240 - 1 - i,   0 - 0 + i, Color::Green);
+		ILI9341_SetPixel(&ili9341,   0 - 0 + i, 320 - 1 - i, Color::Blue);
+		ILI9341_SetPixel(&ili9341, 240 - 1 - i, 320 - 1 - i, Color::Gray);
 	}
 
 	for (int i = 0; i < 80; i++)
 	{
-		ILI9341_SetPixel(&ft232h, 240 / 2 - 0, 120 + i, Color::Black);
-		ILI9341_SetPixel(&ft232h, 240 / 2 - 1, 120 + i, Color::Black);
+		ILI9341_SetPixel(&ili9341, 240 / 2 - 0, 120 + i, Color::Black);
+		ILI9341_SetPixel(&ili9341, 240 / 2 - 1, 120 + i, Color::Black);
 	}
 
-	ILI9341_SetRect(&ft232h, 120 - 10,  60 - 10, 120 + 10,  60 + 10, Color::Yellow);
-	ILI9341_SetRect(&ft232h,  60 - 10, 160 - 10,  60 + 10, 160 + 10, Color::Magenta);
-	ILI9341_SetRect(&ft232h, 180 - 10, 160 - 10, 180 + 10, 160 + 10, Color::Gray);
-	ILI9341_SetRect(&ft232h, 120 - 10, 260 - 10, 120 + 10, 260 + 10, Color::Cyan);
+	ILI9341_SetRect(&ili9341, 120 - 10,  60 - 10, 120 + 10,  60 + 10, Color::Yellow);
+	ILI9341_SetRect(&ili9341,  60 - 10, 160 - 10,  60 + 10, 160 + 10, Color::Magenta);
+	ILI9341_SetRect(&ili9341, 180 - 10, 160 - 10, 180 + 10, 160 + 10, Color::Gray);
+	ILI9341_SetRect(&ili9341, 120 - 10, 260 - 10, 120 + 10, 260 + 10, Color::Cyan);
 
-	ILI9341_Finalize(&ft232h);
+	ILI9341_Finalize(&ili9341);
 	FT232H_Finalize(&ft232h);
 	return 0;
 }
