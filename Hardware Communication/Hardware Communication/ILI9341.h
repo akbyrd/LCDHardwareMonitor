@@ -341,10 +341,40 @@ void PythonInit(FT232H::State* ft232h)
 	// memory write
 }
 
+void ArdnewInit(FT232H::State* ft232h)
+{
+	// Hardware reset
+	ILI9341_WriteCmd(ft232h, 0x01);                            // software reset
+	Sleep(200);
+	ILI9341_Write(ft232h, 0xCB, 0x39, 0x2C, 0x00, 0x34, 0x02); // power control A
+	ILI9341_Write(ft232h, 0xCF, 0x00, 0xC1, 0x30);             // power control B
+	ILI9341_Write(ft232h, 0xE8, 0x85, 0x00, 0x78);             // driver timing control A
+	ILI9341_Write(ft232h, 0xEA, 0x00, 0x00);                   // driver timing control B
+	ILI9341_Write(ft232h, 0xED, 0x64, 0x03, 0x12, 0x81);       // power-on sequence control
+	ILI9341_Write(ft232h, 0xF7, 0x20);                         // pump ratio control
+	ILI9341_Write(ft232h, 0xC0, 0x23);                         // power control VRH[5:0]
+	ILI9341_Write(ft232h, 0xC1, 0x10);                         // power control SAP[2:0] BT[3:0]
+	ILI9341_Write(ft232h, 0xC5, 0x3E, 0x28);                   // VCM control
+	ILI9341_Write(ft232h, 0xC7, 0x86);                         // VCM control 2
+	ILI9341_Write(ft232h, 0x36, 0x48);                         // memory access control
+	ILI9341_Write(ft232h, 0x3A, 0x55);                         // pixel format
+	ILI9341_Write(ft232h, 0xB1, 0x00, 0x18);                   // frame ratio control, standard RGB color
+	ILI9341_Write(ft232h, 0xB6, 0x08, 0x82, 0x27);             // display function control
+	ILI9341_Write(ft232h, 0xF2, 0x00);                         // 3-Gamma function disable
+	ILI9341_Write(ft232h, 0x26, 0x01);                         // gamma curve selected
+	ILI9341_Write(ft232h, 0xE0, 0x0F, 0x31, 0x2B, 0x0C, 0x0E, 0x08, 0x4E, 0xF1, 0x37, 0x07, 0x10, 0x03, 0x0E, 0x09, 0x00); // positive gamma correction
+	ILI9341_Write(ft232h, 0xE1, 0x00, 0x0E, 0x14, 0x03, 0x11, 0x07, 0x31, 0xC1, 0x48, 0x08, 0x0F, 0x0C, 0x31, 0x36, 0x0F); // negative gamma correction
+	ILI9341_WriteCmd(ft232h, 0x11);                            // exit sleep
+	Sleep(120);
+	ILI9341_WriteCmd(ft232h, 0x29);                            // turn on display
+	//ILI9341_Write(ft232h, 0x36, []uint8{lcd.config.Rotate.MADCTL()); // MADCTL
+}
+
 void ILI9341_Initialize(FT232H::State* ft232h)
 {
 	//DocumentationInit(ft232h);
 	PythonInit(ft232h);
+	//ArdnewInit(ft232h);
 }
 
 void ILI9341_Finalize(FT232H::State* ft232h) {}
