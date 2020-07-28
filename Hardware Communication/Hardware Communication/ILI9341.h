@@ -1,7 +1,10 @@
 namespace ILI9341
 {
-	struct Commands
+	struct Command
 	{
+		static const u8 ColumnAddressSet = 0x2A;
+		static const u8 PageAddressSet   = 0x2B;
+		static const u8 MemoryWrite      = 0x2C;
 	};
 }
 
@@ -53,6 +56,22 @@ void ILI9341_Write(FT232H::State* ft232h, u8 cmd, Args... bytes)
 {
 	ILI9341_WriteCmd(ft232h, cmd);
 	ILI9341_WriteData(ft232h, bytes...);
+}
+
+void ILI9341_SetPixel(FT232H::State* ft232h, u16 x, u16 y, u16 color)
+{
+	//Assert(MADCTL == 0 && x <= 0x00EF);
+	//Assert(MADCTL == 1 && x <= 0x013F);
+	ILI9341_Write(ft232h, ILI9341::Command::ColumnAddressSet, Unpack2(x), Unpack2(x));
+	//Assert(MADCTL == 0 && y <= 0x013F);
+	//Assert(MADCTL == 1 && y <= 0x00EF);
+	ILI9341_Write(ft232h, ILI9341::Command::PageAddressSet, Unpack2(y), Unpack2(y));
+	ILI9341_Write(ft232h, ILI9341::Command::MemoryWrite, Unpack2(color));
+}
+
+void ILI9341_SetPixel(FT232H::State* ft232h, u16 x, u16 y, u8 r, u8 g, u8 b)
+{
+	ILI9341_SetPixel(ft232h, x, y, Color16(r, g, b));
 }
 
 void DocumentationInit(FT232H::State* ft232h)

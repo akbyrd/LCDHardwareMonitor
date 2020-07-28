@@ -52,6 +52,31 @@ enum struct Signal
 	High = 1,
 };
 
+constexpr u16 Color16(u8 r, u8 g, u8 b)
+{
+	u16 rp = (r & 0b1111'1000) << 8;
+	u16 gp = (g & 0b1111'1100) << 3;
+	u16 bp = (b & 0b1111'1000) >> 3;
+	u16 color = rp | gp | bp;
+	return color;
+}
+
+struct Color
+{
+	static const u16 Black   = Color16(0x00, 0x00, 0x00);
+	static const u16 White   = Color16(0xFF, 0xFF, 0xFF);
+	static const u16 Red     = Color16(0xFF, 0x00, 0x00);
+	static const u16 Green   = Color16(0x00, 0xFF, 0x00);
+	static const u16 Blue    = Color16(0x00, 0x00, 0xFF);
+	static const u16 Cyan    = Color16(0x00, 0xFF, 0xFF);
+	static const u16 Magenta = Color16(0xFF, 0x00, 0xFF);
+	static const u16 Yellow  = Color16(0xFF, 0xFF, 0x00);
+};
+
+#define Unpack2(x) (((x) >> 8) & 0xFF), ((x) & 0xFF)
+#define Unpack3(x) (((x) >> 16) & 0xFF), (((x) >> 8) & 0xFF), ((x) & 0xFF)
+#define Unpack4(x) (((x) >> 24) & 0xFF), (((x) >> 16) & 0xFF), (((x) >> 8) & 0xFF), ((x) & 0xFF)
+
 #include "FT232H.h"
 #include "ILI9341.h"
 
@@ -62,9 +87,24 @@ int main()
 	FT232H_Initialize(&ft232h);
 	ILI9341_Initialize(&ft232h);
 
-	ILI9341_Write(&ft232h, 0x2A, 0x00, 0xA0, 0x00, 0xA0); // Column
-	ILI9341_Write(&ft232h, 0x2B, 0x00, 0x78, 0x00, 0x78); // Page
-	ILI9341_Write(&ft232h, 0x2C, 0x00, 0x1F);             // Memory
+	ILI9341_SetPixel(&ft232h, 000 - 0, 000 - 0, Color::Red);   // TL
+	ILI9341_SetPixel(&ft232h, 240 - 1, 000 - 0, Color::Green); // TR
+	ILI9341_SetPixel(&ft232h, 000 - 0, 320 - 1, Color::Blue);  // BL
+	ILI9341_SetPixel(&ft232h, 240 - 1, 320 - 1, Color::White); // BR
+
+	for (int i = 0; i < 120; i++)
+	{
+		ILI9341_SetPixel(&ft232h, 000 - 0 + i, 000 - 0 + i, Color::Red);
+		ILI9341_SetPixel(&ft232h, 240 - 1 - i, 000 - 0 + i, Color::Green);
+		ILI9341_SetPixel(&ft232h, 000 - 0 + i, 320 - 1 - i, Color::Blue);
+		ILI9341_SetPixel(&ft232h, 240 - 1 - i, 320 - 1 - i, Color::White);
+	}
+
+	for (int i = 0; i < 80; i++)
+	{
+		ILI9341_SetPixel(&ft232h, 240 / 2 - 0, 120 + i, Color::Black);
+		ILI9341_SetPixel(&ft232h, 240 / 2 - 1, 120 + i, Color::Black);
+	}
 
 	ILI9341_Finalize(&ft232h);
 	FT232H_Finalize(&ft232h);

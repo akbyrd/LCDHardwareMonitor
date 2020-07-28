@@ -7,6 +7,7 @@
 // D[17:0] is parallel data
 // Write cycle: WRX high -> low -> high
 // Read cycle: RDX high -> low -> high
+// Origin in the top left. Display is portrait.
 
 // SPI
 // D[17:0] must be connected to ground (unused)
@@ -45,6 +46,7 @@
 // 	[ ] Image format
 // 	[ ] Signal mode
 // 	[ ] Self diagnostic
+
 
 
 // Random Resources
