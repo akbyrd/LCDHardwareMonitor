@@ -129,31 +129,42 @@ void ILI9341_Reset(ILI9341::State* ili9341)
 {
 	//NOTE: Resets device state to defaults
 	ILI9341_WriteCmd(ili9341, ILI9341::Command::SoftwareReset);
-	//sleep = true;
-	//sleepTime = now;
+	ili9341->sleep = true;
+	ili9341->sleepTime = GetTime();
 	Sleep(5);
+	//nextCommandTime = sleepTime + 5ms
 }
 
 void ILI9341_Sleep(ILI9341::State* ili9341)
 {
 	// NOTE: MCU are memory are still working. Memory maintains contents.
-	//Assert(!sleep);
-	//Sleep(120 - (now - wakeTime));
+	Assert(!ili9341->sleep);
+
+	u32 sinceWake = u32(GetElapsedMs(ili9341->wakeTime));
+	if (sinceWake < 120)
+			Sleep(120 - sinceWake);
+
 	ILI9341_WriteCmd(ili9341, ILI9341::Command::SleepIn);
-	//sleep = true;
-	//sleepTime = now;
+	ili9341->sleep = true;
+	ili9341->sleepTime = GetTime();
 	Sleep(5);
+	//nextCommandTime = sleepTime + 5ms;
 }
 
 void ILI9341_Wake(ILI9341::State* ili9341)
 {
-	//Assert(sleep);
-	//Sleep(120 - (now - sleepTime));
+	Assert(ili9341->sleep);
+
+	u32 sinceSleep = u32(GetElapsedMs(ili9341->sleepTime));
+	if (sinceSleep < 120)
+		Sleep(120 - sinceSleep);
+
 	ILI9341_WriteCmd(ili9341, ILI9341::Command::SleepOut);
-	//sleep = false;
-	//wakeTime = now;
+	ili9341->sleep = false;
+	ili9341->wakeTime = GetTime();
 	// NOTE: Docs contradict themselves. Is it 5 ms or 120 ms?
 	Sleep(5);
+	//nextCommandTime = sleepTime + 5ms
 }
 
 void DocumentationInit(ILI9341::State* ili9341)

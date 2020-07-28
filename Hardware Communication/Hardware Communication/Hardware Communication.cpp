@@ -37,6 +37,9 @@ void Print(const char* format, ...)
 template <typename T>
 T Min(T a, T b) { return a <= b ? a : b; }
 
+template <typename T>
+T Max(T a, T b) { return a >= b ? a : b; }
+
 template<u16 N>
 void TraceBytes(const char* prefix, u8 (&buffer)[N])
 {
@@ -46,6 +49,24 @@ void TraceBytes(const char* prefix, u8 (&buffer)[N])
 		Print(" 0x%.2X", buffer[i]);
 	Print("\n");
 #endif
+}
+
+u64 GetTime()
+{
+	LARGE_INTEGER time;
+	bool success = QueryPerformanceCounter(&time);
+	Assert(success);
+
+	return time.QuadPart;
+}
+
+float GetElapsedMs(u64 since)
+{
+	u64 now = GetTime();
+	LARGE_INTEGER frequency;
+	bool success = QueryPerformanceFrequency(&frequency);
+	Assert(success);
+	return float(double(now - since) / double(frequency.QuadPart) * 1000.0);
 }
 
 enum struct Signal
