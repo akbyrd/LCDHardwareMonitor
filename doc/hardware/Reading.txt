@@ -1,0 +1,63 @@
+Python Write
+0x36 MemoryAccessControl  0x48 (0100'1000)
+0x3A PixelFormat          0x55
+0x26 Gamma Curve Selected 0x01 (Gamme curve 1)
+
+Python Read (Consecutive)
+ReadDisplayIdentificationInformation 0x00 0x00 0x00 0x00      :
+ReadDisplayStatus                    0xD2 0x29 0x82 0x00 0x00 :
+ReadDisplayPowerMode                 0x9C 0x00                : first byte looks right. second doesn't : boost, -idle, -part, -sleep, norm, disp
+ReadDisplayMADCTL                    0x48 0x00                : first byte looks right. second doesn't : tb, rl, norm, rtb, bgr, rlr
+ReadDisplayPixelFormat               0x05 0xFF                : first byte looks right. second doesn't : 16 bits/pixel
+ReadDisplayImageFormat               0x00 0x00                : first byte looks right. second doesn't : Gamma curve 1
+ReadDisplaySignalMode                0x00 0x00                : doesn't appear to have worked          :
+ReadDisplaySelfDiagnosticResult      0xC0 0x00                : first byte looks right. second doesn't : Device working correctly
+
+Hardware Communication Read (Individual)
+ReadDisplayIdentificationInformation 0x00 0x00 0x00 0x00
+ReadDisplayStatus                    0xD2 0x29 0x82 0x00 0x00
+ReadDisplayPowerMode                 0x9C 0x01
+ReadDisplayMADCTL                    0x48 0x01
+ReadDisplayPixelFormat               0x05 0xFF
+ReadDisplayImageFormat               0x00 0x01
+ReadDisplaySignalMode                0x00 0x01
+ReadDisplaySelfDiagnosticResult      0xC0 0x01
+
+Hardware Communication Read (Consecutive)
+ReadDisplayIdentificationInformation 0x00 0x00 0x00
+ReadDisplayStatus                    0xFF 0xFF 0xFF 0xFF
+ReadDisplayPowerMode                 0xFF
+ReadDisplayMADCTL                    0xFF
+ReadDisplayPixelFormat               0xFF
+ReadDisplayImageFormat               0xFF
+ReadDisplaySignalMode                0xFF
+ReadDisplaySelfDiagnosticResult      0xFF
+
+LCDHardwareMonitor Write
+DisableClockDivide
+DisableAdaptiveClock
+Disable3PhaseClock
+SetClockDivisor 0x0000
+0x36 MemoryAccessControl  0x28 (0010'1000)
+0x3A PixelFormat          0x55 (0101'0101)
+
+// NOTE: Reading early by one bit (fixed with clock divide)
+LCDHardwareMonitor (Individual)
+ReadDisplayIdentificationInformation 0x80 0x00 0x00 0x00
+ReadDisplayStatus                    0xE5 0x14 0xC1 0x00 0x00
+ReadDisplayPowerMode                 0xCE 0x00
+ReadDisplayMADCTL                    0x94 0x00
+ReadDisplayPixelFormat               0x82 0xFF
+ReadDisplayImageFormat               0x80 0x00
+ReadDisplaySignalMode                0x80 0x00
+ReadDisplaySelfDiagnosticResult      0xE0 0x00
+
+LCDHardwareMonitor (Consecutive)
+ReadDisplayIdentificationInformation 0x80 0x00 0x00 0x00
+ReadDisplayStatus                    0xFF 0xFF 0xFF 0xFF 0xFF
+ReadDisplayPowerMode                 0xFF 0xFF
+ReadDisplayMADCTL                    0xFF 0xFF
+ReadDisplayPixelFormat               0xFF 0xFF
+ReadDisplayImageFormat               0xFF 0xFF
+ReadDisplaySignalMode                0xFF 0xFF
+ReadDisplaySelfDiagnosticResult      0xFF 0xFF

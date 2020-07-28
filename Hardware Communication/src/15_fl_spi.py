@@ -1,4 +1,5 @@
 import struct
+import logging
 from pyftdi.i2c import I2cController
 from pyftdi.spi import SpiController
 
@@ -341,23 +342,23 @@ class Display:
     _ENCODE_PIXEL = ">H"
     _ENCODE_POS   = ">HH"
     _INIT = (
-        (0xEF, b"\x03\x80\x02"),
-        (0xCF, b"\x00\xc1\x30"),
-        (0xED, b"\x64\x03\x12\x81"),
-        (0xE8, b"\x85\x00\x78"),
-        (0xCB, b"\x39\x2c\x00\x34\x02"),
-        (0xF7, b"\x20"),
-        (0xEA, b"\x00\x00"),
-        (0xC0, b"\x23"),          # Power Control 1, VRH[5:0]
-        (0xC1, b"\x10"),          # Power Control 2, SAP[2:0], BT[3:0]
-        (0xC5, b"\x3e\x28"),      # VCM Control 1
-        (0xC7, b"\x86"),          # VCM Control 2
-        (0x36, b"\x48"),          # Memory Access Control
-        (0x3A, b"\x55"),          # Pixel Format
-        (0xB1, b"\x00\x18"),      # FRMCTR1
-        (0xB6, b"\x08\x82\x27"),  # Display Function Control
-        (0xF2, b"\x00"),          # 3Gamma Function Disable
-        (0x26, b"\x01"),          # Gamma Curve Selected
+        (0xEF, b"\x03\x80\x02"),         # Undocumented
+        (0x36, b"\x48"),                 # Memory Access Control (0100'1000) ()
+        (0x3A, b"\x55"),                 # Pixel Format
+        (0xB1, b"\x00\x18"),             # Frame Rate Control
+        (0xB6, b"\x08\x82\x27"),         # Display Function Control
+        (0xCB, b"\x39\x2c\x00\x34\x02"), # Power Control A
+        (0xCF, b"\x00\xc1\x30"),         # Power Control B
+        (0xC0, b"\x23"),                 # Power Control 1, VRH[5:0]
+        (0xC1, b"\x10"),                 # Power Control 2, SAP[2:0], BT[3:0]
+        (0xC5, b"\x3e\x28"),             # VCM Control 1
+        (0xC7, b"\x86"),                 # VCM Control 2
+        (0xE8, b"\x85\x00\x78"),         # Driver Timing Control A
+        (0xEA, b"\x00\x00"),             # Driver Timing Control B
+        (0xED, b"\x64\x03\x12\x81"),     # Power On Sequence Control
+        (0xF7, b"\x20"),                 # Pump Ratio Control
+        (0xF2, b"\x00"),                 # 3Gamma Function Disable
+        (0x26, b"\x01"),                 # Gamma Curve Selected
         (0xE0, b"\x0f\x31\x2b\x0c\x0e\x08\x4e\xf1\x37\x07\x10\x03\x0e\x09\x00"), # Set Gamma
         (0xE1, b"\x00\x0e\x14\x03\x11\x07\x31\xc1\x48\x08\x0f\x0c\x31\x36\x0f"), # Set Gamma
         (0x11, None),
@@ -427,10 +428,30 @@ class Display:
             print('dc 1')
             self.dc_pin.value = 1
             with self.spi_device as spi:
-                print('data', ''.join('0x{:02X} '.format(x) for x in data))
+                print('write data', ''.join('0x{:02X} '.format(x) for x in data))
                 spi.write(data)
+
+    def read(self, command=None, count=0):
+        """SPI read from device with optional command"""
+        data = bytearray(count)
+        print('dc 0')
+        self.dc_pin.value = 0
+        with self.spi_device as spi:
+            if command is not None:
+                print('cmd', '0x{:02X} '.format(command))
+                spi.write(bytearray([command]))
+            if count:
+                spi.readinto(data)
+                print('read data', ''.join('0x{:02X} '.format(x) for x in data))
+        return data
+
 def color565(r, g, b):
     return (r & 0xF8) << 8 | (g & 0xFC) << 3 | b >> 3
+
+# logging
+#logging.basicConfig(level=logging.DEBUG)
+#log = logging.getLogger('pyftdi.ftdi')
+#log.setLevel(logging.DEBUG)
 
 # create pin instances (D0 = 0, C0 = 8)
 C0 = Pin(8)
@@ -446,4 +467,24 @@ spi = SPI(SCLK, MOSI, MISO)
 spi_device = SPIDevice(spi, cs_pin, baudrate=64000000, polarity=0, phase=0)
 display = Display(spi_device, dc_pin, cs_pin, 240, 320)
 #display.fill_rectangle(0, 0, 240, 320, color565(0xff, 0x00, 0x00))
-display.pixel(160, 120, color565(0x00, 0x00, 0xff))
+#display.pixel(160, 120, color565(0x00, 0x00, 0xff))
+
+commands = [
+	( 0x04, 4, [], "ReadDisplayIdentificationInformation" ),
+	( 0x09, 5, [], "ReadDisplayStatus" ),
+	( 0x0A, 2, [], "ReadDisplayPowerMode" ),
+	( 0x0B, 2, [], "ReadDisplayMADCTL" ),
+	( 0x0C, 2, [], "ReadDisplayPixelFormat" ),
+	( 0x0D, 2, [], "ReadDisplayImageFormat" ),
+	( 0x0E, 2, [], "ReadDisplaySignalMode" ),
+	( 0x0F, 2, [], "ReadDisplaySelfDiagnosticResult" ),
+]
+
+for cmdTuple in commands:
+	cmdTuple[2].extend(display.read(cmdTuple[0], cmdTuple[1]))
+	print('cmd', cmdTuple[3], '0x{:02X} '.format(cmdTuple[0]))
+	print('data', ''.join('0x{:02X} '.format(x) for x in cmdTuple[2]))
+
+for cmdTuple in commands:
+	print('cmd', cmdTuple[3], '0x{:02X} '.format(cmdTuple[0]))
+	print('data', ''.join('0x{:02X} '.format(x) for x in cmdTuple[2]))

@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <stdarg.h>
 
-using u8 = unsigned char;
+using u8  = unsigned char;
 using u16 = unsigned short;
 using u32 = unsigned int;
 using u64 = unsigned long long int;
@@ -27,48 +27,48 @@ void Print(const char* format, ...)
 	OutputDebugStringA(buffer);
 }
 
-template<u16 N>
-void PrintBytes(const char* prefix, u8 (&buffer)[N])
+void PrintBytes(const char* prefix, u8* buffer, u16 bufferLen)
 {
-	Print("%-14s", prefix);
-	for (int i = 0; i < N; i++)
+	Print("%s", prefix);
+	for (int i = 0; i < bufferLen; i++)
 		Print(" 0x%.2X", buffer[i]);
 	Print("\n");
 }
 
 template<u16 N>
-void PrintBytesRaw(const char* prefix, u8 (&buffer)[N])
+void PrintBytes(const char* prefix, u8 (&buffer)[N])
 {
-	if (N > 0)
+	Print("%s", prefix);
+	for (int i = 0; i < N; i++)
+		Print(" 0x%.2X", buffer[i]);
+	Print("\n");
+}
+
+void PrintBytesRaw(u8* buffer, u16 bufferLen)
+{
+	if (bufferLen > 0)
 	{
-		Print("%s", prefix);
 		Print("0x%.2X", buffer[0]);
-		for (int i = 1; i < N; i++)
+		for (int i = 1; i < bufferLen; i++)
 			Print(" 0x%.2X", buffer[i]);
 	}
 }
 
 template<u16 N>
-void TraceBytes(const char* prefix, u8 (&buffer)[N])
+void PrintBytesRaw(u8(&buffer)[N])
 {
-#if ENABLE_TRACE
-	PrintBytes(prefix, buffer);
-#endif
-}
-
-template<u16 N>
-void TraceBytesRaw(const char* prefix, u8 (&buffer)[N])
-{
-#if ENABLE_TRACE
-	PrintBytesRaw(prefix, buffer);
-#endif
+	PrintBytesRaw(buffer, N);
 }
 
 #define ENABLE_TRACE false
 #if ENABLE_TRACE
 	#define Trace(...) Print(__VA_ARGS__)
+	#define TraceBytes(...) PrintBytes(__VA_ARGS__)
+	#define TraceRaw(...) PrintBytesRaw(__VA_ARGS__)
 #else
 	#define Trace(...)
+	#define TraceBytes(...)
+	#define TraceRaw(...)
 #endif
 
 template <typename T>
@@ -136,28 +136,83 @@ int main()
 	ILI9341::State ili9341 = {};
 
 	FT232H_Initialize(&ft232h);
+	FT232H_Write(&ft232h, FT232H::Command::SendImmediate);
 	ILI9341_Initialize(&ili9341, &ft232h);
 
-	ILI9341_Clear(&ili9341, Color::White);
+#if true
+	// looks correct, matches python
+	// 0x00 0x00 0x00 0x00
+	ILI9341_WriteCmd(&ili9341, ILI9341::Command::ReadDisplayIdentificationInformation);
+	//FT232H_WaitForResponse(&ft232h);
+	//FT232H_SetDC(&ft232h, Signal::High); // TODO: Doesn't seem necessary?
+	u8 deviceInfoResponse[4];
+	FT232H_Read(&ft232h, deviceInfoResponse);
+	PrintBytes("Device Info", deviceInfoResponse);
+#endif
 
-	for (int i = 0; i < 120; i++)
-	{
-		ILI9341_SetPixel(&ili9341,   0 - 0 + i,   0 - 0 + i, Color::Red);   // TL
-		ILI9341_SetPixel(&ili9341, 240 - 1 - i,   0 - 0 + i, Color::Green); // TR
-		ILI9341_SetPixel(&ili9341,   0 - 0 + i, 320 - 1 - i, Color::Blue);  // BL
-		ILI9341_SetPixel(&ili9341, 240 - 1 - i, 320 - 1 - i, Color::Gray);  // BR
-	}
+#if true
+	// looks correct, matches python
+	// 0xD2 0x29 0x82 0x00 0x00
+	ILI9341_WriteCmd(&ili9341, ILI9341::Command::ReadDisplayStatus);
+	u8 deviceStatusResponse[5];
+	FT232H_Read(&ft232h, deviceStatusResponse);
+	PrintBytes("Device Status", deviceStatusResponse);
+#endif
 
-	for (int i = 0; i < 80; i++)
-	{
-		ILI9341_SetPixel(&ili9341, 240 / 2 - 0, 120 + i, Color::Black);
-		ILI9341_SetPixel(&ili9341, 240 / 2 - 1, 120 + i, Color::Black);
-	}
+#if true
+	// looks correct, matches python (second byte is a bit off?)
+	// 0x9C 0x01
+	ILI9341_WriteCmd(&ili9341, ILI9341::Command::ReadDisplayPowerMode);
+	u8 powerModeResponse[2];
+	//FT232H_SetDC(&ft232h, Signal::High);
+	FT232H_Read(&ft232h, powerModeResponse);
+	PrintBytes("Power Mode", powerModeResponse);
+#endif
 
-	ILI9341_SetRect(&ili9341, 120 - 10,  60 - 10, 120 + 10,  60 + 10, Color::Yellow);
-	ILI9341_SetRect(&ili9341,  60 - 10, 160 - 10,  60 + 10, 160 + 10, Color::Magenta);
-	ILI9341_SetRect(&ili9341, 180 - 10, 160 - 10, 180 + 10, 160 + 10, Color::Gray);
-	ILI9341_SetRect(&ili9341, 120 - 10, 260 - 10, 120 + 10, 260 + 10, Color::Cyan);
+#if true
+	// looks correct, matches python (second byte is a bit off?)
+	// 0x48 0x01
+	ILI9341_WriteCmd(&ili9341, ILI9341::Command::ReadDisplayMADCTL);
+	u8 madctlResponse[2];
+	FT232H_Read(&ft232h, madctlResponse);
+	PrintBytes("MADCTL", madctlResponse);
+#endif
+
+#if true
+	// looks correct, matches python
+	// 0x05 0xFF
+	ILI9341_WriteCmd(&ili9341, ILI9341::Command::ReadDisplayPixelFormat);
+	u8 pixelFormatResponse[2];
+	FT232H_Read(&ft232h, pixelFormatResponse);
+	PrintBytes("Pixel Format", pixelFormatResponse);
+#endif
+
+#if true
+	// looks correct, matches python (second byte is a bit off?)
+	// 0x00 0x01
+	ILI9341_WriteCmd(&ili9341, ILI9341::Command::ReadDisplayImageFormat);
+	u8 imageFormatResponse[2];
+	FT232H_Read(&ft232h, imageFormatResponse);
+	PrintBytes("Image Format", imageFormatResponse);
+#endif
+
+#if true
+	// matches python (second byte is a bit off?)
+	// 0x00 0x01
+	ILI9341_WriteCmd(&ili9341, ILI9341::Command::ReadDisplaySignalMode);
+	u8 signalModeResponse[2];
+	FT232H_Read(&ft232h, signalModeResponse);
+	PrintBytes("Signal Mode", signalModeResponse);
+#endif
+
+#if true
+	// looks correct, matches python (second byte is a bit off?)
+	// 0xC0 0x01
+	ILI9341_WriteCmd(&ili9341, ILI9341::Command::ReadDisplaySelfDiagnosticResult);
+	u8 diagnosticResponse[2];
+	FT232H_Read(&ft232h, diagnosticResponse);
+	PrintBytes("Diagnostic", diagnosticResponse);
+#endif
 
 	ILI9341_Finalize(&ili9341);
 	FT232H_Finalize(&ft232h);
@@ -165,16 +220,5 @@ int main()
 	return 0;
 }
 
-// Features for the final version
-// 	Ability to trivially toggle tracing
-// 	Ability to trivially toggle write batching
-// 	Ability to profile time spend sleeping
-// 	Commands take a slice
-
-// TODO: Confirm reads are working correctly at all (pixel format?)
-// TODO: Figure out why consecutive reads don't seem to work
 // TODO: Figure out why brightness is wonky with both versions (setting?)
-// TODO: Understand the init sequence
-// TODO: Understand the write-read process
-// 	I think it works because after writing a request to the screen the SPI clock stops until you
-// 	begin reading
+// TODO: Check ReadDisplayStatus values

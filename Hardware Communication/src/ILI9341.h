@@ -44,6 +44,15 @@ namespace ILI9341
 		static const u8 PowerOnSequenceControl       = 0xED;
 		static const u8 Enable3Gamma                 = 0xF2;
 		static const u8 PumpRatioControl             = 0xF7;
+
+		static const u8 ReadDisplayIdentificationInformation = 0x04; // 4 byte response
+		static const u8 ReadDisplayStatus                    = 0x09; // 5 byte response
+		static const u8 ReadDisplayPowerMode                 = 0x0A; // 2 byte response
+		static const u8 ReadDisplayMADCTL                    = 0x0B; // 2 byte response
+		static const u8 ReadDisplayPixelFormat               = 0x0C; // 2 byte response
+		static const u8 ReadDisplayImageFormat               = 0x0D; // 2 byte response
+		static const u8 ReadDisplaySignalMode                = 0x0E; // 2 byte response
+		static const u8 ReadDisplaySelfDiagnosticResult      = 0x0F; // 2 byte response
 	};
 }
 
@@ -53,7 +62,7 @@ void ILI9341_WriteCmd(ILI9341::State* ili9341, u8 cmd)
 
 	// NOTE: LCD reads on the rising edge so write on the falling edge
 	u16 ftcmdSize = 1;
-	Trace("cmd 0x%.2X\n", cmd);
+	TraceBytes("cmd", &cmd, 1);
 	u8 ftcmd[] = { FT232H::Command::SendBytesFallingMSB, BYTE(0, ftcmdSize - 1), BYTE(1, ftcmdSize - 1) };
 	FT232H_Write(ili9341->ft232h, ftcmd);
 	FT232H_Write(ili9341->ft232h, cmd);
@@ -65,7 +74,7 @@ void ILI9341_WriteData(ILI9341::State* ili9341, u8* data, u16 dataLen)
 
 	u16 ftcmdSize = dataLen;
 #if ENABLE_TRACE
-	Trace("write data");
+	Trace("swrite data");
 	for (int i = 0; i < dataLen; i++) Trace(" 0x%.2X", data[i]);
 	Trace("\n");
 #endif
@@ -337,7 +346,7 @@ void ILI9341_Initialize(ILI9341::State* ili9341, FT232H::State* ft232h)
 	ILI9341_PowerOnSequenceControl(ili9341);
 	ILI9341_PumpRatioControl(ili9341);
 	ILI9341_SetGamma(ili9341);
-	ILI9341_WriteCmd(ili9341, ILI9341::Command::SleepOut);
+	ILI9341_Wake(ili9341);
 	ILI9341_WriteCmd(ili9341, ILI9341::Command::DisplayOn);
 }
 

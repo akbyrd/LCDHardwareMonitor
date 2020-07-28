@@ -112,13 +112,14 @@ Features - FT232H Communication
 -------------------------------
 Think about reconnection strategy. Exponential backoff? Simple timer? Respond to OS USB events?
 Crash due to no finding d2xx if the device has never been plugged in. Handle this gracefully.
+Add a way to profile time spent sleeping
 
 
 
 Features - ILI9341 Communication
 --------------------------------
 Profile and compare 16bit and 18bit modes. 16bit uses a lookup table. 18bit uses 50% more bandwidth.
-Write to a buffer and only flush when full or need to sleep
+Write to a buffer and only flush when full or need to sleep (write batching)
 Add proper error handling
 Implement hardware reset
 

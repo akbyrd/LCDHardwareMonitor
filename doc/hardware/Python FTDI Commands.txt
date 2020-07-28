@@ -1,0 +1,208 @@
+FTDI_VENDOR = 0x403
+PRODUCT_IDS FTDI_VENDOR ('232h', 0x6014),
+DEVICE_NAME 0x0900: 'ft232h',
+# Note that the FTDI datasheets contradict themselves, so the following values may not be the right ones...
+# Note that 'TX' and 'RX' are inverted with the datasheet terminology: Values here are seen from the host perspective, whereas datasheet values are defined from the device perspective
+FIFO_SIZES 0x0900: (1024, 1024),  # FT232H:  TX: 1KiB, RX: 1KiB
+
+# Function selection
+class BitMode(IntEnum):
+	RESET = 0x00    # switch off altnerative mode (default to UART)
+	BITBANG = 0x01  # classical asynchronous bitbang mode
+	MPSSE = 0x02    # MPSSE mode, available on 2232x chips
+	SYNCBB = 0x04   # synchronous bitbang mode
+	MCU = 0x08      # MCU Host Bus Emulation mode,
+	OPTO = 0x10     # Fast Opto-Isolated Serial Interface Mode
+	CBUS = 0x20     # Bitbang on CBUS pins of R-type chips
+	SYNCFF = 0x40   # Single Channel Synchronous FIFO mode
+
+
+# MPSSE Commands
+WRITE_BYTES_PVE_MSB = 0x10
+WRITE_BYTES_NVE_MSB = 0x11
+WRITE_BITS_PVE_MSB = 0x12
+WRITE_BITS_NVE_MSB = 0x13
+WRITE_BYTES_PVE_LSB = 0x18
+WRITE_BYTES_NVE_LSB = 0x19
+WRITE_BITS_PVE_LSB = 0x1a
+WRITE_BITS_NVE_LSB = 0x1b
+READ_BYTES_PVE_MSB = 0x20
+READ_BYTES_NVE_MSB = 0x24
+READ_BITS_PVE_MSB = 0x22
+READ_BITS_NVE_MSB = 0x26
+READ_BYTES_PVE_LSB = 0x28
+READ_BYTES_NVE_LSB = 0x2c
+READ_BITS_PVE_LSB = 0x2a
+READ_BITS_NVE_LSB = 0x2e
+RW_BYTES_PVE_NVE_MSB = 0x31
+RW_BYTES_NVE_PVE_MSB = 0x34
+RW_BITS_PVE_PVE_MSB = 0x32
+RW_BITS_PVE_NVE_MSB = 0x33
+RW_BITS_NVE_PVE_MSB = 0x36
+RW_BITS_NVE_NVE_MSB = 0x37
+RW_BYTES_PVE_NVE_LSB = 0x39
+RW_BYTES_NVE_PVE_LSB = 0x3c
+RW_BITS_PVE_PVE_LSB = 0x3a
+RW_BITS_PVE_NVE_LSB = 0x3b
+RW_BITS_NVE_PVE_LSB = 0x3e
+RW_BITS_NVE_NVE_LSB = 0x3f
+WRITE_BITS_TMS_PVE = 0x4a
+WRITE_BITS_TMS_NVE = 0x4b
+RW_BITS_TMS_PVE_PVE = 0x6a
+RW_BITS_TMS_PVE_NVE = 0x6b
+RW_BITS_TMS_NVE_PVE = 0x6e
+RW_BITS_TMS_NVE_NVE = 0x6f
+SEND_IMMEDIATE = 0x87
+WAIT_ON_HIGH = 0x88
+WAIT_ON_LOW = 0x89
+READ_SHORT = 0x90
+READ_EXTENDED = 0x91
+WRITE_SHORT = 0x92
+WRITE_EXTENDED = 0x93
+# -H series only
+DISABLE_CLK_DIV5 = 0x8a
+ENABLE_CLK_DIV5 = 0x8b
+
+# Modem status
+MODEM_CTS = (1 << 4)    # Clear to send
+MODEM_DSR = (1 << 5)    # Data set ready
+MODEM_RI = (1 << 6)     # Ring indicator
+MODEM_RLSD = (1 << 7)   # Carrier detect
+MODEM_DR = (1 << 8)     # Data ready
+MODEM_OE = (1 << 9)     # Overrun error
+MODEM_PE = (1 << 10)    # Parity error
+MODEM_FE = (1 << 11)    # Framing error
+MODEM_BI = (1 << 12)    # Break interrupt
+MODEM_THRE = (1 << 13)  # Transmitter holding register
+MODEM_TEMT = (1 << 14)  # Transmitter empty
+MODEM_RCVE = (1 << 15)  # Error in RCVR FIFO
+
+# FTDI MPSSE commands
+SET_BITS_LOW = 0x80     # Change LSB GPIO output
+SET_BITS_HIGH = 0x82    # Change MSB GPIO output
+GET_BITS_LOW = 0x81     # Get LSB GPIO output
+GET_BITS_HIGH = 0x83    # Get MSB GPIO output
+LOOPBACK_START = 0x84   # Enable loopback
+LOOPBACK_END = 0x85     # Disable loopback
+SET_TCK_DIVISOR = 0x86  # Set clock
+# -H series only
+ENABLE_CLK_3PHASE = 0x8c       # Enable 3-phase data clocking (I2C)
+DISABLE_CLK_3PHASE = 0x8d      # Disable 3-phase data clocking
+CLK_BITS_NO_DATA = 0x8e        # Allows JTAG clock to be output w/o data
+CLK_BYTES_NO_DATA = 0x8f       # Allows JTAG clock to be output w/o data
+CLK_WAIT_ON_HIGH = 0x94        # Clock until GPIOL1 is high
+CLK_WAIT_ON_LOW = 0x95         # Clock until GPIOL1 is low
+ENABLE_CLK_ADAPTIVE = 0x96     # Enable JTAG adaptive clock for ARM
+DISABLE_CLK_ADAPTIVE = 0x97    # Disable JTAG adaptive clock
+CLK_COUNT_WAIT_ON_HIGH = 0x9c  # Clock byte cycles until GPIOL1 is high
+CLK_COUNT_WAIT_ON_LOW = 0x9d   # Clock byte cycles until GPIOL1 is low
+# FT232H only
+DRIVE_ZERO = 0x9e       # Drive-zero mode
+
+# USB control requests
+REQ_OUT = build_request_type(CTRL_OUT, CTRL_TYPE_VENDOR, CTRL_RECIPIENT_DEVICE)
+REQ_IN = build_request_type(CTRL_IN, CTRL_TYPE_VENDOR, CTRL_RECIPIENT_DEVICE)
+
+# Requests
+SIO_REQ_RESET = 0x0              # Reset the port
+SIO_REQ_SET_MODEM_CTRL = 0x1     # Set the modem control register
+SIO_REQ_SET_FLOW_CTRL = 0x2      # Set flow control register
+SIO_REQ_SET_BAUDRATE = 0x3       # Set baud rate
+SIO_REQ_SET_DATA = 0x4           # Set the data characteristics of the port
+SIO_REQ_POLL_MODEM_STATUS = 0x5  # Get line status
+SIO_REQ_SET_EVENT_CHAR = 0x6     # Change event character
+SIO_REQ_SET_ERROR_CHAR = 0x7     # Change error character
+SIO_REQ_SET_LATENCY_TIMER = 0x9  # Change latency timer
+SIO_REQ_GET_LATENCY_TIMER = 0xa  # Get latency timer
+SIO_REQ_SET_BITMODE = 0xb        # Change bit mode
+SIO_REQ_READ_PINS = 0xc          # Read GPIO pin value (or "get bitmode")
+
+# Eeprom requests
+SIO_REQ_EEPROM = 0x90
+SIO_REQ_READ_EEPROM = SIO_REQ_EEPROM + 0   # Read EEPROM content
+SIO_REQ_WRITE_EEPROM = SIO_REQ_EEPROM + 1  # Write EEPROM content
+SIO_REQ_ERASE_EEPROM = SIO_REQ_EEPROM + 2  # Erase EEPROM content
+
+# Reset arguments
+SIO_RESET_SIO = 0        # Reset device
+SIO_RESET_PURGE_RX = 1   # Drain USB RX buffer (host-to-ftdi)
+SIO_RESET_PURGE_TX = 2   # Drain USB TX buffer (ftdi-to-host)
+
+# Flow control arguments
+SIO_DISABLE_FLOW_CTRL = 0x0
+SIO_RTS_CTS_HS = (0x1 << 8)
+SIO_DTR_DSR_HS = (0x2 << 8)
+SIO_XON_XOFF_HS = (0x4 << 8)
+SIO_SET_DTR_MASK = 0x1
+SIO_SET_DTR_HIGH = (SIO_SET_DTR_MASK | (SIO_SET_DTR_MASK << 8))
+SIO_SET_DTR_LOW = (0x0 | (SIO_SET_DTR_MASK << 8))
+SIO_SET_RTS_MASK = 0x2
+SIO_SET_RTS_HIGH = (SIO_SET_RTS_MASK | (SIO_SET_RTS_MASK << 8))
+SIO_SET_RTS_LOW = (0x0 | (SIO_SET_RTS_MASK << 8))
+
+# Parity bits
+PARITY_NONE, PARITY_ODD, PARITY_EVEN, PARITY_MARK, PARITY_SPACE = range(5)
+# Number of stop bits
+STOP_BIT_1, STOP_BIT_15, STOP_BIT_2 = range(3)
+# Number of bits
+BITS_7, BITS_8 = [7+i for i in range(2)]
+# Break type
+BREAK_OFF, BREAK_ON = range(2)
+
+# cts:  Clear to send
+# dsr:  Data set ready
+# ri:   Ring indicator
+# dcd:  Data carrier detect
+# dr:   Data ready
+# oe:   Overrun error
+# pe:   Parity error
+# fe:   Framing error
+# bi:   Break interrupt
+# thre: Transmitter holding register empty
+# temt: Transmitter empty
+# err:  Error in RCVR FIFO
+MODEM_STATUS = [('', '', '', '', 'cts', 'dsr', 'ri', 'dcd'), ('dr', 'overrun', 'parity', 'framing', 'break', 'thre', 'txe', 'rcve')]
+
+ERROR_BITS = (0x00, 0x8E)
+TX_EMPTY_BITS = 0x60
+
+# Clocks and baudrates
+BUS_CLOCK_BASE = 6.0E6  # 6 MHz
+BUS_CLOCK_HIGH = 30.0E6  # 30 MHz
+BAUDRATE_REF_BASE = int(3.0E6)  # 3 MHz
+BAUDRATE_REF_HIGH = int(12.0E6)  # 12 MHz
+BITBANG_BAUDRATE_RATIO_BASE = 16
+BITBANG_BAUDRATE_RATIO_HIGH = 5
+BAUDRATE_TOLERANCE = 3.0  # acceptable clock drift for UART, in %
+
+FRAC_DIV_CODE = (0, 3, 2, 4, 1, 5, 6, 7)
+
+# Latency
+LATENCY_MIN = 12
+LATENCY_MAX = 255
+LATENCY_EEPROM_FT232R = 77
+
+# EEPROM Properties
+EXT_EEPROM_SIZES = (128, 256) # in bytes (93C66 seen as 93C56)
+
+INT_EEPROMS = {
+	0x0600: 0x80,  # FT232R: 128 bytes, 1024 bits
+	0x1000: 0x400  # FT230*X: 1KiB
+}
+
+
+
+Screen Operations
+-----------------
+
+Pixel (Blue)
+	42 0x00 0xA0 0x00 0xA0 # Column Set
+	43 0x00 0x00           # Page Set
+	44 0x00 0x1F           # RAM Write
+
+Pixel (White)
+	42 0x00 0xA0 0x00 0xA0 # Column Set
+	43 0x00 0x00           # Page Set
+	44 0xFF 0xFF           # RAM Write
+
+Fill Rectangle
