@@ -9,13 +9,10 @@ void ILI9341_WriteCmd(FT232H::State* ft232h, u8 cmd)
 {
 	FT232H_SetDC(ft232h, Signal::Low);
 
+	// NOTE: LCD reads on the rising edge so write on the falling edge
 	u16 ftcmdSize = 1;
-#if ENABLE_TRACE
 	Trace("cmd 0x%.2X\n", cmd);
-	u8 ftcmd[] = { FT232H::Command::RW_BYTES_PVE_NVE_MSB, BYTE(0, ftcmdSize - 1), BYTE(1, ftcmdSize - 1) };
-#else
 	u8 ftcmd[] = { FT232H::Command::WRITE_BYTES_NVE_MSB, BYTE(0, ftcmdSize - 1), BYTE(1, ftcmdSize - 1) };
-#endif
 	FT232H_Write(ft232h, ftcmd);
 	FT232H_Write(ft232h, cmd);
 }
@@ -27,13 +24,12 @@ void ILI9341_WriteData(FT232H::State* ft232h, u8 (&data)[N])
 
 	u16 ftcmdSize = N;
 #if ENABLE_TRACE
-	Trace("data");
+	Trace("write data");
 	for (int i = 0; i < N; i++) Trace(" 0x%.2X", data[i]);
 	Trace("\n");
-	u8 ftcmd[] = { FT232H::Command::RW_BYTES_PVE_NVE_MSB, BYTE(0, ftcmdSize - 1), BYTE(1, ftcmdSize - 1) };
-#else
-	u8 ftcmd[] = { FT232H::Command::WRITE_BYTES_NVE_MSB, BYTE(0, ftcmdSize - 1), BYTE(1, ftcmdSize - 1) };
 #endif
+	// NOTE: LCD reads on the rising edge so write on the falling edge
+	u8 ftcmd[] = { FT232H::Command::WRITE_BYTES_NVE_MSB, BYTE(0, ftcmdSize - 1), BYTE(1, ftcmdSize - 1) };
 	FT232H_Write(ft232h, ftcmd);
 	FT232H_Write(ft232h, data);
 }
@@ -61,9 +57,12 @@ void ILI9341_Write(FT232H::State* ft232h, u8 cmd, Args... bytes)
 
 void DocumentationInit(FT232H::State* ft232h)
 {
+	// NOTE: I'm not sure why write_data16 passes two bytes. The first is always zero and is not part
+	// of the parameters.
+
 	auto delay        = [](DWORD ms) { Sleep(ms); };
 	auto write_cmd    = [&](u8 cmd) { ILI9341_WriteCmd(ft232h, cmd); };
-	auto write_data16 = [&](u8 byte1, u8 byte2) { ILI9341_WriteData(ft232h, byte1, byte2); };
+	auto write_data16 = [&](u8 byte1, u8 byte2) { ILI9341_WriteData(ft232h, byte2); };
 
 	write_cmd(0x01); // software reset
 	delay(5);
@@ -215,23 +214,25 @@ void DocumentationInit(FT232H::State* ft232h)
 
 void PythonInit(FT232H::State* ft232h)
 {
+	// Pixel Format 0x55 = 0b'0101'0101 = 16bpp RGB and MCU
+
 	ILI9341_Write(ft232h, 0xEF, 0x03, 0x80, 0x02);             //* Can't find command!
 	ILI9341_Write(ft232h, 0xCF, 0x00, 0xC1, 0x30);             //* Power Control B                    values
 	ILI9341_Write(ft232h, 0xED, 0x64, 0x03, 0x12, 0x81);       // Power On Sequence Control
 	ILI9341_Write(ft232h, 0xE8, 0x85, 0x00, 0x78);             //* Driver Timing Control A            1 extra 0
 	ILI9341_Write(ft232h, 0xCB, 0x39, 0x2C, 0x00, 0x34, 0x02); // Power Control A
-	ILI9341_Write(ft232h, 0xF7, 0x20);                         // Pump Ratio Control                  1 missing 0
-	ILI9341_Write(ft232h, 0xEA, 0x00, 0x00);                   //* Driver Control Timing B            2 missing 0s
-	ILI9341_Write(ft232h, 0xC0, 0x23);                         //* Power Control 1, VRH[5:0]          1 missing 0  value
-	ILI9341_Write(ft232h, 0xC1, 0x10);                         //* Power Control 2, SAP[2:0], BT[3:0] 1 missing 0  value
-	ILI9341_Write(ft232h, 0xC5, 0x3E, 0x28);                   //* VCM Control 1                      2 missing 0s values
-	ILI9341_Write(ft232h, 0xC7, 0x86);                         //* VCM Control 2                      1 missing 0  value
-	ILI9341_Write(ft232h, 0x36, 0x48);                         //* Memory Access Control              1 missing 0
-	ILI9341_Write(ft232h, 0x3A, 0x55);                         //* Pixel Format                       1 missing 0
-	ILI9341_Write(ft232h, 0xB1, 0x00, 0x18);                   //* FRMCTR1                            2 missing 0s values
-	ILI9341_Write(ft232h, 0xB6, 0x08, 0x82, 0x27);             //* Display Function Control           3 missing 0s value  order
-	ILI9341_Write(ft232h, 0xF2, 0x00);                         //* 3Gamma Function Disable            1 missing 0  value
-	ILI9341_Write(ft232h, 0x26, 0x01);                         //* Gamma Curve Selected               1 missing 0
+	ILI9341_Write(ft232h, 0xF7, 0x20);                         // Pump Ratio Control
+	ILI9341_Write(ft232h, 0xEA, 0x00, 0x00);                   // Driver Control Timing B
+	ILI9341_Write(ft232h, 0xC0, 0x23);                         //* Power Control 1, VRH[5:0]          value
+	ILI9341_Write(ft232h, 0xC1, 0x10);                         //* Power Control 2, SAP[2:0], BT[3:0] value
+	ILI9341_Write(ft232h, 0xC5, 0x3E, 0x28);                   //* VCM Control 1                      values
+	ILI9341_Write(ft232h, 0xC7, 0x86);                         //* VCM Control 2                      value
+	ILI9341_Write(ft232h, 0x36, 0x48);                         // Memory Access Control
+	ILI9341_Write(ft232h, 0x3A, 0x55);                         // Pixel Format
+	ILI9341_Write(ft232h, 0xB1, 0x00, 0x18);                   // FRMCTR1                             values
+	ILI9341_Write(ft232h, 0xB6, 0x08, 0x82, 0x27);             //* Display Function Control           value  order
+	ILI9341_Write(ft232h, 0xF2, 0x00);                         //* 3Gamma Function Disable            value
+	ILI9341_Write(ft232h, 0x26, 0x01);                         // Gamma Curve Selected
 	ILI9341_Write(ft232h, 0xE0, 0x0F, 0x31, 0x2B, 0x0C, 0x0E, 0x08, 0x4E, 0xF1, 0x37, 0x07, 0x10, 0x03, 0x0E, 0x09, 0x00); // Set Gamma
 	ILI9341_Write(ft232h, 0xE1, 0x00, 0x0E, 0x14, 0x03, 0x11, 0x07, 0x31, 0xC1, 0x48, 0x08, 0x0F, 0x0C, 0x31, 0x36, 0x0F); // Set Gamma
 	// column
@@ -244,10 +245,7 @@ void PythonInit(FT232H::State* ft232h)
 
 void ILI9341_Initialize(FT232H::State* ft232h)
 {
-	// TODO: Documentation version doesn't work. Long delay, then brightness flickers. Also slower
 	//DocumentationInit(ft232h);
-
-	// TODO: Brightness is wonkey with the python version
 	PythonInit(ft232h);
 }
 

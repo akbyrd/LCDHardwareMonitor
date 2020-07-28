@@ -22,6 +22,12 @@
 // MPSSE Commands
 // https://www.ftdichip.com/Support/Documents/AppNotes/AN_108_Command_Processor_for_MPSSE_and_MCU_Host_Bus_Emulation_Modes.pdf
 
+// MPSSE Examples
+// https://www.ftdichip.com/Support/SoftwareExamples/MPSSE.htm
+
+// FTDI Program Guides
+// https://www.ftdichip.com/Support/Documents/ProgramGuides.htm
+
 // Adaptive clocking: I don't think we need it (for ARM processors)
 // Mode set: Read from (external) EEPROM on reset
 // 	Is this different than regular EEPROM? There's a separate tool

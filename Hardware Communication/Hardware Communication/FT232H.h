@@ -91,7 +91,7 @@ void FT232H_WaitForResponse(FT232H::State* ft232h)
 
 void FT232H_DrainRead(FT232H::State* ft232h, bool force = false)
 {
-#if !ENABLE_TRACE
+#if !ENABLE_TRACE || true
 	if (!force)
 		return;
 #endif
@@ -130,7 +130,7 @@ void FT232H_Write(FT232H::State* ft232h, u8 command, bool drain = true)
 	CheckStatus(status);
 	Assert(bytesWritten == 1);
 
-#if	ENABLE_TRACE
+#if ENABLE_TRACE
 	if (drain)
 	{
 		FT232H_WaitForResponse(ft232h);
@@ -147,7 +147,7 @@ void FT232H_Write(FT232H::State* ft232h, u8 (&data)[N], bool drain = true)
 	CheckStatus(status);
 	Assert(bytesWritten == N);
 
-#if	ENABLE_TRACE
+#if ENABLE_TRACE
 	if (drain)
 	{
 		FT232H_WaitForResponse(ft232h);
@@ -184,22 +184,79 @@ void FT232H_SetDC(FT232H::State* ft232h, Signal signal)
 	}
 }
 
-void FT232H_Read(FT232H::State* ft232h)
+#if true
+template <u16 N>
+u16 FT232H_Read(FT232H::State* ft232h, u8 (&buffer)[N])
 {
 	FT_STATUS status;
 
+	// NOTE: ILI9341 shifts on the falling edge, therefore read on the rising edge
 	DWORD numBytesWritten;
-	u16 readSize = 16;
-	u8 ftcmd[] = { FT232H::Command::READ_BYTES_PVE_MSB, BYTE(0, readSize - 1), BYTE(1, readSize - 1) };
+	u8 ftcmd[] = { FT232H::Command::READ_BYTES_PVE_MSB, BYTE(0, N - 1), BYTE(1, N - 1) };
 	status = FT_Write(ft232h->device, ftcmd, ArrayLength(ftcmd), &numBytesWritten);
 	CheckStatus(status);
 	Assert(ArrayLength(ftcmd) == numBytesWritten);
 
-	// DEBUG: Did we get anything?
-	DWORD bytesInReadBuffer;
-	status = FT_GetQueueStatus(ft232h->device, &bytesInReadBuffer);
+	// TODO: We're wating twice. Are both necessary?
+	//FT232H_WaitForResponse(ft232h);
+
+	// TODO: Don't need this if we use timeouts
+	// NOTE: Check the queue size so we don't stall in the read
+	//DWORD bytesInReadBuffer;
+	//status = FT_GetQueueStatus(ft232h->device, &bytesInReadBuffer);
+	//CheckStatus(status);
+
+	Trace("read data");
+	//DWORD numBytesToRead = Min(bytesInReadBuffer, DWORD(N));
+	DWORD numBytesToRead = N;
+
+	DWORD numBytesRead = 0;
+	status = FT_Read(ft232h->device, buffer, numBytesToRead, &numBytesRead);
 	CheckStatus(status);
+	Assert(numBytesToRead == numBytesRead);
+
+#if ENABLE_TRACE
+	for (int i = 0; i < int(numBytesRead); i++)
+		Trace(" 0x%.2X", buffer[i]);
+#endif
+	Trace("\n");
+
+	return u16(numBytesRead);
 }
+#else
+template <u16 N>
+u16 FT232H_Read(FT232H::State* ft232h, u8 ilicmd, u8 (&buffer)[N])
+{
+	FT232H_SetDC(ft232h, Signal::Low);
+
+	u16 cmdSize = 0;
+	u8 cmd[1024];
+
+	cmd[cmdSize++] = FT232H::Command::WRITE_BYTES_NVE_MSB;
+	cmd[cmdSize++] = BYTE(0, 1 - 1);
+	cmd[cmdSize++] = BYTE(1, 1 - 1);
+	cmd[cmdSize++] = ilicmd;
+	cmd[cmdSize++] = FT232H::Command::READ_BYTES_PVE_MSB;
+	cmd[cmdSize++] = BYTE(0, N - 1);
+	cmd[cmdSize++] = BYTE(1, N - 1);
+
+	FT_STATUS status;
+
+	DWORD numBytesWritten;
+	status = FT_Write(ft232h->device, cmd, cmdSize, &numBytesWritten);
+	CheckStatus(status);
+	Assert(cmdSize == numBytesWritten);
+
+	FT232H_WaitForResponse(ft232h);
+
+	DWORD numBytesRead = 0;
+	status = FT_Read(ft232h->device, buffer, N, &numBytesRead);
+	CheckStatus(status);
+	Assert(N == numBytesRead);
+
+	return u16(numBytesRead);
+}
+#endif
 
 void FT232H_AssertEmptyReadBuffer(FT232H::State* ft232h)
 {
@@ -350,7 +407,7 @@ void FT232H_Initialize(FT232H::State* ft232h)
 	Assert(buffer[0] == FT232H::Response::BadCommand);
 	Assert(buffer[1] == FT232H::Command::BadCommand);
 
-	FT232H_Write(ft232h, FT232H::Command::DisableClockDivide);
+	FT232H_Write(ft232h, FT232H::Command::EnableClockDivide);
 	FT232H_Write(ft232h, FT232H::Command::DisableAdaptiveClock);
 	FT232H_Write(ft232h, FT232H::Command::Disable3PhaseClock);
 

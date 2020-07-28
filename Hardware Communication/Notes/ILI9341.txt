@@ -34,15 +34,24 @@
 // Configure 232 to match ILI requirements
 // 	[x] Select SPI mode (soldered)
 // 	[x] Write on rising or falling?
-// 	[ ] Set clock frequency (what's the valid range?)
+// 	[x] Set clock frequency (what's the valid range?)
 // 	[ ] Start clock high or low?
-// 	[ ]
 // Read something from the display
-// 	Identification information
-// 	Status
-// 	Power mode
-// 	MADCTL
-// 	Pixel format
-// 	Image format
-// 	Signal mode
-// 	Self diagnostic
+// 	[ ] Identification information
+// 	[ ] Status
+// 	[ ] Power mode
+// 	[ ] MADCTL
+// 	[ ] Pixel format
+// 	[ ] Image format
+// 	[ ] Signal mode
+// 	[ ] Self diagnostic
+
+
+// Random Resources
+// https://retropie.org.uk/forum/topic/14519/fast-refresh-rates-up-to-60fps-with-an-spi-display-ili9341/2
+// https://github.com/juj/fbcp-ili9341
+// http://marekburiak.github.io/ILI9341_due/
+// https://github.com/XarkLabs/PDQ_GFX_Libs
+// https://github.com/PaulStoffregen/ILI9341_t3
+// https://github.com/projectitis/ILI9341_t3/tree/anti-alias-fonts
+// https://os.mbed.com/users/dreschpe/code/SPI_TFT_ILI9341/
