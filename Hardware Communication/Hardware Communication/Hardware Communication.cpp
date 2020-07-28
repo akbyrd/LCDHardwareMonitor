@@ -64,6 +64,7 @@ constexpr u16 Color16(u8 r, u8 g, u8 b)
 struct Color
 {
 	static const u16 Black   = Color16(0x00, 0x00, 0x00);
+	static const u16 Gray    = Color16(0x80, 0x80, 0x80);
 	static const u16 White   = Color16(0xFF, 0xFF, 0xFF);
 	static const u16 Red     = Color16(0xFF, 0x00, 0x00);
 	static const u16 Green   = Color16(0x00, 0xFF, 0x00);
@@ -87,16 +88,18 @@ int main()
 	FT232H_Initialize(&ft232h);
 	ILI9341_Initialize(&ft232h);
 
-	ILI9341_SetPixel(&ft232h, 000 - 0, 000 - 0, Color::Red);   // TL
-	ILI9341_SetPixel(&ft232h, 240 - 1, 000 - 0, Color::Green); // TR
-	ILI9341_SetPixel(&ft232h, 000 - 0, 320 - 1, Color::Blue);  // BL
+	//ILI9341_SetPixel(&ft232h, 160, 120, Color::Red);
+
+	ILI9341_SetPixel(&ft232h,   0 - 0,   0 - 0, Color::Red);   // TL
+	ILI9341_SetPixel(&ft232h, 240 - 1,   0 - 0, Color::Green); // TR
+	ILI9341_SetPixel(&ft232h,   0 - 0, 320 - 1, Color::Blue);  // BL
 	ILI9341_SetPixel(&ft232h, 240 - 1, 320 - 1, Color::White); // BR
 
 	for (int i = 0; i < 120; i++)
 	{
-		ILI9341_SetPixel(&ft232h, 000 - 0 + i, 000 - 0 + i, Color::Red);
-		ILI9341_SetPixel(&ft232h, 240 - 1 - i, 000 - 0 + i, Color::Green);
-		ILI9341_SetPixel(&ft232h, 000 - 0 + i, 320 - 1 - i, Color::Blue);
+		ILI9341_SetPixel(&ft232h,   0 - 0 + i,   0 - 0 + i, Color::Red);
+		ILI9341_SetPixel(&ft232h, 240 - 1 - i,   0 - 0 + i, Color::Green);
+		ILI9341_SetPixel(&ft232h,   0 - 0 + i, 320 - 1 - i, Color::Blue);
 		ILI9341_SetPixel(&ft232h, 240 - 1 - i, 320 - 1 - i, Color::White);
 	}
 
@@ -105,6 +108,11 @@ int main()
 		ILI9341_SetPixel(&ft232h, 240 / 2 - 0, 120 + i, Color::Black);
 		ILI9341_SetPixel(&ft232h, 240 / 2 - 1, 120 + i, Color::Black);
 	}
+
+	ILI9341_SetRect(&ft232h, 120 - 10,  60 - 10, 120 + 10,  60 + 10, Color::Yellow);
+	ILI9341_SetRect(&ft232h,  60 - 10, 160 - 10,  60 + 10, 160 + 10, Color::Magenta);
+	ILI9341_SetRect(&ft232h, 180 - 10, 160 - 10, 180 + 10, 160 + 10, Color::Gray);
+	ILI9341_SetRect(&ft232h, 120 - 10, 260 - 10, 120 + 10, 260 + 10, Color::Cyan);
 
 	ILI9341_Finalize(&ft232h);
 	FT232H_Finalize(&ft232h);

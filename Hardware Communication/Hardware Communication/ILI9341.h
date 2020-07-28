@@ -20,21 +20,26 @@ void ILI9341_WriteCmd(FT232H::State* ft232h, u8 cmd)
 	FT232H_Write(ft232h, cmd);
 }
 
-template <u16 N>
-void ILI9341_WriteData(FT232H::State* ft232h, u8 (&data)[N])
+void ILI9341_WriteData(FT232H::State* ft232h, u8* data, u16 dataLen)
 {
 	FT232H_SetDC(ft232h, Signal::High);
 
-	u16 ftcmdSize = N;
+	u16 ftcmdSize = dataLen;
 #if ENABLE_TRACE
 	Trace("write data");
-	for (int i = 0; i < N; i++) Trace(" 0x%.2X", data[i]);
+	for (int i = 0; i < dataLen; i++) Trace(" 0x%.2X", data[i]);
 	Trace("\n");
 #endif
 	// NOTE: LCD reads on the rising edge so write on the falling edge
 	u8 ftcmd[] = { FT232H::Command::WRITE_BYTES_NVE_MSB, BYTE(0, ftcmdSize - 1), BYTE(1, ftcmdSize - 1) };
 	FT232H_Write(ft232h, ftcmd);
-	FT232H_Write(ft232h, data);
+	FT232H_Write(ft232h, data, dataLen);
+}
+
+template <u16 N>
+void ILI9341_WriteData(FT232H::State* ft232h, u8 (&data)[N])
+{
+	ILI9341_WriteData(ft232h, data, N);
 }
 
 template <typename ...Args>
@@ -58,20 +63,35 @@ void ILI9341_Write(FT232H::State* ft232h, u8 cmd, Args... bytes)
 	ILI9341_WriteData(ft232h, bytes...);
 }
 
-void ILI9341_SetPixel(FT232H::State* ft232h, u16 x, u16 y, u16 color)
+void ILI9341_SetRect(FT232H::State* ft232h, u16 x1, u16 y1, u16 x2, u16 y2, u16 color)
 {
+	Assert(x1 <= x2);
+	Assert(x2 <= 240 - 1);
 	//Assert(MADCTL == 0 && x <= 0x00EF);
 	//Assert(MADCTL == 1 && x <= 0x013F);
-	ILI9341_Write(ft232h, ILI9341::Command::ColumnAddressSet, Unpack2(x), Unpack2(x));
+	ILI9341_Write(ft232h, ILI9341::Command::ColumnAddressSet, Unpack2(x1), Unpack2(x2));
+	Assert(y1 <= y2);
+	Assert(y2 <= 320 - 1);
 	//Assert(MADCTL == 0 && y <= 0x013F);
 	//Assert(MADCTL == 1 && y <= 0x00EF);
-	ILI9341_Write(ft232h, ILI9341::Command::PageAddressSet, Unpack2(y), Unpack2(y));
-	ILI9341_Write(ft232h, ILI9341::Command::MemoryWrite, Unpack2(color));
+	ILI9341_Write(ft232h, ILI9341::Command::PageAddressSet, Unpack2(y1), Unpack2(y2));
+
+	// TODO: Change rects to be exclusive of max?
+	// HACK: lol allocation
+	u16 dataLen = 2 * (x2 - x1 + 1) * (y2 - y1 + 1);
+	u8* colorData = new u8[dataLen];
+	for (u16 i = 0; i < dataLen; i += 2)
+	{
+		colorData[i + 0] = BYTE(1, color);
+		colorData[i + 1] = BYTE(0, color);
+	}
+	ILI9341_Write(ft232h, ILI9341::Command::MemoryWrite, colorData, dataLen);
+	delete[] colorData;
 }
 
-void ILI9341_SetPixel(FT232H::State* ft232h, u16 x, u16 y, u8 r, u8 g, u8 b)
+void ILI9341_SetPixel(FT232H::State* ft232h, u16 x, u16 y, u16 color)
 {
-	ILI9341_SetPixel(ft232h, x, y, Color16(r, g, b));
+	ILI9341_SetRect(ft232h, x, y, x, y, color);
 }
 
 void DocumentationInit(FT232H::State* ft232h)

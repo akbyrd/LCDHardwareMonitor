@@ -139,6 +139,22 @@ void FT232H_Write(FT232H::State* ft232h, u8 command, bool drain = true)
 #endif
 };
 
+void FT232H_Write(FT232H::State* ft232h, u8* data, u16 dataLen, bool drain = true)
+{
+	DWORD bytesWritten;
+	FT_STATUS status = FT_Write(ft232h->device, data, dataLen, &bytesWritten);
+	CheckStatus(status);
+	Assert(bytesWritten == dataLen);
+
+#if ENABLE_TRACE
+	if (drain)
+	{
+		FT232H_WaitForResponse(ft232h);
+		FT232H_DrainRead(ft232h);
+	}
+#endif
+};
+
 template <u16 N>
 void FT232H_Write(FT232H::State* ft232h, u8 (&data)[N], bool drain = true)
 {
