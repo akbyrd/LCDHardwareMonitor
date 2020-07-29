@@ -27,6 +27,43 @@ void Print(const char* format, ...)
 	OutputDebugStringA(buffer);
 }
 
+template<u16 N>
+void PrintBytes(const char* prefix, u8 (&buffer)[N])
+{
+	Print("%-14s", prefix);
+	for (int i = 0; i < N; i++)
+		Print(" 0x%.2X", buffer[i]);
+	Print("\n");
+}
+
+template<u16 N>
+void PrintBytesRaw(const char* prefix, u8 (&buffer)[N])
+{
+	if (N > 0)
+	{
+		Print("%s", prefix);
+		Print("0x%.2X", buffer[0]);
+		for (int i = 1; i < N; i++)
+			Print(" 0x%.2X", buffer[i]);
+	}
+}
+
+template<u16 N>
+void TraceBytes(const char* prefix, u8 (&buffer)[N])
+{
+#if ENABLE_TRACE
+	PrintBytes(prefix, buffer);
+#endif
+}
+
+template<u16 N>
+void TraceBytesRaw(const char* prefix, u8 (&buffer)[N])
+{
+#if ENABLE_TRACE
+	PrintBytesRaw(prefix, buffer);
+#endif
+}
+
 #define ENABLE_TRACE false
 #if ENABLE_TRACE
 	#define Trace(...) Print(__VA_ARGS__)
@@ -39,17 +76,6 @@ T Min(T a, T b) { return a <= b ? a : b; }
 
 template <typename T>
 T Max(T a, T b) { return a >= b ? a : b; }
-
-template<u16 N>
-void TraceBytes(const char* prefix, u8 (&buffer)[N])
-{
-#if ENABLE_TRACE || true
-	Print("%-14s", prefix);
-	for (int i = 0; i < N; i++)
-		Print(" 0x%.2X", buffer[i]);
-	Print("\n");
-#endif
-}
 
 u64 GetTime()
 {
@@ -114,17 +140,12 @@ int main()
 
 	ILI9341_Clear(&ili9341, Color::White);
 
-	ILI9341_SetPixel(&ili9341,   0 - 0,   0 - 0, Color::Red);   // TL
-	ILI9341_SetPixel(&ili9341, 240 - 1,   0 - 0, Color::Green); // TR
-	ILI9341_SetPixel(&ili9341,   0 - 0, 320 - 1, Color::Blue);  // BL
-	ILI9341_SetPixel(&ili9341, 240 - 1, 320 - 1, Color::White); // BR
-
 	for (int i = 0; i < 120; i++)
 	{
-		ILI9341_SetPixel(&ili9341,   0 - 0 + i,   0 - 0 + i, Color::Red);
-		ILI9341_SetPixel(&ili9341, 240 - 1 - i,   0 - 0 + i, Color::Green);
-		ILI9341_SetPixel(&ili9341,   0 - 0 + i, 320 - 1 - i, Color::Blue);
-		ILI9341_SetPixel(&ili9341, 240 - 1 - i, 320 - 1 - i, Color::Gray);
+		ILI9341_SetPixel(&ili9341,   0 - 0 + i,   0 - 0 + i, Color::Red);   // TL
+		ILI9341_SetPixel(&ili9341, 240 - 1 - i,   0 - 0 + i, Color::Green); // TR
+		ILI9341_SetPixel(&ili9341,   0 - 0 + i, 320 - 1 - i, Color::Blue);  // BL
+		ILI9341_SetPixel(&ili9341, 240 - 1 - i, 320 - 1 - i, Color::Gray);  // BR
 	}
 
 	for (int i = 0; i < 80; i++)
@@ -140,6 +161,7 @@ int main()
 
 	ILI9341_Finalize(&ili9341);
 	FT232H_Finalize(&ft232h);
+
 	return 0;
 }
 

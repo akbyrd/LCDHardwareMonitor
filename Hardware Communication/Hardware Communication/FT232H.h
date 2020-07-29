@@ -89,20 +89,17 @@ void FT232H_WaitForResponse(FT232H::State* ft232h)
 	Sleep(2 * ft232h->latency);
 }
 
-void FT232H_DrainRead(FT232H::State* ft232h, bool force = false)
+void FT232H_DrainRead(FT232H::State* ft232h, bool print)
 {
-#if !ENABLE_TRACE || true
-	if (!force)
-		return;
-#endif
-
 	DWORD bytesInReadBuffer;
 	FT_STATUS status = FT_GetQueueStatus(ft232h->device, &bytesInReadBuffer);
 	CheckStatus(status);
 
 	if (bytesInReadBuffer > 0)
 	{
-		Trace("drain");
+		if (print)
+			Print("drain");
+
 		while (bytesInReadBuffer > 0)
 		{
 			u8 buffer[8];
@@ -114,12 +111,12 @@ void FT232H_DrainRead(FT232H::State* ft232h, bool force = false)
 			Assert(numBytesToRead == numBytesRead);
 			bytesInReadBuffer -= numBytesRead;
 
-#if ENABLE_TRACE
-			for (int i = 0; i < int(numBytesRead); i++)
-				Trace(" 0x%.2X", buffer[i]);
-#endif
+			if (print)
+				PrintBytesRaw(" ", buffer);
 		}
-		Trace("\n");
+
+		if (print)
+			Print("\n");
 	}
 }
 
@@ -134,7 +131,7 @@ void FT232H_Write(FT232H::State* ft232h, u8 command, bool drain = true)
 	if (drain)
 	{
 		FT232H_WaitForResponse(ft232h);
-		FT232H_DrainRead(ft232h);
+		FT232H_DrainRead(ft232h, true);
 	}
 #endif
 };
@@ -150,7 +147,7 @@ void FT232H_Write(FT232H::State* ft232h, u8* data, u16 dataLen, bool drain = tru
 	if (drain)
 	{
 		FT232H_WaitForResponse(ft232h);
-		FT232H_DrainRead(ft232h);
+		FT232H_DrainRead(ft232h, true);
 	}
 #endif
 };
@@ -167,7 +164,7 @@ void FT232H_Write(FT232H::State* ft232h, u8 (&data)[N], bool drain = true)
 	if (drain)
 	{
 		FT232H_WaitForResponse(ft232h);
-		FT232H_DrainRead(ft232h);
+		FT232H_DrainRead(ft232h, true);
 	}
 #endif
 };
@@ -231,10 +228,7 @@ u16 FT232H_Read(FT232H::State* ft232h, u8 (&buffer)[N])
 	CheckStatus(status);
 	Assert(numBytesToRead == numBytesRead);
 
-#if ENABLE_TRACE
-	for (int i = 0; i < int(numBytesRead); i++)
-		Trace(" 0x%.2X", buffer[i]);
-#endif
+	TraceBytesRaw(buffer);
 	Trace("\n");
 
 	return u16(numBytesRead);
@@ -279,7 +273,6 @@ void FT232H_AssertEmptyReadBuffer(FT232H::State* ft232h)
 	DWORD bytesInReadBuffer;
 	FT_STATUS status = FT_GetQueueStatus(ft232h->device, &bytesInReadBuffer);
 	CheckStatus(status);
-	Assert(bytesInReadBuffer == 0);
 
 	// DEBUG
 	if (bytesInReadBuffer > 0)
@@ -287,6 +280,7 @@ void FT232H_AssertEmptyReadBuffer(FT232H::State* ft232h)
 		Trace("AssertEmptyReadBuffer failed\n");
 		FT232H_DrainRead(ft232h, true);
 	}
+	Assert(bytesInReadBuffer == 0);
 }
 
 void FT232H_Initialize(FT232H::State* ft232h)
@@ -407,12 +401,12 @@ void FT232H_Initialize(FT232H::State* ft232h)
 		status = FT_GetQueueStatus(device, &bytesInReadBuffer);
 		CheckStatus(status);
 	}
-	Assert(bytesInReadBuffer == 2);
 
 	// TODO: Seems like we kinda need a flush after enabling MPSSE
 	// DEBUG
 	if (bytesInReadBuffer != 2)
-		FT232H_DrainRead(ft232h);
+		FT232H_DrainRead(ft232h, true);
+	Assert(bytesInReadBuffer == 2);
 
 	u8 buffer[2];
 	DWORD numBytesRead = 0;
