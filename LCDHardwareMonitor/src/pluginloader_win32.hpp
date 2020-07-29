@@ -12,7 +12,7 @@ using Microsoft::WRL::ComPtr;
 // TODO: Don't really need this in run/. Want to reach into the project output
 // folder directly, but we need to know the correct config subfolder.
 // NOTE: Can use oleview to inspect tlb files. Other tools are available online.
-#import "..\\run\\LCDHardwareMonitor.PluginLoader.CLR.tlb" no_namespace
+#import "..\\..\\build\\vs\\run\\LCDHardwareMonitor.PluginLoader.CLR.tlb" no_namespace
 
 struct LHMHostControl final : public IHostControl
 {

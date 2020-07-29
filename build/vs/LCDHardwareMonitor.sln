@@ -1,0 +1,142 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30320.27
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LCDHardwareMonitor", "LCDHardwareMonitor.vcxproj", "{0BBAB39F-5449-4FCE-AD78-884154644605}"
+	ProjectSection(ProjectDependencies) = postProject
+		{4CF4BF35-2C27-4969-BFD7-34149A9CBF12} = {4CF4BF35-2C27-4969-BFD7-34149A9CBF12}
+		{7DA05A6B-45B5-4877-B211-14ED51B5388B} = {7DA05A6B-45B5-4877-B211-14ED51B5388B}
+		{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A} = {2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "LCDHardwareMonitor API", "LCDHardwareMonitor API", "{CC1638D1-8331-4AC6-AF7B-1E0D9B07EDC0}"
+	ProjectSection(SolutionItems) = preProject
+		..\..\LCDHardwareMonitor API\LHM.natvis = ..\..\LCDHardwareMonitor API\LHM.natvis
+		..\..\LCDHardwareMonitor API\LHMAPI.h = ..\..\LCDHardwareMonitor API\LHMAPI.h
+		..\..\LCDHardwareMonitor API\LHMAPICLR.h = ..\..\LCDHardwareMonitor API\LHMAPICLR.h
+		..\..\LCDHardwareMonitor API\LHMBytes.hpp = ..\..\LCDHardwareMonitor API\LHMBytes.hpp
+		..\..\LCDHardwareMonitor API\LHMCommon.h = ..\..\LCDHardwareMonitor API\LHMCommon.h
+		..\..\LCDHardwareMonitor API\LHMCompiler.h = ..\..\LCDHardwareMonitor API\LHMCompiler.h
+		..\..\LCDHardwareMonitor API\LHMDefer.hpp = ..\..\LCDHardwareMonitor API\LHMDefer.hpp
+		..\..\LCDHardwareMonitor API\LHMHash.hpp = ..\..\LCDHardwareMonitor API\LHMHash.hpp
+		..\..\LCDHardwareMonitor API\LHMList.hpp = ..\..\LCDHardwareMonitor API\LHMList.hpp
+		..\..\LCDHardwareMonitor API\LHMMath.hpp = ..\..\LCDHardwareMonitor API\LHMMath.hpp
+		..\..\LCDHardwareMonitor API\LHMPlugin.h = ..\..\LCDHardwareMonitor API\LHMPlugin.h
+		..\..\LCDHardwareMonitor API\LHMRenderer.h = ..\..\LCDHardwareMonitor API\LHMRenderer.h
+		..\..\LCDHardwareMonitor API\LHMSensorPlugin.h = ..\..\LCDHardwareMonitor API\LHMSensorPlugin.h
+		..\..\LCDHardwareMonitor API\LHMString.hpp = ..\..\LCDHardwareMonitor API\LHMString.hpp
+		..\..\LCDHardwareMonitor API\LHMWidgetPlugin.h = ..\..\LCDHardwareMonitor API\LHMWidgetPlugin.h
+		..\..\LCDHardwareMonitor API\WVP.vs.h = ..\..\LCDHardwareMonitor API\WVP.vs.h
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LCDHardwareMonitor API CLR", "LCDHardwareMonitor API CLR.vcxproj", "{246430DC-680A-432E-B7DE-BCC2C59CDDAE}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LCDHardwareMonitor PluginLoader CLR", "LCDHardwareMonitor PluginLoader CLR.vcxproj", "{4CF4BF35-2C27-4969-BFD7-34149A9CBF12}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Sensor Plugin - OpenHardwareMonitor", "Sensor Plugin - OpenHardwareMonitor.vcxproj", "{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Widget Plugin - Filled Bar", "Widget Plugin - Filled Bar.vcxproj", "{7DA05A6B-45B5-4877-B211-14ED51B5388B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LCDHardwareMonitor GUI", "LCDHardwareMonitor GUI.csproj", "{5ECF7D2F-1DD5-4E32-A973-018FCBD33380}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LCDHardwareMonitor GUI Interop", "LCDHardwareMonitor GUI Interop.vcxproj", "{E16AAA6C-043D-416E-8CE7-D7FDB83B8722}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build Scripts", "Build Scripts", "{88E61B82-2958-4CE2-82FF-6F5952702AB3}"
+	ProjectSection(SolutionItems) = preProject
+		CopyD3DC.bat = CopyD3DC.bat
+		Deploy.bat = Deploy.bat
+		GenTLB.bat = GenTLB.bat
+		ignored.txt = ignored.txt
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{93AE6C14-C253-4259-B426-1784014EBBB1}"
+	ProjectSection(SolutionItems) = preProject
+		..\..\.editorconfig = ..\..\.editorconfig
+		..\..\.gitignore = ..\..\.gitignore
+		..\..\.gitmodules = ..\..\.gitmodules
+		..\..\README.md = ..\..\README.md
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Hardware Communication", "Hardware Communication.vcxproj", "{BC5635D4-690C-484D-931A-E5E5A259D338}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0BBAB39F-5449-4FCE-AD78-884154644605}.Debug|x64.ActiveCfg = Debug|x64
+		{0BBAB39F-5449-4FCE-AD78-884154644605}.Debug|x64.Build.0 = Debug|x64
+		{0BBAB39F-5449-4FCE-AD78-884154644605}.Debug|x86.ActiveCfg = Debug|Win32
+		{0BBAB39F-5449-4FCE-AD78-884154644605}.Debug|x86.Build.0 = Debug|Win32
+		{0BBAB39F-5449-4FCE-AD78-884154644605}.Release|x64.ActiveCfg = Release|x64
+		{0BBAB39F-5449-4FCE-AD78-884154644605}.Release|x64.Build.0 = Release|x64
+		{0BBAB39F-5449-4FCE-AD78-884154644605}.Release|x86.ActiveCfg = Release|Win32
+		{0BBAB39F-5449-4FCE-AD78-884154644605}.Release|x86.Build.0 = Release|Win32
+		{246430DC-680A-432E-B7DE-BCC2C59CDDAE}.Debug|x64.ActiveCfg = Debug|x64
+		{246430DC-680A-432E-B7DE-BCC2C59CDDAE}.Debug|x64.Build.0 = Debug|x64
+		{246430DC-680A-432E-B7DE-BCC2C59CDDAE}.Debug|x86.ActiveCfg = Debug|Win32
+		{246430DC-680A-432E-B7DE-BCC2C59CDDAE}.Debug|x86.Build.0 = Debug|Win32
+		{246430DC-680A-432E-B7DE-BCC2C59CDDAE}.Release|x64.ActiveCfg = Release|x64
+		{246430DC-680A-432E-B7DE-BCC2C59CDDAE}.Release|x64.Build.0 = Release|x64
+		{246430DC-680A-432E-B7DE-BCC2C59CDDAE}.Release|x86.ActiveCfg = Release|Win32
+		{246430DC-680A-432E-B7DE-BCC2C59CDDAE}.Release|x86.Build.0 = Release|Win32
+		{4CF4BF35-2C27-4969-BFD7-34149A9CBF12}.Debug|x64.ActiveCfg = Debug|x64
+		{4CF4BF35-2C27-4969-BFD7-34149A9CBF12}.Debug|x64.Build.0 = Debug|x64
+		{4CF4BF35-2C27-4969-BFD7-34149A9CBF12}.Debug|x86.ActiveCfg = Debug|Win32
+		{4CF4BF35-2C27-4969-BFD7-34149A9CBF12}.Debug|x86.Build.0 = Debug|Win32
+		{4CF4BF35-2C27-4969-BFD7-34149A9CBF12}.Release|x64.ActiveCfg = Release|x64
+		{4CF4BF35-2C27-4969-BFD7-34149A9CBF12}.Release|x64.Build.0 = Release|x64
+		{4CF4BF35-2C27-4969-BFD7-34149A9CBF12}.Release|x86.ActiveCfg = Release|Win32
+		{4CF4BF35-2C27-4969-BFD7-34149A9CBF12}.Release|x86.Build.0 = Release|Win32
+		{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}.Debug|x64.ActiveCfg = Debug|x64
+		{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}.Debug|x64.Build.0 = Debug|x64
+		{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}.Debug|x86.ActiveCfg = Debug|Win32
+		{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}.Debug|x86.Build.0 = Debug|Win32
+		{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}.Release|x64.ActiveCfg = Release|x64
+		{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}.Release|x64.Build.0 = Release|x64
+		{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}.Release|x86.ActiveCfg = Release|Win32
+		{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}.Release|x86.Build.0 = Release|Win32
+		{7DA05A6B-45B5-4877-B211-14ED51B5388B}.Debug|x64.ActiveCfg = Debug|x64
+		{7DA05A6B-45B5-4877-B211-14ED51B5388B}.Debug|x64.Build.0 = Debug|x64
+		{7DA05A6B-45B5-4877-B211-14ED51B5388B}.Debug|x86.ActiveCfg = Debug|Win32
+		{7DA05A6B-45B5-4877-B211-14ED51B5388B}.Debug|x86.Build.0 = Debug|Win32
+		{7DA05A6B-45B5-4877-B211-14ED51B5388B}.Release|x64.ActiveCfg = Release|x64
+		{7DA05A6B-45B5-4877-B211-14ED51B5388B}.Release|x64.Build.0 = Release|x64
+		{7DA05A6B-45B5-4877-B211-14ED51B5388B}.Release|x86.ActiveCfg = Release|Win32
+		{7DA05A6B-45B5-4877-B211-14ED51B5388B}.Release|x86.Build.0 = Release|Win32
+		{5ECF7D2F-1DD5-4E32-A973-018FCBD33380}.Debug|x64.ActiveCfg = Debug|x64
+		{5ECF7D2F-1DD5-4E32-A973-018FCBD33380}.Debug|x64.Build.0 = Debug|x64
+		{5ECF7D2F-1DD5-4E32-A973-018FCBD33380}.Debug|x86.ActiveCfg = Debug|x86
+		{5ECF7D2F-1DD5-4E32-A973-018FCBD33380}.Debug|x86.Build.0 = Debug|x86
+		{5ECF7D2F-1DD5-4E32-A973-018FCBD33380}.Release|x64.ActiveCfg = Release|x64
+		{5ECF7D2F-1DD5-4E32-A973-018FCBD33380}.Release|x64.Build.0 = Release|x64
+		{5ECF7D2F-1DD5-4E32-A973-018FCBD33380}.Release|x86.ActiveCfg = Release|x86
+		{5ECF7D2F-1DD5-4E32-A973-018FCBD33380}.Release|x86.Build.0 = Release|x86
+		{E16AAA6C-043D-416E-8CE7-D7FDB83B8722}.Debug|x64.ActiveCfg = Debug|x64
+		{E16AAA6C-043D-416E-8CE7-D7FDB83B8722}.Debug|x64.Build.0 = Debug|x64
+		{E16AAA6C-043D-416E-8CE7-D7FDB83B8722}.Debug|x86.ActiveCfg = Debug|Win32
+		{E16AAA6C-043D-416E-8CE7-D7FDB83B8722}.Debug|x86.Build.0 = Debug|Win32
+		{E16AAA6C-043D-416E-8CE7-D7FDB83B8722}.Release|x64.ActiveCfg = Release|x64
+		{E16AAA6C-043D-416E-8CE7-D7FDB83B8722}.Release|x64.Build.0 = Release|x64
+		{E16AAA6C-043D-416E-8CE7-D7FDB83B8722}.Release|x86.ActiveCfg = Release|Win32
+		{E16AAA6C-043D-416E-8CE7-D7FDB83B8722}.Release|x86.Build.0 = Release|Win32
+		{BC5635D4-690C-484D-931A-E5E5A259D338}.Debug|x64.ActiveCfg = Debug|x64
+		{BC5635D4-690C-484D-931A-E5E5A259D338}.Debug|x64.Build.0 = Debug|x64
+		{BC5635D4-690C-484D-931A-E5E5A259D338}.Debug|x86.ActiveCfg = Debug|Win32
+		{BC5635D4-690C-484D-931A-E5E5A259D338}.Debug|x86.Build.0 = Debug|Win32
+		{BC5635D4-690C-484D-931A-E5E5A259D338}.Release|x64.ActiveCfg = Release|x64
+		{BC5635D4-690C-484D-931A-E5E5A259D338}.Release|x64.Build.0 = Release|x64
+		{BC5635D4-690C-484D-931A-E5E5A259D338}.Release|x86.ActiveCfg = Release|Win32
+		{BC5635D4-690C-484D-931A-E5E5A259D338}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C54E953A-DF57-4C64-8FE7-4B6D28BAAA07}
+	EndGlobalSection
+EndGlobal

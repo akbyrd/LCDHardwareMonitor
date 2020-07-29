@@ -1,0 +1,76 @@
+Compiler: MSVC 2015
+Language: C++14
+
+C++ /CLI Projects
+Disable incremental linking (not supported)
+Do not use /DEBUG:Fastlink (not supported)
+Can't launch from the run folder because CS project debug settings don't support VS macros.
+
+
+
+Projects
+LCDHardwareMonitor
+Project dependencies: LCDHardwareMonitor PluginLoader CLR
+Include directories: ../LCDHardwareMonitor API/
+Library dependencies: MSCorEE.lib, D3D11.lib, D3D9.lib, DXGI.lib, d3dcompiler.lib
+Output: exe
+Post build: "Deploy.bat" "$(OutDir)" && CopyD3DC.bat "$(WindowsSdkDir)" $(PlatformTarget)
+This is the main project. Contains the the core application as well as unmanaged
+hosting code the starts the CLR and communicates with LCDHardwareMonitor
+PluginLoader CLR on the managed side.
+
+LCDHardwareMonitor PluginLoader CLR
+Project dependencies: LCDHardwareMonitor API CLR
+Include directories: ../LCDHardwareMonitor API/
+References: LCDHardwareMonitor API CLR
+Output: dll
+Compiler flags: /clr
+Post build: "GenTLB.bat" "$(OutDir)" "$(TargetName)" && "Deploy.bat" "$(OutDir)"
+Helps handle managed plugins. The code in this assembly is responsible for
+creating and destroying AppDomains and doing bookkeeping for managed plugins.
+The code here will be injected into the AppDomain for each plugin to deal with
+unmanaged to managed interop. The core application loads this assembly and
+instantiates the main class through a COM interface (unfortunately). Due to the
+COM usage, the assembly must be parsed into .tlb file for the core application
+to use and avoid registering the COM type on the system.
+
+LCDHardwareMonitor API CLR
+Include directories: ../LCDHardwareMonitor API/
+Output: dll
+Compiler flags: /clr
+Post build: "Deploy.bat" "$(OutDir)"
+Contains managed descriptions of all interfaces available to plugins.
+
+OpenHardwareMonitor Plugin
+Project dependencies: LCDHardwareMonitor API CLR
+Include directories: ../LCDHardwareMonitor API/
+Type: sensor plugin
+Output: dll
+Compiler flags: /clr
+Post build: "Deploy.bat" "$(OutDir)" "Sensor Plugins\OpenHardwareMonitor"
+
+Filled Bar Plugin
+Project dependencies: LCDHardwareMonitor API CLR
+Include directories: ../LCDHardwareMonitor API/
+Type: sensor plugin
+Output: dll
+Compiler flags: /clr
+Post build: "Deploy.bat" "$(OutDir)" "Widget Plugins\Filled Bar"
+
+
+
+Directory Structure
+The run directory must have the following structure:
+LCDHardwareMonitor.exe
+LCDHardwareMonitor API CLR.dll
+LCDHardwareMonitor PluginLoader CLR.dll
+LCDHardwareMonitor PluginLoader CLR.tlb
+Sensor Plugins/
+	Plugin Name/
+		Plugin Name.dll
+Widget Plugins/
+	Plugin Name/
+		Plugin Name.dll
+		Plugin Shader.cso
+Shaders/
+	Built-in Shader.cso
