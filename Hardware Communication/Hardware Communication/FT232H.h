@@ -45,7 +45,7 @@ namespace FT232H
 	struct State
 	{
 		FT_HANDLE device            = nullptr;
-		UCHAR     latency           = 1;
+		u8        latency           = 1;
 		u8        lowPinValues      = 0b0000'0000; // Pin 2: DI, 1: DO, 0: TCK
 		u8        lowPinDirections  = 0b0000'0011;
 		u8        highPinValues     = 0b0000'0000; // Pin 2: RST, 1: D/C, 0: CS
@@ -54,27 +54,20 @@ namespace FT232H
 
 	struct Command
 	{
-		static const u8 WRITE_BYTES_PVE_MSB  = '\x10';
-		static const u8 WRITE_BYTES_NVE_MSB  = '\x11';
-		static const u8 READ_BYTES_PVE_MSB   = '\x20';
-		static const u8 READ_BYTES_NVE_MSB   = '\x24';
-		static const u8 RW_BYTES_PVE_NVE_MSB = '\x31';
-		static const u8 RW_BYTES_NVE_PVE_MSB = '\x34';
-
-		//static const u8 SendBytesRisingMSBFirst     = '\x10';
-		//static const u8 SendRecvBytesRisingMSBFirst = '\x34';
-		static const u8 SetDataBitsLowByte          = '\x80';
-		static const u8 ReadDataBitsLowByte         = '\x81';
-		static const u8 SetDataBitsHighByte         = '\x82';
-		static const u8 EnableLoopback              = '\x84';
-		static const u8 DisableLoopback             = '\x85';
-		static const u8 SetClockDivisor             = '\x86';
-		static const u8 DisableClockDivide          = '\x8A';
-		static const u8 EnableClockDivide           = '\x8B';
-		static const u8 Enable3PhaseClock           = '\x8C';
-		static const u8 Disable3PhaseClock          = '\x8D';
-		static const u8 DisableAdaptiveClock        = '\x97';
-		static const u8 BadCommand                  = '\xAB';
+		static const u8 SendBytesFallingMSB  = '\x11';
+		static const u8 RecvBytesRisingMSB   = '\x20';
+		static const u8 SetDataBitsLowByte   = '\x80';
+		static const u8 ReadDataBitsLowByte  = '\x81';
+		static const u8 SetDataBitsHighByte  = '\x82';
+		static const u8 EnableLoopback       = '\x84';
+		static const u8 DisableLoopback      = '\x85';
+		static const u8 SetClockDivisor      = '\x86';
+		static const u8 DisableClockDivide   = '\x8A';
+		static const u8 EnableClockDivide    = '\x8B';
+		static const u8 Enable3PhaseClock    = '\x8C';
+		static const u8 Disable3PhaseClock   = '\x8D';
+		static const u8 DisableAdaptiveClock = '\x97';
+		static const u8 BadCommand           = '\xAB';
 	};
 
 	struct Response
@@ -197,7 +190,6 @@ void FT232H_SetDC(FT232H::State* ft232h, Signal signal)
 	}
 }
 
-#if true
 template <u16 N>
 u16 FT232H_Read(FT232H::State* ft232h, u8 (&buffer)[N])
 {
@@ -205,7 +197,7 @@ u16 FT232H_Read(FT232H::State* ft232h, u8 (&buffer)[N])
 
 	// NOTE: ILI9341 shifts on the falling edge, therefore read on the rising edge
 	DWORD numBytesWritten;
-	u8 ftcmd[] = { FT232H::Command::READ_BYTES_PVE_MSB, BYTE(0, N - 1), BYTE(1, N - 1) };
+	u8 ftcmd[] = { FT232H::Command::RecvBytesRisingMSB, BYTE(0, N - 1), BYTE(1, N - 1) };
 	status = FT_Write(ft232h->device, ftcmd, ArrayLength(ftcmd), &numBytesWritten);
 	CheckStatus(status);
 	Assert(ArrayLength(ftcmd) == numBytesWritten);
@@ -233,40 +225,6 @@ u16 FT232H_Read(FT232H::State* ft232h, u8 (&buffer)[N])
 
 	return u16(numBytesRead);
 }
-#else
-template <u16 N>
-u16 FT232H_Read(FT232H::State* ft232h, u8 ilicmd, u8 (&buffer)[N])
-{
-	FT232H_SetDC(ft232h, Signal::Low);
-
-	u16 cmdSize = 0;
-	u8 cmd[1024];
-
-	cmd[cmdSize++] = FT232H::Command::WRITE_BYTES_NVE_MSB;
-	cmd[cmdSize++] = BYTE(0, 1 - 1);
-	cmd[cmdSize++] = BYTE(1, 1 - 1);
-	cmd[cmdSize++] = ilicmd;
-	cmd[cmdSize++] = FT232H::Command::READ_BYTES_PVE_MSB;
-	cmd[cmdSize++] = BYTE(0, N - 1);
-	cmd[cmdSize++] = BYTE(1, N - 1);
-
-	FT_STATUS status;
-
-	DWORD numBytesWritten;
-	status = FT_Write(ft232h->device, cmd, cmdSize, &numBytesWritten);
-	CheckStatus(status);
-	Assert(cmdSize == numBytesWritten);
-
-	FT232H_WaitForResponse(ft232h);
-
-	DWORD numBytesRead = 0;
-	status = FT_Read(ft232h->device, buffer, N, &numBytesRead);
-	CheckStatus(status);
-	Assert(N == numBytesRead);
-
-	return u16(numBytesRead);
-}
-#endif
 
 void FT232H_AssertEmptyReadBuffer(FT232H::State* ft232h)
 {
