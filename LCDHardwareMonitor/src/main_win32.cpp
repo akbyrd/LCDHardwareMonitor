@@ -165,6 +165,28 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 		Simulation_Update(simulationState);
 
 		Renderer_Render(rendererState);
+		TextureBytes renderTextureBytes = Renderer_GetRenderTargetBytes(rendererState);
+		static bool first = true;
+		if (first)
+		{
+			first = false;
+
+			Bytes bytes = {};
+			defer { List_Free(bytes); };
+
+			u32 bytesLen = renderTextureBytes.size.x * renderTextureBytes.size.y * renderTextureBytes.pixelStride;
+			List_Reserve(bytes, bytesLen);
+			for (u32 y = 0; y < renderTextureBytes.size.y; y++)
+			{
+				ByteSlice rowBytes = {};
+				rowBytes.data   = &renderTextureBytes.bytes[y * renderTextureBytes.rowStride];
+				rowBytes.length = renderTextureBytes.size.x * renderTextureBytes.pixelStride;
+				List_AppendRange(bytes, rowBytes);
+			}
+			b8 success = Platform_WriteFileBytes("render_texture.raw", bytes);
+			Assert(success);
+		}
+
 		// BUG: Looks like it's possible to get WM_PREVIEWWINDOWCLOSED without WM_QUIT
 		PreviewWindow_Render(previewState);
 

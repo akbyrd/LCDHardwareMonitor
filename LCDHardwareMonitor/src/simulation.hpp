@@ -996,6 +996,7 @@ FromGUI_ResetCamera(SimulationState& s, FromGUI::ResetCamera&)
 	ResetCamera(s);
 }
 
+// TODO: Why doesn't this handle errors?
 static void
 FromGUI_SetPluginLoadStates(SimulationState& s, FromGUI::SetPluginLoadStates& setStates)
 {

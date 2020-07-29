@@ -38,6 +38,14 @@ struct DrawCall
 	Material material;
 };
 
+struct TextureBytes
+{
+	ByteSlice bytes;
+	v2u size;
+	u32 pixelStride;
+	u32 rowStride;
+};
+
 b8                    Renderer_Initialize                   (RendererState&, v2u renderSize);
 b8                    Renderer_RebuildSharedGeometryBuffers (RendererState&);
 void                  Renderer_Teardown                     (RendererState&);
@@ -50,6 +58,7 @@ ConstantBufferUpdate& Renderer_PushConstantBufferUpdate     (RendererState&);
 DrawCall&             Renderer_PushDrawCall                 (RendererState&);
 b8                    Renderer_Render                       (RendererState&);
 void*                 Renderer_GetSharedRenderSurface       (RendererState&);
+TextureBytes          Renderer_GetRenderTargetBytes         (RendererState&);
 
 void                  Renderer_ValidateMesh                 (RendererState&, Mesh mesh);
 void                  Renderer_ValidateVertexShader         (RendererState&, VertexShader vs);

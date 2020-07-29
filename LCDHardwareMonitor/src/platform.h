@@ -54,6 +54,7 @@ template<u32 PlaceholderCount, typename... Args>
 inline void
 Platform_LogChecked(Severity severity, Location location, StringView format, Args... args);
 
+b8         Platform_WriteFileBytes         (StringView path, ByteSlice bytes);
 Bytes      Platform_LoadFileBytes          (StringView path);
 String     Platform_LoadFileString         (StringView path);
 i64        Platform_GetTicks               ();

@@ -1,5 +1,5 @@
 // TODO: What happens if we call random renderer api and the device is
-// disconnected? Presumably it can happen at anytime, not just during an update?
+// disconnected? Presumably it can happen at any time, not just during an update?
 
 // TODO: Handle unloading assets (will require reference counting, I think)
 
@@ -98,6 +98,7 @@ struct RendererState
 	ComPtr<ID3D11RenderTargetView> d3dRenderTargetView;
 	ComPtr<ID3D11DepthStencilView> d3dDepthBufferView;
 	HANDLE                         d3dRenderTextureSharedHandle;
+	ComPtr<ID3D11Texture2D>        d3dRenderTextureCPU;
 
 	ComPtr<ID3D11RasterizerState>  d3dRasterizerStateSolid;
 	ComPtr<ID3D11RasterizerState>  d3dRasterizerStateWireframe;
@@ -110,6 +111,7 @@ struct RendererState
 	u32                            multisampleCount;
 	u32                            qualityLevelCount;
 	b8                             isWireframeEnabled;
+	D3D11_MAPPED_SUBRESOURCE       mappedRenderTargetCPU;
 
 	List<VertexShaderData>         vertexShaders;
 	List<PixelShaderData>          pixelShaders;
@@ -264,6 +266,7 @@ Renderer_Initialize(RendererState& s, v2u renderSize)
 	}
 
 
+	// TODO: Try using the keyed mutex flag to synchronize sharing
 	// Create render texture
 	D3D11_TEXTURE2D_DESC renderTextureDesc = {};
 	{
@@ -360,6 +363,30 @@ Renderer_Initialize(RendererState& s, v2u renderSize)
 
 			s.d3dContext->RSSetViewports(1, &viewport);
 		}
+	}
+
+
+	// Create render texture CPU copy
+	{
+		HRESULT hr;
+
+		D3D11_TEXTURE2D_DESC renderTextureCPUDesc = {};
+		renderTextureCPUDesc.Width              = renderTextureDesc.Width;
+		renderTextureCPUDesc.Height             = renderTextureDesc.Height;
+		renderTextureCPUDesc.MipLevels          = 1;
+		renderTextureCPUDesc.ArraySize          = 1;
+		renderTextureCPUDesc.Format             = renderTextureDesc.Format;
+		renderTextureCPUDesc.SampleDesc.Count   = 1;
+		renderTextureCPUDesc.SampleDesc.Quality = renderTextureDesc.SampleDesc.Quality;
+		renderTextureCPUDesc.Usage              = D3D11_USAGE_STAGING;
+		renderTextureCPUDesc.BindFlags          = 0;
+		renderTextureCPUDesc.CPUAccessFlags     = D3D11_CPU_ACCESS_READ;
+		renderTextureCPUDesc.MiscFlags          = 0;
+
+		hr = s.d3dDevice->CreateTexture2D(&renderTextureCPUDesc, nullptr, &s.d3dRenderTextureCPU);
+			LOG_HRESULT_IF_FAILED(hr, return false,
+				Severity::Fatal, "Failed to create render texture CPU copy");
+			SetDebugObjectName(s.d3dRenderTextureCPU, "Render Texture CPU Copy");
 	}
 
 
@@ -514,6 +541,7 @@ Renderer_Teardown(RendererState& s)
 	s.d3dVertexBuffer            .Reset();
 	s.d3dRasterizerStateWireframe.Reset();
 	s.d3dRasterizerStateSolid    .Reset();
+	s.d3dRenderTextureCPU        .Reset();
 	s.d3dDepthBufferView         .Reset();
 	s.d3dRenderTargetView        .Reset();
 	s.d3dRenderTexture           .Reset();
@@ -896,7 +924,21 @@ Renderer_Render(RendererState& s)
 	}
 	List_Clear(s.commandList);
 
+	if (s.mappedRenderTargetCPU.pData)
+	{
+		s.mappedRenderTargetCPU = {};
+		s.d3dContext->Unmap(s.d3dRenderTextureCPU.Get(), 0);
+	}
+	s.d3dContext->CopyResource(s.d3dRenderTextureCPU.Get(), s.d3dRenderTexture.Get());
+
+	// NOTE: Technically unnecessary, since the Map call will sync
+	// NOTE: This doesn't actually guarantee rendering has occurred
 	s.d3dContext->Flush();
+
+	// NOTE: Flush unmaps resources
+	HRESULT hr = s.d3dContext->Map(s.d3dRenderTextureCPU.Get(), 0, D3D11_MAP_READ, 0, &s.mappedRenderTargetCPU);
+	LOG_HRESULT_IF_FAILED(hr, return false,
+		Severity::Warning, "Failed to map render target CPU copy");
 
 	return true;
 }
@@ -923,6 +965,19 @@ void*
 Renderer_GetSharedRenderSurface(RendererState& s)
 {
 	return s.d3dRenderTextureSharedHandle;
+}
+
+TextureBytes
+Renderer_GetRenderTargetBytes(RendererState& s)
+{
+	TextureBytes textureBytes = {};
+	textureBytes.bytes.data   = (u8*) s.mappedRenderTargetCPU.pData;
+	textureBytes.bytes.length = s.mappedRenderTargetCPU.DepthPitch;
+	textureBytes.size         = s.renderSize;
+	textureBytes.rowStride    = s.mappedRenderTargetCPU.RowPitch;
+	textureBytes.pixelStride  = 4;
+	Assert(s.renderFormat == DXGI_FORMAT_B8G8R8A8_UNORM);
+	return textureBytes;
 }
 
 void Renderer_ValidateMesh(RendererState& s, Mesh mesh)

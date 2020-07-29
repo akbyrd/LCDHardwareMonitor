@@ -172,11 +172,51 @@ GetWorkingDirectory()
 	return result;
 }
 
+b8
+Platform_WriteFileBytes(StringView path, ByteSlice bytes)
+{
+	String cwd = {};
+	defer { String_Free(cwd); };
+	auto getCWD = [&cwd]() {
+		cwd = GetWorkingDirectory();
+		return cwd;
+	};
+
+	HANDLE file = CreateFileA(
+		path.data,
+		GENERIC_WRITE,
+		FILE_SHARE_READ,
+		nullptr,
+		CREATE_ALWAYS,
+		FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN,
+		nullptr
+	);
+	defer { CloseHandle(file); };
+	LOG_LAST_ERROR_IF(file == INVALID_HANDLE_VALUE, return false,
+		Severity::Warning, "Failed to create file handle '%'; CWD: '%'", path, getCWD());
+
+	DWORD bytesWritten;
+	b8 success = WriteFile(file, bytes.data, bytes.length, &bytesWritten, nullptr);
+	LOG_LAST_ERROR_IF(!success, return false,
+		Severity::Warning, "Failed to write file '%'; CWD: '%'", path, getCWD());
+	LOG_LAST_ERROR_IF(bytesWritten != bytes.length, return false,
+		Severity::Warning, "Failed to write entire file '%'; CWD: '%'", path, getCWD());
+
+	return true;
+}
+
 static Bytes
 LoadFile(StringView path, u32 padding = 0)
 {
 	Bytes result = {};
 	auto resultGuard = guard { List_Free(result); };
+
+	String cwd = {};
+	defer { String_Free(cwd); };
+	auto getCWD = [&cwd]() {
+		cwd = GetWorkingDirectory();
+		return cwd;
+	};
 
 	{
 		HANDLE file = CreateFileA(
@@ -189,13 +229,8 @@ LoadFile(StringView path, u32 padding = 0)
 			nullptr
 		);
 		defer { CloseHandle(file); };
-		if (file == INVALID_HANDLE_VALUE)
-		{
-			String cwd = GetWorkingDirectory();
-			defer { String_Free(cwd); };
-			LOG_LAST_ERROR(Severity::Warning, "Failed to create file handle '%'; CWD: '%'", path, cwd);
-			return result;
-		}
+		LOG_LAST_ERROR_IF(file == INVALID_HANDLE_VALUE, return result,
+			Severity::Warning, "Failed to create file handle '%'; CWD: '%'", path, getCWD());
 
 		LARGE_INTEGER size_win32;
 		b8 success = GetFileSizeEx(file, &size_win32);
