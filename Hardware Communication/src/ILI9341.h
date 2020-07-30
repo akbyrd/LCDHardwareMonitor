@@ -6,12 +6,12 @@ namespace ILI9341
 		bool sleep;
 		u64 sleepTime;
 		u64 wakeTime;
+		//u64 nextCommandTime;
+		bool rowColSwap;
 
-		//MADCTL_B5
 		//Column
 		//Page
 		//RamWrite
-		//nextCommandTime
 	};
 
 	struct Command
@@ -108,14 +108,10 @@ void ILI9341_Write(ILI9341::State* ili9341, u8 cmd, Args... bytes)
 void ILI9341_SetRect(ILI9341::State* ili9341, u16 x1, u16 y1, u16 x2, u16 y2, u16 color)
 {
 	Assert(x1 <= x2);
-	Assert(x2 <= 240 - 1);
-	//Assert(MADCTL == 0 && x <= 0x00EF);
-	//Assert(MADCTL == 1 && x <= 0x013F);
+	Assert(ili9341->rowColSwap ? x2 < 320 : x2 < 240);
 	ILI9341_Write(ili9341, ILI9341::Command::ColumnAddressSet, Unpack2(x1), Unpack2(x2));
 	Assert(y1 <= y2);
-	Assert(y2 <= 320 - 1);
-	//Assert(MADCTL == 0 && y <= 0x013F);
-	//Assert(MADCTL == 1 && y <= 0x00EF);
+	Assert(ili9341->rowColSwap ? y2 < 240 : y2 < 320);
 	ILI9341_Write(ili9341, ILI9341::Command::PageAddressSet, Unpack2(y1), Unpack2(y2));
 
 	const u32 maxWrite = 0xFFFE;
@@ -155,7 +151,7 @@ void ILI9341_Reset(ILI9341::State* ili9341)
 	ili9341->sleep = true;
 	ili9341->sleepTime = GetTime();
 	Sleep(5);
-	//nextCommandTime = sleepTime + 5ms
+	//ili9341->nextCommandTime = ili9341->sleepTime + 5ms
 }
 
 void ILI9341_Sleep(ILI9341::State* ili9341)
@@ -171,7 +167,7 @@ void ILI9341_Sleep(ILI9341::State* ili9341)
 	ili9341->sleep = true;
 	ili9341->sleepTime = GetTime();
 	Sleep(5);
-	//nextCommandTime = sleepTime + 5ms;
+	//ili9341->nextCommandTime = ili9341->sleepTime + 5ms;
 }
 
 void ILI9341_Wake(ILI9341::State* ili9341)
@@ -187,7 +183,7 @@ void ILI9341_Wake(ILI9341::State* ili9341)
 	ili9341->wakeTime = GetTime();
 	// NOTE: Docs contradict themselves. Is it 5 ms or 120 ms?
 	Sleep(5);
-	//nextCommandTime = sleepTime + 5ms
+	//ili9341->nextCommandTime = ili9341->wakeTime + 5ms
 }
 
 // TODO: Revisit this when displaying LHM frames.
@@ -212,6 +208,7 @@ void ILI9341_MemoryAccessControl(ILI9341::State* ili9341)
 	mac |= rgbOrder_RGB;
 	mac |= horizontalRefershOrder_LeftToRight;
 	ILI9341_Write(ili9341, ILI9341::Command::MemoryAccessControl, mac);
+	ili9341->rowColSwap = false;
 }
 
 void ILI9341_PixelFormatSet(ILI9341::State* ili9341)
