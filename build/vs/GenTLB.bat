@@ -14,6 +14,7 @@ SET DEPENDENCY_DIR=..\LCDHardwareMonitor API CLR\%OUT_DIR%
 
 ECHO  **** Generating TLB
 
+REM TODO: use /win32 and /win64?
 tlbexp /nologo ^
 	"%TARGET_FILE_NO_EXT%.dll" ^
 	/out:"%TARGET_FILE_NO_EXT%.tlb" ^

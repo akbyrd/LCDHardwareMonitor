@@ -257,7 +257,7 @@ Renderer_Initialize(RendererState& s, v2u renderSize)
 		// Ignore warning for not using a flip-mode swap chain
 		DXGI_INFO_QUEUE_MESSAGE_ID ids[] = { 294 };
 		DXGI_INFO_QUEUE_FILTER filter = {};
-		filter.DenyList.NumIDs  = ArrayLength(ids);
+		filter.DenyList.NumIDs  = (u32) ArrayLength(ids);
 		filter.DenyList.pIDList = ids;
 		hr = dxgiInfoQueue->PushStorageFilter(DXGI_DEBUG_DXGI, &filter);
 		LOG_HRESULT_IF_FAILED(hr, IGNORE,

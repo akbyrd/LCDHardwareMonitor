@@ -251,7 +251,7 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 		case WM_ENTERMENULOOP:
 		case WM_ENTERSIZEMOVE:
 		{
-			u32 result = SetTimer(s->hwnd, 1, 1, 0);
+			u64 result = SetTimer(s->hwnd, 1, 1, 0);
 			LOG_LAST_ERROR_IF(result == 0, IGNORE, Severity::Warning, "Failed to set modal timer");
 			break;
 		}

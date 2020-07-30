@@ -183,7 +183,7 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 				rowBytes.length = renderTextureBytes.size.x * renderTextureBytes.pixelStride;
 				List_AppendRange(bytes, rowBytes);
 			}
-			b8 success = Platform_WriteFileBytes("render_texture.raw", bytes);
+			success = Platform_WriteFileBytes("render_texture.raw", bytes);
 			Assert(success);
 		}
 

@@ -12,7 +12,11 @@ using Microsoft::WRL::ComPtr;
 // TODO: Don't really need this in run/. Want to reach into the project output
 // folder directly, but we need to know the correct config subfolder.
 // NOTE: Can use oleview to inspect tlb files. Other tools are available online.
+#pragma warning(push)
+// TODO: Why does tlbexp generate bad code?
+#pragma warning(disable: 5204) // non-virtual destructor
 #import "..\\..\\build\\vs\\run\\LCDHardwareMonitor.PluginLoader.CLR.tlb" no_namespace
+#pragma warning(pop)
 
 struct LHMHostControl final : public IHostControl
 {

@@ -8,7 +8,7 @@
 // Fuck you, Microsoft
 #pragma warning(push, 0)
 // signed unsigned mismatch
-#pragma warning(disable : 4365)
+#pragma warning(disable: 4365)
 // TODO: Why can't this be <memory.h>?
 #include <memory>
 #pragma warning(pop)
