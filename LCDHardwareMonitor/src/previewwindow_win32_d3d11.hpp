@@ -149,13 +149,6 @@ PreviewWindow_Initialize(
 			Severity::Error, "Failed to preview window create back buffer");
 		SetDebugObjectName(s.backBuffer, "Preview Back Buffer");
 
-		// Create a render target view to the back buffer
-		//ComPtr<ID3D11RenderTargetView> renderTargetView;
-		//hr = rendererState.d3dDevice->CreateRenderTargetView(s.backBuffer.Get(), nullptr, &renderTargetView);
-		//LOG_HRESULT_IF_FAILED(hr, return false,
-		//	Severity::Error, "Failed to create preview window render target view");
-		//SetDebugObjectName(renderTargetView, "Preview Render Target View");
-
 		// Associate the window
 		hr = rendererState.dxgiFactory->MakeWindowAssociation(s.hwnd, DXGI_MWA_NO_ALT_ENTER);
 		LOG_HRESULT_IF_FAILED(hr, return false,

@@ -140,9 +140,7 @@ SetDebugObjectNameImpl(const ComPtr<T>& resource, StringView format, Args... arg
 	String name = String_FormatImpl(format, args...);
 	defer { String_Free(name); };
 
-	// TODO: Pretty sure this is an off-by-one
-	Assert(name.length > 0);
-	resource->SetPrivateData(WKPDID_D3DDebugObjectName, name.length - 1, name.data);
+	resource->SetPrivateData(WKPDID_D3DDebugObjectName, name.length, name.data);
 	#else
 		UNUSED(resource); UNUSED(format); UNUSED_ARGS(args...);
 	#endif
@@ -157,11 +155,14 @@ Renderer_Initialize(RendererState& s, v2u renderSize)
 
 	s.multisampleCount = 1;
 
+
 	// Create device
 	{
 		HRESULT hr;
 
-		UINT createDeviceFlags = D3D11_CREATE_DEVICE_SINGLETHREADED;
+		UINT createDeviceFlags = 0;
+		// TODO: Using this flag causes a crash when RTSS tries to hook the process
+		//createDeviceFlags |= D3D11_CREATE_DEVICE_SINGLETHREADED;
 		#if DEBUG
 		createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
 		//createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUGGABLE; //11_1+
@@ -186,11 +187,8 @@ Renderer_Initialize(RendererState& s, v2u renderSize)
 		SetDebugObjectName(s.d3dContext, "Device Context");
 
 		// Check feature level
-		if (!HAS_FLAG(featureLevel, D3D_FEATURE_LEVEL_11_0))
-		{
-			LOG(Severity::Fatal, "Created Device does not support D3D 11");
-			return false;
-		}
+		LOG_IF(!HAS_FLAG(featureLevel, D3D_FEATURE_LEVEL_11_0), return false,
+			Severity::Fatal, "Created Device does not support D3D 11");
 
 		// Obtain the DXGI factory used to create the current device.
 		ComPtr<IDXGIDevice1> dxgiDevice;
@@ -219,13 +217,9 @@ Renderer_Initialize(RendererState& s, v2u renderSize)
 		LOG_HRESULT_IF_FAILED(hr, return false,
 			Severity::Fatal, "Failed to get DXGI adapter description");
 
-		if ((desc.VendorId == 0x1414) && (desc.DeviceId == 0x8c))
-		{
-			// WARNING: Microsoft Basic Render Driver is active. Performance of this
-			// application may be unsatisfactory. Please ensure that your video card is
-			// Direct3D10/11 capable and has the appropriate driver installed.
-			LOG(Severity::Warning, "WARP driver in use.");
-		}
+		b8 warpDriverInUse = (desc.VendorId == 0x1414) && (desc.DeviceId == 0x8c);
+		LOG_IF(warpDriverInUse, IGNORE,
+			Severity::Warning, "WARP driver in use.");
 	}
 
 
@@ -384,9 +378,9 @@ Renderer_Initialize(RendererState& s, v2u renderSize)
 		renderTextureCPUDesc.MiscFlags          = 0;
 
 		hr = s.d3dDevice->CreateTexture2D(&renderTextureCPUDesc, nullptr, &s.d3dRenderTextureCPU);
-			LOG_HRESULT_IF_FAILED(hr, return false,
-				Severity::Fatal, "Failed to create render texture CPU copy");
-			SetDebugObjectName(s.d3dRenderTextureCPU, "Render Texture CPU Copy");
+		LOG_HRESULT_IF_FAILED(hr, return false,
+			Severity::Fatal, "Failed to create render texture CPU copy");
+		SetDebugObjectName(s.d3dRenderTextureCPU, "Render Texture CPU Copy");
 	}
 
 
@@ -596,7 +590,7 @@ Renderer_CreateMesh(RendererState& s, StringView name, Slice<Vertex> vertices, S
 }
 
 static b8
-Renderer_CreateConstantBuffer(RendererState& s, ConstantBuffer& cBuf)
+CreateConstantBuffer(RendererState& s, ConstantBuffer& cBuf)
 {
 	// TODO: Add more cbuf info to logging
 	// TODO: Decide where validation should be handled: simulation or renderer
@@ -666,7 +660,7 @@ Renderer_LoadVertexShader(RendererState& s, StringView name, StringView path, Sl
 			ConstantBuffer& cBuf = List_Append(vs.constantBuffers);
 			cBuf.size = cBufSizes[i];
 
-			b8 success = Renderer_CreateConstantBuffer(s, cBuf);
+			b8 success = CreateConstantBuffer(s, cBuf);
 			LOG_IF(!success, return VertexShader::Null,
 				Severity::Error, "Failed to create VS constant buffer % for '%'", i, path);
 		}
@@ -769,7 +763,7 @@ Renderer_LoadPixelShader(RendererState& s, StringView name, StringView path, Sli
 			ConstantBuffer& cBuf = List_Append(ps.constantBuffers);
 			cBuf.size = cBufSizes[i];
 
-			b8 success = Renderer_CreateConstantBuffer(s, cBuf);
+			b8 success = CreateConstantBuffer(s, cBuf);
 			LOG_IF(!success, return PixelShader::Null,
 				Severity::Error, "Failed to create PS constant buffer % for '%'", i, path);
 		}
@@ -809,7 +803,7 @@ Renderer_PushDrawCall(RendererState& s)
 }
 
 static b8
-Renderer_UpdateConstantBuffer(RendererState& s, ConstantBuffer& cBuf, void* data)
+UpdateConstantBuffer(RendererState& s, ConstantBuffer& cBuf, void* data)
 {
 	D3D11_MAPPED_SUBRESOURCE map = {};
 	HRESULT hr = s.d3dContext->Map(cBuf.d3dConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
@@ -867,7 +861,7 @@ Renderer_Render(RendererState& s)
 					}
 				}
 
-				b8 success = Renderer_UpdateConstantBuffer(s, *cBuf, cBufUpdate.data);
+				b8 success = UpdateConstantBuffer(s, *cBuf, cBufUpdate.data);
 				if (!success) break;
 				break;
 			}
@@ -980,17 +974,20 @@ Renderer_GetRenderTargetBytes(RendererState& s)
 	return textureBytes;
 }
 
-void Renderer_ValidateMesh(RendererState& s, Mesh mesh)
+void
+Renderer_ValidateMesh(RendererState& s, Mesh mesh)
 {
 	Assert(List_IsRefValid(s.meshes, mesh));
 }
 
-void Renderer_ValidateVertexShader(RendererState& s, VertexShader vs)
+void
+Renderer_ValidateVertexShader(RendererState& s, VertexShader vs)
 {
 	Assert(List_IsRefValid(s.vertexShaders, vs));
 }
 
-void Renderer_ValidatePixelShader(RendererState& s, PixelShader ps)
+void
+Renderer_ValidatePixelShader(RendererState& s, PixelShader ps)
 {
 	Assert(List_IsRefValid(s.pixelShaders, ps));
 }
@@ -1028,7 +1025,8 @@ Renderer_ValidateConstantBufferUpdate(RendererState& s, ConstantBufferUpdate& cB
 	}
 }
 
-void Renderer_ValidateDrawCall(RendererState& s, DrawCall& drawCall)
+void
+Renderer_ValidateDrawCall(RendererState& s, DrawCall& drawCall)
 {
 	Renderer_ValidateMaterial(s, drawCall.material);
 }

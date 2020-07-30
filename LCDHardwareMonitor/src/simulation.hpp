@@ -627,7 +627,7 @@ UnloadWidgetPlugin(SimulationState& s, WidgetPlugin& widgetPlugin)
 	context.s            = &s;
 	context.widgetPlugin = &widgetPlugin;
 
-	WidgetAPI::Teardown wigetAPI = {};
+	WidgetAPI::Teardown widgetAPI = {};
 	for (u32 i = 0; i < widgetPlugin.widgetDatas.length; i++)
 	{
 		WidgetData& widgetData = widgetPlugin.widgetDatas[i];
@@ -635,13 +635,13 @@ UnloadWidgetPlugin(SimulationState& s, WidgetPlugin& widgetPlugin)
 
 		context.success = true;
 
-		wigetAPI.widgets                = widgetData.widgets;
-		wigetAPI.widgetsUserData        = widgetData.widgetsUserData;
-		wigetAPI.widgetsUserData.stride = widgetData.desc.userDataSize;
+		widgetAPI.widgets                = widgetData.widgets;
+		widgetAPI.widgetsUserData        = widgetData.widgetsUserData;
+		widgetAPI.widgetsUserData.stride = widgetData.desc.userDataSize;
 
 		// TODO: try/catch?
 		if (widgetData.desc.Teardown)
-			widgetData.desc.Teardown(context, wigetAPI);
+			widgetData.desc.Teardown(context, widgetAPI);
 	}
 
 	// TODO: try/catch?
@@ -1127,7 +1127,7 @@ FromGUI_BeginDragSelection(SimulationState& s, FromGUI::BeginDragSelection&)
 
 	s.mousePosStart = s.mousePos;
 
-	if (s.selected.length > 0)
+	if (s.selected.length != 0)
 	{
 		for (u32 i = 0; i < s.selected.length; i++)
 		{
@@ -1203,6 +1203,7 @@ Simulation_Initialize(SimulationState& s, PluginLoaderState& pluginLoader, Rende
 			u32 cBufSizes[] = {
 				{ sizeof(PSInitialize) },
 			};
+			// TODO: Shader names?
 			ps = Renderer_LoadPixelShader(*s.renderer, "Default", "Shaders/Solid Colored.ps.cso", cBufSizes);
 			LOG_IF(!ps, return false,
 				Severity::Error, "Failed to load built-in solid colored pixel shader");
@@ -1390,84 +1391,6 @@ Simulation_Update(SimulationState& s)
 {
 	s.currentTime = Platform_GetElapsedSeconds(s.startTime);
 
-	PluginContext context = {};
-	context.s = &s;
-
-	// TODO: Only update plugins that are actually being used
-
-	// Update Sensors
-	{
-		SensorPluginAPI::Update api = {};
-		api.RegisterSensors   = RegisterSensors;
-		api.UnregisterSensors = UnregisterSensors;
-
-		for (u32 i = 0; i < s.sensorPlugins.length; i++)
-		{
-			SensorPlugin& sensorPlugin = s.sensorPlugins[i];
-
-			// TODO: try/catch?
-			if (sensorPlugin.functions.Update)
-			{
-				context.sensorPlugin = &sensorPlugin;
-				context.success      = true;
-
-				api.sensors = sensorPlugin.sensors;
-				sensorPlugin.functions.Update(context, api);
-			}
-		}
-	}
-
-	// Update Widgets
-	{
-		// TODO: How sensor values propagate to widgets is an open question. Does
-		// the application spin through the widgets and update the values (Con:
-		// iterating over the list twice. Con: Lots of sensor lookups)? Do we
-		// store a map from sensors to widgets that use them and update widgets
-		// when the sensor value changes (Con: complexity maybe)? Do we store a
-		// pointer in widgets to the sensor value (Con: Have to patch up the
-		// pointer when sensors resize) (could be a relative pointer so update
-		// happens on a single base pointer) (Con: drawing likely needs access to
-		// the full sensor)?
-
-		WidgetPluginAPI::Update pluginAPI = {};
-
-		WidgetAPI::Update wigetAPI = {};
-		wigetAPI.t                        = s.currentTime;
-		wigetAPI.sensors                  = s.sensorPlugins[0].sensors;
-		wigetAPI.GetViewMatrix            = GetViewMatrix;
-		wigetAPI.GetProjectionMatrix      = GetProjectionMatrix;
-		wigetAPI.GetViewProjectionMatrix  = GetViewProjectionMatrix;
-		wigetAPI.PushConstantBufferUpdate = PushConstantBufferUpdate;
-		wigetAPI.PushDrawCall             = PushDrawCall;
-
-		for (u32 i = 0; i < s.widgetPlugins.length; i++)
-		{
-			WidgetPlugin& widgetPlugin = s.widgetPlugins[i];
-
-			context.widgetPlugin = &widgetPlugin;
-			context.success      = true;
-
-			// TODO: try/catch?
-			if (widgetPlugin.functions.Update)
-				widgetPlugin.functions.Update(context, pluginAPI);
-
-			for (u32 j = 0; j < widgetPlugin.widgetDatas.length; j++)
-			{
-				WidgetData& widgetData = widgetPlugin.widgetDatas[i];
-				if (widgetData.widgets.length == 0) continue;
-
-				context.success = true;
-
-				wigetAPI.widgets                = widgetData.widgets;
-				wigetAPI.widgetsUserData        = widgetData.widgetsUserData;
-				wigetAPI.widgetsUserData.stride = widgetData.desc.userDataSize;
-
-				// TODO: try/catch?
-				widgetData.desc.Update(context, wigetAPI);
-			}
-		}
-	}
-
 	// GUI Communication
 	ConnectionState& guiCon = s.guiConnection;
 	while (!guiCon.failure)
@@ -1536,10 +1459,86 @@ Simulation_Update(SimulationState& s)
 		break;
 	}
 
-	// Simulation Drawing
-	PluginContext simContext = {};
-	simContext.success = true;
-	simContext.s = &s;
+	// TODO: Only update plugins that are actually being used
+
+	// Update Sensors
+	{
+		PluginContext context = {};
+		context.s = &s;
+
+		SensorPluginAPI::Update api = {};
+		api.RegisterSensors   = RegisterSensors;
+		api.UnregisterSensors = UnregisterSensors;
+
+		for (u32 i = 0; i < s.sensorPlugins.length; i++)
+		{
+			SensorPlugin& sensorPlugin = s.sensorPlugins[i];
+
+			// TODO: try/catch?
+			if (sensorPlugin.functions.Update)
+			{
+				context.sensorPlugin = &sensorPlugin;
+				context.success      = true;
+
+				api.sensors = sensorPlugin.sensors;
+				sensorPlugin.functions.Update(context, api);
+			}
+		}
+	}
+
+	// Update Widgets
+	{
+		// TODO: How sensor values propagate to widgets is an open question. Does
+		// the application spin through the widgets and update the values (Con:
+		// iterating over the list twice. Con: Lots of sensor lookups)? Do we
+		// store a map from sensors to widgets that use them and update widgets
+		// when the sensor value changes (Con: complexity maybe)? Do we store a
+		// pointer in widgets to the sensor value (Con: Have to patch up the
+		// pointer when sensors resize) (could be a relative pointer so update
+		// happens on a single base pointer) (Con: drawing likely needs access to
+		// the full sensor)?
+
+		PluginContext context = {};
+		context.s = &s;
+
+		WidgetPluginAPI::Update pluginAPI = {};
+
+		WidgetAPI::Update widgetAPI = {};
+		widgetAPI.t                        = s.currentTime;
+		widgetAPI.sensors                  = s.sensorPlugins[0].sensors;
+		widgetAPI.GetViewMatrix            = GetViewMatrix;
+		widgetAPI.GetProjectionMatrix      = GetProjectionMatrix;
+		widgetAPI.GetViewProjectionMatrix  = GetViewProjectionMatrix;
+		widgetAPI.PushConstantBufferUpdate = PushConstantBufferUpdate;
+		widgetAPI.PushDrawCall             = PushDrawCall;
+
+		for (u32 i = 0; i < s.widgetPlugins.length; i++)
+		{
+			WidgetPlugin& widgetPlugin = s.widgetPlugins[i];
+
+			context.widgetPlugin = &widgetPlugin;
+			context.success      = true;
+
+			// TODO: try/catch?
+			if (widgetPlugin.functions.Update)
+				widgetPlugin.functions.Update(context, pluginAPI);
+
+			for (u32 j = 0; j < widgetPlugin.widgetDatas.length; j++)
+			{
+				WidgetData& widgetData = widgetPlugin.widgetDatas[i];
+				if (widgetData.widgets.length == 0) continue;
+
+				context.success = true;
+
+				widgetAPI.widgets                = widgetData.widgets;
+				widgetAPI.widgetsUserData        = widgetData.widgetsUserData;
+				widgetAPI.widgetsUserData.stride = widgetData.desc.userDataSize;
+
+				// TODO: try/catch?
+				widgetData.desc.Update(context, widgetAPI);
+			}
+		}
+	}
 
 	// DEBUG: Draw Coordinate System
 	{
@@ -1554,8 +1553,12 @@ Simulation_Update(SimulationState& s)
 		material.vs   = StandardVertexShader::WVP;
 		material.ps   = StandardPixelShader::DebugCoordinates;
 
-		PushConstantBufferUpdate(simContext, material, ShaderStage::Vertex, 0, &wvp);
-		PushDrawCall(simContext, material);
+		PluginContext context = {};
+		context.success = true;
+		context.s = &s;
+
+		PushConstantBufferUpdate(context, material, ShaderStage::Vertex, 0, &wvp);
+		PushDrawCall(context, material);
 	}
 
 	// Select mouse over widget
@@ -1624,9 +1627,13 @@ Simulation_Update(SimulationState& s)
 		material.vs   = StandardVertexShader::WVP;
 		material.ps   = StandardPixelShader::SolidColored;
 
-		PushConstantBufferUpdate(simContext, material, ShaderStage::Vertex, 0, &wvp);
-		PushConstantBufferUpdate(simContext, material, ShaderStage::Pixel,  0, &color);
-		PushDrawCall(simContext, material);
+		PluginContext context = {};
+		context.success = true;
+		context.s = &s;
+
+		PushConstantBufferUpdate(context, material, ShaderStage::Vertex, 0, &wvp);
+		PushConstantBufferUpdate(context, material, ShaderStage::Pixel,  0, &color);
+		PushDrawCall(context, material);
 	}
 
 	// Draw Selection
@@ -1655,9 +1662,13 @@ Simulation_Update(SimulationState& s)
 		material.vs   = StandardVertexShader::WVP;
 		material.ps   = StandardPixelShader::SolidColored;
 
-		PushConstantBufferUpdate(simContext, material, ShaderStage::Vertex, 0, &wvp);
-		PushConstantBufferUpdate(simContext, material, ShaderStage::Pixel,  0, &color);
-		PushDrawCall(simContext, material);
+		PluginContext context = {};
+		context.success = true;
+		context.s = &s;
+
+		PushConstantBufferUpdate(context, material, ShaderStage::Vertex, 0, &wvp);
+		PushConstantBufferUpdate(context, material, ShaderStage::Pixel,  0, &color);
+		PushDrawCall(context, material);
 	}
 }
 

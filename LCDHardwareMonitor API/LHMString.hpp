@@ -317,7 +317,27 @@ u32 ToString(String& string, const c8* value) { return ToStringImpl_Format(strin
 u32 ToString(String& string, b8        value) { return ToStringImpl_Format(string, "%s",   value ? "true" : "false"); }
 
 u32
+ToString(String& string, String value)
+{
+	b8 lengthOnly = !string.data;
+	u32 written = value.length;
+	if (!lengthOnly) strncpy_s(&string[string.length], string.capacity - string.length, &value[0], value.length);
+	string.length += written * !lengthOnly;
+	return written;
+}
+
+u32
 ToString(String& string, StringView value)
+{
+	b8 lengthOnly = !string.data;
+	u32 written = value.length;
+	if (!lengthOnly) strncpy_s(&string[string.length], string.capacity - string.length, &value[0], value.length);
+	string.length += written * !lengthOnly;
+	return written;
+}
+
+u32
+ToString(String& string, StringSlice value)
 {
 	b8 lengthOnly = !string.data;
 	u32 written = value.length;

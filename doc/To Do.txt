@@ -3,6 +3,7 @@ Outline shader
 
 
 Issues
+	Ignore Properties/Foo.Designer.cs files (they're generated)
 	Fix flush pipe error
 	Fix VS crash
 		devenv crashes with Exception code: 0xc0000374 (heap corruption?)

@@ -77,6 +77,7 @@ D3D9_CreateSharedSurface(
 	HRESULT hr;
 
 	// TODO: Send multisampling from the simulation
+	// TODO: Send format from the simulation
 	hr = d3d9Device.CreateTexture(
 		renderSize.x,
 		renderSize.y,
