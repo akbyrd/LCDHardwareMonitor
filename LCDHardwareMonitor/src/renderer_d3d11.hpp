@@ -110,7 +110,8 @@ struct RendererState
 
 	RenderTarget                   mainRenderTarget;
 	RenderTarget                   mainRenderTargetCPU;
-	HANDLE                         d3dMainRenderTargetSharedHandle;
+	RenderTarget                   mainRenderTargetGUI;
+	HANDLE                         mainRenderTargetGUISharedHandle;
 
 	ComPtr<ID3D11RasterizerState>  d3dRasterizerStateSolid;
 	ComPtr<ID3D11RasterizerState>  d3dRasterizerStateWireframe;
@@ -120,8 +121,10 @@ struct RendererState
 
 	v2u                            renderSize;
 	DXGI_FORMAT                    renderFormat;
+	DXGI_FORMAT                    sharedFormat;
 	u32                            multisampleCount;
-	u32                            qualityLevelCount;
+	u32                            qualityCountRender;
+	u32                            qualityCountShared;
 	b8                             isWireframeEnabled;
 	D3D11_MAPPED_SUBRESOURCE       mappedRenderTargetCPU;
 
@@ -166,6 +169,7 @@ SetDebugObjectNameImpl(const ComPtr<T>& resource, StringView format, Args... arg
 static void UpdateRasterizerState(RendererState& s);
 static D3D11_TEXTURE2D_DESC GetDefaultRenderTextureDesc(RendererState& s);
 static D3D11_TEXTURE2D_DESC GetCPURenderTextureDesc(RendererState& s);
+static D3D11_TEXTURE2D_DESC GetGUIRenderTextureDesc(RendererState& s);
 static RenderTarget CreateRenderTargetImpl(RendererState& s, D3D11_TEXTURE2D_DESC& desc, b8 view, b8 depth, StringView name);
 
 b8
@@ -183,7 +187,8 @@ Renderer_Initialize(RendererState& s, v2u renderSize)
 	// http://filmicgames.com/archives/299
 
 	s.renderSize       = renderSize;
-	s.renderFormat     = DXGI_FORMAT_B8G8R8A8_UNORM;
+	s.renderFormat     = DXGI_FORMAT_B8G8R8A8_UNORM; // DXGI_FORMAT_B5G6R5_UNORM
+	s.sharedFormat     = DXGI_FORMAT_B8G8R8A8_UNORM;
 	s.multisampleCount = 1;
 
 
@@ -293,10 +298,17 @@ Renderer_Initialize(RendererState& s, v2u renderSize)
 
 	// Query Quality Levels
 	{
-		HRESULT hr = s.d3dDevice->CheckMultisampleQualityLevels(s.renderFormat, s.multisampleCount, &s.qualityLevelCount);
+		HRESULT hr;
+
+		hr = s.d3dDevice->CheckMultisampleQualityLevels(s.renderFormat, s.multisampleCount, &s.qualityCountRender);
 		LOG_HRESULT_IF_FAILED(hr, return false,
 			Severity::Fatal, "Failed to query supported multisample levels for render textures");
+
+		hr = s.d3dDevice->CheckMultisampleQualityLevels(s.sharedFormat, s.multisampleCount, &s.qualityCountShared);
+		LOG_HRESULT_IF_FAILED(hr, return false,
+			Severity::Fatal, "Failed to query supported multisample levels for shared textures");
 	}
+
 
 	// Create render target
 	{
@@ -309,13 +321,19 @@ Renderer_Initialize(RendererState& s, v2u renderSize)
 	}
 
 
-	// TOOD: This should probably be an entirely different type. It can't be pushed into the render
-	// texture stack so there's not need to pollute the normal rt code with this special case.
-	// Create render texture CPU copy
+	// Create render texture copies for CPU and GUI
 	{
-		D3D11_TEXTURE2D_DESC desc = GetCPURenderTextureDesc(s);
-		s.mainRenderTargetCPU = CreateRenderTargetImpl(s, desc, false, true, "CPU Copy");
+		D3D11_TEXTURE2D_DESC desc;
+
+		// CPU Copy
+		desc = GetCPURenderTextureDesc(s);
+		s.mainRenderTargetCPU = CreateRenderTargetImpl(s, desc, false, false, "CPU Copy");
 		if (!s.mainRenderTargetCPU) return false;
+
+		// GUI Copy
+		desc = GetGUIRenderTextureDesc(s);
+		s.mainRenderTargetGUI = CreateRenderTargetImpl(s, desc, true, false, "GUI Copy");
+		if (!s.mainRenderTargetGUI) return false;
 	}
 
 
@@ -388,11 +406,11 @@ GetDefaultRenderTextureDesc(RendererState& s)
 	desc.ArraySize          = 1;
 	desc.Format             = s.renderFormat;
 	desc.SampleDesc.Count   = s.multisampleCount;
-	desc.SampleDesc.Quality = s.qualityLevelCount - 1;
+	desc.SampleDesc.Quality = s.qualityCountRender - 1;
 	desc.Usage              = D3D11_USAGE_DEFAULT;
 	desc.BindFlags          = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
 	desc.CPUAccessFlags     = 0;
-	desc.MiscFlags          = D3D11_RESOURCE_MISC_SHARED;
+	desc.MiscFlags          = 0;
 	return desc;
 }
 
@@ -406,11 +424,31 @@ GetCPURenderTextureDesc(RendererState& s)
 	desc.ArraySize          = 1;
 	desc.Format             = s.renderFormat;
 	desc.SampleDesc.Count   = s.multisampleCount;
-	desc.SampleDesc.Quality = s.qualityLevelCount - 1;
+	desc.SampleDesc.Quality = s.qualityCountRender - 1;
 	desc.Usage              = D3D11_USAGE_STAGING;
 	desc.BindFlags          = 0;
 	desc.CPUAccessFlags     = D3D11_CPU_ACCESS_READ;
 	desc.MiscFlags          = 0;
+	return desc;
+}
+
+static D3D11_TEXTURE2D_DESC
+GetGUIRenderTextureDesc(RendererState& s)
+{
+	D3D11_TEXTURE2D_DESC desc = {};
+	desc.Width              = s.renderSize.x;
+	desc.Height             = s.renderSize.y;
+	desc.MipLevels          = 1;
+	desc.ArraySize          = 1;
+	desc.Format             = s.sharedFormat;
+	desc.SampleDesc.Count   = s.multisampleCount;
+	desc.SampleDesc.Quality = s.qualityCountRender - 1;
+	desc.Usage              = D3D11_USAGE_DEFAULT;
+	// TODO: Remove render target when view is sorted out
+	// TODO: Confirm whether shader resource is needed
+	desc.BindFlags          = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+	desc.CPUAccessFlags     = 0;
+	desc.MiscFlags          = D3D11_RESOURCE_MISC_SHARED;
 	return desc;
 }
 
@@ -931,18 +969,33 @@ UpdateConstantBuffer(RendererState& s, ConstantBuffer& cBuf, void* data)
 	return true;
 }
 
+// TODO: Move all GUI and CPU copy handling to the simulation
+static void
+ConvertRenderForGUI(RendererState& s)
+{
+	Material copyMat = {};
+	copyMat.mesh = StandardMesh::Fullscreen;
+	copyMat.vs   = StandardVertexShader::ClipSpace;
+	copyMat.ps   = StandardPixelShader::VertexColored;
+
+	Renderer_PushRenderTarget(s, s.mainRenderTargetGUI);
+	DrawCall& drawCall = Renderer_PushDrawCall(s);
+	drawCall.material = copyMat;
+	Renderer_PopRenderTarget(s);
+}
+
 b8
 Renderer_Render(RendererState& s)
 {
-	// OPTIMIZE: Let clears be a manual call so we don't clear unused render targets
+	ConvertRenderForGUI(s);
+
+	// OPTIMIZE: Make clears a manual call so we don't clear unused render targets (also won't need checks)
 	for (u32 i = 0; i < s.renderTargets.length; i++)
 	{
 		RenderTargetData rt = s.renderTargets[i];
 
-		// HACK: Remove this check
 		if (rt.d3dRenderTargetView)
 			s.d3dContext->ClearRenderTargetView(rt.d3dRenderTargetView.Get(), DirectX::Colors::Black);
-		// HACK: Remove this check
 		if (rt.d3dDepthBufferView)
 			s.d3dContext->ClearDepthStencilView(rt.d3dDepthBufferView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
 	}
@@ -1094,6 +1147,7 @@ Renderer_Render(RendererState& s)
 
 	RenderTargetData& mainRT    = s.renderTargets[s.mainRenderTarget];
 	RenderTargetData& mainRTCPU = s.renderTargets[s.mainRenderTargetCPU];
+	RenderTargetData& mainRTGUI = s.renderTargets[s.mainRenderTargetGUI];
 
 	if (s.mappedRenderTargetCPU.pData)
 	{
@@ -1101,6 +1155,7 @@ Renderer_Render(RendererState& s)
 		s.d3dContext->Unmap(mainRTCPU.d3dRenderTexture.Get(), 0);
 	}
 	s.d3dContext->CopyResource(mainRTCPU.d3dRenderTexture.Get(), mainRT.d3dRenderTexture.Get());
+	s.d3dContext->CopyResource(mainRTGUI.d3dRenderTexture.Get(), mainRT.d3dRenderTexture.Get());
 
 	// NOTE: Technically unnecessary, since the Map call will sync
 	// NOTE: This doesn't actually guarantee rendering has occurred
@@ -1119,10 +1174,10 @@ Renderer_CreateRenderTextureSharedHandle(RendererState& s)
 {
 	HRESULT hr;
 
-	RenderTargetData mainRT = s.renderTargets[s.mainRenderTarget];
+	RenderTargetData mainRTGUI = s.renderTargets[s.mainRenderTargetGUI];
 
 	ComPtr<ID3D11Resource> d3dRenderTextureResource;
-	mainRT.d3dRenderTargetView->GetResource(&d3dRenderTextureResource);
+	mainRTGUI.d3dRenderTargetView->GetResource(&d3dRenderTextureResource);
 
 	// Shared surface
 	ComPtr<IDXGIResource> dxgiRenderTexture;
@@ -1130,7 +1185,9 @@ Renderer_CreateRenderTextureSharedHandle(RendererState& s)
 	LOG_HRESULT_IF_FAILED(hr, return false,
 		Severity::Error, "Failed to get DXGI render texture");
 
-	hr = dxgiRenderTexture->GetSharedHandle(&s.d3dMainRenderTargetSharedHandle);
+	// TODO: Docs recommend IDXGIResource1::CreateSharedHandle
+	// https://docs.microsoft.com/en-us/windows/win32/api/dxgi/nf-dxgi-idxgiresource-getsharedhandle
+	hr = dxgiRenderTexture->GetSharedHandle(&s.mainRenderTargetGUISharedHandle);
 	LOG_HRESULT_IF_FAILED(hr, return false,
 		Severity::Error, "Failed to get DXGI render texture handle");
 
@@ -1140,7 +1197,7 @@ Renderer_CreateRenderTextureSharedHandle(RendererState& s)
 void*
 Renderer_GetSharedRenderSurface(RendererState& s)
 {
-	return s.d3dMainRenderTargetSharedHandle;
+	return s.mainRenderTargetGUISharedHandle;
 }
 
 TextureBytes
@@ -1151,9 +1208,9 @@ Renderer_GetMainRenderTargetBytes(RendererState& s)
 	textureBytes.bytes.length = s.mappedRenderTargetCPU.DepthPitch;
 	textureBytes.size         = s.renderSize;
 	textureBytes.rowStride    = s.mappedRenderTargetCPU.RowPitch;
-	textureBytes.pixelStride  = 4;
+	textureBytes.pixelStride  = 2;
 
-	Assert(s.renderFormat == DXGI_FORMAT_B8G8R8A8_UNORM);
+	Assert(s.renderFormat == DXGI_FORMAT_B5G6R5_UNORM);
 	return textureBytes;
 }
 

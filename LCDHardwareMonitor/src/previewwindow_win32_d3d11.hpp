@@ -122,11 +122,11 @@ PreviewWindow_Initialize(
 		// TODO: Get values from system (match desktop. what happens if it changes?)
 		swapChainDesc.BufferDesc.RefreshRate.Numerator   = 60;
 		swapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
-		swapChainDesc.BufferDesc.Format                  = rendererState.renderFormat;
+		swapChainDesc.BufferDesc.Format                  = rendererState.sharedFormat;
 		swapChainDesc.BufferDesc.ScanlineOrdering        = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
 		swapChainDesc.BufferDesc.Scaling                 = DXGI_MODE_SCALING_UNSPECIFIED;
 		swapChainDesc.SampleDesc.Count                   = rendererState.multisampleCount;
-		swapChainDesc.SampleDesc.Quality                 = rendererState.qualityLevelCount - 1;
+		swapChainDesc.SampleDesc.Quality                 = rendererState.qualityCountShared - 1;
 		swapChainDesc.BufferUsage                        = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 		swapChainDesc.BufferCount                        = 1;
 		swapChainDesc.OutputWindow                       = s.hwnd;
@@ -194,7 +194,7 @@ PreviewWindow_Render(PreviewWindowState& s)
 
 	RendererState& rendererState = *s.rendererState;
 
-	RenderTargetData mainRT = rendererState.renderTargets[rendererState.mainRenderTarget];
+	RenderTargetData mainRT = rendererState.renderTargets[rendererState.mainRenderTargetGUI];
 	rendererState.d3dContext->CopyResource(s.backBuffer.Get(), mainRT.d3dRenderTexture.Get());
 
 	// TODO: Handle DXGI_ERROR_DEVICE_RESET and DXGI_ERROR_DEVICE_REMOVED

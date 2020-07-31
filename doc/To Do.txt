@@ -1,3 +1,5 @@
+Only create and copy into GUI texture when GUI is connected
+Move GUI and CPU texture handling to the simulation (don't bake it into the renderer)
 Outline shader
 
 
