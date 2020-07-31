@@ -59,6 +59,7 @@ Mesh            Renderer_CreateMesh                     (RendererState&, StringV
 VertexShader    Renderer_LoadVertexShader               (RendererState&, StringView name, StringView path, Slice<VertexAttribute> attributes, Slice<u32> cBufSizes);
 PixelShader     Renderer_LoadPixelShader                (RendererState&, StringView name, StringView path, Slice<u32> cBufSizes);
 RenderTarget    Renderer_CreateRenderTarget             (RendererState&, StringView name, b8 resource);
+RenderTarget    Renderer_CreateRenderTargetWithAlpha    (RendererState&, StringView name, b8 resource);
 RenderTarget    Renderer_CreateSharedRenderTarget       (RendererState&, StringView name, b8 resource);
 CPUTexture      Renderer_CreateCPUTexture               (RendererState&, StringView name);
 DepthBuffer     Renderer_CreateDepthBuffer              (RendererState&, StringView name, b8 resource);
@@ -80,6 +81,7 @@ void            Renderer_PopPixelShaderResource         (RendererState&, u32 slo
 void            Renderer_UpdateVSConstantBuffer         (RendererState&, VSConstantBufferUpdate&);
 void            Renderer_UpdatePSConstantBuffer         (RendererState&, PSConstantBufferUpdate&);
 void            Renderer_DrawMesh                       (RendererState&, Mesh);
+void            Renderer_SetBlendMode                   (RendererState&, b8 alpha);
 void            Renderer_Copy                           (RendererState&, RenderTarget, CPUTexture);
 
 CPUTextureBytes Renderer_GetCPUTextureBytes             (RendererState&, CPUTexture);

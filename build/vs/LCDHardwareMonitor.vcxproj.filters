@@ -50,6 +50,9 @@
     <ClInclude Include="..\..\LCDHardwareMonitor\src\Solid Colored.ps.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\LCDHardwareMonitor\src\Blur.ps.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\LCDHardwareMonitor\src\ft232h.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -73,10 +76,16 @@
     <FxCompile Include="..\..\LCDHardwareMonitor\res\Solid Colored.ps">
       <Filter>Resources</Filter>
     </FxCompile>
+    <FxCompile Include="..\..\LCDHardwareMonitor\res\Blur.ps">
+      <Filter>Resources</Filter>
+    </FxCompile>
     <FxCompile Include="..\..\LCDHardwareMonitor\res\Clip Space.vs">
       <Filter>Resources</Filter>
     </FxCompile>
     <FxCompile Include="..\..\LCDHardwareMonitor\res\Composite.ps">
+      <Filter>Resources</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\LCDHardwareMonitor\res\Blur Composite.ps">
       <Filter>Resources</Filter>
     </FxCompile>
   </ItemGroup>

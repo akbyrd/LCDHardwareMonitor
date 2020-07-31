@@ -1,6 +1,7 @@
 #if __cplusplus
 	#define cbuffer struct
 	#define float4  v4
+	namespace SolidColor {
 #endif
 
 cbuffer PSInitialize
@@ -9,6 +10,7 @@ cbuffer PSInitialize
 };
 
 #if __cplusplus
+	}
 	#undef cbuffer
 	#undef float4
 #endif

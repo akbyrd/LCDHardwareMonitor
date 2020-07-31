@@ -1,4 +1,5 @@
 Texture2D source;
+Texture2D sourceDepth;
 SamplerState samplerState;
 
 struct PixelFragment
@@ -11,7 +12,5 @@ struct PixelFragment
 float4 main(PixelFragment pIn) : SV_TARGET
 {
 	float4 sample = source.Sample(samplerState, pIn.UV);
-	//float avg = (sample.r + sample.b + sample.g) / 3;
-	//return float4(sample.rgb, 0.5);
-	return float4(sample.rgb, 1.0);
+	return sample;
 }

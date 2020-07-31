@@ -1712,7 +1712,7 @@ Color128(u8 r, u8 g, u8 b, u8 a)
 	return result;
 }
 
-struct Colors16
+namespace Colors16
 {
 	static const u16 Black   = Color16(0x00, 0x00, 0x00);
 	static const u16 Gray    = Color16(0x80, 0x80, 0x80);
@@ -1723,6 +1723,19 @@ struct Colors16
 	static const u16 Cyan    = Color16(0x00, 0xFF, 0xFF);
 	static const u16 Magenta = Color16(0xFF, 0x00, 0xFF);
 	static const u16 Yellow  = Color16(0xFF, 0xFF, 0x00);
+};
+
+namespace Colors128
+{
+	static const v4 Black   = Color128(0x00, 0x00, 0x00, 0xFF);
+	static const v4 Gray    = Color128(0x80, 0x80, 0x80, 0xFF);
+	static const v4 White   = Color128(0xFF, 0xFF, 0xFF, 0xFF);
+	static const v4 Red     = Color128(0xFF, 0x00, 0x00, 0xFF);
+	static const v4 Green   = Color128(0x00, 0xFF, 0x00, 0xFF);
+	static const v4 Blue    = Color128(0x00, 0x00, 0xFF, 0xFF);
+	static const v4 Cyan    = Color128(0x00, 0xFF, 0xFF, 0xFF);
+	static const v4 Magenta = Color128(0xFF, 0x00, 0xFF, 0xFF);
+	static const v4 Yellow  = Color128(0xFF, 0xFF, 0x00, 0xFF);
 };
 
 // -------------------------------------------------------------------------------------------------

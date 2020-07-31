@@ -1,4 +1,6 @@
 #include "Solid Colored.ps.h"
+#include "Blur.ps.h"
+#include "Blur Composite.ps.h"
 
 enum struct GUIInteraction
 {
@@ -46,6 +48,13 @@ struct SimulationState
 
 	FullWidgetRef       hovered;
 	List<FullWidgetRef> selected;
+	RenderTarget        tempRenderTargets[3];
+	DepthBuffer         tempDepthBuffers[3];
+	PixelShader         blurShader;
+	PixelShader         blurCompositeShader;
+	Blur::PSPerObject   blurPSPerObject[2];
+	BlurComposite::PSPerObject blurCompositePSPerObject1;
+	BlurComposite::PSPerObject blurCompositePSPerObject2;
 };
 
 struct PluginContext
@@ -1270,6 +1279,11 @@ Simulation_Initialize(
 	s.startTime    = Platform_GetTicks();
 	s.renderSize   = { 320, 240 };
 
+	s.blurPSPerObject[0].textureSize = s.renderSize;
+	s.blurPSPerObject[0].direction   = v2{ 1.0f, 0.0f };
+	s.blurPSPerObject[1].textureSize = s.renderSize;
+	s.blurPSPerObject[1].direction   = v2{ 0.0f, 1.0f };
+
 	b8 success = PluginLoader_Initialize(*s.pluginLoader);
 	if (!success) return false;
 
@@ -1326,7 +1340,7 @@ Simulation_Initialize(
 			PixelShader ps;
 
 			u32 cBufSizes[] = {
-				{ sizeof(PSInitialize) },
+				{ sizeof(SolidColor::PSInitialize) },
 			};
 			ps = Renderer_LoadPixelShader(*s.renderer, "Solid Colored", "Shaders/Solid Colored.ps.cso", cBufSizes);
 			LOG_IF(!ps, return false,
@@ -1471,6 +1485,41 @@ Simulation_Initialize(
 			Mesh fullscreen = Renderer_CreateMesh(*s.renderer, "Fullscreen Mesh", vertices, indices);
 			Assert(fullscreen == StandardMesh::Fullscreen);
 		}
+	}
+
+	// Other rendering resources
+	{
+		for (u32 i = 0; i < ArrayLength(s.tempRenderTargets); i++)
+		{
+			String name = String_Format("Temporary Render Target %", i);
+			defer { String_Free(name); };
+
+			s.tempRenderTargets[i] = Renderer_CreateRenderTargetWithAlpha(*s.renderer, name, true);
+			if (!s.tempRenderTargets[i]) return false;
+		}
+
+		for (u32 i = 0; i < ArrayLength(s.tempDepthBuffers); i++)
+		{
+			String name = String_Format("Temporary Depth Buffer %", i);
+			defer { String_Free(name); };
+
+			s.tempDepthBuffers[i] = Renderer_CreateDepthBuffer(*s.renderer, name, true);
+			if (!s.tempDepthBuffers[i]) return false;
+		}
+
+		u32 blurCBufSizes[] = {
+			{ sizeof(Blur::PSPerObject) }
+		};
+		s.blurShader = Renderer_LoadPixelShader(*s.renderer, "Default", "Shaders/Blur.ps.cso", blurCBufSizes);
+		LOG_IF(!s.blurShader, return false,
+			Severity::Error, "Failed to load blur pixel shader");
+
+		u32 blurCompositeCBufSizes[] = {
+			{ sizeof(BlurComposite::PSPerObject) }
+		};
+		s.blurCompositeShader = Renderer_LoadPixelShader(*s.renderer, "Default", "Shaders/Blur Composite.ps.cso", blurCompositeCBufSizes);
+		LOG_IF(!s.blurCompositeShader, return false,
+			Severity::Error, "Failed to load blur composite pixel shader");
 	}
 
 	// DEBUG: Testing
@@ -1626,6 +1675,7 @@ Simulation_Update(SimulationState& s)
 	Renderer_PushDepthBuffer(*s.renderer, StandardDepthBuffer::Main);
 	Renderer_ClearRenderTarget(*s.renderer, {});
 	Renderer_ClearDepthBuffer(*s.renderer);
+	Renderer_SetBlendMode(*s.renderer, true);
 
 	// Update Widgets
 	{
@@ -1645,18 +1695,18 @@ Simulation_Update(SimulationState& s)
 		WidgetPluginAPI::Update pluginAPI = {};
 
 		WidgetAPI::Update widgetAPI = {};
-		widgetAPI.t                        = s.currentTime;
-		widgetAPI.sensors                  = s.sensorPlugins[0].sensors;
-		widgetAPI.GetViewMatrix            = GetViewMatrix;
-		widgetAPI.GetProjectionMatrix      = GetProjectionMatrix;
-		widgetAPI.GetViewProjectionMatrix  = GetViewProjectionMatrix;
-		widgetAPI.UpdateVSConstantBuffer   = UpdateVSConstantBuffer;
-		widgetAPI.UpdatePSConstantBuffer   = UpdatePSConstantBuffer;
-		widgetAPI.DrawMesh                 = DrawMesh;
-		widgetAPI.PushVertexShader         = PushVertexShader;
-		widgetAPI.PushPixelShader          = PushPixelShader;
-		widgetAPI.PopVertexShader          = PopVertexShader;
-		widgetAPI.PopPixelShader           = PopPixelShader;
+		widgetAPI.t                       = s.currentTime;
+		widgetAPI.sensors                 = s.sensorPlugins[0].sensors;
+		widgetAPI.GetViewMatrix           = GetViewMatrix;
+		widgetAPI.GetProjectionMatrix     = GetProjectionMatrix;
+		widgetAPI.GetViewProjectionMatrix = GetViewProjectionMatrix;
+		widgetAPI.UpdateVSConstantBuffer  = UpdateVSConstantBuffer;
+		widgetAPI.UpdatePSConstantBuffer  = UpdatePSConstantBuffer;
+		widgetAPI.DrawMesh                = DrawMesh;
+		widgetAPI.PushVertexShader        = PushVertexShader;
+		widgetAPI.PushPixelShader         = PushPixelShader;
+		widgetAPI.PopVertexShader         = PopVertexShader;
+		widgetAPI.PopPixelShader          = PopPixelShader;
 
 		for (u32 i = 0; i < s.widgetPlugins.length; i++)
 		{
@@ -1706,6 +1756,150 @@ Simulation_Update(SimulationState& s)
 		PopPixelShader(context);
 	}
 
+	// TODO: Shouldn't this be after mouse selection?
+	// TODO: Fill amount is wrong because of the hacky fake sensor value
+	// Draw Selection
+	if (s.selected.length != 0)
+	{
+		// Re-render selected widgets
+		// -> Depth 0
+		{
+			PluginContext context = {};
+			context.s = &s;
+
+			// TODO: Duplicating this is error prone
+			WidgetAPI::Update widgetAPI = {};
+			widgetAPI.t                       = s.currentTime;
+			widgetAPI.sensors                 = s.sensorPlugins[0].sensors;
+			widgetAPI.GetViewMatrix           = GetViewMatrix;
+			widgetAPI.GetProjectionMatrix     = GetProjectionMatrix;
+			widgetAPI.GetViewProjectionMatrix = GetViewProjectionMatrix;
+			widgetAPI.UpdateVSConstantBuffer  = UpdateVSConstantBuffer;
+			widgetAPI.UpdatePSConstantBuffer  = UpdatePSConstantBuffer;
+			widgetAPI.DrawMesh                = DrawMesh;
+			widgetAPI.PushVertexShader        = PushVertexShader;
+			widgetAPI.PushPixelShader         = PushPixelShader;
+			widgetAPI.PopVertexShader         = PopVertexShader;
+			widgetAPI.PopPixelShader          = PopPixelShader;
+
+			Renderer_PushRenderTarget(*s.renderer, StandardRenderTarget::Null);
+			Renderer_PushDepthBuffer(*s.renderer, s.tempDepthBuffers[0]);
+			Renderer_ClearDepthBuffer(*s.renderer);
+			for (u32 i = 0; i < s.selected.length ; i++)
+			{
+				FullWidgetRef selected = s.selected[i];
+
+				WidgetPlugin& widgetPlugin = s.widgetPlugins[selected.pluginRef];
+				WidgetData&   widgetData   = widgetPlugin.widgetDatas[selected.dataRef];
+				Widget&       widget       = widgetData.widgets[selected.widgetRef];
+
+				context.widgetPlugin = &widgetPlugin;
+				context.success      = true;
+
+				widgetAPI.widgets                = widget;
+				// TODO: Can this be made simpler?
+				widgetAPI.widgetsUserData        = widgetData.widgetsUserData[widgetData.desc.userDataSize * ToIndex(widget.ref)];
+				widgetAPI.widgetsUserData.stride = widgetData.desc.userDataSize;
+
+				// TODO: try/catch?
+				widgetData.desc.Update(context, widgetAPI);
+			}
+			Renderer_PopDepthBuffer(*s.renderer);
+			Renderer_PopRenderTarget(*s.renderer);
+		}
+
+		Renderer_PushDepthBuffer(*s.renderer, StandardDepthBuffer::Null);
+		Renderer_PushVertexShader(*s.renderer, StandardVertexShader::ClipSpace);
+		Renderer_PushPixelShaderResource(*s.renderer, s.tempDepthBuffers[0], 1);
+
+		// Copy depth as solid color
+		// Depth 0 -> Temp 1
+		{
+			s.blurCompositePSPerObject1.useSourceColor = false;
+			s.blurCompositePSPerObject1.compositeColor = Color128(21, 133, 181, 255);
+
+			PSConstantBufferUpdate blurCompositeCBufUpdate1 = {};
+			blurCompositeCBufUpdate1.ps    = s.blurCompositeShader;
+			blurCompositeCBufUpdate1.index = 0;
+			blurCompositeCBufUpdate1.data  = &s.blurCompositePSPerObject1;
+
+			Renderer_PushRenderTarget(*s.renderer, s.tempRenderTargets[1]);
+			Renderer_PushPixelShaderResource(*s.renderer, s.tempDepthBuffers[0], 0);
+			Renderer_ClearRenderTarget(*s.renderer, Color128(0, 0, 0, 0));
+			Renderer_UpdatePSConstantBuffer(*s.renderer, blurCompositeCBufUpdate1);
+			Renderer_PushPixelShader(*s.renderer, s.blurCompositeShader);
+			Renderer_DrawMesh(*s.renderer, StandardMesh::Fullscreen);
+			Renderer_PopPixelShader(*s.renderer);
+			Renderer_PopPixelShaderResource(*s.renderer, 0);
+			Renderer_PopRenderTarget(*s.renderer);
+		}
+
+		// Blur to create outline
+		// Temp 1 -> Temp 2 -> Temp 1
+		{
+			Renderer_PushRenderTarget(*s.renderer, s.tempRenderTargets[2]);
+			Renderer_ClearRenderTarget(*s.renderer, Color128(0, 0, 0, 0));
+			Renderer_PopRenderTarget(*s.renderer);
+			Renderer_SetBlendMode(*s.renderer, false);
+
+			PSConstantBufferUpdate hBlurCBufUpdate = {};
+			hBlurCBufUpdate.ps    = s.blurShader;
+			hBlurCBufUpdate.index = 0;
+			hBlurCBufUpdate.data  = &s.blurPSPerObject[0];
+
+			PSConstantBufferUpdate vBlurCBufUpdate = {};
+			vBlurCBufUpdate.ps    = s.blurShader;
+			vBlurCBufUpdate.index = 0;
+			vBlurCBufUpdate.data  = &s.blurPSPerObject[1];
+
+			Renderer_PushPixelShader(*s.renderer, s.blurShader);
+			for (u32 i = 0; i < 8; i++)
+			{
+				// Horizontal blur
+				Renderer_PushRenderTarget(*s.renderer, s.tempRenderTargets[2]);
+				Renderer_PushPixelShaderResource(*s.renderer, s.tempRenderTargets[1], 0);
+				Renderer_UpdatePSConstantBuffer(*s.renderer, hBlurCBufUpdate);
+				Renderer_DrawMesh(*s.renderer, StandardMesh::Fullscreen);
+				Renderer_PopPixelShaderResource(*s.renderer, 0);
+				Renderer_PopRenderTarget(*s.renderer);
+
+				// Vertical blur
+				Renderer_PushRenderTarget(*s.renderer, s.tempRenderTargets[1]);
+				Renderer_PushPixelShaderResource(*s.renderer, s.tempRenderTargets[2], 0);
+				Renderer_UpdatePSConstantBuffer(*s.renderer, vBlurCBufUpdate);
+				Renderer_DrawMesh(*s.renderer, StandardMesh::Fullscreen);
+				Renderer_PopPixelShaderResource(*s.renderer, 0);
+				Renderer_PopRenderTarget(*s.renderer);
+			}
+			Renderer_PopPixelShader(*s.renderer);
+		}
+
+		// Composite blur back into main render target
+		// Temp 1 -> Main
+		{
+			s.blurCompositePSPerObject2.useSourceColor = true;
+
+			PSConstantBufferUpdate blurCompositeCBufUpdate2 = {};
+			blurCompositeCBufUpdate2.ps    = s.blurCompositeShader;
+			blurCompositeCBufUpdate2.index = 0;
+			blurCompositeCBufUpdate2.data  = &s.blurCompositePSPerObject2;
+
+			Renderer_SetBlendMode(*s.renderer, true);
+			Renderer_PushRenderTarget(*s.renderer, StandardRenderTarget::Main);
+			Renderer_PushPixelShaderResource(*s.renderer, s.tempRenderTargets[1], 0);
+			Renderer_UpdatePSConstantBuffer(*s.renderer, blurCompositeCBufUpdate2);
+			Renderer_PushPixelShader(*s.renderer, s.blurCompositeShader);
+			Renderer_DrawMesh(*s.renderer, StandardMesh::Fullscreen);
+			Renderer_PopPixelShader(*s.renderer);
+			Renderer_PopPixelShaderResource(*s.renderer, 0);
+			Renderer_PopRenderTarget(*s.renderer);
+		}
+
+		Renderer_PopPixelShaderResource(*s.renderer, 1);
+		Renderer_PopVertexShader(*s.renderer);
+		Renderer_PopDepthBuffer(*s.renderer);
+	}
+
 	// Select mouse over widget
 	if (guiCon.pipe.state == PipeState::Connected || s.previewWindow)
 	{
@@ -1751,9 +1945,8 @@ Simulation_Update(SimulationState& s)
 		}
 	}
 
-	// TODO: Outline shader? How should we handle depth?
 	// Draw Hover
-	if (s.hovered.widgetRef && !IsWidgetSelected(s, s.hovered) && s.guiInteraction == GUIInteraction::Null)
+	if (s.hovered.widgetRef && s.guiInteraction == GUIInteraction::Null)
 	{
 		Widget& widget = GetWidget(s, s.hovered);
 
@@ -1773,40 +1966,6 @@ Simulation_Update(SimulationState& s)
 
 		UpdateVSConstantBuffer(context, StandardVertexShader::WVP, 0, &wvp);
 		UpdatePSConstantBuffer(context, StandardPixelShader::SolidColored, 0, &color);
-		PushVertexShader(context, StandardVertexShader::WVP);
-		PushPixelShader(context, StandardPixelShader::SolidColored);
-		DrawMesh(context, StandardMesh::Quad);
-		PopVertexShader(context);
-		PopPixelShader(context);
-	}
-
-	// Draw Selection
-	// TODO: Use a fancy shader to draw outlines
-	static v4 color = Color128(0, 122, 204, 255);
-	static List<Matrix> wvps = {}; // TODO: Leak
-	List_Clear(wvps);
-
-	for (u32 i = 0; i < s.selected.length; i++)
-	{
-		FullWidgetRef selected = s.selected[i];
-		Widget& widget = GetWidget(s, selected);
-
-		v2 position = WidgetPosition(widget);
-		v2 size = widget.size + v2{ 8, 8 };
-
-		Matrix world = Identity();
-		SetPosition(world, position, -(widget.depth + 5.0f));
-		SetScale   (world, size, 1.0f);
-
-		Matrix& wvp = List_Append(wvps);
-		wvp = world * s.vp;
-
-		PluginContext context = {};
-		context.success = true;
-		context.s = &s;
-
-		UpdateVSConstantBuffer(context, StandardVertexShader::WVP, 0, &wvp);
-		UpdatePSConstantBuffer(context, StandardPixelShader::SolidColored,  0, &color);
 		PushVertexShader(context, StandardVertexShader::WVP);
 		PushPixelShader(context, StandardPixelShader::SolidColored);
 		DrawMesh(context, StandardMesh::Quad);

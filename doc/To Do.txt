@@ -1,5 +1,35 @@
 Current
 -------
+Features - Outline shader
+-------------------------
+[x] Create multiple render targets
+[x] Render selection into a separate target
+[x] Get alpha blending working
+[x] Re-shade selection target with solid color
+[x] Blur selection target
+[x] Copy selection target to main target (skipping parts that were originally shaded
+[x] Don't clear selection target when not in use
+[ ] Use main depth buffer for selection (change depth test mode?)
+[ ] Optimize (re-shade, blur, and blit in one step)
+[ ] Clamp outline to screen edges
+[ ]
+[ ] Fix darken to be optional
+[ ] Darken highlight when failing depth test
+[ ] Move push/pop near actual code. Let it be ever so slightly inefficient
+[ ] Review shaders
+[ ] Change Blur to Outline
+[ ] Reduce Outline to single pass
+[ ] Share constant buffer between Outline and Outline Composite
+[ ] Outline only needs to produce alpha. Composite can add color.
+[ ] // TODO: Shouldn't this be after mouse selection?
+[ ] // TODO: Fill amount is wrong because of the hacky fake sensor value
+[ ] Use for hover
+[ ] Choose better selection colors
+[ ] Consider using a UAV for simultaneous read and write
+// TODO: Add GPU events / labels
+// TODO: Remove types from resource names
+// TODO: Try different selection colors (what were we using before?)
+
 Bring ILI9341 code over
 	Add a tracing option
 	Use SetBit to simplify config
@@ -16,8 +46,11 @@ Read from display
 
 
 
+
 Bugs
 ----
+Lag when selecting preview while GUI is open
+VS 2019 16.7 bug: won't create Shaders dir when compiling
 D3D leak when closing with selection
 D3D warning:
 	D3D11 WARNING: ID3D11DeviceContext::PSSetShaderResources:
@@ -26,14 +59,11 @@ D3D warning:
 Fix flush pipe error
 Fix VS crash
 	devenv crashes with Exception code: 0xc0000374 (heap corruption?)
-	LHM crashes with Exception code: 0xc0000005 (access violation, probably spurious during dev)
-	definitely happens with multiple startup projects, not sure about individual
+	only seems to happen with multiple startup projects
 	LHM appears to hang in D3D creation sometimes? Unrelated?
-Fix VS 2019 warnings
 Look at tlbgen and references vs pointers
-Fix 64 bit builds
+Fix 64 bit warnings from tlbgen
 Support x86 and x64
-Fix select when dragging sensors
 GUI shouldn't close the simulation if it didn't start it
 There's a frame of flicker where the old image size is drawn when zooming. Is this fixable?
 There's some sort of mouse position jump on my laptop when rotating the camera
@@ -48,6 +78,7 @@ Refactoring
 Add a mode where rendering is immediate mode to catch errors at their source
 Starting to feel like state checking should be in the sim
 Try removing WidgetData
+Shaders should go through deploy?
 Start using Scoped
 Namespaces
 Native namespace for interop?
@@ -133,6 +164,8 @@ Implement hardware reset
 
 Features - Rendering
 --------------------
+Change rasterizer state to be runtime configurable
+Render with alpha, then convert to 16 bit
 I'm no longer convince the Push/Pop model is all that useful. Why not just Set everything?
 	Push/Pop is good for plugins, so they can change and restor state without knowing what the state
 	was. But we could also just re-apply state between plugins. Or only use PushPop for plugins and
@@ -154,6 +187,9 @@ Double buffer CPU texture to prevent syncing?
 
 Features - GUI
 --------------
+Reset GUI interactions when GUI or preview lose focus.
+	Primary goal here is to avoid input getting stuck when alt tabbing
+	Secondary goal is to avoid mouse position discontinuity when tabbing between GUI and preview
 Drag sensors
 Reconcile input when connecting (buttons already down) and disconnecting (release down buttons).
 Is it worth trying to send everything at once? (Slice<List<Sensor>> feels kind of silly)
@@ -240,3 +276,5 @@ Add UTF-8 support?
 Reduce link dependencies
 Implement a way to get errors from users. Event tracing? Windows error reporting? Dumps? Telemetry?
 Reset state structs if Initialize fails
+Ensure program doesn't cause all CPU cores to boost constantly (preferably at all)
+Collect crash reports / metrics

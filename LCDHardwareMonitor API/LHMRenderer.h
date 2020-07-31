@@ -22,7 +22,6 @@ struct Vertex
 	v2 uv;
 };
 
-// TODO: WTF?
 using Index = u32;
 
 namespace StandardRenderTarget

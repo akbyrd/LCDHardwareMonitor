@@ -82,6 +82,7 @@ UpdateBarWidgets(PluginContext& context, WidgetAPI::Update api)
 			SetScale   (world, size, 1.0f);
 			barWidget.vsPerObject.wvp = world * api.GetViewProjectionMatrix(context);
 
+			// TODO: Can we use instancing to accelerate this?
 			api.UpdateVSConstantBuffer(context, StandardVertexShader::WVP, 0, &barWidget.vsPerObject);
 			api.UpdatePSConstantBuffer(context, filledBarPS, 1, &barWidget.psPerObject);
 			api.DrawMesh(context, StandardMesh::Quad);

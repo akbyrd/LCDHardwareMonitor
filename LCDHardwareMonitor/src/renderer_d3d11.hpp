@@ -142,6 +142,7 @@ enum struct RenderCommandType
 	PopPixelShader,
 	PushPixelShaderResource,
 	PopPixelShaderResource,
+	SetBlendMode,
 	Copy,
 };
 
@@ -158,8 +159,9 @@ struct RenderCommand
 		VertexShader           vertexShader;
 		PixelShader            pixelShader;
 		PixelShaderResource    psResource;
+		v4                     clearColor;
+		b8                     blendModeAlpha;
 		CopyResource           copy;
-		v4                     color;
 	};
 };
 
@@ -169,6 +171,8 @@ struct RendererState
 	ComPtr<ID3D11DeviceContext>   d3dContext;
 	ComPtr<ID3D11RasterizerState> d3dRasterizerStateSolid;
 	ComPtr<ID3D11RasterizerState> d3dRasterizerStateWireframe;
+	ComPtr<ID3D11BlendState>      d3dBlendStateAlpha;
+	ComPtr<ID3D11BlendState>      d3dBlendStateSolid;
 	ComPtr<ID3D11Buffer>          d3dVertexBuffer;
 	ComPtr<ID3D11Buffer>          d3dIndexBuffer;
 
@@ -179,6 +183,7 @@ struct RendererState
 	u32                           qualityCountRender;
 	u32                           qualityCountShared;
 	b8                            isWireframeEnabled;
+	b8                            isAlphaBlendEnabled;
 	b8                            resourceCreationFinalized;
 
 	List<VertexShaderData>        vertexShaders;
@@ -413,6 +418,26 @@ Renderer_CreateRenderTarget(RendererState& s, StringView name, b8 resource)
 	desc.MipLevels          = 1;
 	desc.ArraySize          = 1;
 	desc.Format             = s.renderFormat;
+	desc.SampleDesc.Count   = s.multisampleCount;
+	desc.SampleDesc.Quality = s.qualityCountRender - 1;
+	desc.Usage              = D3D11_USAGE_DEFAULT;
+	desc.BindFlags          = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+	desc.CPUAccessFlags     = 0;
+	desc.MiscFlags          = 0;
+	return CreateRenderTargetImpl(s, name, resource, desc);
+}
+
+RenderTarget
+Renderer_CreateRenderTargetWithAlpha(RendererState& s, StringView name, b8 resource)
+{
+	Assert(!s.resourceCreationFinalized);
+
+	D3D11_TEXTURE2D_DESC desc = {};
+	desc.Width              = s.renderSize.x;
+	desc.Height             = s.renderSize.y;
+	desc.MipLevels          = 1;
+	desc.ArraySize          = 1;
+	desc.Format             = DXGI_FORMAT_B8G8R8A8_UNORM;
 	desc.SampleDesc.Count   = s.multisampleCount;
 	desc.SampleDesc.Quality = s.qualityCountRender - 1;
 	desc.Usage              = D3D11_USAGE_DEFAULT;
@@ -907,7 +932,7 @@ Renderer_ClearRenderTarget(RendererState& s, v4 color)
 {
 	RenderCommand& renderCommand = List_Append(s.commandList);
 	renderCommand.type = RenderCommandType::ClearRenderTarget;
-	renderCommand.color = color;
+	renderCommand.clearColor = color;
 }
 
 b8
@@ -1031,6 +1056,14 @@ Renderer_ValidateCopy(RendererState& s, RenderTarget rt, CPUTexture ct)
 }
 
 void
+Renderer_SetBlendMode(RendererState& s, b8 alpha)
+{
+	RenderCommand& renderCommand = List_Append(s.commandList);
+	renderCommand.type = RenderCommandType::SetBlendMode;
+	renderCommand.blendModeAlpha = alpha;
+}
+
+void
 Renderer_Copy(RendererState& s, RenderTarget rt, CPUTexture ct)
 {
 	RenderCommand& renderCommand = List_Append(s.commandList);
@@ -1141,33 +1174,56 @@ Renderer_Initialize(RendererState& s)
 		#if DEBUG
 		HRESULT hr;
 
-		ComPtr<IDXGIDebug1> dxgiDebug;
-		hr = DXGIGetDebugInterface1(0, IID_PPV_ARGS(&dxgiDebug));
-		LOG_HRESULT_IF_FAILED(hr, return false,
-			Severity::Warning, "Failed to get DXGI debug interface");
+		// D3D11 Stuff
+		{
+			ComPtr<ID3D11InfoQueue> d3dInfoQueue;
+			hr = s.d3dDevice.As(&d3dInfoQueue);
+			LOG_HRESULT_IF_FAILED(hr, return false,
+				Severity::Warning, "Failed to get D3D info queue interface");
 
-		dxgiDebug->EnableLeakTrackingForThread();
+			D3D11_MESSAGE_ID ids[] = {
+				D3D11_MESSAGE_ID_DEVICE_DRAW_RENDERTARGETVIEW_NOT_SET,
+			};
+			D3D11_INFO_QUEUE_FILTER filter;
+			memset(&filter, 0, sizeof(filter));
+			filter.DenyList.NumIDs  = (u32) ArrayLength(ids);
+			filter.DenyList.pIDList = ids;
+			hr = d3dInfoQueue->AddStorageFilterEntries(&filter);
+			LOG_HRESULT_IF_FAILED(hr, IGNORE,
+				Severity::Warning, "Failed to set D3D warning filter");
+		}
 
-		ComPtr<IDXGIInfoQueue> dxgiInfoQueue;
-		hr = DXGIGetDebugInterface1(0, IID_PPV_ARGS(&dxgiInfoQueue));
-		LOG_HRESULT_IF_FAILED(hr, return false,
-			Severity::Warning, "Failed to get DXGI info queue");
+		// DXGI Stuff
+		{
+			ComPtr<IDXGIDebug1> dxgiDebug;
+			hr = DXGIGetDebugInterface1(0, IID_PPV_ARGS(&dxgiDebug));
+			LOG_HRESULT_IF_FAILED(hr, return false,
+				Severity::Warning, "Failed to get DXGI debug interface");
 
-		hr = dxgiInfoQueue->SetBreakOnSeverity(DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE_SEVERITY_ERROR, true);
-		LOG_HRESULT_IF_FAILED(hr, IGNORE,
-			Severity::Warning, "Failed to set DXGI break on error");
-		hr = dxgiInfoQueue->SetBreakOnSeverity(DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE_SEVERITY_CORRUPTION, true);
-		LOG_HRESULT_IF_FAILED(hr, IGNORE,
-			Severity::Warning, "Failed to set DXGI break on corruption");
+			dxgiDebug->EnableLeakTrackingForThread();
 
-		// Ignore warning for not using a flip-mode swap chain
-		DXGI_INFO_QUEUE_MESSAGE_ID ids[] = { 294 };
-		DXGI_INFO_QUEUE_FILTER filter = {};
-		filter.DenyList.NumIDs  = (u32) ArrayLength(ids);
-		filter.DenyList.pIDList = ids;
-		hr = dxgiInfoQueue->PushStorageFilter(DXGI_DEBUG_DXGI, &filter);
-		LOG_HRESULT_IF_FAILED(hr, IGNORE,
-			Severity::Warning, "Failed to set DXGI warning filter");
+			ComPtr<IDXGIInfoQueue> dxgiInfoQueue;
+			hr = DXGIGetDebugInterface1(0, IID_PPV_ARGS(&dxgiInfoQueue));
+			LOG_HRESULT_IF_FAILED(hr, return false,
+				Severity::Warning, "Failed to get DXGI info queue");
+
+			hr = dxgiInfoQueue->SetBreakOnSeverity(DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE_SEVERITY_ERROR, true);
+			LOG_HRESULT_IF_FAILED(hr, IGNORE,
+				Severity::Warning, "Failed to set DXGI break on error");
+			hr = dxgiInfoQueue->SetBreakOnSeverity(DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE_SEVERITY_CORRUPTION, true);
+			LOG_HRESULT_IF_FAILED(hr, IGNORE,
+				Severity::Warning, "Failed to set DXGI break on corruption");
+
+			DXGI_INFO_QUEUE_MESSAGE_ID ids[] = {
+				294, // Not using a flip-mode swap chain
+			};
+			DXGI_INFO_QUEUE_FILTER filter = {};
+			filter.DenyList.NumIDs  = (u32) ArrayLength(ids);
+			filter.DenyList.pIDList = ids;
+			hr = dxgiInfoQueue->PushStorageFilter(DXGI_DEBUG_DXGI, &filter);
+			LOG_HRESULT_IF_FAILED(hr, IGNORE,
+				Severity::Warning, "Failed to set DXGI warning filter");
+		}
 		#endif
 	}
 
@@ -1233,25 +1289,39 @@ Renderer_Initialize(RendererState& s)
 	{
 		HRESULT hr;
 
-		D3D11_BLEND_DESC blendDesc = {};
-		blendDesc.AlphaToCoverageEnable                 = false;
-		blendDesc.IndependentBlendEnable                = false;
-		blendDesc.RenderTarget[0].BlendEnable           = true;
-		blendDesc.RenderTarget[0].SrcBlend              = D3D11_BLEND_SRC_ALPHA;
-		blendDesc.RenderTarget[0].DestBlend             = D3D11_BLEND_INV_SRC_ALPHA;
-		blendDesc.RenderTarget[0].BlendOp               = D3D11_BLEND_OP_ADD;
-		blendDesc.RenderTarget[0].SrcBlendAlpha         = D3D11_BLEND_ONE;
-		blendDesc.RenderTarget[0].DestBlendAlpha        = D3D11_BLEND_ZERO;
-		blendDesc.RenderTarget[0].BlendOpAlpha          = D3D11_BLEND_OP_ADD;
-		blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+		D3D11_BLEND_DESC alphaDesc = {};
+		alphaDesc.AlphaToCoverageEnable                 = false;
+		alphaDesc.IndependentBlendEnable                = false;
+		alphaDesc.RenderTarget[0].BlendEnable           = true;
+		alphaDesc.RenderTarget[0].SrcBlend              = D3D11_BLEND_SRC_ALPHA;
+		alphaDesc.RenderTarget[0].DestBlend             = D3D11_BLEND_INV_SRC_ALPHA;
+		alphaDesc.RenderTarget[0].BlendOp               = D3D11_BLEND_OP_ADD;
+		alphaDesc.RenderTarget[0].SrcBlendAlpha         = D3D11_BLEND_ONE;
+		alphaDesc.RenderTarget[0].DestBlendAlpha        = D3D11_BLEND_ZERO;
+		alphaDesc.RenderTarget[0].BlendOpAlpha          = D3D11_BLEND_OP_ADD;
+		alphaDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
 
-		ComPtr<ID3D11BlendState> blendState;
-		hr = s.d3dDevice->CreateBlendState(&blendDesc, &blendState);
+		hr = s.d3dDevice->CreateBlendState(&alphaDesc, &s.d3dBlendStateAlpha);
 		LOG_HRESULT_IF_FAILED(hr, return false,
 			Severity::Fatal, "Failed to create alpha blend state");
-		SetDebugObjectName(blendState, "Blend State (Alpha)");
+		SetDebugObjectName(s.d3dBlendStateAlpha, "Blend State (Alpha)");
 
-		s.d3dContext->OMSetBlendState(blendState.Get(), nullptr, 0xFFFFFFFF);
+		D3D11_BLEND_DESC solidDesc = {};
+		solidDesc.AlphaToCoverageEnable                 = false;
+		solidDesc.IndependentBlendEnable                = false;
+		solidDesc.RenderTarget[0].BlendEnable           = true;
+		solidDesc.RenderTarget[0].SrcBlend              = D3D11_BLEND_ONE;
+		solidDesc.RenderTarget[0].DestBlend             = D3D11_BLEND_ZERO;
+		solidDesc.RenderTarget[0].BlendOp               = D3D11_BLEND_OP_ADD;
+		solidDesc.RenderTarget[0].SrcBlendAlpha         = D3D11_BLEND_ONE;
+		solidDesc.RenderTarget[0].DestBlendAlpha        = D3D11_BLEND_ZERO;
+		solidDesc.RenderTarget[0].BlendOpAlpha          = D3D11_BLEND_OP_ADD;
+		solidDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+
+		hr = s.d3dDevice->CreateBlendState(&solidDesc, &s.d3dBlendStateSolid);
+		LOG_HRESULT_IF_FAILED(hr, return false,
+			Severity::Fatal, "Failed to create solid blend state");
+		SetDebugObjectName(s.d3dBlendStateSolid, "Blend State (Solid)");
 	}
 
 
@@ -1363,6 +1433,8 @@ Renderer_Teardown(RendererState& s)
 
 	s.d3dIndexBuffer             .Reset();
 	s.d3dVertexBuffer            .Reset();
+	s.d3dBlendStateSolid         .Reset();
+	s.d3dBlendStateAlpha         .Reset();
 	s.d3dRasterizerStateWireframe.Reset();
 	s.d3dRasterizerStateSolid    .Reset();
 	s.d3dContext                 .Reset();
@@ -1476,7 +1548,7 @@ Renderer_Render(RendererState& s)
 			{
 				Assert(s.renderTargetStack.length != 1);
 				RenderTargetData& rt = *List_GetLast(s.renderTargetStack);
-				s.d3dContext->ClearRenderTargetView(rt.d3dRenderTargetView.Get(), renderCommand.color.arr);
+				s.d3dContext->ClearRenderTargetView(rt.d3dRenderTargetView.Get(), renderCommand.clearColor.arr);
 				break;
 			}
 
@@ -1671,6 +1743,20 @@ Renderer_Render(RendererState& s)
 							s.d3dContext->PSSetShaderResources(psr.slot, 1, db.d3dDepthBufferResourceView.GetAddressOf());
 						break;
 					}
+				}
+				break;
+			}
+
+			case RenderCommandType::SetBlendMode:
+			{
+				b8 useAlphaBlend = renderCommand.blendModeAlpha;
+				if (s.isAlphaBlendEnabled != useAlphaBlend)
+				{
+					s.isAlphaBlendEnabled = useAlphaBlend;
+					ID3D11BlendState* blendState = s.isAlphaBlendEnabled
+						? s.d3dBlendStateAlpha.Get()
+						: s.d3dBlendStateSolid.Get();
+					s.d3dContext->OMSetBlendState(blendState, nullptr, 0xFFFFFFFF);
 				}
 				break;
 			}
