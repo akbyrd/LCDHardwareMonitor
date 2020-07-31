@@ -64,6 +64,9 @@
     <FxCompile Include="..\..\LCDHardwareMonitor\res\Solid Colored.ps">
       <Filter>Resources</Filter>
     </FxCompile>
+    <FxCompile Include="..\..\LCDHardwareMonitor\res\Clip Space.vs">
+      <Filter>Resources</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\LCDHardwareMonitor\src\main_win32.cpp">

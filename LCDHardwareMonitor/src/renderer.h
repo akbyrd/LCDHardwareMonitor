@@ -38,6 +38,8 @@ struct DrawCall
 	Material material;
 };
 
+using RenderTarget = List<struct RenderTargetData>::RefT;
+
 struct TextureBytes
 {
 	ByteSlice bytes;
@@ -54,11 +56,16 @@ VertexShader          Renderer_LoadVertexShader             (RendererState&, Str
 PixelShader           Renderer_LoadPixelShader              (RendererState&, StringView name, StringView path, Slice<u32> cBufSizes);
 // TODO: Combine with CreateMesh, LoadVertexShader, and LoadPixelShader
 Material              Renderer_CreateMaterial               (RendererState&, Mesh mesh, VertexShader vs, PixelShader ps);
+RenderTarget          Renderer_CreateRenderTarget           (RendererState&);
 ConstantBufferUpdate& Renderer_PushConstantBufferUpdate     (RendererState&);
 DrawCall&             Renderer_PushDrawCall                 (RendererState&);
+void                  Renderer_PushRenderTarget             (RendererState&, RenderTarget);
+void                  Renderer_PopRenderTarget              (RendererState&);
+void                  Renderer_PushPixelShader              (RendererState&, PixelShader);
+void                  Renderer_PopPixelShader               (RendererState&);
 b8                    Renderer_Render                       (RendererState&);
 void*                 Renderer_GetSharedRenderSurface       (RendererState&);
-TextureBytes          Renderer_GetRenderTargetBytes         (RendererState&);
+TextureBytes          Renderer_GetMainRenderTargetBytes     (RendererState&);
 
 void                  Renderer_ValidateMesh                 (RendererState&, Mesh mesh);
 void                  Renderer_ValidateVertexShader         (RendererState&, VertexShader vs);

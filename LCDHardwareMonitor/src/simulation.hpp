@@ -1187,16 +1187,23 @@ Simulation_Initialize(SimulationState& s, PluginLoaderState& pluginLoader, Rende
 	{
 		// Vertex shader
 		{
+			VertexShader vs;
+
 			VertexAttribute vsAttributes[] = {
 				{ VertexAttributeSemantic::Position, VertexAttributeFormat::v3 },
 				{ VertexAttributeSemantic::Color,    VertexAttributeFormat::v4 },
 				{ VertexAttributeSemantic::TexCoord, VertexAttributeFormat::v2 },
 			};
 
-			VertexShader vs = Renderer_LoadVertexShader(*s.renderer, "Default", "Shaders/WVP.vs.cso", vsAttributes, sizeof(Matrix));
+			vs = Renderer_LoadVertexShader(*s.renderer, "Default", "Shaders/WVP.vs.cso", vsAttributes, sizeof(Matrix));
 			LOG_IF(!vs, return false,
 				Severity::Error, "Failed to load built-in wvp vertex shader");
 			Assert(vs == StandardVertexShader::WVP);
+
+			vs = Renderer_LoadVertexShader(*s.renderer, "Default", "Shaders/Clip Space.vs.cso", vsAttributes, sizeof(Matrix));
+			LOG_IF(!vs, return false,
+				Severity::Error, "Failed to load built-in clip space vertex shader");
+			Assert(vs == StandardVertexShader::ClipSpace);
 		}
 
 		// Pixel shader
@@ -1334,6 +1341,22 @@ Simulation_Initialize(SimulationState& s, PluginLoaderState& pluginLoader, Rende
 
 			Mesh quad = Renderer_CreateMesh(*s.renderer, "Cube Mesh", vertices, indices);
 			Assert(quad == StandardMesh::Cube);
+		}
+
+		// Fullscreen mesh
+		{
+			Vertex vertices[] = {
+				{ { -1.0f, -1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f } }, // BL
+				{ { -1.0f,  1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }, { 1.0f, 0.0f } }, // TR
+				{ {  1.0f, -1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f } }, // BR
+			};
+
+			Index indices[] = {
+				0, 1, 2,
+			};
+
+			Mesh fullscreen = Renderer_CreateMesh(*s.renderer, "Fullscreen Mesh", vertices, indices);
+			Assert(fullscreen == StandardMesh::Fullscreen);
 		}
 	}
 

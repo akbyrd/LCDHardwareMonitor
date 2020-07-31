@@ -122,7 +122,7 @@ PreviewWindow_Initialize(
 		// TODO: Get values from system (match desktop. what happens if it changes?)
 		swapChainDesc.BufferDesc.RefreshRate.Numerator   = 60;
 		swapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
-		swapChainDesc.BufferDesc.Format                  = DXGI_FORMAT_B8G8R8A8_UNORM;
+		swapChainDesc.BufferDesc.Format                  = rendererState.renderFormat;
 		swapChainDesc.BufferDesc.ScanlineOrdering        = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
 		swapChainDesc.BufferDesc.Scaling                 = DXGI_MODE_SCALING_UNSPECIFIED;
 		swapChainDesc.SampleDesc.Count                   = rendererState.multisampleCount;
@@ -194,11 +194,13 @@ PreviewWindow_Render(PreviewWindowState& s)
 
 	RendererState& rendererState = *s.rendererState;
 
+	RenderTargetData mainRT = rendererState.renderTargets[rendererState.mainRenderTarget];
+	rendererState.d3dContext->CopyResource(s.backBuffer.Get(), mainRT.d3dRenderTexture.Get());
+
 	// TODO: Handle DXGI_ERROR_DEVICE_RESET and DXGI_ERROR_DEVICE_REMOVED
 	// Developer Command Prompt for Visual Studio as an administrator, and
 	// typing dxcap -forcetdr which will immediately cause all currently
 	// running Direct3D apps to get a DXGI_ERROR_DEVICE_REMOVED event.
-	rendererState.d3dContext->CopyResource(s.backBuffer.Get(), rendererState.d3dRenderTexture.Get());
 	HRESULT hr = s.swapChain->Present(0, 0);
 	LOG_HRESULT_IF_FAILED(hr, return false,
 		Severity::Error, "Failed to present preview window");

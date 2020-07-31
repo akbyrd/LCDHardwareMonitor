@@ -4,6 +4,7 @@
 using Mesh         = List<struct MeshData>::RefT;
 using VertexShader = List<struct VertexShaderData>::RefT;
 using PixelShader  = List<struct PixelShaderData>::RefT;
+using RenderTarget = List<struct RenderTargetData>::RefT;
 
 // TODO: Re-order structs in this file
 enum struct ShaderStage
@@ -32,16 +33,18 @@ using Index = u32;
 
 namespace StandardMesh
 {
-	static const Mesh Null     = { 0 };
-	static const Mesh Triangle = { 1 };
-	static const Mesh Quad     = { 2 };
-	static const Mesh Cube     = { 3 };
+	static const Mesh Null       = { 0 };
+	static const Mesh Triangle   = { 1 };
+	static const Mesh Quad       = { 2 };
+	static const Mesh Cube       = { 3 };
+	static const Mesh Fullscreen = { 4 };
 };
 
 namespace StandardVertexShader
 {
-	static const VertexShader Null = { 0 };
-	static const VertexShader WVP  = { 1 };
+	static const VertexShader Null      = { 0 };
+	static const VertexShader WVP       = { 1 };
+	static const VertexShader ClipSpace = { 2 };
 };
 
 namespace StandardPixelShader
