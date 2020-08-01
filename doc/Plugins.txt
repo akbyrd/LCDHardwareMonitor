@@ -1,154 +1,167 @@
 Required Features
-	Load C++ modules
-	Load .NET assemblies
-	Very high performance
-	<10 ns function calls into plugins
-	Single version of the CLR
-	Single copy of .NET dependencies (e.g. mscorlib)
-	Logging and graceful shutdown as the worst case if a plugin exception occurs
+-----------------
+Load C++ modules
+Load .NET assemblies
+Very high performance
+<10 ns function calls into plugins
+Single version of the CLR
+Single copy of .NET dependencies (e.g. mscorlib)
+Logging and graceful shutdown as the worst case if a plugin exception occurs
 	Not trying to be secure. Just user and developer friendly.
-Preferred Features
-	Exceptions only affect a single plugin
-		Assemblies in separate AppDomains
-	Individually load and unload plugins
-	Target .NET Framework 4.0
-	Plugins can be updated while the application is running (scan, unload, load)
 
-Optimization
-- We eat 200ns to cross domain boundaries. Is there some way to prevent this?
-- Check for double thunks on managed to managed calls. Use __clrcall to
+
+
+Preferred Features
+------------------
+Exceptions only affect a single plugin
+Assemblies in separate AppDomains
+Individually load and unload plugins
+Target .NET Framework 4.0
+Plugins can be updated while the application is running (scan, unload, load)
+
+
+
+
+Misc Thoughts / Questions
+-------------------------
+Pure C# and pure C++ plugins. No more boundary crossing.
+Is there a performant way to sandbox in C++? Are subprocesses a thing?
+Try/catch on C++ plugins. Just dump 'em if they fuck up.
+Use the host manager to run GC every frame.
+We eat 200ns to cross domain boundaries. Is there some way to prevent this?
+Check for double thunks on managed to managed calls. Use __clrcall to
 	disable native thunk generation.
-- Would it be better to compile managed plugins as clr pure / managed only?
+Would it be better to compile managed plugins as clr pure / managed only?
 	We'll still be able to make direct unmanaged to managed calls because we
 	create and return function pointers. Can/should we drop all #pragma
 	unmanaged?
+What happens when a dependency throws an exception? We'll unload the
+	plugin, but we should probably unload every plugin that uses the
+	dependency, right? Granted, this is an edge case of an edge case.
+.NET assemblies show up twice in Visual Studio's Modules window. Once as
+	managed, once with a 'wrong address' error. Why? Does this indicate a
+	problem or inefficiency?
 
-Ideas
-	Pure C# and pure C++ plugins. No more boundary crossing.
-	Is there a performant way to sandbox in C++? Are subprocesses a thing?
-	Try/catch on C++ plugins. Just dump 'em if they fuck up.
-	Use the host manager to run GC every frame.
 
-Thoughts
-	Reasons for AppDomains
-		- Resolving dependencies. The search path is based on the working
-			directory, not the directory of the plugin. So our folder structure
-			means plugin dependencies won't be found. We currently rely on the
-			AssemblyResolve event to manually LoadFrom. We can't change the
-			search directory with the default domain, but we can with separate
-			domains.
-		- Loading and unloading plugins. This is mostly for fun. It's
-			convenient when setting up the LCD, making changes, or when a plugin
-			fails, but those are not the common case.
-		- Hot swapping plugins. Users should be able to add, remove, and
-			overwrite plugins and the application should respectively load,
-			unload, and reload them automatically. This may end up being a reason
-			*not* to use domains. If we have to manually copy native modules then
-			we'll likely use the same model for managed plugins.
-	Not Reasons for AppDomains
-		- Security/sandboxing. Wrap plugin calls with try/catch and if they
-			explode, just unload them or stop calling them.
-		- Performance. It's easy enough to save which plugins are in use and
-			only load those. We can't unload, but that only affects a single run
-			of the application.
 
-Edge Cases
-	- What happens when a dependency throws an exception? We'll unload the
-		plugin, but we should probably unload every plugin that uses the
-		dependency, right? Granted, this is an edge case of an edge case. I'll
-		pencil it in for triage in 2021.
+AppDomains
+----------
+Reasons for AppDomains
+	Resolving dependencies. The search path is based on the working
+		directory, not the directory of the plugin. So our folder structure
+		means plugin dependencies won't be found. We currently rely on the
+		AssemblyResolve event to manually LoadFrom. We can't change the
+		search directory with the default domain, but we can with separate
+		domains.
+	Loading and unloading plugins. This is mostly for fun. It's
+		convenient when setting up the LCD, making changes, or when a plugin
+		fails, but those are not the common case.
+	Hot swapping plugins. Users should be able to add, remove, and
+		overwrite plugins and the application should respectively load,
+		unload, and reload them automatically. This may end up being a reason
+		*not* to use domains. If we have to manually copy native modules then
+		we'll likely use the same model for managed plugins.
 
-Curiosities
-	- .NET assemblies show up twice in Visual Studio's Modules window. Once as
-		managed, once with a 'wrong address' error. Why? Does this indicate a
-		problem or inefficiency?
-	- The .NET Framework and the CLR are versioned separately. While the .NET
-		Framework is upgraded regularly, currently at 4.7.1, the CLR is much
-		less freqently upgraded and is currently 4.0.x. The framework has been
-		running on CLR 4 since framework 4.0. The major versions mostly match,
-		except there was no CLR 3.
-		https://docs.microsoft.com/en-us/dotnet/framework/migration-guide/versions-and-dependencies
-	- The CLR comes with Windows (at least in Win10), so there's no need to
-		install a redistributable.
-		https://docs.microsoft.com/en-us/dotnet/framework/migration-guide/how-to-determine-which-versions-are-installed
+Not Reasons for AppDomains
+	Security/sandboxing. Wrap plugin calls with try/catch and if they
+		explode, just unload them or stop calling them.
+	Performance. It's easy enough to save which plugins are in use and
+		only load those. We can't unload, but that only affects a single run
+		of the application.
+
+
+
 
 Notes
-	- An IHostControl and AppDomainManager must be implemented in order to
-		host the CLR. This seems a little pointless as it's *only* purpose for
-		us is to get a pointer to the AppDomainManager, but it looks like it's
-		required.
-	- The IHostControl can be done in C++. It's a COM type and presumably it
-		could be implemented in C# as well.
-	- Need to check to see if the AppDomainManager can be implemented in C++.
-		If it's in C#, a tlb file needs to be generated so the native side can
-		use the COM types. This is done by checking 'Register for COM Interop'
-		in the VS project settings. The tlb is then used with an #import
-		directive in C++. We could preprocess the tlb into a tlh if we wanted.
-	- It's not clear whether we need to register the COM types on the user's
-		machine, or if it counts as private COM and being in the same directory
-		is sufficient.
-	- We may be able to embed the tlb in the C# dll.
-	- Marshalled function pointers are __stdcall. Be careful.
-	- Native types must be marked public or #pragma make_public() to be visible
-		across assembly boundaries.
+-----
+An IHostControl and AppDomainManager must be implemented in order to
+	host the CLR. This seems a little pointless as it's *only* purpose for
+	us is to get a pointer to the AppDomainManager, but it looks like it's
+	required.
+The IHostControl can be done in C++. It's a COM type and presumably it
+	could be implemented in C# as well.
+Need to check to see if the AppDomainManager can be implemented in C++.
+	If it's in C#, a tlb file needs to be generated so the native side can
+	use the COM types. This is done by checking 'Register for COM Interop'
+	in the VS project settings. The tlb is then used with an #import
+	directive in C++. We could preprocess the tlb into a tlh if we wanted.
+It's not clear whether we need to register the COM types on the user's
+	machine, or if it counts as private COM and being in the same directory
+	is sufficient.
+We may be able to embed the tlb in the C# dll.
+Marshalled function pointers are __stdcall. Be careful.
+Native types must be marked public or #pragma make_public() to be visible
+	across assembly boundaries.
+The .NET Framework and the CLR are versioned separately. While the .NET
+	Framework is upgraded regularly, currently at 4.7.1, the CLR is much
+	less freqently upgraded and is currently 4.0.x. The framework has been
+	running on CLR 4 since framework 4.0. The major versions mostly match,
+	except there was no CLR 3.
+	https://docs.microsoft.com/en-us/dotnet/framework/migration-guide/versions-and-dependencies
+The CLR comes with Windows (at least in Win10), so there's no need to
+	install a redistributable.
+	https://docs.microsoft.com/en-us/dotnet/framework/migration-guide/how-to-determine-which-versions-are-installed
+
+
 
 Research
-	https://www.codeproject.com/Articles/416471/CLR-Hosting-Customizing-the-CLR
-	https://www.codeproject.com/Articles/418259/CLR-Hosting-Customizing-the-CLR-Part-2
+--------
+https://www.codeproject.com/Articles/416471/CLR-Hosting-Customizing-the-CLR
+https://www.codeproject.com/Articles/418259/CLR-Hosting-Customizing-the-CLR-Part-2
 
-	http://www.lenholgate.com/blog/2010/07/clr-hosting---a-flexible-managed-plugin-system-part-1.html
-	Perhaps IDL is worth looking into?
-	More generally, what's the best way to write COM interfaces?
+http://www.lenholgate.com/blog/2010/07/clr-hosting---a-flexible-managed-plugin-system-part-1.html
+Perhaps IDL is worth looking into?
+More generally, what's the best way to write COM interfaces?
 
-	Hosting Overview
-	https://msdn.microsoft.com/en-us/library/dd380850(v=vs.100).aspx
-	Topics at bottom
-	Initialize with CLRCreateInstance (supercedes CorBindToRuntimeEx)
+Hosting Overview
+https://msdn.microsoft.com/en-us/library/dd380850(v=vs.100).aspx
+Topics at bottom
+Initialize with CLRCreateInstance (supercedes CorBindToRuntimeEx)
 
-	Loading the Common Language Runtime into a Process
-	https://msdn.microsoft.com/en-us/library/01918c6x(v=vs.100).aspx
-	Metahost.h (Windows SDK), mscoree.lib
+Loading the Common Language Runtime into a Process
+https://msdn.microsoft.com/en-us/library/01918c6x(v=vs.100).aspx
+Metahost.h (Windows SDK), mscoree.lib
 
-	Runtime Hosts
-	https://msdn.microsoft.com/en-us/library/a51xd4ze(v=vs.100).aspx
-	Nothing interesting.
+Runtime Hosts
+https://msdn.microsoft.com/en-us/library/a51xd4ze(v=vs.100).aspx
+Nothing interesting.
 
-	Application Domains
-	https://msdn.microsoft.com/en-us/library/2bh4z9hs(v=vs.100).aspx
-	Just general info
+Application Domains
+https://msdn.microsoft.com/en-us/library/2bh4z9hs(v=vs.100).aspx
+Just general info
 
-	Creating and Configuring Application Domains
-	https://msdn.microsoft.com/en-us/library/wxtzfyw3(v=vs.100).aspx
-	System.AppDomain.CreateDomain
-	Domains can have custom key/value pairs to embed information
-	Use AppDomainSetup.ApplicationBase to set loading directory.
-	Use AppDomainSetup.ConfigurationFile to supply configuration settings.
+Creating and Configuring Application Domains
+https://msdn.microsoft.com/en-us/library/wxtzfyw3(v=vs.100).aspx
+System.AppDomain.CreateDomain
+Domains can have custom key/value pairs to embed information
+Use AppDomainSetup.ApplicationBase to set loading directory.
+Use AppDomainSetup.ConfigurationFile to supply configuration settings.
 
-	Determining Application Domain Boundaries
-	https://msdn.microsoft.com/en-us/library/56e3y6t8(v=vs.100).aspx
+Determining Application Domain Boundaries
+https://msdn.microsoft.com/en-us/library/56e3y6t8(v=vs.100).aspx
 
-	Activation Configuration Files
-	https://msdn.microsoft.com/en-us/library/ff361644(v=vs.100).aspx
-	For using new .NET Framework versions with an older host. Don't care.
+Activation Configuration Files
+https://msdn.microsoft.com/en-us/library/ff361644(v=vs.100).aspx
+For using new .NET Framework versions with an older host. Don't care.
 
-	Loading and Executing User Code
-	https://msdn.microsoft.com/en-us/library/y6k08yft(v=vs.100).aspx
+Loading and Executing User Code
+https://msdn.microsoft.com/en-us/library/y6k08yft(v=vs.100).aspx
 
-	Transitioning to Managed Hosting Code
-	https://msdn.microsoft.com/en-us/library/yzba0xwe(v=vs.100).aspx
-	AppDomainManagers in each domain for calling managed code.
+Transitioning to Managed Hosting Code
+https://msdn.microsoft.com/en-us/library/yzba0xwe(v=vs.100).aspx
+AppDomainManagers in each domain for calling managed code.
 
-	Unloading Domains and Shutting Down a Process
-	https://msdn.microsoft.com/en-us/library/7y06h4xe(v=vs.100).aspx
-	Assemblies in the default domain and domain-neutral aassemblies cannot be
-	unloaded.
+Unloading Domains and Shutting Down a Process
+https://msdn.microsoft.com/en-us/library/7y06h4xe(v=vs.100).aspx
+Assemblies in the default domain and domain-neutral aassemblies cannot be
+unloaded.
 
-	How-to and Walkthrough Directory
-	https://msdn.microsoft.com/en-us/library/ms184413(v=vs.100).aspx
-	Debugging and Profiling
-	Interoperating with Unmanaged Code
-	WPF Walkthroughs
+How-to and Walkthrough Directory
+https://msdn.microsoft.com/en-us/library/ms184413(v=vs.100).aspx
+Debugging and Profiling
+Interoperating with Unmanaged Code
+WPF Walkthroughs
 
-	// TODO: Read this!
-	Mixed (Native and Managed) Assemblies
-	https://msdn.microsoft.com/en-us/library/x0w2664k.aspx
+// TODO: Read this!
+Mixed (Native and Managed) Assemblies
+https://msdn.microsoft.com/en-us/library/x0w2664k.aspx

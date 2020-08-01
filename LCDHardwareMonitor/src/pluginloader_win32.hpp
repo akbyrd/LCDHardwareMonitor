@@ -7,6 +7,7 @@ using Microsoft::WRL::ComPtr;
 #include <CorHdr.h>
 #pragma warning(pop)
 
+// NOTE: Required for CLRCreateInstance
 #pragma comment(lib, "MSCorEE.lib")
 
 // TODO: Don't really need this in run/. Want to reach into the project output

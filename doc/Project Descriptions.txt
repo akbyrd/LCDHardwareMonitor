@@ -1,27 +1,52 @@
-Compiler: MSVC 2015
-Language: C++14
-
-C++ /CLI Projects
-Disable incremental linking (not supported)
-Do not use /DEBUG:Fastlink (not supported)
-Can't launch from the run folder because CS project debug settings don't support VS macros.
+Compiler: MSVC 2019
+Language: C++17
 
 
 
 Projects
 LCDHardwareMonitor
 Project dependencies: LCDHardwareMonitor PluginLoader CLR
-Include directories: ../LCDHardwareMonitor API/
+Other references: None
+Include directories: LCDHardwareMonitor API
 Library dependencies: MSCorEE.lib, D3D11.lib, D3D9.lib, DXGI.lib, d3dcompiler.lib
 Output: exe
+Compiler flags: None
 Post build: "Deploy.bat" "$(OutDir)" && CopyD3DC.bat "$(WindowsSdkDir)" $(PlatformTarget)
 This is the main project. Contains the the core application as well as unmanaged
 hosting code the starts the CLR and communicates with LCDHardwareMonitor
 PluginLoader CLR on the managed side.
 
+LCDHardwareMonitor API CLR
+Project dependencies: None
+Other references: None
+Include directories: LCDHardwareMonitor API
+Output: dll
+Compiler flags: /clr
+Post build: "Deploy.bat" "$(OutDir)"
+Contains managed descriptions of all interfaces available to plugins.
+
+LCDHardwareMonitor GUI
+Project dependencies: LCDHardwareMonitor GUI Interop
+Other references: MahApps.Metro, ControlzEz, System.Windows.Interactivity
+Output: exe
+Compiler flags: None
+Post build: PUSHD $(ProjectDir) && "Deploy.bat" "$(OutDir)" "GUI" && POPD
+The GUI application for editing the content displayed on the LCD. This is a C# WPF application.
+
+LCDHardwareMonitor GUI Interop
+Project dependencies: None
+Other references: None
+Include directories: LCDHardwareMonitor API, LCDHardwareMonitor/src
+Output: dll
+Compiler flags: /clr
+Post build: "Deploy.bat" "$(OutDir)" "GUI"
+Contains C++/CLI code that allows the C++ LCDHardwareMonitor application and C# GUI application to
+communicate with one another. This primarily consists of message sending and receiving.
+
 LCDHardwareMonitor PluginLoader CLR
 Project dependencies: LCDHardwareMonitor API CLR
-Include directories: ../LCDHardwareMonitor API/
+Other references: None
+Include directories: LCDHardwareMonitor API, LCDHardwareMonitor/src
 References: LCDHardwareMonitor API CLR
 Output: dll
 Compiler flags: /clr
@@ -32,29 +57,21 @@ The code here will be injected into the AppDomain for each plugin to deal with
 unmanaged to managed interop. The core application loads this assembly and
 instantiates the main class through a COM interface (unfortunately). Due to the
 COM usage, the assembly must be parsed into .tlb file for the core application
-to use and avoid registering the COM type on the system.
+to use and to avoid registering the COM types system-wide.
 
-LCDHardwareMonitor API CLR
-Include directories: ../LCDHardwareMonitor API/
-Output: dll
-Compiler flags: /clr
-Post build: "Deploy.bat" "$(OutDir)"
-Contains managed descriptions of all interfaces available to plugins.
-
-OpenHardwareMonitor Plugin
+Sensor Plugin - OpenHardwareMonitor
 Project dependencies: LCDHardwareMonitor API CLR
-Include directories: ../LCDHardwareMonitor API/
-Type: sensor plugin
+Other references: OpenHardwareMonitorLib
+Include directories: LCDHardwareMonitor API
 Output: dll
 Compiler flags: /clr
 Post build: "Deploy.bat" "$(OutDir)" "Sensor Plugins\OpenHardwareMonitor"
 
-Filled Bar Plugin
+Widget Plugin - Filled Bar
 Project dependencies: LCDHardwareMonitor API CLR
-Include directories: ../LCDHardwareMonitor API/
-Type: sensor plugin
+Other references: None
+Include directories: LCDHardwareMonitor API
 Output: dll
-Compiler flags: /clr
 Post build: "Deploy.bat" "$(OutDir)" "Widget Plugins\Filled Bar"
 
 
@@ -74,3 +91,7 @@ Widget Plugins/
 		Plugin Shader.cso
 Shaders/
 	Built-in Shader.cso
+GUI/
+	LCDHardwareMonitor.GUI.exe
+	GUI Dependency.dll
+d3dcompiler_47.dll

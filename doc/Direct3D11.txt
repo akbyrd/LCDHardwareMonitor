@@ -1,0 +1,50 @@
+Coordinate Systems
+------------------
+UVs
+D3D: 0,0 is the top left. Texture memory starts at the top left.
+OGL: 0,0 is the bottom left. Texture memory starts the bottom left.
+
+
+
+Reading from the depth buffer
+-----------------------------
+https://docs.microsoft.com/en-us/windows/win32/direct3d11/d3d10-graphics-programming-guide-depth-stencil#reading-the-depth-stencil-buffer-as-a-texture
+Format must be typeless: descDepth.Format = DXGI_FORMAT_R24G8_TYPELESS;
+Must have shader resource bind flag: D3D10_BIND_SHADER_RESOURCE
+Needs a typed resource view: ID3D11Device::CreateShaderResourceView
+The resource view type must match the buffer format, with the types filled in
+DXGI_FORMAT_R24G8_TYPELESS => DXGI_FORMAT_D24_UNORM_S8_UINT/DXGI_FORMAT_R24_UNORM_X8_TYPELESS
+
+
+
+ComPtr
+------
+Use of the WRL ComPtr is preferred for a couple reasons
+  1) Querying interfaces is much simpler with As()
+  2) It allows temporary pointers to be created on the stack and cleaned up
+     without any additional bookkeeping.
+
+ComPtrs should usually be passed as raw pointers for simplicity. However, an
+exception is common utility functions like SetDebugObjectName where the constant
+.Get() would be annoying.
+
+Remember operator& maps to ReleaseAndGetAddressOf()
+
+
+
+Texture Formats
+---------------
+https://docs.microsoft.com/en-us/previous-versions//ff471325(v=vs.85)
+https://docs.microsoft.com/en-us/windows/win32/direct3ddxgi/format-support-for-direct3d-11-0-feature-level-hardware
+https://docs.microsoft.com/en-us/windows/win32/direct3ddxgi/format-support-for-direct3d-11-1-feature-level-hardware
+Formats must support "Display Scan-Out" to be usable in a swap chain
+Formats that are shareable are extremely restricted. It's not clear exactly which formats are supported though.
+
+
+
+DirectX Versions
+----------------
+DirectX 11 launched with Windows 7, back-ported to Vista. First hardware 2009. DXGI 1.1.
+DirectX 11.1 launched with Windows 8 (2011). DXGI 1.2, WDDM 1.2. Mandatory 16 bit formats.
+DirectX 11.2 launched with Windows 8.1 (2013). DXGI 1.3,  WDDM 1.3.
+DirectX 11.3 launched with Windows 10 (2015).

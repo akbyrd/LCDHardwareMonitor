@@ -1,21 +1,19 @@
 # LCDHardwareMonitor
-A UI application, rendering engine, and USB driver for displaying custom content on an LCD screen. It is intended to be extremely customizable, allowing data from any conceivable source to be displayed along with Direct3D content. It is built entirely on a plugin based architecture to allow for easy extension and customization.
+An application for designing and displaying custom content on an LCD screen. It is intended to be extremely customizable, allowing data from any conceivable source to be displayed along with Direct3D content. It is built entirely on a plugin based architecture to allow for easy extension and customization.
 
-## About
-This project started with the desire for a far more capable alternative to LCDSysInfo. It has evolved into an excuse to learn Git, WPF, MVVM, Direct3D, and USB drivers. You'll have to excuse the slow progress as I find time figure all these things out from scratch. Feel free to point out my mistakes! While the code will remain open source, I intend to build the accompanying hardware and sell it as a ready-to-go package with the software. It'll probably be Windows only, but I'm not ruling out other platforms entirely.
+This project started with the desire for a far more capable alternative to LCDSysInfo. The primary use case is displaying CPU and GPU utilization in real time. Currently it is Windows-only but is likely to support Linux in the future. The software will remain free, but I intend to build and sell hardware kits for a plug-and-play experience.
 
 ## Status
 * ~~WPF shell prototype~~
 * ~~Plugin architecture~~
 * ~~Content renderer~~
+* ~~Choose hardware~~
+* Hardware Communication
 * GUI Application
 * Core functionality
-* Choose hardware
-* USB driver
 * More features
 * More plugins
-
-After spending entirely too much time with WPF, MVVM, and other shenanigans I've scrapped the UI in order to focus exclusively on actual functionality. The UI is a graphical editor provided for convenience, and not fundamental to the applications purpose. I'll likely stick with WPF as the initial UI.
+* Hardware Kit
 
 ![Renderer Preview](doc/progress/LCD%20Hardware%20Monitor%2006%20-%20Renderer%20In%20WPF.png)
 
@@ -27,16 +25,25 @@ After spending entirely too much time with WPF, MVVM, and other shenanigans I've
 
 ![Sensor Progress](doc/progress/LCD%20Hardware%20Monitor%2012%20-%20Actual%20Data.gif)
 
+## Development Requirements
+* Visual Studio 2019
+* Windows 10 SDK
+* DirectX 11 SDK
+* Windows Runtime C++ Template Library (WRL)
+* C++/CLI
+* .NET 4.7.2 targeting pack
+* .NET 4.7.2 SDK
+
+## Third Party Dependencies
+(all included or automatic)
+* FTDI d2xx driver (included with Windows)
+* FTDI d2xx headers and import library (included)
+* OpenHardwareMonitor.dll (included)
+* MahApps.Metro (automatic through NuGet)
+* ControlzEz (automatic through NuGet)
+
 ## Getting Started
-You shouldn't need to do anything other than install the [DirectX SDK](https://www.microsoft.com/en-us/download/details.aspx?id=6812). Open the solution in Visual Studio and compile.
-
-## Requirements
-* [DirectX SDK](https://www.microsoft.com/en-us/download/details.aspx?id=6812)
-
-## Resources
-* [Modern UI for WPF](https://github.com/firstfloorsoftware/mui)
-* [Prism](https://msdn.microsoft.com/en-us/library/gg406140.aspx)
-* [OpenHardwareMonitor](http://openhardwaremonitor.org/) ([GitHub clone](https://github.com/Sycobob/OpenHardwareMonitor))
+If the development requirements are installed you shouldn't need to do anything other than open the Visual Studio solution and compile.
 
 ## License
 Uh, it's free and stuff. I'll figure this out later.
