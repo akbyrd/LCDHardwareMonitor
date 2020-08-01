@@ -108,8 +108,8 @@ union v2t
 	};
 	T arr[2];
 
-	T& operator[] (i32 index);
-	const T& operator[] (i32 index) const;
+	T& operator[] (u32 index);
+	const T& operator[] (u32 index) const;
 	template<typename U> explicit operator v2t<U>();
 	template<typename U> explicit operator v3t<U>();
 	template<typename U> explicit operator v4t<U>();
@@ -231,16 +231,18 @@ operator/= (v2t<T>& lhs, U rhs)
 
 template<typename T>
 inline T&
-v2t<T>::operator[] (i32 index)
+v2t<T>::operator[] (u32 index)
 {
+	Assert(index < ArrayLength(arr));
 	T& result = arr[index];
 	return result;
 }
 
 template<typename T>
 inline const T&
-v2t<T>::operator[] (i32 index) const
+v2t<T>::operator[] (u32 index) const
 {
+	Assert(index < ArrayLength(arr));
 	const T& result = arr[index];
 	return result;
 }
@@ -355,8 +357,8 @@ union v3t
 	};
 	T arr[3];
 
-	T& operator[] (i32 index);
-	const T& operator[] (i32 index) const;
+	T& operator[] (u32 index);
+	const T& operator[] (u32 index) const;
 	template<typename U> explicit operator v2t<U>();
 	template<typename U> explicit operator v3t<U>();
 	template<typename U> explicit operator v4t<U>();
@@ -478,16 +480,18 @@ operator/ (U dividend, v3t<T> v)
 
 template<typename T>
 inline T&
-v3t<T>::operator[] (i32 index)
+v3t<T>::operator[] (u32 index)
 {
+	Assert(index < ArrayLength(arr));
 	T& result = arr[index];
 	return result;
 }
 
 template<typename T>
 inline const T&
-v3t<T>::operator[] (i32 index) const
+v3t<T>::operator[] (u32 index) const
 {
+	Assert(index < ArrayLength(arr));
 	const T& result = arr[index];
 	return result;
 }
@@ -627,8 +631,8 @@ union v4t
 	};
 	T arr[4];
 
-	T& operator[] (i32 index);
-	const T& operator[] (i32 index) const;
+	T& operator[] (u32 index);
+	const T& operator[] (u32 index) const;
 	template<typename U> explicit operator v2t<U>();
 	template<typename U> explicit operator v3t<U>();
 	template<typename U> explicit operator v4t<U>();
@@ -750,16 +754,18 @@ operator/= (v4t<T>& lhs, U rhs)
 
 template<typename T>
 inline T&
-v4t<T>::operator[] (i32 index)
+v4t<T>::operator[] (u32 index)
 {
+	Assert(index < ArrayLength(arr));
 	T& result = arr[index];
 	return result;
 }
 
 template<typename T>
 inline const T&
-v4t<T>::operator[] (i32 index) const
+v4t<T>::operator[] (u32 index) const
 {
+	Assert(index < ArrayLength(arr));
 	const T& result = arr[index];
 	return result;
 }
@@ -947,19 +953,19 @@ union Matrix
 	r32 arr[4][4];
 	v4 col[4];
 
-	v4& operator[] (i32 col);
-	const v4& operator[] (i32 col) const;
+	v4& operator[] (u32 _col);
+	const v4& operator[] (u32 _col) const;
 };
 
 inline v4
-Row(const Matrix& m, i32 row)
+Row(const Matrix& m, u32 row)
 {
 	v4 result = { m[0][row], m[1][row], m[2][row], m[3][row] };
 	return result;
 }
 
 inline const v4&
-Col(const Matrix& m, i32 col)
+Col(const Matrix& m, u32 col)
 {
 	const v4& result = m.col[col];
 	return result;
@@ -992,15 +998,17 @@ operator* (v4t<T> lhs, const Matrix& rhs)
 }
 
 inline v4&
-Matrix::operator[] (i32 _col)
+Matrix::operator[] (u32 _col)
 {
+	Assert(_col < ArrayLength(col));
 	v4& result = col[_col];
 	return result;
 }
 
 inline const v4&
-Matrix::operator[] (i32 _col) const
+Matrix::operator[] (u32 _col) const
 {
+	Assert(_col < ArrayLength(arr));
 	const v4& result = col[_col];
 	return result;
 }
