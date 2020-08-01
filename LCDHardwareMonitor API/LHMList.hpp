@@ -53,8 +53,8 @@ struct List
 	T*  data;
 
 	using RefT = ListRef<T>;
-	inline T& operator[] (RefT r) { return data[ToIndex(r)]; }
-	inline T& operator[] (u32 i)  { return data[i]; }
+	inline T& operator[] (RefT r) { u32 i = ToIndex(r); Assert(i < length); return data[i]; }
+	inline T& operator[] (u32 i)  { Assert(i < length); return data[i]; }
 };
 
 #if false
@@ -84,8 +84,8 @@ struct Slice
 	explicit operator Slice<U>() { return *(Slice<U>*) this; }
 
 	using RefT = ListRef<T>;
-	inline T& operator[] (RefT r) { return (T&) ((u8*) data)[stride*(ToIndex(r))]; }
-	inline T& operator[] (u32 i)  { return (T&) ((u8*) data)[stride*i]; }
+	inline T& operator[] (RefT r) { u32 i = ToIndex(r); Assert(i < length); return (T&) ((u8*) data)[stride*i]; }
+	inline T& operator[] (u32 i)  { Assert(i < length); return (T&) ((u8*) data)[stride*i]; }
 };
 
 template<typename T>
@@ -124,7 +124,7 @@ inline T&
 List_Append(List<T>& list, T item)
 {
 	List_Grow(list);
-	T& slot = list.data[list.length++];
+	T& slot = list[list.length++];
 	slot = item;
 	return slot;
 }
@@ -134,7 +134,7 @@ inline T&
 List_Append(List<T>& list)
 {
 	List_Grow(list);
-	T& slot = list.data[list.length++];
+	T& slot = list[list.length++];
 	return slot;
 }
 
@@ -159,7 +159,7 @@ List_AppendRange(List<T>& list, Slice<T> items)
 	else
 	{
 		for (u32 i = 0; i < items.length; i++)
-			list.data[list.length++] = items[i];
+			list[list.length++] = items[i];
 	}
 }
 
@@ -173,34 +173,14 @@ List_Clear(List<T>& list)
 
 template<typename T>
 inline b8
-List_Contains(List<T>& list, T* item)
-{
-	if (list.length == 0)
-		return false;
-
-	// TODO: This returns false positives if the address in the range, but not an actual item
-	b8 result = item >= &list.data[0] && item < &list.data[list.length];
-	return result;
-}
-
-template<typename T>
-inline b8
-List_Contains(List<T>& list, T& item)
-{
-	b8 result = List_Contains(list, &item);
-	return result;
-}
-
-template<typename T>
-inline b8
-List_ContainsValue(List<T>& list, T item)
+List_Contains(List<T>& list, T item)
 {
 	if (list.length == 0)
 		return false;
 
 	for (u32 i = 0; i < list.length; i++)
 	{
-		if (list.data[i] == item)
+		if (list[i] == item)
 			return true;
 	}
 	return false;
@@ -236,7 +216,7 @@ inline ListRef<T>
 List_FindFirst(List<T>& list, T item)
 {
 	for (u32 i = 0; i < list.length; i++)
-		if (list.data[i] == item)
+		if (list[i] == item)
 			return List_GetRef(list, i);
 
 	return ListRef<T>::Null;
@@ -247,7 +227,7 @@ inline ListRef<T>
 List_FindLast(List<T>& list, T item)
 {
 	for (u32 i = list.length; i > 0; i--)
-		if (list.data[i - 1] == item)
+		if (list[i - 1] == item)
 			return List_GetRef(list, i);
 
 	return ListRef<T>::Null;
@@ -265,24 +245,22 @@ template<typename T>
 inline T&
 List_Get(List<T>& list, u32 index)
 {
-	return list.data[index];
+	return list[index];
 }
 
 template<typename T>
 inline T&
 List_GetFirst(List<T>& list)
 {
-	// TODO: Decide what to do here
-	//Assert(list.length > 0);
-	return list.data[0];
+	return list[0];
 }
 
 template<typename T>
 inline T&
 List_GetLast(List<T>& list)
 {
-	//Assert(list.length > 0);
-	return list.data[list.length - 1];
+	Assert(list.length > 0);
+	return list[list.length - 1];
 }
 
 template<typename T>
@@ -309,26 +287,6 @@ List_GetLastRef(List<T>& list)
 }
 
 template<typename T>
-inline T*
-List_GetFirstPtr(List<T>& list)
-{
-	if (list.length == 0)
-		return &list.data[0];
-
-	return &list.data[0];
-}
-
-template<typename T>
-inline T*
-List_GetLastPtr(List<T>& list)
-{
-	if (list.length == 0)
-		return &list.data[0];
-
-	return &list.data[list.length - 1];
-}
-
-template<typename T>
 inline u32
 List_GetRemaining(List<T>& list)
 {
@@ -341,6 +299,22 @@ List_IsRefValid(List<T>& list, ListRef<T> ref)
 {
 	b8 result = ToIndex(ref) < list.length;
 	return result;
+}
+
+template<typename T>
+inline T&
+List_Push(List<T>& list)
+{
+	return List_Append(list);
+}
+
+template<typename T>
+inline T
+List_Pop(List<T>& list)
+{
+	T item = List_GetLast(list);
+	List_RemoveLast(list);
+	return item;
 }
 
 template<typename T>
@@ -359,7 +333,7 @@ inline void
 List_Remove(List<T>& list, u32 index)
 {
 	Assert(index < list.length);
-	memmove(&list[index], &list[index + 1], sizeof(T) * (list.length - index - 1));
+	memmove(&list[index], &list.data[index + 1], sizeof(T) * (list.length - index - 1));
 	List_ZeroRange(list, list.length - 1, 1);
 	list.length--;
 }
@@ -370,7 +344,7 @@ List_RemoveFast(List<T>& list, ListRef<T> ref)
 {
 	Assert(List_IsRefValid(list, ref));
 	T& slot = list[ref];
-	slot = list.data[list.length - 1];
+	slot = list[list.length - 1];
 	List_ZeroRange(list, list.length - 1, 1);
 	list.length--;
 }
@@ -381,7 +355,7 @@ List_RemoveFast(List<T>& list, u32 index)
 {
 	Assert(index < list.length);
 	T& slot = list[index];
-	slot = list.data[list.length - 1];
+	slot = list[list.length - 1];
 	List_ZeroRange(list, list.length - 1, 1);
 	list.length--;
 }
@@ -392,7 +366,7 @@ inline void
 List_RemoveRangeFast(List<T>& list, u32 start, u32 count)
 {
 	Assert(start < list.length && (start + count) <= list.length);
-	memcpy(&list.data[start], &list.data[start + count], sizeof(T) * count);
+	memcpy(&list[start], &list[start + count], sizeof(T) * count);
 	List_ZeroRange(list, list.length - count, 1);
 	list.length -= count;
 }
@@ -402,7 +376,7 @@ inline void
 List_RemoveLast(List<T>& list)
 {
 	Assert(list.length > 0);
-	memset(&list.data[list.length - 1], 0, sizeof(T));
+	memset(&list[list.length - 1], 0, sizeof(T));
 	list.length--;
 }
 
@@ -461,7 +435,7 @@ List_Slice(List<T>& list, u32 start)
 	Slice<T> result = {};
 	result.length = list.length - start;
 	result.stride = sizeof(T);
-	result.data   = &list.data[start];
+	result.data   = &list[start];
 	return result;
 }
 
@@ -472,7 +446,7 @@ List_Slice(Slice<T>& slice, u32 start)
 	Slice<T> result = {};
 	result.length = slice.length - start;
 	result.stride = slice.stride;
-	result.data   = &slice.data[start];
+	result.data   = &slice[start];
 	return result;
 }
 
@@ -485,7 +459,7 @@ List_MemberSlice(List<T>& list, U T::* memberPtr)
 	result.stride = sizeof(T);
 
 	if (list.length > 0)
-		result.data = &(list.data[0].*memberPtr);
+		result.data = &(list[0].*memberPtr);
 
 	return result;
 }
@@ -514,7 +488,7 @@ inline T&
 List_GetLast(Slice<T>& list)
 {
 	Assert(list.length > 0);
-	return list.data[list.length - 1];
+	return list[list.length - 1];
 }
 
 template<typename T, typename U>
@@ -527,7 +501,7 @@ Slice_MemberSlice(Slice<T>& slice, U T::* memberPtr)
 
 	if (slice.length > 0)
 	{
-		result.data   = &(slice.data[0].*memberPtr);
+		result.data   = &(slice[0].*memberPtr);
 		result.stride = slice.stride;
 	}
 
@@ -538,10 +512,13 @@ Slice_MemberSlice(Slice<T>& slice, U T::* memberPtr)
 // TODO: This data structure needs to be reworked entirely. The API is all over the place and
 // generally garbage.
 // TODO: Settle on references or pointers
-// TODO: Where should memory be included?
 // TODO: Allow range-for usage
 // TODO: Use placement new to avoid calling destructors on garbage objects?
 // TODO: Use functions to zero empty slots. Use raw access to skip the zeroing. Use the function to
 // fuzz unused slots with different values.
+// TODO: Null object pattern and Refs are in tension with each other. There are two interesting
+// cases: 1) Zero init data is 'invalid' in the sense it doesn't map to anything at all. Using zero
+// init data is an error. 2) Zero init data is 'invalid' in the sense that it's not the intended
+// value, but it maps to a default/null object and is valid to use.
 
 #endif

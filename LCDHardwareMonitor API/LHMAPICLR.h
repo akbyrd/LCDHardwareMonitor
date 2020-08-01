@@ -28,7 +28,7 @@ String_FromCLR(LHMString lhmString, CLRString^ clrString)
 	String_Reserve(lhmString, length);
 
 	lhmString.length = length;
-	strncpy_s(&lhmString[0], lhmString.capacity, cstring, length);
+	strncpy_s(lhmString.data, lhmString.capacity, cstring, length);
 
 	Marshal::FreeHGlobal((IntPtr) cstring);
 }

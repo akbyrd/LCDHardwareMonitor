@@ -197,7 +197,7 @@ Connection_Teardown(ConnectionState& con)
 	Platform_DestroyPipe(con.pipe);
 
 	for (u32 i = 0; i < con.queue.capacity; i++)
-		List_Free(con.queue[i]);
+		List_Free(con.queue.data[i]);
 	List_Free(con.queue);
 }
 
@@ -404,7 +404,7 @@ Serialize(ByteStream& stream, T*& pointer)
 		case ByteStreamMode::Read:
 		{
 			// Point to the data appended to the stream
-			T* data = (T*) &stream.bytes[stream.cursor];
+			T* data = (T*) &stream.bytes.data[stream.cursor];
 			pointer = data;
 			break;
 		}
@@ -412,7 +412,7 @@ Serialize(ByteStream& stream, T*& pointer)
 		case ByteStreamMode::Write:
 		{
 			// Copy the data into the stream
-			T* data = (T*) &stream.bytes[stream.cursor];
+			T* data = (T*) &stream.bytes.data[stream.cursor];
 			*data = *pointer;
 			pointer = data;
 			break;
@@ -436,7 +436,7 @@ template<typename T>
 void
 Serialize(ByteStream& stream, List<T>& list)
 {
-	T* data = (T*) &stream.bytes[stream.cursor];
+	T* data = (T*) &stream.bytes.data[stream.cursor];
 	stream.cursor += List_SizeOf(list);
 
 	switch (stream.mode)
@@ -471,7 +471,7 @@ template<typename T>
 void
 Serialize(ByteStream& stream, Slice<T>& slice)
 {
-	T* data = (T*) &stream.bytes[stream.cursor];
+	T* data = (T*) &stream.bytes.data[stream.cursor];
 	stream.cursor += List_SizeOf(slice);
 
 	switch (stream.mode)
@@ -510,7 +510,7 @@ Serialize(ByteStream& stream, Slice<T>& slice)
 void
 Serialize(ByteStream& stream, String& string)
 {
-	c8* data = (c8*) &stream.bytes[stream.cursor];
+	c8* data = (c8*) &stream.bytes.data[stream.cursor];
 	stream.cursor += string.length + 1;
 
 	switch (stream.mode)
@@ -534,7 +534,7 @@ Serialize(ByteStream& stream, String& string)
 void
 Serialize(ByteStream& stream, StringView& string)
 {
-	c8* data = (c8*) &stream.bytes[stream.cursor];
+	c8* data = (c8*) &stream.bytes.data[stream.cursor];
 	stream.cursor += string.length + 1;
 
 	switch (stream.mode)

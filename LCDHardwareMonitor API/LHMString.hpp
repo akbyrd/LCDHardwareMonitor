@@ -35,8 +35,8 @@ struct String
 	u32 capacity;
 	c8* data;
 
-	c8& operator[] (StrPos p) { return data[ToIndex(p)]; }
-	c8& operator[] (u32 i)    { return data[i]; }
+	c8& operator[] (StrPos p) { u32 i = ToIndex(p); Assert(i < length); return data[i]; }
+	c8& operator[] (u32 i)    { Assert(i < length); return data[i]; }
 };
 
 void String_Free(String& string);
@@ -52,8 +52,8 @@ struct StringView
 	template<u32 Length>
 	StringView(const c8(&arr)[Length]) { length = Length - 1;    data = (c8*) arr;   }
 
-	c8& operator[] (StrPos p) { return data[ToIndex(p)]; }
-	c8& operator[] (u32 i)    { return data[i]; }
+	c8& operator[] (StrPos p) { u32 i = ToIndex(p); Assert(i < length); return data[i]; }
+	c8& operator[] (u32 i)    { Assert(i < length); return data[i]; }
 };
 
 struct StringSlice
@@ -67,8 +67,8 @@ struct StringSlice
 	template<u32 Length>
 	StringSlice(const c8(&arr)[Length])   { length = Length - 1;    data = (c8*) arr;   }
 
-	c8& operator[] (StrPos p) { return data[ToIndex(p)]; }
-	c8& operator[] (u32 i)    { return data[i]; }
+	c8& operator[] (StrPos p) { u32 i = ToIndex(p); Assert(i < length); return data[i]; }
+	c8& operator[] (u32 i)    { Assert(i < length); return data[i]; }
 };
 
 // -------------------------------------------------------------------------------------------------
@@ -91,7 +91,7 @@ String_Reserve(String& string, u32 capacity)
 
 		string.capacity = capacity;
 		string.data     = (c8*) ReallocChecked(string.data, (size) totalSize);
-		memset(&string[string.length], 0, (size) emptySize);
+		memset(&string.data[string.length], 0, (size) emptySize);
 	}
 }
 
@@ -105,8 +105,8 @@ String_FromView(StringView view)
 	String string = {};
 	String_Reserve(string, view.length + 1);
 
-	strncpy_s(&string[0], string.capacity, &view[0], view.length);
 	string.length = view.length;
+	strncpy_s(string.data, string.capacity, view.data, view.length);
 
 	return string;
 }
@@ -118,7 +118,7 @@ String_FromSlice(StringSlice slice)
 	String_Reserve(string, slice.length + 1);
 
 	string.length = slice.length;
-	strncpy_s(&string[0], string.capacity, &slice[0], slice.length);
+	strncpy_s(string.data, string.capacity, slice.data, slice.length);
 
 	return string;
 }
@@ -224,13 +224,13 @@ FormatImpl(String& string, StringView format, u32 iFmt, Args&&... args)
 			for (len = 1; iFmt + len < format.length; len++)
 				if (format[iFmt + len] == '%') break;
 
-			if (!lengthOnly) strncpy_s(&string[string.length], string.capacity - string.length, &format[iFmt], len);
+			if (!lengthOnly) strncpy_s(&string.data[string.length], string.capacity - string.length, &format[iFmt], len);
 			Step(len, len);
 		}
 		else
 		{
-			c8 ahead1 = format.length - iFmt >= 1 ? format[iFmt + 1] : '\0';
-			c8 ahead2 = format.length - iFmt >= 2 ? format[iFmt + 2] : '\0';
+			c8 ahead1 = format.length - iFmt > 1 ? format[iFmt + 1] : '\0';
+			c8 ahead2 = format.length - iFmt > 2 ? format[iFmt + 2] : '\0';
 
 			if (ahead1 != '!' || ahead2 == '!')
 			{
@@ -242,8 +242,8 @@ FormatImpl(String& string, StringView format, u32 iFmt, Args&&... args)
 			{
 				if (!lengthOnly)
 				{
-					string[string.length + 0] = '%';
-					string[string.length + 1] = '\0';
+					string.data[string.length + 0] = '%';
+					string.data[string.length + 1] = '\0';
 				}
 				Step(1, 2);
 			}
@@ -251,15 +251,15 @@ FormatImpl(String& string, StringView format, u32 iFmt, Args&&... args)
 			{
 				if (!lengthOnly)
 				{
-					string[string.length + 0] = '!';
-					string[string.length + 1] = '\0';
+					string.data[string.length + 0] = '!';
+					string.data[string.length + 1] = '\0';
 				}
 				Step(1, 2);
 			}
 		}
 	}
 
-	Assert(lengthOnly || string[string.length] == '\0');
+	Assert(lengthOnly || string.data[string.length] == '\0');
 	return written;
 }
 
@@ -296,7 +296,7 @@ ToStringImpl_Format(String& string, StringView format, T value)
 	b8 lengthOnly = !string.data;
 	u32 written = 0;
 	// TODO: Check return value!
-	written += (u32) snprintf(&string[string.length], string.capacity - string.length, &format[0], value);
+	written += (u32) snprintf(&string.data[string.length], string.capacity - string.length, format.data, value);
 	string.length += written * !lengthOnly;
 	return written;
 }
@@ -321,7 +321,7 @@ ToString(String& string, String value)
 {
 	b8 lengthOnly = !string.data;
 	u32 written = value.length;
-	if (!lengthOnly) strncpy_s(&string[string.length], string.capacity - string.length, &value[0], value.length);
+	if (!lengthOnly) strncpy_s(&string.data[string.length], string.capacity - string.length, value.data, value.length);
 	string.length += written * !lengthOnly;
 	return written;
 }
@@ -331,7 +331,7 @@ ToString(String& string, StringView value)
 {
 	b8 lengthOnly = !string.data;
 	u32 written = value.length;
-	if (!lengthOnly) strncpy_s(&string[string.length], string.capacity - string.length, &value[0], value.length);
+	if (!lengthOnly) strncpy_s(&string.data[string.length], string.capacity - string.length, value.data, value.length);
 	string.length += written * !lengthOnly;
 	return written;
 }
@@ -341,7 +341,7 @@ ToString(String& string, StringSlice value)
 {
 	b8 lengthOnly = !string.data;
 	u32 written = value.length;
-	if (!lengthOnly) strncpy_s(&string[string.length], string.capacity - string.length, &value[0], value.length);
+	if (!lengthOnly) strncpy_s(&string.data[string.length], string.capacity - string.length, value.data, value.length);
 	string.length += written * !lengthOnly;
 	return written;
 }
