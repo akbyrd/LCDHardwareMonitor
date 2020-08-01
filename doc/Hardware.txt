@@ -82,3 +82,310 @@ Data
 => 39.55 mbps
 USB 1.0 = 12 mbps
 USB 2.0 = 480 mbps
+
+
+
+50-Pin Prototyping
+------------------
+Search terms
+Dual row breadboard connector
+FPC breadboard
+FPC jumpber
+Dual row jumper
+50 pin ribbon cable
+50 pin ZIF socket
+pin header with long legs
+ribbon cable breadboard adapter
+
+Items
+https://www.icbreakout.com/products/2xn-idc-connector-breakout-board
+https://www.adafruit.com/product/2103
+http://www.technologicalarts.ca/shop/store/details/251/idc-ribbon-cable-to-breadboard-adapter,-50-pin.html?pop=0
+https://www.digikey.com/product-detail/en/cw-industries/CWR-130-14-0203/CDP14S-ND/1122539
+https://vetco.net/products/34-pin-dual-row-female-header-0-1-8243-pitch-spans-breadboard-gap/vupn6475
+https://www.creatroninc.com/product/50-pin-idc-ribbon-breakout/
+https://www.proto-advantage.com/store/product_info.php?products_id=2700103
+
+General Approaches
+- Strip of PCB with 4 columns of holes. Left 2 are connected and right 2 are connected. Female header in center. Outer columns into breadboard.
+- Female connector with long legs. Bend legs to straddle breadboard gap.
+- Ribbon cable to dip terminal made for breadboards (wide)
+
+
+
+FT232H Notes
+------------
+https://cdn-learn.adafruit.com/downloads/pdf/adafruit-ft232h-breakout.pdf?timestamp=1589495076
+
+http://openocd.sourceforge.net/doc/html/Debug-Adapter-Hardware.html
+If you're doing development with ARM chips the OpenOCD debugger tool is invaluable for steppingthrough the execution of chips using the JTAG protocol.   FTDI chips with an MPSSE like the FT232H caneven speak JTAG and work with OpenOCD for on-chip debugging
+
+MPSSE is for serial interfaces only (UART SPI I2C)
+320x240x16 @ 60Hz = 70 Mbits/s or 8.8 MBytes/s
+MPSSE up to 30 Mbits/s
+RS232 up to 12 Mbaud
+245 parallel FIFO up to 40 Mbytes/Sec
+Operation configuration mode and USB Description strings configurable in external EEPROM over the USB interface.
+The EEPROM is programmable in-circuit over USB using a  utility  program  called FT_Prog
+Supports JTAG
+
+https://github.com/adafruit/Adafruit_Python_GPIO/blob/master/Adafruit_GPIO/FT232H.py
+https://www.intra2net.com/en/developer/libftdi/
+https://learn.adafruit.com/adafruit-ft232h-breakout/gpio
+https://learn.adafruit.com/adafruit-ft232h-breakout/mpsse-setup
+
+
+
+Serial Notes
+------------
+RS232 is higher voltage (e.g. -13V to +13V). High is 0.
+Use TTL serial.
+
+
+
+Serial Terminals
+----------------
+Basics: https://learn.sparkfun.com/tutorials/terminal-basics/all
+
+Putty
+MobaXTerm
+X-CTU
+
+
+
+ILI9341 Notes
+-------------
+VCI: 3.3V!!
+Logic: 3.3V!!
+3.3V IO. Need a voltage regulator to reduce the FT232H 5V.
+Has RAM
+Forward slash is inverted!
+Supports MCU, RGB, and SPI interfaces
+SPI is slowest.
+MCU can write to the frame buffer. Parallel: data + control.
+RGB can't write to the frame buffer. Parallel: data + timing.
+
+VDDI when not in use: VDDI_LED
+
+
+
+Wiring (First Attempt)
+------
+import adafruit_rgb_display.ili9341 as ili9341
+disp = ili9341.ILI9341(
+	board.SPI(),
+	baudrate = 24000000,
+	cs  = digitalio.DigitalInOut(board.D4),
+	dc  = digitalio.DigitalInOut(board.D5),
+	rst = digitalio.DigitalInOut(board.D6))
+
+SPI
+SCLK/SCK Serial clock
+MOSI/SDI Serial out
+MISO/SDO Serial in
+SS/CS    Slave select
+
+Screen
+10 RESET  Reset
+33 SDO    Serial out
+34 SDI    Serial in
+36 WR_RS  Command/parameter select
+37 RS_SCL Serial clock
+38 CS     Chip select
+
+38 CS
+RS
+34 SDI
+33 SDO
+37 SCL
+
+FT232
+D0 SCK    -> 37
+D1 MOSI   -> 34
+D4 CS     -> 38
+D5 D/C    -> 36
+D6 RST    -> 10??
+
+
+
+Wiring (Blinka)
+---------------
+FT232
+D0 SCK    -> 37
+D1 MOSI   -> 34
+D2 MISO   -> 33
+C0 CS     -> 38
+C1 D/C    -> 36
+
+
+
+Wiring (Second Attempt)
+-----------------------
+https://docs.google.com/spreadsheets/d/1zxMiJKoRe3q7I4emEKbmwHFO10INDtVC_y3p5X46-5Q/edit#gid=0
+1 LEDK                                                             (Fix 0?)
+2 LED-A1                                                           (Fix 1?)
+3 LED-A2                                                           (Fix 1?)
+4 LED-A3                                                           (Fix 1?)
+5 LED-A4                                                           (Fix 1?)
+6 IM0                                       0 4 pin / 1 3 pin SPI  (Fix 0 or 1)
+7 IM1                                       1 4 pin / 0 3 pin SPI  (Fix 0 or 1)
+8 IM2                                       1 4 pin / 1 3 pin SPI  (Fix 0 or 1)
+9 IM3                                       1 4 pin / 1 3 pin SPI  (Fix 0 or 1)
+10 /RESET                                                          (Fix 1 / 0 NOT)
+11 VSYNC                                                           (No Fix)
+12 HSYNC                                                           (No Fix)
+13 DOTCLK                                                          (No Fix)
+14 DE                                                              (No Fix)
+15 DB17                                                            (Fix 0)
+16 DB16                                                            (Fix 0)
+17 DB15                                                            (Fix 0)
+18 DB14                                                            (Fix 0)
+19 DB13                                                            (Fix 0)
+20 DB12                                                            (Fix 0)
+21 DB11                                                            (Fix 0)
+22 DB10                                                            (Fix 0)
+23 DB9                                                             (Fix 0)
+24 DB8                                                             (Fix 0)
+25 DB7                                                             (Fix 0)
+26 DB6                                                             (Fix 0)
+27 DB5                                                             (Fix 0)
+28 DB4                                                             (Fix 0)
+29 DB3                                                             (Fix 0)
+30 DB2                                                             (Fix 0)
+31 DB1                                                             (Fix 0)
+32 DB0                                                             (Fix 0)
+33 SDO                                      SPI                    (Fix 0 or 1)
+34 SDI                                      SPI                    (Fix 0 or 1)
+35 /RD                                                             (Fix 1)
+36 /WR_RS                                   SPI NOT (Command/Data) (Fix 1)
+37 RS_SCL                                   SPI (Clock)            (Fix 0 or 1)
+38 /CS                                      SPI NOT (Chip Select)  (Fix 0 in MCU only)
+39 TE                                                              (No Fix)
+40 IOVCC                                    3.3V                   ----
+41 IOVCC                                    3.3V                   ----
+42 VCI                                      3.3V                   ----
+43 GND                                      0.0V                   ----
+44 CTP_SCL                                                         (No Fix)
+45 CTP_SDA                                                         (No Fix)
+46 CTP_IRQ                                                         (No Fix)
+47 CTP_RES                                                         (No Fix)
+48 GND                                      0.0V                   ----
+49 GND                                      0.0V                   ----
+50 GND                                      0.0V                   ----
+
+
+
+Code Repos
+----------
+Adafruit_ILI9341         - Arduino, SPI
+Adafruit_Python_ILI9341  - SPI, Archived
+TFTLCD-Library           - ~Arduino, Parallel, Multiple Screens, Archived
+Adafruit_FT6206_Library  - Capacitive touchscreen
+May need to start from blinka for the FT232H
+
+
+
+Next Steps
+----------
+A) Get adafruit code working with 50 pin FPC
+B) Get custom code working with 50 pin FPC
+C) Get adafruit code working with breakout screen
+D) Get custom code working with breakout screen
+
+
+
+Adafruit 2.8" and 3.2" Color TFT Touchscreen Breakout v2
+https://learn.adafruit.com/adafruit-2-dot-8-color-tft-touchscreen-breakout-v2
+SPI, 8 pin, resistive, and capactive touchscreen
+Uses an Arduino, not the FT232H
+Or a Feather and Circuitpython
+Tutorial for the screen itself. Contains good info.
+
+CircuitPython Libraries on any Computer with FT232H
+https://learn.adafruit.com/circuitpython-on-any-computer-with-ft232h/overiew
+This is the current one meant for my hardware
+Do this first
+
+Desktop or Laptop TFT Sidekick With FT232H
+https://learn.adafruit.com/tft-sidekick-with-ft232h/overview
+SPI only, different screen (still ili9341)
+Do this second
+
+Adafruit-GFX-Library
+https://github.com/adafruit/Adafruit-GFX-Library
+For Arduino
+Adafruit GFX graphics core library, this is the 'core' class that all our other graphics libraries derive from
+It needs to be paired with a hardware-specific library for each display device
+https://learn.adafruit.com/adafruit-gfx-graphics-library
+
+Adafruit_ILI9341 Arduino Library
+https://github.com/adafruit/Adafruit_ILI9341
+For Arduino
+Works with GFX Library
+Current SPI library
+
+TFTLCD-Library
+https://github.com/adafruit/TFTLCD-Library
+For Arduino
+Current 8 pin library
+
+Older screen using 8 pin parallel
+https://www.adafruit.com/product/335
+For Arduino
+Uses TFTLCD-Library
+https://learn.adafruit.com/2-8-tft-touchscreen
+
+Adafruit_Python_ILI9341
+https://github.com/adafruit/Adafruit_Python_ILI9341
+Deprecated in favor of Adafruit Circuitpython RGB Display
+Depends on PIL and Adafruit_GPIO
+
+Adafruit_FT6206_Library
+https://github.com/adafruit/Adafruit_FT6206_Library
+Capacitive touchscreen library
+
+
+
+Screens
+-------
+2.8" TFT LCD with Touchscreen Breakout Board w/MicroSD Socket - ILI9341 (Resitive)
+https://www.adafruit.com/product/1770
+Learn: Adafruit 2.8" and 3.2" Color TFT Touchscreen Breakout v2
+SPI: Adafruit_ILI9341
+8 Pin: TFTLCD-Library
+Touch: Adafruit_TouchScreen
+
+2.8" TFT LCD with Cap Touch Breakout Board w/MicroSD Socket (Capacitive)
+https://www.adafruit.com/product/2090
+Learn: Adafruit 2.8" and 3.2" Color TFT Touchscreen Breakout v2
+SPI: Adafruit_ILI9341
+8 Pin: TFTLCD-Library
+Touch: Adafruit_FT6206_Library
+
+2.8" TFT Display with Resistive Touchscreen
+https://www.adafruit.com/product/1774
+Code: Adafruit_ILI9341
+SPI: Adafruit_ILI9341
+8 Pin: TFTLCD-Library
+
+2.8" TFT Display - 240x320 with Capacitive Touchscreen
+https://www.adafruit.com/product/2770
+Code: Adafruit_ILI9341
+
+2.8" 18-bit color TFT LCD with touchscreen breakout board - ILI9325
+https://www.adafruit.com/product/335
+Code: TFTLCD-Library
+Touch Code: Adafruit_TouchScreen
+Learn: 2.8" TFT Touchscreen
+https://learn.adafruit.com/2-8-tft-touchscreen/overview
+
+
+https://learn.adafruit.com/category/lcds-leds-and-displays
+https://learn.adafruit.com/category/lcds-and-displays
+
+
+Plan
+----
+1) Circuitpython FT232H + LCD tutorial (SPI)
+2) TFT Sidekick with FT232H (SPI)
+3) Something with TFTLCD-Library
