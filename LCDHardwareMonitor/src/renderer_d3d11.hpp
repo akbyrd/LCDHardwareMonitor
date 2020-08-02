@@ -174,7 +174,7 @@ struct RendererState
 
 template<u32 PlaceholderCount, typename T, typename... Args>
 static inline void
-SetDebugObjectNameChecked(const ComPtr<T>& resource, StringView format, Args... args)
+SetDebugObjectNameChecked(ComPtr<T>& resource, StringView format, Args... args)
 {
 	static_assert(PlaceholderCount == sizeof...(Args));
 	SetDebugObjectNameImpl(resource, format, args...);
@@ -182,7 +182,7 @@ SetDebugObjectNameChecked(const ComPtr<T>& resource, StringView format, Args... 
 
 template<typename T, typename... Args>
 static inline void
-SetDebugObjectNameImpl(const ComPtr<T>& resource, StringView format, Args... args)
+SetDebugObjectNameImpl(ComPtr<T>& resource, StringView format, Args... args)
 {
 	#if defined(DEBUG)
 	String name = String_FormatImpl(format, args...);
@@ -263,7 +263,7 @@ DestroyRenderTarget(RendererState& s, RenderTargetData& rt)
 // TODO: Standardize RenderTexture vs RenderTarget
 // TODO: Try using the keyed mutex flag to synchronize sharing
 static RenderTarget
-CreateRenderTargetImpl(RendererState& s, D3D11_TEXTURE2D_DESC& desc, b8 view, b8 resource, StringView name)
+CreateRenderTargetImpl(RendererState& s, StringView name, D3D11_TEXTURE2D_DESC& desc, b8 view, b8 resource)
 {
 	RenderTargetData& renderTargetData = List_Append(s.renderTargets);
 	renderTargetData.ref = List_GetLastRef(s.renderTargets);
@@ -431,14 +431,14 @@ ConvertRenderForGUI(RendererState& s)
 // Public API Implementation - Resource Creation
 
 RenderTarget
-Renderer_CreateRenderTarget(RendererState& s, b8 resource)
+Renderer_CreateRenderTarget(RendererState& s, StringView name, b8 resource)
 {
 	D3D11_TEXTURE2D_DESC desc = GetDefaultRenderTextureDesc(s);
-	return CreateRenderTargetImpl(s, desc, true, resource, {});
+	return CreateRenderTargetImpl(s, name, desc, true, resource);
 }
 
 DepthBuffer
-Renderer_CreateDepthBuffer(RendererState& s, b8 resource)
+Renderer_CreateDepthBuffer(RendererState& s, StringView name, b8 resource)
 {
 	DepthBufferData& depthBufferData = List_Append(s.depthBuffers);
 	depthBufferData.ref = List_GetLastRef(s.depthBuffers);
@@ -447,6 +447,15 @@ Renderer_CreateDepthBuffer(RendererState& s, b8 resource)
 		DestroyDepthBuffer(s, depthBufferData);
 		List_RemoveLast(s.depthBuffers);
 	};
+
+
+	String index = {};
+	defer { String_Free(index); };
+	if (name.length == 0)
+	{
+		index = String_Format("%", s.depthBuffers.length);
+		name = index;
+	}
 
 
 	// Create texture
@@ -477,7 +486,7 @@ Renderer_CreateDepthBuffer(RendererState& s, b8 resource)
 	hr = s.d3dDevice->CreateTexture2D(&depthDesc, nullptr, &d3dDepthBuffer);
 	LOG_HRESULT_IF_FAILED(hr, return {},
 		Severity::Fatal, "Failed to create depth buffer");
-	SetDebugObjectName(d3dDepthBuffer, "Depth Buffer %", s.depthBuffers.length);
+	SetDebugObjectName(d3dDepthBuffer, "Depth Buffer %", name);
 
 	// TODO: Is this needed?
 	D3D11_DEPTH_STENCIL_VIEW_DESC depthViewDesc = {};
@@ -489,7 +498,7 @@ Renderer_CreateDepthBuffer(RendererState& s, b8 resource)
 	hr = s.d3dDevice->CreateDepthStencilView(d3dDepthBuffer.Get(), &depthViewDesc, &depthBufferData.d3dDepthBufferView);
 	LOG_HRESULT_IF_FAILED(hr, return {},
 		Severity::Fatal, "Failed to create depth buffer view");
-	SetDebugObjectName(depthBufferData.d3dDepthBufferView, "Depth Buffer View %", s.depthBuffers.length);
+	SetDebugObjectName(depthBufferData.d3dDepthBufferView, "Depth Buffer View %", name);
 
 
 	// Create shader resource
@@ -503,7 +512,7 @@ Renderer_CreateDepthBuffer(RendererState& s, b8 resource)
 		resourceDesc.Texture2D.MipLevels       = UINT(-1);
 
 		s.d3dDevice->CreateShaderResourceView(d3dDepthBuffer.Get(), &resourceDesc, &depthBufferData.d3dDepthBufferResourceView);
-		SetDebugObjectName(depthBufferData.d3dDepthBufferResourceView, "Depth Buffer Resource View %", s.depthBuffers.length);
+		SetDebugObjectName(depthBufferData.d3dDepthBufferResourceView, "Depth Buffer Resource View %", name);
 	}
 
 
@@ -1085,11 +1094,11 @@ Renderer_Initialize(RendererState& s, v2u renderSize)
 	// Create main render target & depth buffer
 	{
 		D3D11_TEXTURE2D_DESC desc = GetDefaultRenderTextureDesc(s);
-		RenderTarget rt = CreateRenderTargetImpl(s, desc, true, true, "Main");
+		RenderTarget rt = CreateRenderTargetImpl(s, "Main", desc, true, true);
 		if (!rt) return false;
 		Assert(rt == StandardRenderTarget::Main);
 
-		DepthBuffer db = Renderer_CreateDepthBuffer(s, false);
+		DepthBuffer db = Renderer_CreateDepthBuffer(s, "Main", false);
 		if (!db) return false;
 		Assert(db == StandardDepthBuffer::Main);
 
@@ -1106,12 +1115,12 @@ Renderer_Initialize(RendererState& s, v2u renderSize)
 
 		// CPU Copy
 		desc = GetCPURenderTextureDesc(s);
-		s.mainRenderTargetCPU = CreateRenderTargetImpl(s, desc, false, false, "CPU Copy");
+		s.mainRenderTargetCPU = CreateRenderTargetImpl(s, "CPU Copy", desc, false, false);
 		if (!s.mainRenderTargetCPU) return false;
 
 		// GUI Copy
 		desc = GetGUIRenderTextureDesc(s);
-		s.mainRenderTargetGUI = CreateRenderTargetImpl(s, desc, true, false, "GUI Copy");
+		s.mainRenderTargetGUI = CreateRenderTargetImpl(s, "GUI Copy", desc, true, false);
 		if (!s.mainRenderTargetGUI) return false;
 	}
 

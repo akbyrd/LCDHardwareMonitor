@@ -57,8 +57,8 @@ VertexShader          Renderer_LoadVertexShader             (RendererState&, Str
 PixelShader           Renderer_LoadPixelShader              (RendererState&, StringView name, StringView path, Slice<u32> cBufSizes);
 // TODO: Combine with CreateMesh, LoadVertexShader, and LoadPixelShader
 Material              Renderer_CreateMaterial               (RendererState&, Mesh mesh, VertexShader vs, PixelShader ps);
-RenderTarget          Renderer_CreateRenderTarget           (RendererState&, b8 resource);
-DepthBuffer           Renderer_CreateDepthBuffer            (RendererState&, b8 resource);
+RenderTarget          Renderer_CreateRenderTarget           (RendererState&, StringView name, b8 resource);
+DepthBuffer           Renderer_CreateDepthBuffer            (RendererState&, StringView name, b8 resource);
 ConstantBufferUpdate& Renderer_PushConstantBufferUpdate     (RendererState&);
 DrawCall&             Renderer_PushDrawCall                 (RendererState&);
 void                  Renderer_PushRenderTarget             (RendererState&, RenderTarget);

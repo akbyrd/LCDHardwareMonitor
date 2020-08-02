@@ -1,6 +1,5 @@
 Current
 -------
-Add name to CreateDepthBuffer
 Move feature TODOs from code to this text document
 Ignore Properties/Foo.Designer.cs files (they're generated)
 Move GUI and CPU texture handling to the simulation (don't bake it into the renderer)
