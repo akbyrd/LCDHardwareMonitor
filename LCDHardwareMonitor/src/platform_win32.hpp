@@ -674,7 +674,7 @@ Platform_CreatePipeServer(StringView name, Pipe& pipe)
 			Severity::Warning, "Failed to create pipe server connect event '%'", pipe.name);
 	}
 
-	// TODO: Would like to automatically kick of a connection here, but that makes it harder for the
+	// TODO: Would like to automatically kick off a connection here, but that makes it harder for the
 	// caller to handle connect/disconnect events.
 	cleanupGuard.dismiss = true;
 	return PipeResult::Success;

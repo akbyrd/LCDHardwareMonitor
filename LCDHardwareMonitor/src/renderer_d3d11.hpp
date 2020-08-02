@@ -1,8 +1,3 @@
-// TODO: What happens if we call random renderer api and the device is
-// disconnected? Presumably it can happen at any time, not just during an update?
-
-// TODO: Handle unloading assets (will require reference counting, I think)
-
 #pragma comment(lib, "D3D11.lib")
 #pragma comment(lib, "DXGI.lib")
 #pragma comment(lib, "d3dcompiler.lib")
@@ -481,7 +476,6 @@ Renderer_CreateDepthBuffer(RendererState& s, StringView name, b8 resource)
 		depthDesc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
 	}
 
-	// TODO: Why don't we keep the depth buffer around and free it? Is this a leak?
 	ComPtr<ID3D11Texture2D> d3dDepthBuffer;
 	hr = s.d3dDevice->CreateTexture2D(&depthDesc, nullptr, &d3dDepthBuffer);
 	LOG_HRESULT_IF_FAILED(hr, return {},
@@ -573,7 +567,6 @@ Renderer_RebuildSharedGeometryBuffers(RendererState&s)
 Mesh
 Renderer_CreateMesh(RendererState& s, StringView name, Slice<Vertex> vertices, Slice<Index> indices)
 {
-	// TODO: Eventually lists will reuse slots
 	MeshData& mesh = List_Append(s.meshes);
 	mesh.ref  = List_GetLastRef(s.meshes);
 	mesh.name = String_FromView(name);
@@ -598,12 +591,10 @@ Renderer_ValidateMesh(RendererState& s, Mesh mesh)
 	Assert(List_IsRefValid(s.meshes, mesh));
 }
 
-// TODO: Should a failed load mark the file as bad?
 VertexShader
 Renderer_LoadVertexShader(RendererState& s, StringView name, StringView path, Slice<VertexAttribute> attributes, Slice<u32> cBufSizes)
 {
 	// Vertex Shader
-	// TODO: Eventually lists will reuse slots
 	VertexShaderData& vs = List_Append(s.vertexShaders);
 	vs.ref = List_GetLastRef(s.vertexShaders);
 
@@ -707,7 +698,6 @@ Renderer_ValidateVertexShader(RendererState& s, VertexShader vs)
 PixelShader
 Renderer_LoadPixelShader(RendererState& s, StringView name, StringView path, Slice<u32> cBufSizes)
 {
-	// TODO: Eventually lists will reuse slots
 	PixelShaderData& ps = List_Append(s.pixelShaders);
 	ps.ref = List_GetLastRef(s.pixelShaders);
 
@@ -829,7 +819,6 @@ Renderer_ValidateDrawCall(RendererState& s, DrawCall& drawCall)
 	Renderer_ValidateMaterial(s, drawCall.material);
 }
 
-// TODO: Add a way to push both a render target and depth buffer in the same command
 void
 Renderer_PushRenderTarget(RendererState& s, RenderTarget renderTarget)
 {
@@ -876,7 +865,6 @@ Renderer_PopPixelShader(RendererState& s)
 	renderCommand.type = RenderCommandType::PopPixelShader;
 }
 
-// TODO: Add a way to set multiple resources (and to specify the slot)
 void
 Renderer_PushPixelShaderResource(RendererState& s, RenderTarget renderTarget)
 {
@@ -1182,7 +1170,6 @@ Renderer_Initialize(RendererState& s, v2u renderSize)
 	}
 
 
-	// TODO: Need sorting if we're actually going to support alpha for users
 	// Initialize blend state
 	{
 		HRESULT hr;

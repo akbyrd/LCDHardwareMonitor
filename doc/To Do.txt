@@ -1,8 +1,7 @@
 Current
 -------
-Move feature TODOs from code to this text document
-Ignore Properties/Foo.Designer.cs files (they're generated)
 Move GUI and CPU texture handling to the simulation (don't bake it into the renderer)
+Renderer TODOs
 
 
 
@@ -23,6 +22,8 @@ Fix VS crash
 Fix VS 2019 warnings
 Look at tlbgen and references vs pointers
 Fix 64 bit builds
+Support x86 and x64
+Reduce link dependencies
 Fix select when dragging sensors
 GUI shouldn't close the simulation if it didn't start it
 There's a frame of flicker where the old image size is drawn when zooming. Is this fixable?
@@ -99,6 +100,20 @@ Need to handle mouse position when preview isn't visible
 Need to actually avoid processing broken plugins
 Outline shader
 Users probably need to be able to create custom UI for plugin settings
+Watch plugin directory contents for registering, unregistering, and reloading plugins.
+
+
+
+Features - Rendering
+--------------------
+Add a way to push both a render target and depth buffer in the same command
+Add a way to set multiple resources (and to specify the slot)
+Need sorting if we're actually going to support alpha for users
+Implement unloading assets. Will require reference counting, I think. Needed for unloading plugins.
+	Also means creation needs to reuse slots.
+What happens if we call random renderer api and the device is disconnected? Presumably it can happen
+	at any time, not just during an update?
+Should failing to load an asset mark the file as bad?
 
 
 

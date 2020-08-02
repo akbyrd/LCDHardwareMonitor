@@ -1358,9 +1358,6 @@ Simulation_Initialize(SimulationState& s, PluginLoaderState& pluginLoader, Rende
 		}
 	}
 
-	// TODO: Watch directory contents for registering, unregistering, and
-	// reloading plugins.
-
 	// DEBUG: Testing
 	{
 		Plugin& ohmPlugin = RegisterPlugin(s, "Sensor Plugins\\OpenHardwareMonitor", "Sensor.OpenHardwareMonitor.dll");
