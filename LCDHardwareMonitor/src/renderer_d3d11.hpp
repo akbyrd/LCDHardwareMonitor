@@ -166,6 +166,9 @@ struct RendererState
 	List<PixelShaderResource>      pixelShaderResourceStack;
 };
 
+// -------------------------------------------------------------------------------------------------
+// Internal functions
+
 #define SetDebugObjectName(resource, format, ...) \
 	SetDebugObjectNameChecked<CountPlaceholders(format)>(resource, format, ##__VA_ARGS__)
 
@@ -190,9 +193,6 @@ SetDebugObjectNameImpl(const ComPtr<T>& resource, StringView format, Args... arg
 		UNUSED(resource); UNUSED(format); UNUSED_ARGS(args...);
 	#endif
 }
-
-static void UpdateRasterizerState(RendererState& s);
-static RenderTarget CreateRenderTargetImpl(RendererState& s, D3D11_TEXTURE2D_DESC& desc, b8 view, b8 resource, StringView name);
 
 static D3D11_TEXTURE2D_DESC
 GetDefaultRenderTextureDesc(RendererState& s)
@@ -249,6 +249,700 @@ GetGUIRenderTextureDesc(RendererState& s)
 	desc.MiscFlags          = D3D11_RESOURCE_MISC_SHARED;
 	return desc;
 }
+
+static void
+DestroyRenderTarget(RendererState& s, RenderTargetData& rt)
+{
+	UNUSED(s);
+	rt.d3dRenderTargetResourceView.Reset();
+	rt.d3dRenderTargetView.Reset();
+	rt.d3dRenderTexture.Reset();
+	rt = {};
+}
+
+// TODO: Standardize RenderTexture vs RenderTarget
+// TODO: Try using the keyed mutex flag to synchronize sharing
+static RenderTarget
+CreateRenderTargetImpl(RendererState& s, D3D11_TEXTURE2D_DESC& desc, b8 view, b8 resource, StringView name)
+{
+	RenderTargetData& renderTargetData = List_Append(s.renderTargets);
+	renderTargetData.ref = List_GetLastRef(s.renderTargets);
+
+	auto renderTargetGuard = guard {
+		DestroyRenderTarget(s, renderTargetData);
+		List_RemoveLast(s.renderTargets);
+	};
+
+
+	String index = {};
+	defer { String_Free(index); };
+	if (name.length == 0)
+	{
+		index = String_Format("%", s.renderTargets.length);
+		name = index;
+	}
+
+
+	// Create texture
+	HRESULT hr;
+
+	hr = s.d3dDevice->CreateTexture2D(&desc, nullptr, &renderTargetData.d3dRenderTexture);
+	LOG_HRESULT_IF_FAILED(hr, return {},
+		Severity::Fatal, "Failed to create render texture");
+	SetDebugObjectName(renderTargetData.d3dRenderTexture, "Render Texture %", name);
+
+	if (view)
+	{
+		hr = s.d3dDevice->CreateRenderTargetView(renderTargetData.d3dRenderTexture.Get(), nullptr, &renderTargetData.d3dRenderTargetView);
+		LOG_HRESULT_IF_FAILED(hr, return {},
+			Severity::Fatal, "Failed to create render target view");
+		SetDebugObjectName(renderTargetData.d3dRenderTargetView, "Render Target View %", name);
+	}
+
+
+	// Create Shader resource
+	if (resource)
+	{
+		s.d3dDevice->CreateShaderResourceView(renderTargetData.d3dRenderTexture.Get(), nullptr, &renderTargetData.d3dRenderTargetResourceView);
+		SetDebugObjectName(renderTargetData.d3dRenderTargetResourceView, "Render Target Resource View %", s.renderTargets.length);
+	}
+
+
+	renderTargetGuard.dismiss = true;
+	return renderTargetData.ref;
+}
+
+static void
+DestroyDepthBuffer(RendererState& s, DepthBufferData& db)
+{
+	UNUSED(s);
+	db.d3dDepthBufferResourceView.Reset();
+	db.d3dDepthBufferView.Reset();
+	db = {};
+}
+
+static void
+UpdateRasterizerState(RendererState& s)
+{
+	if (s.isWireframeEnabled)
+	{
+		s.d3dContext->RSSetState(s.d3dRasterizerStateWireframe.Get());
+	}
+	else
+	{
+		s.d3dContext->RSSetState(s.d3dRasterizerStateSolid.Get());
+	}
+}
+
+static void
+DestroyMesh(RendererState& s, MeshData& mesh)
+{
+	UNUSED(s);
+	String_Free(mesh.name);
+	mesh = {};
+}
+
+static b8
+CreateConstantBuffer(RendererState& s, ConstantBuffer& cBuf)
+{
+	// TODO: Add more cbuf info to logging
+	// TODO: Decide where validation should be handled: simulation or renderer
+
+	LOG_IF(!IsMultipleOf(cBuf.size, 16), return false,
+		Severity::Error, "Constant buffer size '%' is not a multiple of 16", cBuf.size);
+
+	D3D11_BUFFER_DESC d3dDesc = {};
+	d3dDesc.ByteWidth           = cBuf.size;
+	d3dDesc.Usage               = D3D11_USAGE_DYNAMIC;
+	d3dDesc.BindFlags           = D3D11_BIND_CONSTANT_BUFFER;
+	d3dDesc.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
+	d3dDesc.MiscFlags           = 0;
+	d3dDesc.StructureByteStride = 0;
+
+	HRESULT hr = s.d3dDevice->CreateBuffer(&d3dDesc, nullptr, &cBuf.d3dConstantBuffer);
+	LOG_HRESULT_IF_FAILED(hr, return false,
+		Severity::Error, "Failed to create constant buffer");
+	// TODO: Pass in shader type and buffer name for better errors?
+	SetDebugObjectName(cBuf.d3dConstantBuffer, "Constant Buffer");
+
+	return true;
+}
+
+static void
+DestroyVertexShader(RendererState& s, VertexShaderData& vs)
+{
+	UNUSED(s);
+	vs.d3dVertexShader.Reset();
+	vs.d3dInputLayout.Reset();
+	for (u32 j = 0; j < vs.constantBuffers.length; j++)
+		vs.constantBuffers[j].d3dConstantBuffer.Reset();
+	List_Free(vs.constantBuffers);
+	String_Free(vs.name);
+	vs = {};
+}
+
+static void
+DestroyPixelShader(RendererState& s, PixelShaderData& ps)
+{
+	UNUSED(s);
+	ps.d3dPixelShader.Reset();
+	for (u32 j = 0; j < ps.constantBuffers.length; j++)
+		ps.constantBuffers[j].d3dConstantBuffer.Reset();
+	List_Free(ps.constantBuffers);
+	String_Free(ps.name);
+	ps = {};
+}
+
+static b8
+UpdateConstantBuffer(RendererState& s, ConstantBuffer& cBuf, void* data)
+{
+	D3D11_MAPPED_SUBRESOURCE map = {};
+	HRESULT hr = s.d3dContext->Map(cBuf.d3dConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
+	LOG_HRESULT_IF_FAILED(hr, return false,
+		Severity::Error, "Failed to map constant buffer");
+
+	memcpy(map.pData, data, cBuf.size);
+	s.d3dContext->Unmap(cBuf.d3dConstantBuffer.Get(), 0);
+
+	return true;
+}
+
+// TODO: Change push calls to just take a struct. Copies are fine.
+// TODO: Move all GUI and CPU copy handling to the simulation
+static void
+ConvertRenderForGUI(RendererState& s)
+{
+	Material copyMat = {};
+	copyMat.mesh = StandardMesh::Fullscreen;
+	copyMat.vs   = StandardVertexShader::ClipSpace;
+	copyMat.ps   = StandardPixelShader::Composite;
+
+	Renderer_PushRenderTarget(s, s.mainRenderTargetGUI);
+	Renderer_PushDepthBuffer(s, StandardDepthBuffer::Null);
+	Renderer_PushPixelShaderResource(s, StandardRenderTarget::Main);
+	DrawCall& drawCall = Renderer_PushDrawCall(s);
+	drawCall.material = copyMat;
+	Renderer_PopPixelShaderResource(s);
+	Renderer_PopDepthBuffer(s);
+	Renderer_PopRenderTarget(s);
+}
+
+// -------------------------------------------------------------------------------------------------
+// Public API Implementation - Resource Creation
+
+RenderTarget
+Renderer_CreateRenderTarget(RendererState& s, b8 resource)
+{
+	D3D11_TEXTURE2D_DESC desc = GetDefaultRenderTextureDesc(s);
+	return CreateRenderTargetImpl(s, desc, true, resource, {});
+}
+
+DepthBuffer
+Renderer_CreateDepthBuffer(RendererState& s, b8 resource)
+{
+	DepthBufferData& depthBufferData = List_Append(s.depthBuffers);
+	depthBufferData.ref = List_GetLastRef(s.depthBuffers);
+
+	auto depthBufferGuard = guard {
+		DestroyDepthBuffer(s, depthBufferData);
+		List_RemoveLast(s.depthBuffers);
+	};
+
+
+	// Create texture
+	HRESULT hr;
+
+	D3D11_TEXTURE2D_DESC depthDesc = {};
+	depthDesc.Width              = s.renderSize.x;
+	depthDesc.Height             = s.renderSize.y;
+	depthDesc.MipLevels          = 1;
+	depthDesc.ArraySize          = 1;
+	depthDesc.Format             = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	// TODO: Doubt this is correct...
+	depthDesc.SampleDesc.Count   = s.multisampleCount;
+	depthDesc.SampleDesc.Quality = s.qualityCountRender - 1;
+	depthDesc.Usage              = D3D11_USAGE_DEFAULT;
+	depthDesc.BindFlags          = D3D11_BIND_DEPTH_STENCIL;
+	depthDesc.CPUAccessFlags     = 0;
+	depthDesc.MiscFlags          = 0;
+
+	if (resource)
+	{
+		depthDesc.Format     = DXGI_FORMAT_R24G8_TYPELESS;
+		depthDesc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
+	}
+
+	// TODO: Why don't we keep the depth buffer around and free it? Is this a leak?
+	ComPtr<ID3D11Texture2D> d3dDepthBuffer;
+	hr = s.d3dDevice->CreateTexture2D(&depthDesc, nullptr, &d3dDepthBuffer);
+	LOG_HRESULT_IF_FAILED(hr, return {},
+		Severity::Fatal, "Failed to create depth buffer");
+	SetDebugObjectName(d3dDepthBuffer, "Depth Buffer %", s.depthBuffers.length);
+
+	// TODO: Is this needed?
+	D3D11_DEPTH_STENCIL_VIEW_DESC depthViewDesc = {};
+	depthViewDesc.Format             = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	depthViewDesc.ViewDimension      = D3D11_DSV_DIMENSION_TEXTURE2D;
+	depthViewDesc.Flags              = 0;
+	depthViewDesc.Texture2D.MipSlice = 0;
+
+	hr = s.d3dDevice->CreateDepthStencilView(d3dDepthBuffer.Get(), &depthViewDesc, &depthBufferData.d3dDepthBufferView);
+	LOG_HRESULT_IF_FAILED(hr, return {},
+		Severity::Fatal, "Failed to create depth buffer view");
+	SetDebugObjectName(depthBufferData.d3dDepthBufferView, "Depth Buffer View %", s.depthBuffers.length);
+
+
+	// Create shader resource
+	if (resource)
+	{
+		// TODO: Why can't this be DXGI_FORMAT_D24_UNORM_S8_UINT? Will we be able to read stencil bits?
+		D3D11_SHADER_RESOURCE_VIEW_DESC resourceDesc = {};
+		resourceDesc.Format                    = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+		resourceDesc.ViewDimension             = D3D11_SRV_DIMENSION_TEXTURE2D;
+		resourceDesc.Texture2D.MostDetailedMip = 0;
+		resourceDesc.Texture2D.MipLevels       = UINT(-1);
+
+		s.d3dDevice->CreateShaderResourceView(d3dDepthBuffer.Get(), &resourceDesc, &depthBufferData.d3dDepthBufferResourceView);
+		SetDebugObjectName(depthBufferData.d3dDepthBufferResourceView, "Depth Buffer Resource View %", s.depthBuffers.length);
+	}
+
+
+	depthBufferGuard.dismiss = true;
+	return depthBufferData.ref;
+}
+
+b8
+Renderer_RebuildSharedGeometryBuffers(RendererState&s)
+{
+	// Finalize vertex buffer
+	{
+		D3D11_BUFFER_DESC vertBuffDesc = {};
+		vertBuffDesc.ByteWidth           = (u32) List_SizeOf(s.vertexBuffer);
+		vertBuffDesc.Usage               = D3D11_USAGE_DYNAMIC;
+		vertBuffDesc.BindFlags           = D3D11_BIND_VERTEX_BUFFER;
+		vertBuffDesc.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
+		vertBuffDesc.MiscFlags           = 0;
+		vertBuffDesc.StructureByteStride = 0;
+
+		D3D11_SUBRESOURCE_DATA vertBuffInitData = {};
+		vertBuffInitData.pSysMem          = s.vertexBuffer.data;
+		vertBuffInitData.SysMemPitch      = 0;
+		vertBuffInitData.SysMemSlicePitch = 0;
+
+		s.d3dVertexBuffer.Reset();
+		HRESULT hr = s.d3dDevice->CreateBuffer(&vertBuffDesc, &vertBuffInitData, &s.d3dVertexBuffer);
+		LOG_HRESULT_IF_FAILED(hr, return false,
+			Severity::Fatal, "Failed to create shared vertex buffer");
+		SetDebugObjectName(s.d3dVertexBuffer, "Shared Vertex Buffer");
+	}
+
+	// Finalize index buffer
+	{
+		D3D11_BUFFER_DESC indexBuffDesc = {};
+		indexBuffDesc.ByteWidth           = (u32) List_SizeOf(s.indexBuffer);
+		indexBuffDesc.Usage               = D3D11_USAGE_IMMUTABLE;
+		indexBuffDesc.BindFlags           = D3D11_BIND_INDEX_BUFFER;
+		indexBuffDesc.CPUAccessFlags      = 0;
+		indexBuffDesc.MiscFlags           = 0;
+		indexBuffDesc.StructureByteStride = 0;
+
+		D3D11_SUBRESOURCE_DATA indexBuffInitData = {};
+		indexBuffInitData.pSysMem          = s.indexBuffer.data;
+		indexBuffInitData.SysMemPitch      = 0;
+		indexBuffInitData.SysMemSlicePitch = 0;
+
+		s.d3dIndexBuffer.Reset();
+		HRESULT hr = s.d3dDevice->CreateBuffer(&indexBuffDesc, &indexBuffInitData, &s.d3dIndexBuffer);
+		LOG_HRESULT_IF_FAILED(hr, return false,
+			Severity::Fatal, "Failed to create shared index buffer");
+		SetDebugObjectName(s.d3dIndexBuffer, "Shared Index Buffer");
+	}
+
+	return true;
+}
+
+Mesh
+Renderer_CreateMesh(RendererState& s, StringView name, Slice<Vertex> vertices, Slice<Index> indices)
+{
+	// TODO: Eventually lists will reuse slots
+	MeshData& mesh = List_Append(s.meshes);
+	mesh.ref  = List_GetLastRef(s.meshes);
+	mesh.name = String_FromView(name);
+
+	// Copy Data
+	{
+		mesh.vOffset = s.vertexBuffer.length;
+		mesh.iOffset = s.indexBuffer.length;
+		mesh.iCount  = indices.length;
+		mesh.iFormat = DXGI_FORMAT_R32_UINT;
+
+		List_AppendRange(s.vertexBuffer, vertices);
+		List_AppendRange(s.indexBuffer, indices);
+	}
+
+	return mesh.ref;
+}
+
+void
+Renderer_ValidateMesh(RendererState& s, Mesh mesh)
+{
+	Assert(List_IsRefValid(s.meshes, mesh));
+}
+
+// TODO: Should a failed load mark the file as bad?
+VertexShader
+Renderer_LoadVertexShader(RendererState& s, StringView name, StringView path, Slice<VertexAttribute> attributes, Slice<u32> cBufSizes)
+{
+	// Vertex Shader
+	// TODO: Eventually lists will reuse slots
+	VertexShaderData& vs = List_Append(s.vertexShaders);
+	vs.ref = List_GetLastRef(s.vertexShaders);
+
+	auto vsGuard = guard {
+		DestroyVertexShader(s, vs);
+		List_RemoveLast(s.vertexShaders);
+	};
+
+	vs.name = String_FromView(name);
+
+	// Load
+	Bytes vsBytes = {};
+	defer { List_Free(vsBytes); };
+	{
+		vsBytes = Platform_LoadFileBytes(path);
+		if (!vsBytes.data) return VertexShader::Null;
+	}
+
+	// Create
+	{
+		HRESULT hr = s.d3dDevice->CreateVertexShader(vsBytes.data, vsBytes.length, nullptr, &vs.d3dVertexShader);
+		LOG_HRESULT_IF_FAILED(hr, return VertexShader::Null,
+			Severity::Error, "Failed to create vertex shader '%'", path);
+		SetDebugObjectName(vs.d3dVertexShader, "Vertex Shader: %", name);
+	}
+
+	// Constant Buffers
+	if (cBufSizes.length)
+	{
+		List_Reserve(vs.constantBuffers, cBufSizes.length);
+		for (u32 i = 0; i < cBufSizes.length; i++)
+		{
+			ConstantBuffer& cBuf = List_Append(vs.constantBuffers);
+			cBuf.size = cBufSizes[i];
+
+			b8 success = CreateConstantBuffer(s, cBuf);
+			LOG_IF(!success, return VertexShader::Null,
+				Severity::Error, "Failed to create VS constant buffer % for '%'", i, path);
+		}
+	}
+
+	// Input layout
+	{
+		List<D3D11_INPUT_ELEMENT_DESC> vsInputDescs = {};
+		List_Reserve(vsInputDescs, attributes.length);
+		for (u32 i = 0; i < attributes.length; i++)
+		{
+			const c8* semantic;
+			switch (attributes[i].semantic)
+			{
+				case VertexAttributeSemantic::Position: semantic = HLSLSemantic::Position; break;
+				case VertexAttributeSemantic::Color:    semantic = HLSLSemantic::Color;    break;
+				case VertexAttributeSemantic::TexCoord: semantic = HLSLSemantic::TexCoord; break;
+
+				default:
+					LOG(Severity::Error, "Unrecognized VS attribute semantic % '%'", (i32) attributes[i].semantic, path);
+					return VertexShader::Null;
+			}
+
+			DXGI_FORMAT format;
+			switch (attributes[i].format)
+			{
+				case VertexAttributeFormat::v2: format = DXGI_FORMAT_R32G32_FLOAT;       break;
+				case VertexAttributeFormat::v3: format = DXGI_FORMAT_R32G32B32_FLOAT;    break;
+				case VertexAttributeFormat::v4: format = DXGI_FORMAT_R32G32B32A32_FLOAT; break;
+
+				default:
+					LOG(Severity::Error, "Unrecognized VS attribute format % '%'", (i32) attributes[i].format, path);
+					return VertexShader::Null;
+			}
+
+			D3D11_INPUT_ELEMENT_DESC inputDesc = {};
+			inputDesc.SemanticName         = semantic;
+			inputDesc.SemanticIndex        = 0;
+			inputDesc.Format               = format;
+			inputDesc.InputSlot            = 0;
+			inputDesc.AlignedByteOffset    = D3D11_APPEND_ALIGNED_ELEMENT;
+			inputDesc.InputSlotClass       = D3D11_INPUT_PER_VERTEX_DATA;
+			inputDesc.InstanceDataStepRate = 0;
+			List_Append(vsInputDescs, inputDesc);
+		}
+
+		HRESULT hr = s.d3dDevice->CreateInputLayout(vsInputDescs.data, vsInputDescs.length, vsBytes.data, vsBytes.length, &vs.d3dInputLayout);
+		LOG_HRESULT_IF_FAILED(hr, return VertexShader::Null,
+			Severity::Error, "Failed to create VS input layout '%'", path);
+		SetDebugObjectName(vs.d3dInputLayout, "Input Layout: %", name);
+
+		vs.d3dPrimitveTopology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	}
+
+	vsGuard.dismiss = true;
+	return vs.ref;
+}
+
+void
+Renderer_ValidateVertexShader(RendererState& s, VertexShader vs)
+{
+	Assert(List_IsRefValid(s.vertexShaders, vs));
+}
+
+PixelShader
+Renderer_LoadPixelShader(RendererState& s, StringView name, StringView path, Slice<u32> cBufSizes)
+{
+	// TODO: Eventually lists will reuse slots
+	PixelShaderData& ps = List_Append(s.pixelShaders);
+	ps.ref = List_GetLastRef(s.pixelShaders);
+
+	auto psGuard = guard {
+		DestroyPixelShader(s, ps);
+		List_RemoveLast(s.pixelShaders);
+	};
+
+	ps.name = String_FromView(name);
+
+	// Load
+	Bytes psBytes = {};
+	defer { List_Free(psBytes); };
+	{
+		psBytes = Platform_LoadFileBytes(path);
+		if (!psBytes.data) return PixelShader::Null;
+	}
+
+	// Create
+	{
+		HRESULT hr = s.d3dDevice->CreatePixelShader(psBytes.data, (u64) psBytes.length, nullptr, &ps.d3dPixelShader);
+		LOG_HRESULT_IF_FAILED(hr, return PixelShader::Null,
+			Severity::Error, "Failed to create pixel shader '%'", path);
+		SetDebugObjectName(ps.d3dPixelShader, "Pixel Shader: %", name);
+	}
+
+	// Constant Buffers
+	if (cBufSizes.length)
+	{
+		List_Reserve(ps.constantBuffers, cBufSizes.length);
+		for (u32 i = 0; i < cBufSizes.length; i++)
+		{
+			ConstantBuffer& cBuf = List_Append(ps.constantBuffers);
+			cBuf.size = cBufSizes[i];
+
+			b8 success = CreateConstantBuffer(s, cBuf);
+			LOG_IF(!success, return PixelShader::Null,
+				Severity::Error, "Failed to create PS constant buffer % for '%'", i, path);
+		}
+	}
+
+	psGuard.dismiss = true;
+	return ps.ref;
+}
+
+void
+Renderer_ValidatePixelShader(RendererState& s, PixelShader ps)
+{
+	Assert(List_IsRefValid(s.pixelShaders, ps));
+}
+
+Material
+Renderer_CreateMaterial(RendererState& s, Mesh mesh, VertexShader vs, PixelShader ps)
+{
+	UNUSED(s);
+
+	Material material = {};
+	material.mesh = mesh;
+	material.vs   = vs;
+	material.ps   = ps;
+	return material;
+}
+
+void
+Renderer_ValidateMaterial(RendererState& s, Material material)
+{
+	Renderer_ValidateMesh(s, material.mesh);
+	Renderer_ValidateVertexShader(s, material.vs);
+	Renderer_ValidatePixelShader(s, material.ps);
+}
+
+// -------------------------------------------------------------------------------------------------
+// Public API Implementation - Rendering Operations
+
+ConstantBufferUpdate&
+Renderer_PushConstantBufferUpdate(RendererState& s)
+{
+	RenderCommand& renderCommand = List_Append(s.commandList);
+	renderCommand.type = RenderCommandType::ConstantBufferUpdate;
+	return renderCommand.cBufUpdate;
+}
+
+void
+Renderer_ValidateConstantBufferUpdate(RendererState& s, ConstantBufferUpdate& cBufUpdate)
+{
+	Renderer_ValidateMaterial(s, cBufUpdate.material);
+
+	switch (cBufUpdate.shaderStage)
+	{
+		case ShaderStage::Null: Assert(false); break;
+
+		case ShaderStage::Vertex:
+		{
+			VertexShaderData& vs = s.vertexShaders[cBufUpdate.material.vs];
+			Assert(cBufUpdate.index < vs.constantBuffers.length);
+			break;
+		}
+
+		case ShaderStage::Pixel:
+		{
+			PixelShaderData& ps = s.pixelShaders[cBufUpdate.material.ps];
+			Assert(cBufUpdate.index < ps.constantBuffers.length);
+			break;
+		}
+	}
+}
+
+DrawCall&
+Renderer_PushDrawCall(RendererState& s)
+{
+	RenderCommand& renderCommand = List_Append(s.commandList);
+	renderCommand.type = RenderCommandType::DrawCall;
+	return renderCommand.drawCall;
+}
+
+void
+Renderer_ValidateDrawCall(RendererState& s, DrawCall& drawCall)
+{
+	Renderer_ValidateMaterial(s, drawCall.material);
+}
+
+// TODO: Add a way to push both a render target and depth buffer in the same command
+void
+Renderer_PushRenderTarget(RendererState& s, RenderTarget renderTarget)
+{
+	Assert(renderTarget);
+	RenderCommand& renderCommand = List_Append(s.commandList);
+	renderCommand.type = RenderCommandType::PushRenderTarget;
+	renderCommand.renderTarget = renderTarget;
+}
+
+void
+Renderer_PopRenderTarget(RendererState& s)
+{
+	RenderCommand& renderCommand = List_Append(s.commandList);
+	renderCommand.type = RenderCommandType::PopRenderTarget;
+}
+
+void
+Renderer_PushDepthBuffer(RendererState& s, DepthBuffer depthBuffer)
+{
+	RenderCommand& renderCommand = List_Append(s.commandList);
+	renderCommand.type = RenderCommandType::PushDepthBuffer;
+	renderCommand.depthBuffer = depthBuffer;
+}
+
+void
+Renderer_PopDepthBuffer(RendererState& s)
+{
+	RenderCommand& renderCommand = List_Append(s.commandList);
+	renderCommand.type = RenderCommandType::PopDepthBuffer;
+}
+
+void
+Renderer_PushPixelShader(RendererState& s, PixelShader ps)
+{
+	RenderCommand& renderCommand = List_Append(s.commandList);
+	renderCommand.type = RenderCommandType::PushPixelShader;
+	renderCommand.pixelShader = ps;
+}
+
+void
+Renderer_PopPixelShader(RendererState& s)
+{
+	RenderCommand& renderCommand = List_Append(s.commandList);
+	renderCommand.type = RenderCommandType::PopPixelShader;
+}
+
+// TODO: Add a way to set multiple resources (and to specify the slot)
+void
+Renderer_PushPixelShaderResource(RendererState& s, RenderTarget renderTarget)
+{
+	RenderCommand& renderCommand = List_Append(s.commandList);
+	renderCommand.type = RenderCommandType::PushPixelShaderResource;
+	renderCommand.psResource.setRenderTexture = true;
+	renderCommand.psResource.renderTarget = renderTarget;
+}
+
+void
+Renderer_PushPixelShaderResource(RendererState& s, DepthBuffer depthBuffer)
+{
+	RenderCommand& renderCommand = List_Append(s.commandList);
+	renderCommand.type = RenderCommandType::PushPixelShaderResource;
+	renderCommand.psResource.setRenderTexture = false;
+	renderCommand.psResource.depthBuffer = depthBuffer;
+}
+
+void
+Renderer_PopPixelShaderResource(RendererState& s)
+{
+	RenderCommand& renderCommand = List_Append(s.commandList);
+	renderCommand.type = RenderCommandType::PopPixelShaderResource;
+}
+
+// -------------------------------------------------------------------------------------------------
+// Public API Implementation - Misc
+
+b8
+Renderer_CreateRenderTextureSharedHandle(RendererState& s)
+{
+	HRESULT hr;
+
+	RenderTargetData mainRTGUI = s.renderTargets[s.mainRenderTargetGUI];
+
+	ComPtr<ID3D11Resource> d3dRenderTextureResource;
+	mainRTGUI.d3dRenderTargetView->GetResource(&d3dRenderTextureResource);
+
+	// Shared surface
+	ComPtr<IDXGIResource> dxgiRenderTexture;
+	hr = d3dRenderTextureResource.As(&dxgiRenderTexture);
+	LOG_HRESULT_IF_FAILED(hr, return false,
+		Severity::Error, "Failed to get DXGI render texture");
+
+	// TODO: Docs recommend IDXGIResource1::CreateSharedHandle
+	// https://docs.microsoft.com/en-us/windows/win32/api/dxgi/nf-dxgi-idxgiresource-getsharedhandle
+	hr = dxgiRenderTexture->GetSharedHandle(&s.mainRenderTargetGUISharedHandle);
+	LOG_HRESULT_IF_FAILED(hr, return false,
+		Severity::Error, "Failed to get DXGI render texture handle");
+
+	return true;
+}
+
+void*
+Renderer_GetSharedRenderSurface(RendererState& s)
+{
+	return s.mainRenderTargetGUISharedHandle;
+}
+
+TextureBytes
+Renderer_GetMainRenderTargetBytes(RendererState& s)
+{
+	TextureBytes textureBytes = {};
+	textureBytes.bytes.data   = (u8*) s.mappedRenderTargetCPU.pData;
+	textureBytes.bytes.length = s.mappedRenderTargetCPU.DepthPitch;
+	textureBytes.size         = s.renderSize;
+	textureBytes.rowStride    = s.mappedRenderTargetCPU.RowPitch;
+	textureBytes.pixelStride  = 2;
+
+	Assert(s.renderFormat == DXGI_FORMAT_B5G6R5_UNORM);
+	return textureBytes;
+}
+
+// -------------------------------------------------------------------------------------------------
+// Public API Implementation - Core Functions
 
 b8
 Renderer_Initialize(RendererState& s, v2u renderSize)
@@ -536,452 +1230,6 @@ Renderer_Initialize(RendererState& s, v2u renderSize)
 	return true;
 }
 
-static void
-DestroyRenderTarget(RendererState& s, RenderTargetData& rt)
-{
-	UNUSED(s);
-	rt.d3dRenderTargetResourceView.Reset();
-	rt.d3dRenderTargetView.Reset();
-	rt.d3dRenderTexture.Reset();
-	rt = {};
-}
-
-// TODO: Standardize RenderTexture vs RenderTarget
-// TODO: Try using the keyed mutex flag to synchronize sharing
-static RenderTarget
-CreateRenderTargetImpl(RendererState& s, D3D11_TEXTURE2D_DESC& desc, b8 view, b8 resource, StringView name)
-{
-	RenderTargetData& renderTargetData = List_Append(s.renderTargets);
-	renderTargetData.ref = List_GetLastRef(s.renderTargets);
-
-	auto renderTargetGuard = guard {
-		DestroyRenderTarget(s, renderTargetData);
-		List_RemoveLast(s.renderTargets);
-	};
-
-
-	String index = {};
-	defer { String_Free(index); };
-	if (name.length == 0)
-	{
-		index = String_Format("%", s.renderTargets.length);
-		name = index;
-	}
-
-
-	// Create texture
-	HRESULT hr;
-
-	hr = s.d3dDevice->CreateTexture2D(&desc, nullptr, &renderTargetData.d3dRenderTexture);
-	LOG_HRESULT_IF_FAILED(hr, return {},
-		Severity::Fatal, "Failed to create render texture");
-	SetDebugObjectName(renderTargetData.d3dRenderTexture, "Render Texture %", name);
-
-	if (view)
-	{
-		hr = s.d3dDevice->CreateRenderTargetView(renderTargetData.d3dRenderTexture.Get(), nullptr, &renderTargetData.d3dRenderTargetView);
-		LOG_HRESULT_IF_FAILED(hr, return {},
-			Severity::Fatal, "Failed to create render target view");
-		SetDebugObjectName(renderTargetData.d3dRenderTargetView, "Render Target View %", name);
-	}
-
-
-	// Create Shader resource
-	if (resource)
-	{
-		s.d3dDevice->CreateShaderResourceView(renderTargetData.d3dRenderTexture.Get(), nullptr, &renderTargetData.d3dRenderTargetResourceView);
-		SetDebugObjectName(renderTargetData.d3dRenderTargetResourceView, "Render Target Resource View %", s.renderTargets.length);
-	}
-
-
-	renderTargetGuard.dismiss = true;
-	return renderTargetData.ref;
-}
-
-RenderTarget
-Renderer_CreateRenderTarget(RendererState& s, b8 resource)
-{
-	D3D11_TEXTURE2D_DESC desc = GetDefaultRenderTextureDesc(s);
-	return CreateRenderTargetImpl(s, desc, true, resource, {});
-}
-
-static void
-DestroyDepthBuffer(RendererState& s, DepthBufferData& db)
-{
-	UNUSED(s);
-	db.d3dDepthBufferResourceView.Reset();
-	db.d3dDepthBufferView.Reset();
-	db = {};
-}
-
-DepthBuffer
-Renderer_CreateDepthBuffer(RendererState& s, b8 resource)
-{
-	DepthBufferData& depthBufferData = List_Append(s.depthBuffers);
-	depthBufferData.ref = List_GetLastRef(s.depthBuffers);
-
-	auto depthBufferGuard = guard {
-		DestroyDepthBuffer(s, depthBufferData);
-		List_RemoveLast(s.depthBuffers);
-	};
-
-
-	// Create texture
-	HRESULT hr;
-
-	D3D11_TEXTURE2D_DESC depthDesc = {};
-	depthDesc.Width              = s.renderSize.x;
-	depthDesc.Height             = s.renderSize.y;
-	depthDesc.MipLevels          = 1;
-	depthDesc.ArraySize          = 1;
-	depthDesc.Format             = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	// TODO: Doubt this is correct...
-	depthDesc.SampleDesc.Count   = s.multisampleCount;
-	depthDesc.SampleDesc.Quality = s.qualityCountRender - 1;
-	depthDesc.Usage              = D3D11_USAGE_DEFAULT;
-	depthDesc.BindFlags          = D3D11_BIND_DEPTH_STENCIL;
-	depthDesc.CPUAccessFlags     = 0;
-	depthDesc.MiscFlags          = 0;
-
-	if (resource)
-	{
-		depthDesc.Format     = DXGI_FORMAT_R24G8_TYPELESS;
-		depthDesc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
-	}
-
-	// TODO: Why don't we keep the depth buffer around and free it? Is this a leak?
-	ComPtr<ID3D11Texture2D> d3dDepthBuffer;
-	hr = s.d3dDevice->CreateTexture2D(&depthDesc, nullptr, &d3dDepthBuffer);
-	LOG_HRESULT_IF_FAILED(hr, return {},
-		Severity::Fatal, "Failed to create depth buffer");
-	SetDebugObjectName(d3dDepthBuffer, "Depth Buffer %", s.depthBuffers.length);
-
-	// TODO: Is this needed?
-	D3D11_DEPTH_STENCIL_VIEW_DESC depthViewDesc = {};
-	depthViewDesc.Format             = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	depthViewDesc.ViewDimension      = D3D11_DSV_DIMENSION_TEXTURE2D;
-	depthViewDesc.Flags              = 0;
-	depthViewDesc.Texture2D.MipSlice = 0;
-
-	hr = s.d3dDevice->CreateDepthStencilView(d3dDepthBuffer.Get(), &depthViewDesc, &depthBufferData.d3dDepthBufferView);
-	LOG_HRESULT_IF_FAILED(hr, return {},
-		Severity::Fatal, "Failed to create depth buffer view");
-	SetDebugObjectName(depthBufferData.d3dDepthBufferView, "Depth Buffer View %", s.depthBuffers.length);
-
-
-	// Create shader resource
-	if (resource)
-	{
-		// TODO: Why can't this be DXGI_FORMAT_D24_UNORM_S8_UINT? Will we be able to read stencil bits?
-		D3D11_SHADER_RESOURCE_VIEW_DESC resourceDesc = {};
-		resourceDesc.Format                    = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
-		resourceDesc.ViewDimension             = D3D11_SRV_DIMENSION_TEXTURE2D;
-		resourceDesc.Texture2D.MostDetailedMip = 0;
-		resourceDesc.Texture2D.MipLevels       = UINT(-1);
-
-		s.d3dDevice->CreateShaderResourceView(d3dDepthBuffer.Get(), &resourceDesc, &depthBufferData.d3dDepthBufferResourceView);
-		SetDebugObjectName(depthBufferData.d3dDepthBufferResourceView, "Depth Buffer Resource View %", s.depthBuffers.length);
-	}
-
-
-	depthBufferGuard.dismiss = true;
-	return depthBufferData.ref;
-}
-
-b8
-Renderer_RebuildSharedGeometryBuffers(RendererState&s)
-{
-	// Finalize vertex buffer
-	{
-		D3D11_BUFFER_DESC vertBuffDesc = {};
-		vertBuffDesc.ByteWidth           = (u32) List_SizeOf(s.vertexBuffer);
-		vertBuffDesc.Usage               = D3D11_USAGE_DYNAMIC;
-		vertBuffDesc.BindFlags           = D3D11_BIND_VERTEX_BUFFER;
-		vertBuffDesc.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
-		vertBuffDesc.MiscFlags           = 0;
-		vertBuffDesc.StructureByteStride = 0;
-
-		D3D11_SUBRESOURCE_DATA vertBuffInitData = {};
-		vertBuffInitData.pSysMem          = s.vertexBuffer.data;
-		vertBuffInitData.SysMemPitch      = 0;
-		vertBuffInitData.SysMemSlicePitch = 0;
-
-		s.d3dVertexBuffer.Reset();
-		HRESULT hr = s.d3dDevice->CreateBuffer(&vertBuffDesc, &vertBuffInitData, &s.d3dVertexBuffer);
-		LOG_HRESULT_IF_FAILED(hr, return false,
-			Severity::Fatal, "Failed to create shared vertex buffer");
-		SetDebugObjectName(s.d3dVertexBuffer, "Shared Vertex Buffer");
-	}
-
-	// Finalize index buffer
-	{
-		D3D11_BUFFER_DESC indexBuffDesc = {};
-		indexBuffDesc.ByteWidth           = (u32) List_SizeOf(s.indexBuffer);
-		indexBuffDesc.Usage               = D3D11_USAGE_IMMUTABLE;
-		indexBuffDesc.BindFlags           = D3D11_BIND_INDEX_BUFFER;
-		indexBuffDesc.CPUAccessFlags      = 0;
-		indexBuffDesc.MiscFlags           = 0;
-		indexBuffDesc.StructureByteStride = 0;
-
-		D3D11_SUBRESOURCE_DATA indexBuffInitData = {};
-		indexBuffInitData.pSysMem          = s.indexBuffer.data;
-		indexBuffInitData.SysMemPitch      = 0;
-		indexBuffInitData.SysMemSlicePitch = 0;
-
-		s.d3dIndexBuffer.Reset();
-		HRESULT hr = s.d3dDevice->CreateBuffer(&indexBuffDesc, &indexBuffInitData, &s.d3dIndexBuffer);
-		LOG_HRESULT_IF_FAILED(hr, return false,
-			Severity::Fatal, "Failed to create shared index buffer");
-		SetDebugObjectName(s.d3dIndexBuffer, "Shared Index Buffer");
-	}
-
-	return true;
-}
-
-static void
-UpdateRasterizerState(RendererState& s)
-{
-	if (s.isWireframeEnabled)
-	{
-		s.d3dContext->RSSetState(s.d3dRasterizerStateWireframe.Get());
-	}
-	else
-	{
-		s.d3dContext->RSSetState(s.d3dRasterizerStateSolid.Get());
-	}
-}
-
-static void
-DestroyMesh(RendererState& s, MeshData& mesh)
-{
-	UNUSED(s);
-	String_Free(mesh.name);
-	mesh = {};
-}
-
-Mesh
-Renderer_CreateMesh(RendererState& s, StringView name, Slice<Vertex> vertices, Slice<Index> indices)
-{
-	// TODO: Eventually lists will reuse slots
-	MeshData& mesh = List_Append(s.meshes);
-	mesh.ref  = List_GetLastRef(s.meshes);
-	mesh.name = String_FromView(name);
-
-	// Copy Data
-	{
-		mesh.vOffset = s.vertexBuffer.length;
-		mesh.iOffset = s.indexBuffer.length;
-		mesh.iCount  = indices.length;
-		mesh.iFormat = DXGI_FORMAT_R32_UINT;
-
-		List_AppendRange(s.vertexBuffer, vertices);
-		List_AppendRange(s.indexBuffer, indices);
-	}
-
-	return mesh.ref;
-}
-
-static b8
-CreateConstantBuffer(RendererState& s, ConstantBuffer& cBuf)
-{
-	// TODO: Add more cbuf info to logging
-	// TODO: Decide where validation should be handled: simulation or renderer
-
-	LOG_IF(!IsMultipleOf(cBuf.size, 16), return false,
-		Severity::Error, "Constant buffer size '%' is not a multiple of 16", cBuf.size);
-
-	D3D11_BUFFER_DESC d3dDesc = {};
-	d3dDesc.ByteWidth           = cBuf.size;
-	d3dDesc.Usage               = D3D11_USAGE_DYNAMIC;
-	d3dDesc.BindFlags           = D3D11_BIND_CONSTANT_BUFFER;
-	d3dDesc.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
-	d3dDesc.MiscFlags           = 0;
-	d3dDesc.StructureByteStride = 0;
-
-	HRESULT hr = s.d3dDevice->CreateBuffer(&d3dDesc, nullptr, &cBuf.d3dConstantBuffer);
-	LOG_HRESULT_IF_FAILED(hr, return false,
-		Severity::Error, "Failed to create constant buffer");
-	// TODO: Pass in shader type and buffer name for better errors?
-	SetDebugObjectName(cBuf.d3dConstantBuffer, "Constant Buffer");
-
-	return true;
-}
-
-static void
-DestroyVertexShader(RendererState& s, VertexShaderData& vs)
-{
-	UNUSED(s);
-	vs.d3dVertexShader.Reset();
-	vs.d3dInputLayout.Reset();
-	for (u32 j = 0; j < vs.constantBuffers.length; j++)
-		vs.constantBuffers[j].d3dConstantBuffer.Reset();
-	List_Free(vs.constantBuffers);
-	String_Free(vs.name);
-	vs = {};
-}
-
-// TODO: Should a failed load mark the file as bad?
-VertexShader
-Renderer_LoadVertexShader(RendererState& s, StringView name, StringView path, Slice<VertexAttribute> attributes, Slice<u32> cBufSizes)
-{
-	// Vertex Shader
-	// TODO: Eventually lists will reuse slots
-	VertexShaderData& vs = List_Append(s.vertexShaders);
-	vs.ref = List_GetLastRef(s.vertexShaders);
-
-	auto vsGuard = guard {
-		DestroyVertexShader(s, vs);
-		List_RemoveLast(s.vertexShaders);
-	};
-
-	vs.name = String_FromView(name);
-
-	// Load
-	Bytes vsBytes = {};
-	defer { List_Free(vsBytes); };
-	{
-		vsBytes = Platform_LoadFileBytes(path);
-		if (!vsBytes.data) return VertexShader::Null;
-	}
-
-	// Create
-	{
-		HRESULT hr = s.d3dDevice->CreateVertexShader(vsBytes.data, vsBytes.length, nullptr, &vs.d3dVertexShader);
-		LOG_HRESULT_IF_FAILED(hr, return VertexShader::Null,
-			Severity::Error, "Failed to create vertex shader '%'", path);
-		SetDebugObjectName(vs.d3dVertexShader, "Vertex Shader: %", name);
-	}
-
-	// Constant Buffers
-	if (cBufSizes.length)
-	{
-		List_Reserve(vs.constantBuffers, cBufSizes.length);
-		for (u32 i = 0; i < cBufSizes.length; i++)
-		{
-			ConstantBuffer& cBuf = List_Append(vs.constantBuffers);
-			cBuf.size = cBufSizes[i];
-
-			b8 success = CreateConstantBuffer(s, cBuf);
-			LOG_IF(!success, return VertexShader::Null,
-				Severity::Error, "Failed to create VS constant buffer % for '%'", i, path);
-		}
-	}
-
-	// Input layout
-	{
-		List<D3D11_INPUT_ELEMENT_DESC> vsInputDescs = {};
-		List_Reserve(vsInputDescs, attributes.length);
-		for (u32 i = 0; i < attributes.length; i++)
-		{
-			const c8* semantic;
-			switch (attributes[i].semantic)
-			{
-				case VertexAttributeSemantic::Position: semantic = HLSLSemantic::Position; break;
-				case VertexAttributeSemantic::Color:    semantic = HLSLSemantic::Color;    break;
-				case VertexAttributeSemantic::TexCoord: semantic = HLSLSemantic::TexCoord; break;
-
-				default:
-					LOG(Severity::Error, "Unrecognized VS attribute semantic % '%'", (i32) attributes[i].semantic, path);
-					return VertexShader::Null;
-			}
-
-			DXGI_FORMAT format;
-			switch (attributes[i].format)
-			{
-				case VertexAttributeFormat::v2: format = DXGI_FORMAT_R32G32_FLOAT;       break;
-				case VertexAttributeFormat::v3: format = DXGI_FORMAT_R32G32B32_FLOAT;    break;
-				case VertexAttributeFormat::v4: format = DXGI_FORMAT_R32G32B32A32_FLOAT; break;
-
-				default:
-					LOG(Severity::Error, "Unrecognized VS attribute format % '%'", (i32) attributes[i].format, path);
-					return VertexShader::Null;
-			}
-
-			D3D11_INPUT_ELEMENT_DESC inputDesc = {};
-			inputDesc.SemanticName         = semantic;
-			inputDesc.SemanticIndex        = 0;
-			inputDesc.Format               = format;
-			inputDesc.InputSlot            = 0;
-			inputDesc.AlignedByteOffset    = D3D11_APPEND_ALIGNED_ELEMENT;
-			inputDesc.InputSlotClass       = D3D11_INPUT_PER_VERTEX_DATA;
-			inputDesc.InstanceDataStepRate = 0;
-			List_Append(vsInputDescs, inputDesc);
-		}
-
-		HRESULT hr = s.d3dDevice->CreateInputLayout(vsInputDescs.data, vsInputDescs.length, vsBytes.data, vsBytes.length, &vs.d3dInputLayout);
-		LOG_HRESULT_IF_FAILED(hr, return VertexShader::Null,
-			Severity::Error, "Failed to create VS input layout '%'", path);
-		SetDebugObjectName(vs.d3dInputLayout, "Input Layout: %", name);
-
-		vs.d3dPrimitveTopology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	}
-
-	vsGuard.dismiss = true;
-	return vs.ref;
-}
-
-static void
-DestroyPixelShader(RendererState& s, PixelShaderData& ps)
-{
-	UNUSED(s);
-	ps.d3dPixelShader.Reset();
-	for (u32 j = 0; j < ps.constantBuffers.length; j++)
-		ps.constantBuffers[j].d3dConstantBuffer.Reset();
-	List_Free(ps.constantBuffers);
-	String_Free(ps.name);
-	ps = {};
-}
-
-// TODO: Unload functions
-PixelShader
-Renderer_LoadPixelShader(RendererState& s, StringView name, StringView path, Slice<u32> cBufSizes)
-{
-	// TODO: Eventually lists will reuse slots
-	PixelShaderData& ps = List_Append(s.pixelShaders);
-	ps.ref = List_GetLastRef(s.pixelShaders);
-
-	auto psGuard = guard {
-		DestroyPixelShader(s, ps);
-		List_RemoveLast(s.pixelShaders);
-	};
-
-	ps.name = String_FromView(name);
-
-	// Load
-	Bytes psBytes = {};
-	defer { List_Free(psBytes); };
-	{
-		psBytes = Platform_LoadFileBytes(path);
-		if (!psBytes.data) return PixelShader::Null;
-	}
-
-	// Create
-	{
-		HRESULT hr = s.d3dDevice->CreatePixelShader(psBytes.data, (u64) psBytes.length, nullptr, &ps.d3dPixelShader);
-		LOG_HRESULT_IF_FAILED(hr, return PixelShader::Null,
-			Severity::Error, "Failed to create pixel shader '%'", path);
-		SetDebugObjectName(ps.d3dPixelShader, "Pixel Shader: %", name);
-	}
-
-	// Constant Buffers
-	if (cBufSizes.length)
-	{
-		List_Reserve(ps.constantBuffers, cBufSizes.length);
-		for (u32 i = 0; i < cBufSizes.length; i++)
-		{
-			ConstantBuffer& cBuf = List_Append(ps.constantBuffers);
-			cBuf.size = cBufSizes[i];
-
-			b8 success = CreateConstantBuffer(s, cBuf);
-			LOG_IF(!success, return PixelShader::Null,
-				Severity::Error, "Failed to create PS constant buffer % for '%'", i, path);
-		}
-	}
-
-	psGuard.dismiss = true;
-	return ps.ref;
-}
-
 void
 Renderer_Teardown(RendererState& s)
 {
@@ -1056,141 +1304,6 @@ Renderer_Teardown(RendererState& s)
 		Platform_Print("\n");
 		#endif
 	}
-}
-
-Material
-Renderer_CreateMaterial(RendererState& s, Mesh mesh, VertexShader vs, PixelShader ps)
-{
-	UNUSED(s);
-
-	Material material = {};
-	material.mesh = mesh;
-	material.vs   = vs;
-	material.ps   = ps;
-	return material;
-}
-
-ConstantBufferUpdate&
-Renderer_PushConstantBufferUpdate(RendererState& s)
-{
-	RenderCommand& renderCommand = List_Append(s.commandList);
-	renderCommand.type = RenderCommandType::ConstantBufferUpdate;
-	return renderCommand.cBufUpdate;
-}
-
-DrawCall&
-Renderer_PushDrawCall(RendererState& s)
-{
-	RenderCommand& renderCommand = List_Append(s.commandList);
-	renderCommand.type = RenderCommandType::DrawCall;
-	return renderCommand.drawCall;
-}
-
-// TODO: Add a way to push both a render target and depth buffer in the same command
-void
-Renderer_PushRenderTarget(RendererState& s, RenderTarget renderTarget)
-{
-	Assert(renderTarget);
-	RenderCommand& renderCommand = List_Append(s.commandList);
-	renderCommand.type = RenderCommandType::PushRenderTarget;
-	renderCommand.renderTarget = renderTarget;
-}
-
-void
-Renderer_PopRenderTarget(RendererState& s)
-{
-	RenderCommand& renderCommand = List_Append(s.commandList);
-	renderCommand.type = RenderCommandType::PopRenderTarget;
-}
-
-void
-Renderer_PushDepthBuffer(RendererState& s, DepthBuffer depthBuffer)
-{
-	RenderCommand& renderCommand = List_Append(s.commandList);
-	renderCommand.type = RenderCommandType::PushDepthBuffer;
-	renderCommand.depthBuffer = depthBuffer;
-}
-
-void
-Renderer_PopDepthBuffer(RendererState& s)
-{
-	RenderCommand& renderCommand = List_Append(s.commandList);
-	renderCommand.type = RenderCommandType::PopDepthBuffer;
-}
-
-void
-Renderer_PushPixelShader(RendererState& s, PixelShader ps)
-{
-	RenderCommand& renderCommand = List_Append(s.commandList);
-	renderCommand.type = RenderCommandType::PushPixelShader;
-	renderCommand.pixelShader = ps;
-}
-
-void
-Renderer_PopPixelShader(RendererState& s)
-{
-	RenderCommand& renderCommand = List_Append(s.commandList);
-	renderCommand.type = RenderCommandType::PopPixelShader;
-}
-
-// TODO: Add a way to set multiple resources (and to specify the slot)
-void
-Renderer_PushPixelShaderResource(RendererState& s, RenderTarget renderTarget)
-{
-	RenderCommand& renderCommand = List_Append(s.commandList);
-	renderCommand.type = RenderCommandType::PushPixelShaderResource;
-	renderCommand.psResource.setRenderTexture = true;
-	renderCommand.psResource.renderTarget = renderTarget;
-}
-
-void
-Renderer_PushPixelShaderResource(RendererState& s, DepthBuffer depthBuffer)
-{
-	RenderCommand& renderCommand = List_Append(s.commandList);
-	renderCommand.type = RenderCommandType::PushPixelShaderResource;
-	renderCommand.psResource.setRenderTexture = false;
-	renderCommand.psResource.depthBuffer = depthBuffer;
-}
-
-void
-Renderer_PopPixelShaderResource(RendererState& s)
-{
-	RenderCommand& renderCommand = List_Append(s.commandList);
-	renderCommand.type = RenderCommandType::PopPixelShaderResource;
-}
-
-static b8
-UpdateConstantBuffer(RendererState& s, ConstantBuffer& cBuf, void* data)
-{
-	D3D11_MAPPED_SUBRESOURCE map = {};
-	HRESULT hr = s.d3dContext->Map(cBuf.d3dConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
-	LOG_HRESULT_IF_FAILED(hr, return false,
-		Severity::Error, "Failed to map constant buffer");
-
-	memcpy(map.pData, data, cBuf.size);
-	s.d3dContext->Unmap(cBuf.d3dConstantBuffer.Get(), 0);
-
-	return true;
-}
-
-// TODO: Change push calls to just take a struct. Copies are fine.
-// TODO: Move all GUI and CPU copy handling to the simulation
-static void
-ConvertRenderForGUI(RendererState& s)
-{
-	Material copyMat = {};
-	copyMat.mesh = StandardMesh::Fullscreen;
-	copyMat.vs   = StandardVertexShader::ClipSpace;
-	copyMat.ps   = StandardPixelShader::Composite;
-
-	Renderer_PushRenderTarget(s, s.mainRenderTargetGUI);
-	Renderer_PushDepthBuffer(s, StandardDepthBuffer::Null);
-	Renderer_PushPixelShaderResource(s, StandardRenderTarget::Main);
-	DrawCall& drawCall = Renderer_PushDrawCall(s);
-	drawCall.material = copyMat;
-	Renderer_PopPixelShaderResource(s);
-	Renderer_PopDepthBuffer(s);
-	Renderer_PopRenderTarget(s);
 }
 
 b8
@@ -1466,106 +1579,4 @@ Renderer_Render(RendererState& s)
 		Severity::Warning, "Failed to map render target CPU copy");
 
 	return true;
-}
-
-b8
-Renderer_CreateRenderTextureSharedHandle(RendererState& s)
-{
-	HRESULT hr;
-
-	RenderTargetData mainRTGUI = s.renderTargets[s.mainRenderTargetGUI];
-
-	ComPtr<ID3D11Resource> d3dRenderTextureResource;
-	mainRTGUI.d3dRenderTargetView->GetResource(&d3dRenderTextureResource);
-
-	// Shared surface
-	ComPtr<IDXGIResource> dxgiRenderTexture;
-	hr = d3dRenderTextureResource.As(&dxgiRenderTexture);
-	LOG_HRESULT_IF_FAILED(hr, return false,
-		Severity::Error, "Failed to get DXGI render texture");
-
-	// TODO: Docs recommend IDXGIResource1::CreateSharedHandle
-	// https://docs.microsoft.com/en-us/windows/win32/api/dxgi/nf-dxgi-idxgiresource-getsharedhandle
-	hr = dxgiRenderTexture->GetSharedHandle(&s.mainRenderTargetGUISharedHandle);
-	LOG_HRESULT_IF_FAILED(hr, return false,
-		Severity::Error, "Failed to get DXGI render texture handle");
-
-	return true;
-}
-
-void*
-Renderer_GetSharedRenderSurface(RendererState& s)
-{
-	return s.mainRenderTargetGUISharedHandle;
-}
-
-TextureBytes
-Renderer_GetMainRenderTargetBytes(RendererState& s)
-{
-	TextureBytes textureBytes = {};
-	textureBytes.bytes.data   = (u8*) s.mappedRenderTargetCPU.pData;
-	textureBytes.bytes.length = s.mappedRenderTargetCPU.DepthPitch;
-	textureBytes.size         = s.renderSize;
-	textureBytes.rowStride    = s.mappedRenderTargetCPU.RowPitch;
-	textureBytes.pixelStride  = 2;
-
-	Assert(s.renderFormat == DXGI_FORMAT_B5G6R5_UNORM);
-	return textureBytes;
-}
-
-void
-Renderer_ValidateMesh(RendererState& s, Mesh mesh)
-{
-	Assert(List_IsRefValid(s.meshes, mesh));
-}
-
-void
-Renderer_ValidateVertexShader(RendererState& s, VertexShader vs)
-{
-	Assert(List_IsRefValid(s.vertexShaders, vs));
-}
-
-void
-Renderer_ValidatePixelShader(RendererState& s, PixelShader ps)
-{
-	Assert(List_IsRefValid(s.pixelShaders, ps));
-}
-
-void
-Renderer_ValidateMaterial(RendererState& s, Material material)
-{
-	Renderer_ValidateMesh(s, material.mesh);
-	Renderer_ValidateVertexShader(s, material.vs);
-	Renderer_ValidatePixelShader(s, material.ps);
-}
-
-void
-Renderer_ValidateConstantBufferUpdate(RendererState& s, ConstantBufferUpdate& cBufUpdate)
-{
-	Renderer_ValidateMaterial(s, cBufUpdate.material);
-
-	switch (cBufUpdate.shaderStage)
-	{
-		case ShaderStage::Null: Assert(false); break;
-
-		case ShaderStage::Vertex:
-		{
-			VertexShaderData& vs = s.vertexShaders[cBufUpdate.material.vs];
-			Assert(cBufUpdate.index < vs.constantBuffers.length);
-			break;
-		}
-
-		case ShaderStage::Pixel:
-		{
-			PixelShaderData& ps = s.pixelShaders[cBufUpdate.material.ps];
-			Assert(cBufUpdate.index < ps.constantBuffers.length);
-			break;
-		}
-	}
-}
-
-void
-Renderer_ValidateDrawCall(RendererState& s, DrawCall& drawCall)
-{
-	Renderer_ValidateMaterial(s, drawCall.material);
 }
