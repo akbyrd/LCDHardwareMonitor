@@ -1079,24 +1079,6 @@ Renderer_Initialize(RendererState& s, v2u renderSize)
 	}
 
 
-	// Create main render target & depth buffer
-	{
-		D3D11_TEXTURE2D_DESC desc = GetDefaultRenderTextureDesc(s);
-		RenderTarget rt = CreateRenderTargetImpl(s, "Main", desc, true, true);
-		if (!rt) return false;
-		Assert(rt == StandardRenderTarget::Main);
-
-		DepthBuffer db = Renderer_CreateDepthBuffer(s, "Main", false);
-		if (!db) return false;
-		Assert(db == StandardDepthBuffer::Main);
-
-		// TODO: Move to simulation
-		RenderTargetData mainRT = s.renderTargets[rt];
-		DepthBufferData  mainDB = s.depthBuffers[db];
-		s.d3dContext->OMSetRenderTargets(1, mainRT.d3dRenderTargetView.GetAddressOf(), mainDB.d3dDepthBufferView.Get());
-	}
-
-
 	// Create render texture copies for CPU and GUI
 	{
 		D3D11_TEXTURE2D_DESC desc;
@@ -1326,14 +1308,12 @@ Renderer_Render(RendererState& s)
 		RenderTargetData*   rt;
 		DepthBufferData*    db;
 		VertexShaderData*   vs;
-		PixelShaderData*    ps;
+		PixelShaderData*    ps;	
 		PixelShaderResource psr;
 	};
 	BindState bindState = {};
-	bindState.rt               = &s.renderTargets[StandardRenderTarget::Main];
-	bindState.db               = &s.depthBuffers[StandardDepthBuffer::Main];
-	bindState.psr.renderTarget = StandardRenderTarget::Null;
-	bindState.psr.depthBuffer  = StandardDepthBuffer::Null;
+	bindState.rt = &s.nullRenderTarget;
+	bindState.db = &s.nullDepthBuffer;
 
 	// OPTIMIZE: Sort draws?
 	// OPTIMIZE: Adding a "SetMaterial" command would remove some redundant shader lookups.
@@ -1431,7 +1411,7 @@ Renderer_Render(RendererState& s)
 			case RenderCommandType::PushRenderTarget:
 			{
 				RenderTargetData& rt = s.renderTargets[renderCommand.renderTarget];
-				DepthBufferData&  db = *bindState.db;
+				DepthBufferData&  db = bindState.db ? *bindState.db : s.nullDepthBuffer;
 
 				List_Push(s.renderTargetStack, bindState.rt);
 				bindState.rt = &rt;
@@ -1444,7 +1424,7 @@ Renderer_Render(RendererState& s)
 			{
 				Assert(s.renderTargetStack.length != 0);
 				RenderTargetData& rt = *List_Pop(s.renderTargetStack);
-				DepthBufferData&  db = *bindState.db;
+				DepthBufferData&  db = bindState.db ? *bindState.db : s.nullDepthBuffer;
 
 				bindState.rt = &rt;
 
@@ -1455,7 +1435,7 @@ Renderer_Render(RendererState& s)
 			case RenderCommandType::PushDepthBuffer:
 			{
 				DepthBufferData&  db = renderCommand.depthBuffer? s.depthBuffers[renderCommand.depthBuffer] : s.nullDepthBuffer;
-				RenderTargetData& rt = *bindState.rt;
+				RenderTargetData& rt = bindState.rt ? *bindState.rt : s.nullRenderTarget;
 
 				List_Push(s.depthBufferStack, bindState.db);
 				bindState.db = &db;
@@ -1468,7 +1448,7 @@ Renderer_Render(RendererState& s)
 			{
 				Assert(s.depthBufferStack.length != 0);
 				DepthBufferData&  db = *List_Pop(s.depthBufferStack);
-				RenderTargetData& rt = *bindState.rt;
+				RenderTargetData& rt = bindState.rt ? *bindState.rt : s.nullRenderTarget;
 
 				bindState.db = &db;
 

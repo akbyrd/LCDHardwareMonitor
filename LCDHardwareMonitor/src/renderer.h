@@ -38,9 +38,6 @@ struct DrawCall
 	Material material;
 };
 
-using RenderTarget = List<struct RenderTargetData>::RefT;
-using DepthBuffer = List<struct DepthBufferData>::RefT;
-
 struct TextureBytes
 {
 	ByteSlice bytes;

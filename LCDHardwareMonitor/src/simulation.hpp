@@ -1183,6 +1183,17 @@ Simulation_Initialize(SimulationState& s, PluginLoaderState& pluginLoader, Rende
 	// Setup Camera
 	ResetCamera(s);
 
+	// Create Standard Rendering Resources
+	{
+		RenderTarget rt = Renderer_CreateRenderTarget(*s.renderer, "Main", true);
+		if (!rt) return false;
+		Assert(rt == StandardRenderTarget::Main);
+
+		DepthBuffer db = Renderer_CreateDepthBuffer(*s.renderer, "Main", false);
+		if (!db) return false;
+		Assert(db == StandardDepthBuffer::Main);
+	}
+
 	// Load Default Assets
 	{
 		// Vertex shader
@@ -1507,6 +1518,9 @@ Simulation_Update(SimulationState& s)
 		}
 	}
 
+	Renderer_PushRenderTarget(*s.renderer, StandardRenderTarget::Main);
+	Renderer_PushDepthBuffer(*s.renderer, StandardDepthBuffer::Main);
+
 	// Update Widgets
 	{
 		// TODO: How sensor values propagate to widgets is an open question. Does
@@ -1691,6 +1705,9 @@ Simulation_Update(SimulationState& s)
 		PushConstantBufferUpdate(context, material, ShaderStage::Pixel,  0, &color);
 		PushDrawCall(context, material);
 	}
+
+	Renderer_PopDepthBuffer(*s.renderer);
+	Renderer_PopRenderTarget(*s.renderer);
 }
 
 void

@@ -1,6 +1,8 @@
 Current
 -------
 Move GUI and CPU texture handling to the simulation (don't bake it into the renderer)
+Fix brightness/sRGB issue with GUI
+Add name to Renderer_CreateMaterial?
 Renderer TODOs
 
 
