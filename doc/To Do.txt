@@ -51,17 +51,14 @@ Consider using premake
 
 Refactoring - Memory handling
 -----------------------------
-Figure out what happens when memory allocations fail
-Re-use memory when formatting
-Use an arena for logging
-Add a proper OOM crash flow
-Add a StackAllocator (with debugging)
-Add a HeapAllocator (with debugging)
-Push context onto a stack and dump during OOM crash
-Style 1: Soft abort (log, save, close resources, exit)
-Style 2: Hard Abort (exit)
-Probably a function instead of a signal handler
-Manual failure points
+[x] Figure out what happens when memory allocations fail
+[ ] Add a StackAllocator (with debugging)
+[ ] Add a HeapAllocator (with debugging)
+[ ] Add a FixedAllocator (with debugging)
+[ ] Set active allocator and use it automatically
+[ ] Use stack allocator for formatting and temporaries
+[ ] Use fixed allocator for logging
+[ ] Push context onto a stack and dump during OOM crash
 
 
 
