@@ -1227,6 +1227,11 @@ Simulation_Initialize(SimulationState& s, PluginLoaderState& pluginLoader, Rende
 			LOG_IF(!ps, return false,
 				Severity::Error, "Failed to load built-in vertex colored pixel shader");
 			Assert(ps == StandardPixelShader::DebugCoordinates);
+
+			ps = Renderer_LoadPixelShader(*s.renderer, "Composite", "Shaders/Composite.ps.cso", {});
+			LOG_IF(!ps, return false,
+				Severity::Error, "Failed to load composite pixel shader");
+			Assert(ps == StandardPixelShader::Composite);
 		}
 
 		// Triangle mesh

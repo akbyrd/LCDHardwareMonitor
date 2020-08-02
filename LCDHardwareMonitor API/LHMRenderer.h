@@ -53,6 +53,7 @@ namespace StandardPixelShader
 	static const PixelShader SolidColored     = { 1 };
 	static const PixelShader VertexColored    = { 2 };
 	static const PixelShader DebugCoordinates = { 3 };
+	static const PixelShader Composite        = { 4 };
 };
 
 #endif
