@@ -192,10 +192,63 @@ SetDebugObjectNameImpl(const ComPtr<T>& resource, StringView format, Args... arg
 }
 
 static void UpdateRasterizerState(RendererState& s);
-static D3D11_TEXTURE2D_DESC GetDefaultRenderTextureDesc(RendererState& s);
-static D3D11_TEXTURE2D_DESC GetCPURenderTextureDesc(RendererState& s);
-static D3D11_TEXTURE2D_DESC GetGUIRenderTextureDesc(RendererState& s);
 static RenderTarget CreateRenderTargetImpl(RendererState& s, D3D11_TEXTURE2D_DESC& desc, b8 view, b8 resource, StringView name);
+
+static D3D11_TEXTURE2D_DESC
+GetDefaultRenderTextureDesc(RendererState& s)
+{
+	D3D11_TEXTURE2D_DESC desc = {};
+	desc.Width              = s.renderSize.x;
+	desc.Height             = s.renderSize.y;
+	desc.MipLevels          = 1;
+	desc.ArraySize          = 1;
+	desc.Format             = s.renderFormat;
+	desc.SampleDesc.Count   = s.multisampleCount;
+	desc.SampleDesc.Quality = s.qualityCountRender - 1;
+	desc.Usage              = D3D11_USAGE_DEFAULT;
+	desc.BindFlags          = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+	desc.CPUAccessFlags     = 0;
+	desc.MiscFlags          = 0;
+	return desc;
+}
+
+static D3D11_TEXTURE2D_DESC
+GetCPURenderTextureDesc(RendererState& s)
+{
+	D3D11_TEXTURE2D_DESC desc = {};
+	desc.Width              = s.renderSize.x;
+	desc.Height             = s.renderSize.y;
+	desc.MipLevels          = 1;
+	desc.ArraySize          = 1;
+	desc.Format             = s.renderFormat;
+	desc.SampleDesc.Count   = s.multisampleCount;
+	desc.SampleDesc.Quality = s.qualityCountRender - 1;
+	desc.Usage              = D3D11_USAGE_STAGING;
+	desc.BindFlags          = 0;
+	desc.CPUAccessFlags     = D3D11_CPU_ACCESS_READ;
+	desc.MiscFlags          = 0;
+	return desc;
+}
+
+static D3D11_TEXTURE2D_DESC
+GetGUIRenderTextureDesc(RendererState& s)
+{
+	D3D11_TEXTURE2D_DESC desc = {};
+	desc.Width              = s.renderSize.x;
+	desc.Height             = s.renderSize.y;
+	desc.MipLevels          = 1;
+	desc.ArraySize          = 1;
+	desc.Format             = s.sharedFormat;
+	desc.SampleDesc.Count   = s.multisampleCount;
+	desc.SampleDesc.Quality = s.qualityCountRender - 1;
+	desc.Usage              = D3D11_USAGE_DEFAULT;
+	// TODO: Remove render target when view is sorted out
+	// TODO: Confirm whether shader resource is needed
+	desc.BindFlags          = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+	desc.CPUAccessFlags     = 0;
+	desc.MiscFlags          = D3D11_RESOURCE_MISC_SHARED;
+	return desc;
+}
 
 b8
 Renderer_Initialize(RendererState& s, v2u renderSize)
@@ -483,69 +536,14 @@ Renderer_Initialize(RendererState& s, v2u renderSize)
 	return true;
 }
 
-static D3D11_TEXTURE2D_DESC
-GetDefaultRenderTextureDesc(RendererState& s)
-{
-	D3D11_TEXTURE2D_DESC desc = {};
-	desc.Width              = s.renderSize.x;
-	desc.Height             = s.renderSize.y;
-	desc.MipLevels          = 1;
-	desc.ArraySize          = 1;
-	desc.Format             = s.renderFormat;
-	desc.SampleDesc.Count   = s.multisampleCount;
-	desc.SampleDesc.Quality = s.qualityCountRender - 1;
-	desc.Usage              = D3D11_USAGE_DEFAULT;
-	desc.BindFlags          = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-	desc.CPUAccessFlags     = 0;
-	desc.MiscFlags          = 0;
-	return desc;
-}
-
-static D3D11_TEXTURE2D_DESC
-GetCPURenderTextureDesc(RendererState& s)
-{
-	D3D11_TEXTURE2D_DESC desc = {};
-	desc.Width              = s.renderSize.x;
-	desc.Height             = s.renderSize.y;
-	desc.MipLevels          = 1;
-	desc.ArraySize          = 1;
-	desc.Format             = s.renderFormat;
-	desc.SampleDesc.Count   = s.multisampleCount;
-	desc.SampleDesc.Quality = s.qualityCountRender - 1;
-	desc.Usage              = D3D11_USAGE_STAGING;
-	desc.BindFlags          = 0;
-	desc.CPUAccessFlags     = D3D11_CPU_ACCESS_READ;
-	desc.MiscFlags          = 0;
-	return desc;
-}
-
-static D3D11_TEXTURE2D_DESC
-GetGUIRenderTextureDesc(RendererState& s)
-{
-	D3D11_TEXTURE2D_DESC desc = {};
-	desc.Width              = s.renderSize.x;
-	desc.Height             = s.renderSize.y;
-	desc.MipLevels          = 1;
-	desc.ArraySize          = 1;
-	desc.Format             = s.sharedFormat;
-	desc.SampleDesc.Count   = s.multisampleCount;
-	desc.SampleDesc.Quality = s.qualityCountRender - 1;
-	desc.Usage              = D3D11_USAGE_DEFAULT;
-	// TODO: Remove render target when view is sorted out
-	// TODO: Confirm whether shader resource is needed
-	desc.BindFlags          = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-	desc.CPUAccessFlags     = 0;
-	desc.MiscFlags          = D3D11_RESOURCE_MISC_SHARED;
-	return desc;
-}
-
 static void
-Renderer_DestroyRenderTarget(RendererState& s, RenderTargetData& rt)
+DestroyRenderTarget(RendererState& s, RenderTargetData& rt)
 {
 	UNUSED(s);
 	rt.d3dRenderTargetResourceView.Reset();
 	rt.d3dRenderTargetView.Reset();
 	rt.d3dRenderTexture.Reset();
+	rt = {};
 }
 
 // TODO: Standardize RenderTexture vs RenderTarget
@@ -557,7 +555,7 @@ CreateRenderTargetImpl(RendererState& s, D3D11_TEXTURE2D_DESC& desc, b8 view, b8
 	renderTargetData.ref = List_GetLastRef(s.renderTargets);
 
 	auto renderTargetGuard = guard {
-		Renderer_DestroyRenderTarget(s, renderTargetData);
+		DestroyRenderTarget(s, renderTargetData);
 		List_RemoveLast(s.renderTargets);
 	};
 
@@ -600,12 +598,20 @@ CreateRenderTargetImpl(RendererState& s, D3D11_TEXTURE2D_DESC& desc, b8 view, b8
 	return renderTargetData.ref;
 }
 
+RenderTarget
+Renderer_CreateRenderTarget(RendererState& s, b8 resource)
+{
+	D3D11_TEXTURE2D_DESC desc = GetDefaultRenderTextureDesc(s);
+	return CreateRenderTargetImpl(s, desc, true, resource, {});
+}
+
 static void
-Renderer_DestroyDepthBuffer(RendererState& s, DepthBufferData& db)
+DestroyDepthBuffer(RendererState& s, DepthBufferData& db)
 {
 	UNUSED(s);
 	db.d3dDepthBufferResourceView.Reset();
 	db.d3dDepthBufferView.Reset();
+	db = {};
 }
 
 DepthBuffer
@@ -615,7 +621,7 @@ Renderer_CreateDepthBuffer(RendererState& s, b8 resource)
 	depthBufferData.ref = List_GetLastRef(s.depthBuffers);
 
 	auto depthBufferGuard = guard {
-		Renderer_DestroyDepthBuffer(s, depthBufferData);
+		DestroyDepthBuffer(s, depthBufferData);
 		List_RemoveLast(s.depthBuffers);
 	};
 
@@ -682,13 +688,6 @@ Renderer_CreateDepthBuffer(RendererState& s, b8 resource)
 	return depthBufferData.ref;
 }
 
-RenderTarget
-Renderer_CreateRenderTarget(RendererState& s, b8 resource)
-{
-	D3D11_TEXTURE2D_DESC desc = GetDefaultRenderTextureDesc(s);
-	return CreateRenderTargetImpl(s, desc, true, resource, {});
-}
-
 b8
 Renderer_RebuildSharedGeometryBuffers(RendererState&s)
 {
@@ -752,98 +751,14 @@ UpdateRasterizerState(RendererState& s)
 	}
 }
 
-void
-Renderer_Teardown(RendererState& s)
+static void
+DestroyMesh(RendererState& s, MeshData& mesh)
 {
-	List_Free(s.pixelShaderResourceStack);
-	List_Free(s.pixelShaderStack);
-	List_Free(s.depthBufferStack);
-	List_Free(s.renderTargetStack);
-	List_Free(s.commandList);
-	List_Free(s.indexBuffer);
-	List_Free(s.vertexBuffer);
-
-	for (u32 i = 0; i < s.depthBuffers.length; i++)
-	{
-		DepthBufferData& db = s.depthBuffers[i];
-
-		db.d3dDepthBufferResourceView.Reset();
-		db.d3dDepthBufferView.Reset();
-	}
-	List_Free(s.depthBuffers);
-
-	for (u32 i = 0; i < s.renderTargets.length; i++)
-	{
-		RenderTargetData& rt = s.renderTargets[i];
-
-		rt.d3dRenderTargetResourceView.Reset();
-		rt.d3dRenderTargetView.Reset();
-	}
-	List_Free(s.renderTargets);
-
-	for (u32 i = 0; i < s.meshes.length; i++)
-	{
-		MeshData& mesh = s.meshes[i];
-		String_Free(mesh.name);
-	}
-	List_Free(s.meshes);
-
-	for (u32 i = 0; i < s.pixelShaders.length; i++)
-	{
-		PixelShaderData& ps = s.pixelShaders[i];
-
-		ps.d3dPixelShader.Reset();
-		for (u32 j = 0; j < ps.constantBuffers.length; j++)
-			ps.constantBuffers[j].d3dConstantBuffer.Reset();
-		List_Free(ps.constantBuffers);
-		String_Free(ps.name);
-	}
-	List_Free(s.pixelShaders);
-
-	for (u32 i = 0; i < s.vertexShaders.length; i++)
-	{
-		VertexShaderData& vs = s.vertexShaders[i];
-
-		vs.d3dVertexShader.Reset();
-		vs.d3dInputLayout.Reset();
-		for (u32 j = 0; j < vs.constantBuffers.length; j++)
-			vs.constantBuffers[j].d3dConstantBuffer.Reset();
-		List_Free(vs.constantBuffers);
-		String_Free(vs.name);
-	}
-	List_Free(s.vertexShaders);
-
-	s.d3dIndexBuffer             .Reset();
-	s.d3dVertexBuffer            .Reset();
-	s.d3dRasterizerStateWireframe.Reset();
-	s.d3dRasterizerStateSolid    .Reset();
-	s.dxgiFactory                .Reset();
-	s.d3dContext                 .Reset();
-	s.d3dDevice                  .Reset();
-
-	// Log live objects
-	{
-		#ifdef DEBUG
-		HRESULT hr;
-
-		ComPtr<IDXGIDebug1> dxgiDebug;
-		hr = DXGIGetDebugInterface1(0, IID_PPV_ARGS(&dxgiDebug));
-		LOG_HRESULT_IF_FAILED(hr, return,
-			Severity::Warning, "Failed to get DXGI debug interface");
-
-		// NOTE: Only available with the Windows SDK installed. That's not
-		// unituitive and doesn't lead to cryptic errors or anything. Fuck you,
-		// Microsoft.
-		hr = dxgiDebug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_ALL);
-		LOG_HRESULT_IF_FAILED(hr, return,
-			Severity::Warning, "Failed to report live D3D objects");
-
-		Platform_Print("\n");
-		#endif
-	}
+	UNUSED(s);
+	String_Free(mesh.name);
+	mesh = {};
 }
 
-// TODO: Standardize asset function naming convention
 Mesh
 Renderer_CreateMesh(RendererState& s, StringView name, Slice<Vertex> vertices, Slice<Index> indices)
 {
@@ -892,6 +807,19 @@ CreateConstantBuffer(RendererState& s, ConstantBuffer& cBuf)
 	return true;
 }
 
+static void
+DestroyVertexShader(RendererState& s, VertexShaderData& vs)
+{
+	UNUSED(s);
+	vs.d3dVertexShader.Reset();
+	vs.d3dInputLayout.Reset();
+	for (u32 j = 0; j < vs.constantBuffers.length; j++)
+		vs.constantBuffers[j].d3dConstantBuffer.Reset();
+	List_Free(vs.constantBuffers);
+	String_Free(vs.name);
+	vs = {};
+}
+
 // TODO: Should a failed load mark the file as bad?
 VertexShader
 Renderer_LoadVertexShader(RendererState& s, StringView name, StringView path, Slice<VertexAttribute> attributes, Slice<u32> cBufSizes)
@@ -902,14 +830,8 @@ Renderer_LoadVertexShader(RendererState& s, StringView name, StringView path, Sl
 	vs.ref = List_GetLastRef(s.vertexShaders);
 
 	auto vsGuard = guard {
-		vs.d3dVertexShader.Reset();
-		vs.d3dInputLayout.Reset();
-
-		for (u32 i = 0; i < vs.constantBuffers.length; i++)
-			vs.constantBuffers[i].d3dConstantBuffer.Reset();
-		List_Free(vs.constantBuffers);
-		String_Free(vs.name);
-		s.vertexShaders.length -= 1;
+		DestroyVertexShader(s, vs);
+		List_RemoveLast(s.vertexShaders);
 	};
 
 	vs.name = String_FromView(name);
@@ -998,6 +920,18 @@ Renderer_LoadVertexShader(RendererState& s, StringView name, StringView path, Sl
 	return vs.ref;
 }
 
+static void
+DestroyPixelShader(RendererState& s, PixelShaderData& ps)
+{
+	UNUSED(s);
+	ps.d3dPixelShader.Reset();
+	for (u32 j = 0; j < ps.constantBuffers.length; j++)
+		ps.constantBuffers[j].d3dConstantBuffer.Reset();
+	List_Free(ps.constantBuffers);
+	String_Free(ps.name);
+	ps = {};
+}
+
 // TODO: Unload functions
 PixelShader
 Renderer_LoadPixelShader(RendererState& s, StringView name, StringView path, Slice<u32> cBufSizes)
@@ -1007,13 +941,8 @@ Renderer_LoadPixelShader(RendererState& s, StringView name, StringView path, Sli
 	ps.ref = List_GetLastRef(s.pixelShaders);
 
 	auto psGuard = guard {
-		ps.d3dPixelShader.Reset();
-
-		for (u32 i = 0; i < ps.constantBuffers.length; i++)
-			ps.constantBuffers[i].d3dConstantBuffer.Reset();
-		List_Free(ps.constantBuffers);
-		String_Free(ps.name);
-		s.pixelShaders.length -= 1;
+		DestroyPixelShader(s, ps);
+		List_RemoveLast(s.pixelShaders);
 	};
 
 	ps.name = String_FromView(name);
@@ -1051,6 +980,82 @@ Renderer_LoadPixelShader(RendererState& s, StringView name, StringView path, Sli
 
 	psGuard.dismiss = true;
 	return ps.ref;
+}
+
+void
+Renderer_Teardown(RendererState& s)
+{
+	List_Free(s.pixelShaderResourceStack);
+	List_Free(s.pixelShaderStack);
+	List_Free(s.depthBufferStack);
+	List_Free(s.renderTargetStack);
+	List_Free(s.commandList);
+	List_Free(s.indexBuffer);
+	List_Free(s.vertexBuffer);
+
+	for (u32 i = 0; i < s.depthBuffers.length; i++)
+	{
+		DepthBufferData& db = s.depthBuffers[i];
+		DestroyDepthBuffer(s, db);
+	}
+	List_Free(s.depthBuffers);
+
+	for (u32 i = 0; i < s.renderTargets.length; i++)
+	{
+		RenderTargetData& rt = s.renderTargets[i];
+		DestroyRenderTarget(s, rt);
+	}
+	List_Free(s.renderTargets);
+
+	for (u32 i = 0; i < s.meshes.length; i++)
+	{
+		MeshData& mesh = s.meshes[i];
+		DestroyMesh(s, mesh);
+	}
+	List_Free(s.meshes);
+
+	for (u32 i = 0; i < s.pixelShaders.length; i++)
+	{
+		PixelShaderData& ps = s.pixelShaders[i];
+		DestroyPixelShader(s, ps);
+	}
+	List_Free(s.pixelShaders);
+
+	for (u32 i = 0; i < s.vertexShaders.length; i++)
+	{
+		VertexShaderData& vs = s.vertexShaders[i];
+		DestroyVertexShader(s, vs);
+	}
+	List_Free(s.vertexShaders);
+
+	s.d3dIndexBuffer             .Reset();
+	s.d3dVertexBuffer            .Reset();
+	s.d3dRasterizerStateWireframe.Reset();
+	s.d3dRasterizerStateSolid    .Reset();
+	s.dxgiFactory                .Reset();
+	s.d3dContext                 .Reset();
+	s.d3dDevice                  .Reset();
+
+	// Log live objects
+	{
+		#ifdef DEBUG
+		HRESULT hr;
+
+		ComPtr<IDXGIDebug1> dxgiDebug;
+		hr = DXGIGetDebugInterface1(0, IID_PPV_ARGS(&dxgiDebug));
+		LOG_HRESULT_IF_FAILED(hr, return,
+			Severity::Warning, "Failed to get DXGI debug interface");
+
+		// NOTE: Only available with the Windows SDK installed. That's not
+		// unituitive and doesn't lead to cryptic errors or anything. Fuck you,
+		// Microsoft.
+		hr = dxgiDebug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_ALL);
+		LOG_HRESULT_IF_FAILED(hr, return,
+			Severity::Warning, "Failed to report live D3D objects");
+
+		Platform_Print("\n");
+		#endif
+	}
 }
 
 Material

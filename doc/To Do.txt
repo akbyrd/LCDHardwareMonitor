@@ -1,3 +1,13 @@
+Current
+-------
+Add name to CreateDepthBuffer
+Move feature TODOs from code to this text document
+Ignore Properties/Foo.Designer.cs files (they're generated)
+Move GUI and CPU texture handling to the simulation (don't bake it into the renderer)
+
+
+
+
 Bugs
 ----
 D3D leak when closing with selection
@@ -25,14 +35,8 @@ Ensure we're handling CloseHandle failures correctly
 
 Refactoring
 -----------
-Clear out stashed changes
 Add a mode where rendering is immediate mode to catch errors at their source
-I think I saw places that were manually destroying render targets or depth buffers that should be using the functions
-Add name to CreateDepthBuffer
-Move feature TODOs from code to this text document
-Ignore Properties/Foo.Designer.cs files (they're generated)
 Starting to feel like state checking should be in the sim
-Move GUI and CPU texture handling to the simulation (don't bake it into the renderer)
 Try removing WidgetData
 Start using Scoped
 Namespaces
