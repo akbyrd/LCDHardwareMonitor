@@ -86,6 +86,7 @@ struct DepthBufferData
 	ComPtr<ID3D11ShaderResourceView> d3dDepthBufferResourceView;
 };
 
+// TODO: Use pointers like everything else in bind state?
 struct PixelShaderResource
 {
 	b8 setRenderTexture;
@@ -345,6 +346,7 @@ Renderer_Initialize(RendererState& s, v2u renderSize)
 		if (!db) return false;
 		Assert(db == StandardDepthBuffer::Main);
 
+		// TODO: Move to simulation
 		RenderTargetData mainRT = s.renderTargets[rt];
 		DepthBufferData  mainDB = s.depthBuffers[db];
 		s.d3dContext->OMSetRenderTargets(1, mainRT.d3dRenderTargetView.GetAddressOf(), mainDB.d3dDepthBufferView.Get());
