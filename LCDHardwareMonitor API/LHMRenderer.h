@@ -5,6 +5,7 @@ using Mesh         = List<struct MeshData>::RefT;
 using VertexShader = List<struct VertexShaderData>::RefT;
 using PixelShader  = List<struct PixelShaderData>::RefT;
 using RenderTarget = List<struct RenderTargetData>::RefT;
+using DepthBuffer  = List<struct DepthBufferData>::RefT;
 
 // TODO: Re-order structs in this file
 enum struct ShaderStage
@@ -30,6 +31,18 @@ struct Vertex
 
 // TODO: WTF?
 using Index = u32;
+
+namespace StandardRenderTarget
+{
+	static const RenderTarget Null = { 0 };
+	static const RenderTarget Main = { 1 };
+};
+
+namespace StandardDepthBuffer
+{
+	static const DepthBuffer Null = { 0 };
+	static const DepthBuffer Main = { 1 };
+};
 
 namespace StandardMesh
 {

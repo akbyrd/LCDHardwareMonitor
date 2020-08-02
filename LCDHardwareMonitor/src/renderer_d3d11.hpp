@@ -127,8 +127,6 @@ struct RendererState
 	ComPtr<ID3D11DeviceContext>    d3dContext;
 	ComPtr<IDXGIFactory1>          dxgiFactory;
 
-	DepthBuffer                    mainDepthBuffer;
-	RenderTarget                   mainRenderTarget;
 	RenderTarget                   mainRenderTargetCPU;
 	RenderTarget                   mainRenderTargetGUI;
 	HANDLE                         mainRenderTargetGUISharedHandle;
@@ -156,6 +154,8 @@ struct RendererState
 	List<RenderCommand>            commandList;
 	List<RenderTargetData>         renderTargets;
 	List<DepthBufferData>          depthBuffers;
+	RenderTargetData               nullRenderTarget;
+	DepthBufferData                nullDepthBuffer;
 
 	// Only here so we don't allocate every frame
 	List<RenderTargetData*>        renderTargetStack;
@@ -335,23 +335,17 @@ Renderer_Initialize(RendererState& s, v2u renderSize)
 
 	// Create main render target & depth buffer
 	{
-		// Null objects
-		RenderTargetData& nullRT = List_Append(s.renderTargets);
-		nullRT.ref = List_GetLastRef(s.renderTargets);
-
-		DepthBufferData& nullDB = List_Append(s.depthBuffers);
-		nullDB.ref = List_GetLastRef(s.depthBuffers);
-
-		// Textures
 		D3D11_TEXTURE2D_DESC desc = GetDefaultRenderTextureDesc(s);
-		s.mainRenderTarget = CreateRenderTargetImpl(s, desc, true, true, {});
-		if (!s.mainRenderTarget) return false;
+		RenderTarget rt = CreateRenderTargetImpl(s, desc, true, true, "Main");
+		if (!rt) return false;
+		Assert(rt == StandardRenderTarget::Main);
 
-		s.mainDepthBuffer = Renderer_CreateDepthBuffer(s, false);
-		if (!s.mainDepthBuffer) return false;
+		DepthBuffer db = Renderer_CreateDepthBuffer(s, false);
+		if (!db) return false;
+		Assert(db == StandardDepthBuffer::Main);
 
-		RenderTargetData mainRT = s.renderTargets[s.mainRenderTarget];
-		DepthBufferData  mainDB = s.depthBuffers[s.mainDepthBuffer];
+		RenderTargetData mainRT = s.renderTargets[rt];
+		DepthBufferData  mainDB = s.depthBuffers[db];
 		s.d3dContext->OMSetRenderTargets(1, mainRT.d3dRenderTargetView.GetAddressOf(), mainDB.d3dDepthBufferView.Get());
 	}
 
@@ -852,7 +846,6 @@ Renderer_CreateMesh(RendererState& s, StringView name, Slice<Vertex> vertices, S
 {
 	// TODO: Eventually lists will reuse slots
 	MeshData& mesh = List_Append(s.meshes);
-
 	mesh.ref  = List_GetLastRef(s.meshes);
 	mesh.name = String_FromView(name);
 
@@ -903,6 +896,8 @@ Renderer_LoadVertexShader(RendererState& s, StringView name, StringView path, Sl
 	// Vertex Shader
 	// TODO: Eventually lists will reuse slots
 	VertexShaderData& vs = List_Append(s.vertexShaders);
+	vs.ref = List_GetLastRef(s.vertexShaders);
+
 	auto vsGuard = guard {
 		vs.d3dVertexShader.Reset();
 		vs.d3dInputLayout.Reset();
@@ -997,7 +992,6 @@ Renderer_LoadVertexShader(RendererState& s, StringView name, StringView path, Sl
 	}
 
 	vsGuard.dismiss = true;
-	vs.ref = List_GetLastRef(s.vertexShaders);
 	return vs.ref;
 }
 
@@ -1007,6 +1001,8 @@ Renderer_LoadPixelShader(RendererState& s, StringView name, StringView path, Sli
 {
 	// TODO: Eventually lists will reuse slots
 	PixelShaderData& ps = List_Append(s.pixelShaders);
+	ps.ref = List_GetLastRef(s.pixelShaders);
+
 	auto psGuard = guard {
 		ps.d3dPixelShader.Reset();
 
@@ -1051,7 +1047,6 @@ Renderer_LoadPixelShader(RendererState& s, StringView name, StringView path, Sli
 	}
 
 	psGuard.dismiss = true;
-	ps.ref = List_GetLastRef(s.pixelShaders);
 	return ps.ref;
 }
 
@@ -1186,14 +1181,14 @@ Renderer_Render(RendererState& s)
 	ConvertRenderForGUI(s);
 
 	// OPTIMIZE: Make clears a manual call so we don't clear unused render targets (also won't need checks)
-	for (u32 i = 1; i < s.renderTargets.length; i++)
+	for (u32 i = 0; i < s.renderTargets.length; i++)
 	{
 		RenderTargetData rt = s.renderTargets[i];
 		if (rt.d3dRenderTargetView)
 			s.d3dContext->ClearRenderTargetView(rt.d3dRenderTargetView.Get(), DirectX::Colors::Black);
 	}
 
-	for (u32 i = 1; i < s.depthBuffers.length; i++)
+	for (u32 i = 0; i < s.depthBuffers.length; i++)
 	{
 		DepthBufferData db = s.depthBuffers[i];
 		s.d3dContext->ClearDepthStencilView(db.d3dDepthBufferView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
@@ -1208,13 +1203,15 @@ Renderer_Render(RendererState& s)
 		PixelShaderResource psr;
 	};
 	BindState bindState = {};
-	bindState.rt               = &s.renderTargets[s.mainRenderTarget];
-	bindState.db               = &s.depthBuffers[s.mainDepthBuffer];
-	bindState.psr.renderTarget = List_GetFirstRef(s.renderTargets);
-	bindState.psr.depthBuffer  = List_GetFirstRef(s.depthBuffers);
+	bindState.rt               = &s.renderTargets[StandardRenderTarget::Main];
+	bindState.db               = &s.depthBuffers[StandardDepthBuffer::Main];
+	bindState.psr.renderTarget = StandardRenderTarget::Null;
+	bindState.psr.depthBuffer  = StandardDepthBuffer::Null;
 
 	// OPTIMIZE: Sort draws?
 	// OPTIMIZE: Adding a "SetMaterial" command would remove some redundant shader lookups.
+	// OPTIMIZE: Add checks to only issue driver calls if state really changed
+	// OPTIMIZE: Don't reset the BindState every frame?
 
 	for (u32 i = 0; i < s.commandList.length; i++)
 	{
@@ -1309,7 +1306,7 @@ Renderer_Render(RendererState& s)
 				RenderTargetData& rt = s.renderTargets[renderCommand.renderTarget];
 				DepthBufferData&  db = *bindState.db;
 
-				List_Append(s.renderTargetStack, bindState.rt);
+				List_Push(s.renderTargetStack, bindState.rt);
 				bindState.rt = &rt;
 
 				s.d3dContext->OMSetRenderTargets(1, rt.d3dRenderTargetView.GetAddressOf(), db.d3dDepthBufferView.Get());
@@ -1333,7 +1330,7 @@ Renderer_Render(RendererState& s)
 				DepthBufferData&  db = s.depthBuffers[renderCommand.depthBuffer];
 				RenderTargetData& rt = *bindState.rt;
 
-				List_Append(s.depthBufferStack, bindState.db);
+				List_Push(s.depthBufferStack, bindState.db);
 				bindState.db = &db;
 
 				s.d3dContext->OMSetRenderTargets(1, rt.d3dRenderTargetView.GetAddressOf(), db.d3dDepthBufferView.Get());
@@ -1357,7 +1354,7 @@ Renderer_Render(RendererState& s)
 			{
 				PixelShaderData ps = s.pixelShaders[renderCommand.pixelShader];
 
-				List_Append(s.pixelShaderStack, bindState.ps);
+				List_Push(s.pixelShaderStack, bindState.ps);
 				s.d3dContext->PSSetShader(ps.d3dPixelShader.Get(), nullptr, 0);
 				break;
 			}
@@ -1423,7 +1420,7 @@ Renderer_Render(RendererState& s)
 	Assert(s.pixelShaderStack.length == 0);
 	Assert(s.pixelShaderResourceStack.length == 0);
 
-	RenderTargetData& mainRT    = s.renderTargets[s.mainRenderTarget];
+	RenderTargetData& mainRT    = s.renderTargets[StandardRenderTarget::Main];
 	RenderTargetData& mainRTCPU = s.renderTargets[s.mainRenderTargetCPU];
 	RenderTargetData& mainRTGUI = s.renderTargets[s.mainRenderTargetGUI];
 

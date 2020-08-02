@@ -309,6 +309,13 @@ List_Push(List<T>& list)
 }
 
 template<typename T>
+inline T&
+List_Push(List<T>& list, T item)
+{
+	return List_Append(list, item);
+}
+
+template<typename T>
 inline T
 List_Pop(List<T>& list)
 {
