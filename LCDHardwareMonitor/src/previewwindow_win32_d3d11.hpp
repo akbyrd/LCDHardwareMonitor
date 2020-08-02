@@ -194,8 +194,8 @@ PreviewWindow_Render(PreviewWindowState& s)
 
 	RendererState& rendererState = *s.rendererState;
 
-	RenderTargetData mainRT = rendererState.renderTargets[rendererState.mainRenderTargetGUI];
-	rendererState.d3dContext->CopyResource(s.backBuffer.Get(), mainRT.d3dRenderTexture.Get());
+	RenderTargetData mainRTGUI = rendererState.renderTargets[rendererState.mainRenderTargetGUI];
+	rendererState.d3dContext->CopyResource(s.backBuffer.Get(), mainRTGUI.d3dRenderTexture.Get());
 
 	// TODO: Handle DXGI_ERROR_DEVICE_RESET and DXGI_ERROR_DEVICE_REMOVED
 	// Developer Command Prompt for Visual Studio as an administrator, and

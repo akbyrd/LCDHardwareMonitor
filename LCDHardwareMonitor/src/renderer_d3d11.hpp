@@ -211,7 +211,7 @@ Renderer_Initialize(RendererState& s, v2u renderSize)
 	// http://filmicgames.com/archives/299
 
 	s.renderSize       = renderSize;
-	s.renderFormat     = DXGI_FORMAT_B8G8R8A8_UNORM; // DXGI_FORMAT_B5G6R5_UNORM
+	s.renderFormat     = DXGI_FORMAT_B5G6R5_UNORM;
 	s.sharedFormat     = DXGI_FORMAT_B8G8R8A8_UNORM;
 	s.multisampleCount = 1;
 
@@ -1166,6 +1166,7 @@ UpdateConstantBuffer(RendererState& s, ConstantBuffer& cBuf, void* data)
 	return true;
 }
 
+// TODO: Change push calls to just take a struct. Copies are fine.
 // TODO: Move all GUI and CPU copy handling to the simulation
 static void
 ConvertRenderForGUI(RendererState& s)
@@ -1173,11 +1174,15 @@ ConvertRenderForGUI(RendererState& s)
 	Material copyMat = {};
 	copyMat.mesh = StandardMesh::Fullscreen;
 	copyMat.vs   = StandardVertexShader::ClipSpace;
-	copyMat.ps   = StandardPixelShader::VertexColored;
+	copyMat.ps   = StandardPixelShader::Composite;
 
 	Renderer_PushRenderTarget(s, s.mainRenderTargetGUI);
+	Renderer_PushDepthBuffer(s, StandardDepthBuffer::Null);
+	Renderer_PushPixelShaderResource(s, StandardRenderTarget::Main);
 	DrawCall& drawCall = Renderer_PushDrawCall(s);
 	drawCall.material = copyMat;
+	Renderer_PopPixelShaderResource(s);
+	Renderer_PopDepthBuffer(s);
 	Renderer_PopRenderTarget(s);
 }
 
@@ -1436,7 +1441,6 @@ Renderer_Render(RendererState& s)
 
 	RenderTargetData& mainRT    = s.renderTargets[StandardRenderTarget::Main];
 	RenderTargetData& mainRTCPU = s.renderTargets[s.mainRenderTargetCPU];
-	RenderTargetData& mainRTGUI = s.renderTargets[s.mainRenderTargetGUI];
 
 	if (s.mappedRenderTargetCPU.pData)
 	{
@@ -1444,7 +1448,6 @@ Renderer_Render(RendererState& s)
 		s.d3dContext->Unmap(mainRTCPU.d3dRenderTexture.Get(), 0);
 	}
 	s.d3dContext->CopyResource(mainRTCPU.d3dRenderTexture.Get(), mainRT.d3dRenderTexture.Get());
-	s.d3dContext->CopyResource(mainRTGUI.d3dRenderTexture.Get(), mainRT.d3dRenderTexture.Get());
 
 	// NOTE: Technically unnecessary, since the Map call will sync
 	// NOTE: This doesn't actually guarantee rendering has occurred
