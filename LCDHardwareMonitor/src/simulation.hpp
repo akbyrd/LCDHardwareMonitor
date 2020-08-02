@@ -1195,12 +1195,12 @@ Simulation_Initialize(SimulationState& s, PluginLoaderState& pluginLoader, Rende
 				{ VertexAttributeSemantic::TexCoord, VertexAttributeFormat::v2 },
 			};
 
-			vs = Renderer_LoadVertexShader(*s.renderer, "Default", "Shaders/WVP.vs.cso", vsAttributes, sizeof(Matrix));
+			vs = Renderer_LoadVertexShader(*s.renderer, "WVP", "Shaders/WVP.vs.cso", vsAttributes, sizeof(Matrix));
 			LOG_IF(!vs, return false,
 				Severity::Error, "Failed to load built-in wvp vertex shader");
 			Assert(vs == StandardVertexShader::WVP);
 
-			vs = Renderer_LoadVertexShader(*s.renderer, "Default", "Shaders/Clip Space.vs.cso", vsAttributes, sizeof(Matrix));
+			vs = Renderer_LoadVertexShader(*s.renderer, "Clip Space", "Shaders/Clip Space.vs.cso", vsAttributes, sizeof(Matrix));
 			LOG_IF(!vs, return false,
 				Severity::Error, "Failed to load built-in clip space vertex shader");
 			Assert(vs == StandardVertexShader::ClipSpace);
@@ -1213,18 +1213,17 @@ Simulation_Initialize(SimulationState& s, PluginLoaderState& pluginLoader, Rende
 			u32 cBufSizes[] = {
 				{ sizeof(PSInitialize) },
 			};
-			// TODO: Shader names?
-			ps = Renderer_LoadPixelShader(*s.renderer, "Default", "Shaders/Solid Colored.ps.cso", cBufSizes);
+			ps = Renderer_LoadPixelShader(*s.renderer, "Solid Colored", "Shaders/Solid Colored.ps.cso", cBufSizes);
 			LOG_IF(!ps, return false,
 				Severity::Error, "Failed to load built-in solid colored pixel shader");
 			Assert(ps == StandardPixelShader::SolidColored);
 
-			ps = Renderer_LoadPixelShader(*s.renderer, "Default", "Shaders/Vertex Colored.ps.cso", {});
+			ps = Renderer_LoadPixelShader(*s.renderer, "Vertex Colored", "Shaders/Vertex Colored.ps.cso", {});
 			LOG_IF(!ps, return false,
 				Severity::Error, "Failed to load built-in vertex colored pixel shader");
 			Assert(ps == StandardPixelShader::VertexColored);
 
-			ps = Renderer_LoadPixelShader(*s.renderer, "Default", "Shaders/Debug Coordinates.ps.cso", {});
+			ps = Renderer_LoadPixelShader(*s.renderer, "Debug Coordinates", "Shaders/Debug Coordinates.ps.cso", {});
 			LOG_IF(!ps, return false,
 				Severity::Error, "Failed to load built-in vertex colored pixel shader");
 			Assert(ps == StandardPixelShader::DebugCoordinates);
