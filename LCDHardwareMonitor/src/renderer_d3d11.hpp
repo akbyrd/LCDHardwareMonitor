@@ -88,6 +88,7 @@ struct DepthBufferData
 
 struct PixelShaderResource
 {
+	b8 setRenderTexture;
 	RenderTarget renderTarget;
 	DepthBuffer  depthBuffer;
 };
@@ -1078,9 +1079,11 @@ Renderer_PushDrawCall(RendererState& s)
 	return renderCommand.drawCall;
 }
 
+// TODO: Add a way to push both a render target and depth buffer in the same command
 void
 Renderer_PushRenderTarget(RendererState& s, RenderTarget renderTarget)
 {
+	Assert(renderTarget);
 	RenderCommand& renderCommand = List_Append(s.commandList);
 	renderCommand.type = RenderCommandType::PushRenderTarget;
 	renderCommand.renderTarget = renderTarget;
@@ -1123,11 +1126,13 @@ Renderer_PopPixelShader(RendererState& s)
 	renderCommand.type = RenderCommandType::PopPixelShader;
 }
 
+// TODO: Add a way to set multiple resources (and to specify the slot)
 void
 Renderer_PushPixelShaderResource(RendererState& s, RenderTarget renderTarget)
 {
 	RenderCommand& renderCommand = List_Append(s.commandList);
 	renderCommand.type = RenderCommandType::PushPixelShaderResource;
+	renderCommand.psResource.setRenderTexture = true;
 	renderCommand.psResource.renderTarget = renderTarget;
 }
 
@@ -1136,6 +1141,7 @@ Renderer_PushPixelShaderResource(RendererState& s, DepthBuffer depthBuffer)
 {
 	RenderCommand& renderCommand = List_Append(s.commandList);
 	renderCommand.type = RenderCommandType::PushPixelShaderResource;
+	renderCommand.psResource.setRenderTexture = false;
 	renderCommand.psResource.depthBuffer = depthBuffer;
 }
 
@@ -1327,7 +1333,7 @@ Renderer_Render(RendererState& s)
 
 			case RenderCommandType::PushDepthBuffer:
 			{
-				DepthBufferData&  db = s.depthBuffers[renderCommand.depthBuffer];
+				DepthBufferData&  db = renderCommand.depthBuffer? s.depthBuffers[renderCommand.depthBuffer] : s.nullDepthBuffer;
 				RenderTargetData& rt = *bindState.rt;
 
 				List_Push(s.depthBufferStack, bindState.db);
@@ -1373,20 +1379,28 @@ Renderer_Render(RendererState& s)
 				PixelShaderResource& psr = renderCommand.psResource;
 				Assert(psr.renderTarget || psr.depthBuffer);
 
-				List_Append(s.pixelShaderResourceStack, bindState.psr);
+				List_Push(s.pixelShaderResourceStack, bindState.psr);
 
-				if (psr.renderTarget)
+				if (psr.setRenderTexture)
 				{
 					RenderTargetData& rt = s.renderTargets[psr.renderTarget];
-					s.d3dContext->PSSetShaderResources(0, 1, rt.d3dRenderTargetResourceView.GetAddressOf());
-					bindState.psr.renderTarget = rt.ref;
+
+					if (bindState.psr.renderTarget != rt.ref)
+					{
+						s.d3dContext->PSSetShaderResources(0, 1, rt.d3dRenderTargetResourceView.GetAddressOf());
+						bindState.psr.renderTarget = rt.ref;
+					}
 				}
 
-				if (psr.depthBuffer)
+				if (!psr.setRenderTexture)
 				{
 					DepthBufferData& db = s.depthBuffers[psr.depthBuffer];
-					s.d3dContext->PSSetShaderResources(1, 1, db.d3dDepthBufferResourceView.GetAddressOf());
-					bindState.psr.depthBuffer = db.ref;
+
+					if (bindState.psr.depthBuffer != db.ref)
+					{
+						s.d3dContext->PSSetShaderResources(1, 1, db.d3dDepthBufferResourceView.GetAddressOf());
+						bindState.psr.depthBuffer = db.ref;
+					}
 				}
 				break;
 			}
@@ -1398,14 +1412,14 @@ Renderer_Render(RendererState& s)
 
 				if (psr.renderTarget != bindState.psr.renderTarget)
 				{
-					RenderTargetData& rt  = s.renderTargets[psr.renderTarget];
+					RenderTargetData& rt = psr.renderTarget ? s.renderTargets[psr.renderTarget] : s.nullRenderTarget;
 					s.d3dContext->PSSetShaderResources(0, 1, rt.d3dRenderTargetResourceView.GetAddressOf());
 					bindState.psr.renderTarget = rt.ref;
 				}
 
 				if (psr.depthBuffer != bindState.psr.depthBuffer)
 				{
-					DepthBufferData& db = s.depthBuffers[psr.depthBuffer];
+					DepthBufferData& db = psr.depthBuffer ? s.depthBuffers[psr.depthBuffer] : s.nullDepthBuffer;
 					s.d3dContext->PSSetShaderResources(1, 1, db.d3dDepthBufferResourceView.GetAddressOf());
 					bindState.psr.depthBuffer = db.ref;
 				}
