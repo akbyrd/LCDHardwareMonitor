@@ -1,6 +1,5 @@
 Current
 -------
-Implement a stack allocator
 Update sensors in the UI
 Simulation_Teardown fails if plugins have been unloaded and rawRefToKind is still set
 Sensor list doesn't update when unloading plugin
@@ -68,18 +67,18 @@ Rewrite List<T>
 
 Refactoring - Memory handling
 -----------------------------
-Run gflags and sanitizers
-Figure out what happens when memory allocations fail
-Re-use memory when formatting
-Use an arena for logging
-Add a proper OOM crash flow
-Add a StackAllocator (with debugging)
-Add a HeapAllocator (with debugging)
-Push context onto a stack and dump during OOM crash
-Style 1: Soft abort (log, save, close resources, exit)
-Style 2: Hard Abort (exit)
-Probably a function instead of a signal handler
-Manual failure points
+[x] Figure out what happens when memory allocations fail
+[ ] Move allocations to platform
+[ ] Decide whether to support non-POD
+[ ] Add a StackAllocator (with debugging)
+[ ] Add a HeapAllocator (with debugging)
+[x] Add a FixedAllocator
+[ ] Add debugging to fixed allocator
+[ ] Set active allocator and use it automatically
+[ ] Use stack allocator for formatting and temporaries
+[ ] Use fixed allocator for logging
+[ ] Push context onto a stack and dump during OOM crash
+[ ] Run gflags and sanitizers
 
 
 
