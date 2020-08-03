@@ -1,8 +1,6 @@
 Current
 -------
-Add name to Renderer_CreateMaterial?
 Renderer TODOs
-Fix brightness/sRGB issue with GUI
 
 
 
