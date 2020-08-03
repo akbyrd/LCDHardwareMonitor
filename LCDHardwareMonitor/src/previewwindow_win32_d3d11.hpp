@@ -192,9 +192,10 @@ PreviewWindow_Render(PreviewWindowState& s)
 {
 	if (!s.hwnd) return true;
 
-	RendererState& rendererState = *s.rendererState;
+	SimulationState& simulationState = *s.simulationState;
+	RendererState&   rendererState   = *s.rendererState;
 
-	RenderTargetData mainRTGUI = rendererState.renderTargets[rendererState.mainRenderTargetGUI];
+	RenderTargetData mainRTGUI = rendererState.renderTargets[simulationState.renderTargetGUICopy];
 	rendererState.d3dContext->CopyResource(s.backBuffer.Get(), mainRTGUI.d3dRenderTexture.Get());
 
 	// TODO: Handle DXGI_ERROR_DEVICE_RESET and DXGI_ERROR_DEVICE_REMOVED

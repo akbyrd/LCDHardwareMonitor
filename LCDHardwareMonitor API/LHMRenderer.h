@@ -35,7 +35,7 @@ using Index = u32;
 namespace StandardRenderTarget
 {
 	static const RenderTarget Null = { 0 };
-	static const RenderTarget Main = { 3 }; // TODO: Should be 1
+	static const RenderTarget Main = { 1 };
 };
 
 namespace StandardDepthBuffer

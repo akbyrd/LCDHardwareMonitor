@@ -38,7 +38,9 @@ struct DrawCall
 	Material material;
 };
 
-struct TextureBytes
+using CPUTexture = List<struct CPUTextureData>::RefT;
+
+struct CPUTextureBytes
 {
 	ByteSlice bytes;
 	v2u size;
@@ -55,6 +57,8 @@ PixelShader           Renderer_LoadPixelShader              (RendererState&, Str
 // TODO: Combine with CreateMesh, LoadVertexShader, and LoadPixelShader
 Material              Renderer_CreateMaterial               (RendererState&, Mesh mesh, VertexShader vs, PixelShader ps);
 RenderTarget          Renderer_CreateRenderTarget           (RendererState&, StringView name, b8 resource);
+RenderTarget          Renderer_CreateSharedRenderTarget     (RendererState&, StringView name, b8 resource);
+CPUTexture            Renderer_CreateCPUTexture             (RendererState&, StringView name);
 DepthBuffer           Renderer_CreateDepthBuffer            (RendererState&, StringView name, b8 resource);
 ConstantBufferUpdate& Renderer_PushConstantBufferUpdate     (RendererState&);
 DrawCall&             Renderer_PushDrawCall                 (RendererState&);
@@ -67,9 +71,10 @@ void                  Renderer_PopPixelShader               (RendererState&);
 void                  Renderer_PushPixelShaderResource      (RendererState&, RenderTarget);
 void                  Renderer_PushPixelShaderResource      (RendererState&, DepthBuffer);
 void                  Renderer_PopPixelShaderResource       (RendererState&);
+void                  Renderer_Copy                         (RendererState&, RenderTarget, CPUTexture);
 b8                    Renderer_Render                       (RendererState&);
-void*                 Renderer_GetSharedRenderSurface       (RendererState&);
-TextureBytes          Renderer_GetMainRenderTargetBytes     (RendererState&);
+CPUTextureBytes       Renderer_GetCPUTextureBytes           (RendererState&, CPUTexture);
+size                  Renderer_GetSharedRenderTargetHandle  (RendererState&, RenderTarget);
 
 void                  Renderer_ValidateMesh                 (RendererState&, Mesh mesh);
 void                  Renderer_ValidateVertexShader         (RendererState&, VertexShader vs);

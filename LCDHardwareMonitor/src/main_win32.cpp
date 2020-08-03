@@ -73,9 +73,6 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 	LOG_IF(!success, return -1, Severity::Fatal, "Failed to initialize the renderer");
 	DEFER_TEARDOWN { Renderer_Teardown(rendererState); };
 
-	success = Renderer_CreateRenderTextureSharedHandle(rendererState);
-	LOG_IF(!success, return -1, Severity::Fatal, "Failed to create a shared render texture");
-
 
 	// Simulation
 	success = Simulation_Initialize(simulationState, pluginLoaderState, rendererState);

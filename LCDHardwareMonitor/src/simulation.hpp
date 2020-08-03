@@ -20,6 +20,9 @@ struct SimulationState
 	List<WidgetPlugin>  widgetPlugins;
 
 	v2u                 renderSize;
+	CPUTexture          renderTargetCPUCopy;
+	RenderTarget        renderTargetGUICopy;
+
 	v3                  cameraPos;
 	Matrix              view;
 	Matrix              proj;
@@ -223,7 +226,7 @@ ToGUI_Connect(SimulationState& s)
 
 	ToGUI::Connect connect = {};
 	connect.version       = LHMVersion;
-	connect.renderSurface = (size) Renderer_GetSharedRenderSurface(*s.renderer);
+	connect.renderSurface = Renderer_GetSharedRenderTargetHandle(*s.renderer, s.renderTargetGUICopy);
 	connect.renderSize.x  = s.renderSize.x;
 	connect.renderSize.y  = s.renderSize.y;
 	SerializeAndQueueMessage(s.guiConnection, connect);
@@ -1192,6 +1195,12 @@ Simulation_Initialize(SimulationState& s, PluginLoaderState& pluginLoader, Rende
 		DepthBuffer db = Renderer_CreateDepthBuffer(*s.renderer, "Main", false);
 		if (!db) return false;
 		Assert(db == StandardDepthBuffer::Main);
+
+		s.renderTargetCPUCopy = Renderer_CreateCPUTexture(*s.renderer, "CPU Copy");
+		if (!s.renderTargetCPUCopy) return false;
+
+		s.renderTargetGUICopy = Renderer_CreateSharedRenderTarget(*s.renderer, "GUI Copy", false);
+		if (!s.renderTargetGUICopy) return false;
 	}
 
 	// Load Default Assets
@@ -1704,6 +1713,30 @@ Simulation_Update(SimulationState& s)
 		PushConstantBufferUpdate(context, material, ShaderStage::Vertex, 0, &wvp);
 		PushConstantBufferUpdate(context, material, ShaderStage::Pixel,  0, &color);
 		PushDrawCall(context, material);
+	}
+
+	// Update CPU texture
+	{
+		Renderer_PushRenderTarget(*s.renderer, StandardRenderTarget::Null);
+		Renderer_Copy(*s.renderer, StandardRenderTarget::Main, s.renderTargetCPUCopy);
+		Renderer_PopRenderTarget(*s.renderer);
+	}
+
+	// Update GUI preview texture
+	{
+		Material copyMat = {};
+		copyMat.mesh = StandardMesh::Fullscreen;
+		copyMat.vs   = StandardVertexShader::ClipSpace;
+		copyMat.ps   = StandardPixelShader::Composite;
+
+		Renderer_PushRenderTarget(*s.renderer, s.renderTargetGUICopy);
+		Renderer_PushDepthBuffer(*s.renderer, StandardDepthBuffer::Null);
+		Renderer_PushPixelShaderResource(*s.renderer, StandardRenderTarget::Main);
+		DrawCall& drawCall = Renderer_PushDrawCall(*s.renderer);
+		drawCall.material = copyMat;
+		Renderer_PopPixelShaderResource(*s.renderer);
+		Renderer_PopDepthBuffer(*s.renderer);
+		Renderer_PopRenderTarget(*s.renderer);
 	}
 
 	Renderer_PopDepthBuffer(*s.renderer);
