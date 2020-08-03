@@ -138,7 +138,6 @@ struct RendererState
 {
 	ComPtr<ID3D11Device>          d3dDevice;
 	ComPtr<ID3D11DeviceContext>   d3dContext;
-	ComPtr<IDXGIFactory1>         dxgiFactory;
 	ComPtr<ID3D11RasterizerState> d3dRasterizerStateSolid;
 	ComPtr<ID3D11RasterizerState> d3dRasterizerStateWireframe;
 	ComPtr<ID3D11Buffer>          d3dVertexBuffer;
@@ -1019,13 +1018,6 @@ Renderer_Initialize(RendererState& s, v2u renderSize)
 		hr = dxgiDevice->GetAdapter(&dxgiAdapter);
 		LOG_HRESULT_IF_FAILED(hr, return false,
 			Severity::Fatal, "Failed to get DXGI adapter");
-		SetDebugObjectName(dxgiAdapter, "DXGI Adapter");
-
-		// TODO: Only needed for the swap chain
-		hr = dxgiAdapter->GetParent(IID_PPV_ARGS(&s.dxgiFactory));
-		LOG_HRESULT_IF_FAILED(hr, return false,
-			Severity::Fatal, "Failed to get DXGI factory");
-		SetDebugObjectName(s.dxgiFactory, "DXGI Factory");
 
 		// Check for the WARP driver
 		DXGI_ADAPTER_DESC desc = {};
@@ -1261,7 +1253,6 @@ Renderer_Teardown(RendererState& s)
 	s.d3dVertexBuffer            .Reset();
 	s.d3dRasterizerStateWireframe.Reset();
 	s.d3dRasterizerStateSolid    .Reset();
-	s.dxgiFactory                .Reset();
 	s.d3dContext                 .Reset();
 	s.d3dDevice                  .Reset();
 

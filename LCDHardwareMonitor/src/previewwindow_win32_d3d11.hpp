@@ -93,6 +93,8 @@ PreviewWindow_Initialize(
 
 	// Attach Renderer
 	{
+		HRESULT hr;
+
 		// TODO: When using fullscreen, the display mode should be chosen by
 		// enumerating supported modes. If a mode is chosen that isn't supported,
 		// a performance penalty will be incurred due to Present performing a blit
@@ -137,8 +139,22 @@ PreviewWindow_Initialize(
 		// NOTE: IDXGISwapChain::ResizeTarget to resize window if render target changes
 
 		// Create the swap chain
-		HRESULT hr;
-		hr = rendererState.dxgiFactory->CreateSwapChain(rendererState.d3dDevice.Get(), &swapChainDesc, &s.swapChain);
+		ComPtr<IDXGIDevice1> dxgiDevice;
+		hr = rendererState.d3dDevice.As(&dxgiDevice);
+		LOG_HRESULT_IF_FAILED(hr, return false,
+			Severity::Fatal, "Failed to get DXGI device");
+
+		ComPtr<IDXGIAdapter> dxgiAdapter;
+		hr = dxgiDevice->GetAdapter(&dxgiAdapter);
+		LOG_HRESULT_IF_FAILED(hr, return false,
+			Severity::Fatal, "Failed to get DXGI adapter");
+
+		ComPtr<IDXGIFactory1> dxgiFactory;
+		hr = dxgiAdapter->GetParent(IID_PPV_ARGS(&dxgiFactory));
+		LOG_HRESULT_IF_FAILED(hr, return false,
+			Severity::Fatal, "Failed to get DXGI factory");
+
+		hr = dxgiFactory->CreateSwapChain(rendererState.d3dDevice.Get(), &swapChainDesc, &s.swapChain);
 		LOG_HRESULT_IF_FAILED(hr, return false,
 			Severity::Error, "Failed to create preview window swap chain");
 		SetDebugObjectName(s.swapChain, "Preview Swap Chain");
@@ -150,7 +166,7 @@ PreviewWindow_Initialize(
 		SetDebugObjectName(s.backBuffer, "Preview Back Buffer");
 
 		// Associate the window
-		hr = rendererState.dxgiFactory->MakeWindowAssociation(s.hwnd, DXGI_MWA_NO_ALT_ENTER);
+		hr = dxgiFactory->MakeWindowAssociation(s.hwnd, DXGI_MWA_NO_ALT_ENTER);
 		LOG_HRESULT_IF_FAILED(hr, return false,
 			Severity::Error, "Failed to associate DXGI and preview window");
 	}
