@@ -797,13 +797,12 @@ Renderer_ValidateMaterial(RendererState& s, Material material)
 // -------------------------------------------------------------------------------------------------
 // Public API Implementation - Rendering Operations
 
-// TODO: Change push calls to just take a struct. Copies are fine.
-ConstantBufferUpdate&
-Renderer_PushConstantBufferUpdate(RendererState& s)
+void
+Renderer_PushConstantBufferUpdate(RendererState& s, ConstantBufferUpdate& cbu)
 {
 	RenderCommand& renderCommand = List_Append(s.commandList);
 	renderCommand.type = RenderCommandType::ConstantBufferUpdate;
-	return renderCommand.cBufUpdate;
+	renderCommand.cBufUpdate = cbu;
 }
 
 void
@@ -831,12 +830,12 @@ Renderer_ValidateConstantBufferUpdate(RendererState& s, ConstantBufferUpdate& cB
 	}
 }
 
-DrawCall&
-Renderer_PushDrawCall(RendererState& s)
+void
+Renderer_PushDrawCall(RendererState& s, DrawCall& dc)
 {
 	RenderCommand& renderCommand = List_Append(s.commandList);
 	renderCommand.type = RenderCommandType::DrawCall;
-	return renderCommand.drawCall;
+	renderCommand.drawCall = dc;
 }
 
 void

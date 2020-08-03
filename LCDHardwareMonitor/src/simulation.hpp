@@ -193,12 +193,13 @@ PushConstantBufferUpdate(PluginContext& context, Material material, ShaderStage 
 
 	RendererState& rendererState = *context.s->renderer;
 
-	ConstantBufferUpdate& cBufUpdate = Renderer_PushConstantBufferUpdate(rendererState);
+	ConstantBufferUpdate cBufUpdate = {};
 	cBufUpdate.material    = material;
 	cBufUpdate.shaderStage = shaderStage;
 	cBufUpdate.index       = index;
 	cBufUpdate.data        = data;
 	Renderer_ValidateConstantBufferUpdate(rendererState, cBufUpdate);
+	Renderer_PushConstantBufferUpdate(rendererState, cBufUpdate);
 }
 
 static void
@@ -208,9 +209,10 @@ PushDrawCall(PluginContext& context, Material material)
 
 	RendererState& rendererState = *context.s->renderer;
 
-	DrawCall& drawCall = Renderer_PushDrawCall(rendererState);
+	DrawCall drawCall = {};
 	drawCall.material = material;
 	Renderer_ValidateDrawCall(rendererState, drawCall);
+	Renderer_PushDrawCall(rendererState, drawCall);
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -1729,11 +1731,13 @@ Simulation_Update(SimulationState& s)
 		copyMat.vs   = StandardVertexShader::ClipSpace;
 		copyMat.ps   = StandardPixelShader::Composite;
 
+		DrawCall drawCall = {};
+		drawCall.material = copyMat;
+
 		Renderer_PushRenderTarget(*s.renderer, s.renderTargetGUICopy);
 		Renderer_PushDepthBuffer(*s.renderer, StandardDepthBuffer::Null);
 		Renderer_PushPixelShaderResource(*s.renderer, StandardRenderTarget::Main);
-		DrawCall& drawCall = Renderer_PushDrawCall(*s.renderer);
-		drawCall.material = copyMat;
+		Renderer_PushDrawCall(*s.renderer, drawCall);
 		Renderer_PopPixelShaderResource(*s.renderer);
 		Renderer_PopDepthBuffer(*s.renderer);
 		Renderer_PopRenderTarget(*s.renderer);

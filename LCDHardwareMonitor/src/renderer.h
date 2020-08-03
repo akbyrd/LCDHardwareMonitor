@@ -60,8 +60,8 @@ RenderTarget          Renderer_CreateRenderTarget           (RendererState&, Str
 RenderTarget          Renderer_CreateSharedRenderTarget     (RendererState&, StringView name, b8 resource);
 CPUTexture            Renderer_CreateCPUTexture             (RendererState&, StringView name);
 DepthBuffer           Renderer_CreateDepthBuffer            (RendererState&, StringView name, b8 resource);
-ConstantBufferUpdate& Renderer_PushConstantBufferUpdate     (RendererState&);
-DrawCall&             Renderer_PushDrawCall                 (RendererState&);
+void                  Renderer_PushConstantBufferUpdate     (RendererState&, ConstantBufferUpdate&);
+void                  Renderer_PushDrawCall                 (RendererState&, DrawCall&);
 void                  Renderer_PushRenderTarget             (RendererState&, RenderTarget);
 void                  Renderer_PopRenderTarget              (RendererState&);
 void                  Renderer_PushDepthBuffer              (RendererState&, DepthBuffer);
