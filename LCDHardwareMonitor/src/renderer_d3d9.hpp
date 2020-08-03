@@ -71,7 +71,7 @@ D3D9_CreateSharedSurface(
 	IDirect3DDevice9Ex& d3d9Device,
 	IDirect3DTexture9*& d3d9RenderTarget,
 	IDirect3DSurface9*& d3d9RenderSurface0,
-	HANDLE              d3dRenderTargetSharedHandle,
+	HANDLE              sharedRenderTargetHandle,
 	v2u                 renderSize)
 {
 	HRESULT hr;
@@ -86,7 +86,7 @@ D3D9_CreateSharedSurface(
 		D3DFMT_A8R8G8B8,
 		D3DPOOL_DEFAULT,
 		&d3d9RenderTarget,
-		&d3dRenderTargetSharedHandle
+		&sharedRenderTargetHandle
 	);
 	LOG_HRESULT_IF_FAILED(hr, return false,
 		Severity::Error, "Failed to create D3D9 render target");

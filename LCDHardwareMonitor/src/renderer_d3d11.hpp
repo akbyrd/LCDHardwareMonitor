@@ -787,7 +787,7 @@ Renderer_CreateMaterial(RendererState& s, Mesh mesh, VertexShader vs, PixelShade
 }
 
 void
-Renderer_ValidateMaterial(RendererState& s, Material material)
+Renderer_ValidateMaterial(RendererState& s, Material& material)
 {
 	Renderer_ValidateMesh(s, material.mesh);
 	Renderer_ValidateVertexShader(s, material.vs);
@@ -806,25 +806,25 @@ Renderer_PushConstantBufferUpdate(RendererState& s, ConstantBufferUpdate& cbu)
 }
 
 void
-Renderer_ValidateConstantBufferUpdate(RendererState& s, ConstantBufferUpdate& cBufUpdate)
+Renderer_ValidateConstantBufferUpdate(RendererState& s, ConstantBufferUpdate& cbu)
 {
-	Renderer_ValidateMaterial(s, cBufUpdate.material);
+	Renderer_ValidateMaterial(s, cbu.material);
 
-	switch (cBufUpdate.shaderStage)
+	switch (cbu.shaderStage)
 	{
 		case ShaderStage::Null: Assert(false); break;
 
 		case ShaderStage::Vertex:
 		{
-			VertexShaderData& vs = s.vertexShaders[cBufUpdate.material.vs];
-			Assert(cBufUpdate.index < vs.constantBuffers.length);
+			VertexShaderData& vs = s.vertexShaders[cbu.material.vs];
+			Assert(cbu.index < vs.constantBuffers.length);
 			break;
 		}
 
 		case ShaderStage::Pixel:
 		{
-			PixelShaderData& ps = s.pixelShaders[cBufUpdate.material.ps];
-			Assert(cBufUpdate.index < ps.constantBuffers.length);
+			PixelShaderData& ps = s.pixelShaders[cbu.material.ps];
+			Assert(cbu.index < ps.constantBuffers.length);
 			break;
 		}
 	}
@@ -839,17 +839,17 @@ Renderer_PushDrawCall(RendererState& s, DrawCall& dc)
 }
 
 void
-Renderer_ValidateDrawCall(RendererState& s, DrawCall& drawCall)
+Renderer_ValidateDrawCall(RendererState& s, DrawCall& dc)
 {
-	Renderer_ValidateMaterial(s, drawCall.material);
+	Renderer_ValidateMaterial(s, dc.material);
 }
 
 void
-Renderer_PushRenderTarget(RendererState& s, RenderTarget renderTarget)
+Renderer_PushRenderTarget(RendererState& s, RenderTarget rt)
 {
 	RenderCommand& renderCommand = List_Append(s.commandList);
 	renderCommand.type = RenderCommandType::PushRenderTarget;
-	renderCommand.renderTarget = renderTarget;
+	renderCommand.renderTarget = rt;
 }
 
 void
@@ -860,11 +860,11 @@ Renderer_PopRenderTarget(RendererState& s)
 }
 
 void
-Renderer_PushDepthBuffer(RendererState& s, DepthBuffer depthBuffer)
+Renderer_PushDepthBuffer(RendererState& s, DepthBuffer db)
 {
 	RenderCommand& renderCommand = List_Append(s.commandList);
 	renderCommand.type = RenderCommandType::PushDepthBuffer;
-	renderCommand.depthBuffer = depthBuffer;
+	renderCommand.depthBuffer = db;
 }
 
 void
@@ -890,21 +890,21 @@ Renderer_PopPixelShader(RendererState& s)
 }
 
 void
-Renderer_PushPixelShaderResource(RendererState& s, RenderTarget renderTarget)
+Renderer_PushPixelShaderResource(RendererState& s, RenderTarget rt)
 {
 	RenderCommand& renderCommand = List_Append(s.commandList);
 	renderCommand.type = RenderCommandType::PushPixelShaderResource;
 	renderCommand.psResource.setRenderTarget = true;
-	renderCommand.psResource.renderTarget = renderTarget;
+	renderCommand.psResource.renderTarget = rt;
 }
 
 void
-Renderer_PushPixelShaderResource(RendererState& s, DepthBuffer depthBuffer)
+Renderer_PushPixelShaderResource(RendererState& s, DepthBuffer db)
 {
 	RenderCommand& renderCommand = List_Append(s.commandList);
 	renderCommand.type = RenderCommandType::PushPixelShaderResource;
 	renderCommand.psResource.setRenderTarget = false;
-	renderCommand.psResource.depthBuffer = depthBuffer;
+	renderCommand.psResource.depthBuffer = db;
 }
 
 void
@@ -1339,31 +1339,31 @@ Renderer_Render(RendererState& s)
 
 			case RenderCommandType::ConstantBufferUpdate:
 			{
-				ConstantBufferUpdate& cBufUpdate = renderCommand.cBufUpdate;
+				ConstantBufferUpdate& cbu = renderCommand.cBufUpdate;
 
 				// TODO: Do validation in API call (ps & vs refs, shader stage, etc)
 				// TODO: If we fail to update a constant buffer do we skip drawing?
 				ConstantBuffer* cBuf = nullptr;
-				switch (cBufUpdate.shaderStage)
+				switch (cbu.shaderStage)
 				{
 					case ShaderStage::Null: Assert(false); break;
 
 					case ShaderStage::Vertex:
 					{
-						VertexShaderData& vs = s.vertexShaders[cBufUpdate.material.vs];
-						cBuf = &vs.constantBuffers[cBufUpdate.index];
+						VertexShaderData& vs = s.vertexShaders[cbu.material.vs];
+						cBuf = &vs.constantBuffers[cbu.index];
 						break;
 					}
 
 					case ShaderStage::Pixel:
 					{
-						PixelShaderData& ps = s.pixelShaders[cBufUpdate.material.ps];
-						cBuf = &ps.constantBuffers[cBufUpdate.index];
+						PixelShaderData& ps = s.pixelShaders[cbu.material.ps];
+						cBuf = &ps.constantBuffers[cbu.index];
 						break;
 					}
 				}
 
-				b8 success = UpdateConstantBuffer(s, *cBuf, cBufUpdate.data);
+				b8 success = UpdateConstantBuffer(s, *cBuf, cbu.data);
 				if (!success) break;
 				break;
 			}

@@ -55,7 +55,7 @@ Mesh                  Renderer_CreateMesh                   (RendererState&, Str
 VertexShader          Renderer_LoadVertexShader             (RendererState&, StringView name, StringView path, Slice<VertexAttribute> attributes, Slice<u32> cBufSizes);
 PixelShader           Renderer_LoadPixelShader              (RendererState&, StringView name, StringView path, Slice<u32> cBufSizes);
 // TODO: Combine with CreateMesh, LoadVertexShader, and LoadPixelShader
-Material              Renderer_CreateMaterial               (RendererState&, Mesh mesh, VertexShader vs, PixelShader ps);
+Material              Renderer_CreateMaterial               (RendererState&, Mesh, VertexShader, PixelShader);
 RenderTarget          Renderer_CreateRenderTarget           (RendererState&, StringView name, b8 resource);
 RenderTarget          Renderer_CreateSharedRenderTarget     (RendererState&, StringView name, b8 resource);
 CPUTexture            Renderer_CreateCPUTexture             (RendererState&, StringView name);
@@ -76,9 +76,9 @@ b8                    Renderer_Render                       (RendererState&);
 CPUTextureBytes       Renderer_GetCPUTextureBytes           (RendererState&, CPUTexture);
 size                  Renderer_GetSharedRenderTargetHandle  (RendererState&, RenderTarget);
 
-void                  Renderer_ValidateMesh                 (RendererState&, Mesh mesh);
-void                  Renderer_ValidateVertexShader         (RendererState&, VertexShader vs);
-void                  Renderer_ValidatePixelShader          (RendererState&, PixelShader ps);
-void                  Renderer_ValidateMaterial             (RendererState&, Material material);
-void                  Renderer_ValidateConstantBufferUpdate (RendererState&, ConstantBufferUpdate& cBufUpdate);
-void                  Renderer_ValidateDrawCall             (RendererState&, DrawCall& drawCall);
+void                  Renderer_ValidateMesh                 (RendererState&, Mesh);
+void                  Renderer_ValidateVertexShader         (RendererState&, VertexShader);
+void                  Renderer_ValidatePixelShader          (RendererState&, PixelShader);
+void                  Renderer_ValidateMaterial             (RendererState&, Material&);
+void                  Renderer_ValidateConstantBufferUpdate (RendererState&, ConstantBufferUpdate&);
+void                  Renderer_ValidateDrawCall             (RendererState&, DrawCall&);

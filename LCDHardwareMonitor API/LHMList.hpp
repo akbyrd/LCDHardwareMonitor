@@ -94,8 +94,8 @@ List_Reserve(List<T>& list, u32 capacity)
 {
 	if (list.capacity < capacity)
 	{
-		u64 totalSize = sizeof(T) * capacity;
-		u64 emptySize = sizeof(T) * (capacity - list.length);
+		u64 totalSize = sizeof(T) * u64(capacity);
+		u64 emptySize = sizeof(T) * u64(capacity - list.length);
 
 		list.capacity = capacity;
 		list.data     = (T*) ReallocChecked(list.data, (size) totalSize);
@@ -110,8 +110,8 @@ List_Grow(List<T>& list)
 	if (list.length == list.capacity)
 	{
 		u32 capacity  = list.capacity ? 2*list.capacity : 4;
-		u64 totalSize = sizeof(T) * capacity;
-		u64 emptySize = sizeof(T) * (capacity - list.length);
+		u64 totalSize = sizeof(T) * u64(capacity);
+		u64 emptySize = sizeof(T) * u64(capacity - list.length);
 
 		list.capacity = capacity;
 		list.data     = (T*) ReallocChecked(list.data, (size) totalSize);
