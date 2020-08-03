@@ -241,7 +241,7 @@ CreateRenderTargetImpl(RendererState& s, StringView name, b8 resource, D3D11_TEX
 		Severity::Fatal, "Failed to create render target view");
 	SetDebugObjectName(renderTargetData.d3dRenderTargetView, "Render Target View %", name);
 
-	// Create Shader resource
+	// Create shader resource
 	if (resource)
 	{
 		s.d3dDevice->CreateShaderResourceView(renderTargetData.d3dRenderTarget.Get(), nullptr, &renderTargetData.d3dRenderTargetResourceView);
@@ -404,13 +404,9 @@ Renderer_CreateSharedRenderTarget(RendererState& s, StringView name, b8 resource
 
 	HRESULT hr;
 
-	// TODO: Can this be simplified?
 	// Shared handle
-	ComPtr<ID3D11Resource> d3dRenderTargetResource;
-	renderTargetData.d3dRenderTargetView->GetResource(&d3dRenderTargetResource);
-
 	ComPtr<IDXGIResource> dxgiRenderTarget;
-	hr = d3dRenderTargetResource.As(&dxgiRenderTarget);
+	hr = renderTargetData.d3dRenderTarget.As(&dxgiRenderTarget);
 	LOG_HRESULT_IF_FAILED(hr, return {},
 		Severity::Error, "Failed to get DXGI render target");
 
@@ -1295,12 +1291,11 @@ Renderer_Teardown(RendererState& s)
 b8
 Renderer_Render(RendererState& s)
 {
-	// OPTIMIZE: Make clears a manual call so we don't clear unused render targets (also won't need checks)
+	// OPTIMIZE: Make clears a manual call so we don't do unnecessary clears
 	for (u32 i = 0; i < s.renderTargets.length; i++)
 	{
 		RenderTargetData& rt = s.renderTargets[i];
-		if (rt.d3dRenderTargetView)
-			s.d3dContext->ClearRenderTargetView(rt.d3dRenderTargetView.Get(), DirectX::Colors::Black);
+		s.d3dContext->ClearRenderTargetView(rt.d3dRenderTargetView.Get(), DirectX::Colors::Black);
 	}
 
 	for (u32 i = 0; i < s.depthBuffers.length; i++)
