@@ -69,7 +69,7 @@ struct PixelShaderData
 struct RenderTargetData
 {
 	RenderTarget                     ref;
-	ComPtr<ID3D11Texture2D>          d3dRenderTexture;
+	ComPtr<ID3D11Texture2D>          d3dRenderTarget;
 	ComPtr<ID3D11RenderTargetView>   d3dRenderTargetView;
 	ComPtr<ID3D11ShaderResourceView> d3dRenderTargetResourceView;
 	HANDLE                           sharedHandle;
@@ -92,7 +92,7 @@ struct CPUTextureData
 // TODO: Use pointers like everything else in bind state?
 struct PixelShaderResource
 {
-	b8 setRenderTexture;
+	b8           setRenderTarget;
 	RenderTarget renderTarget;
 	DepthBuffer  depthBuffer;
 };
@@ -205,7 +205,7 @@ DestroyRenderTarget(RendererState& s, RenderTargetData& rt)
 	UNUSED(s);
 	rt.d3dRenderTargetResourceView.Reset();
 	rt.d3dRenderTargetView.Reset();
-	rt.d3dRenderTexture.Reset();
+	rt.d3dRenderTarget.Reset();
 	rt = {};
 }
 
@@ -231,12 +231,12 @@ CreateRenderTargetImpl(RendererState& s, StringView name, b8 resource, D3D11_TEX
 	}
 
 	// Create texture
-	hr = s.d3dDevice->CreateTexture2D(&desc, nullptr, &renderTargetData.d3dRenderTexture);
+	hr = s.d3dDevice->CreateTexture2D(&desc, nullptr, &renderTargetData.d3dRenderTarget);
 	LOG_HRESULT_IF_FAILED(hr, return {},
-		Severity::Fatal, "Failed to create render texture");
-	SetDebugObjectName(renderTargetData.d3dRenderTexture, "Render Texture %", name);
+		Severity::Fatal, "Failed to create render target");
+	SetDebugObjectName(renderTargetData.d3dRenderTarget, "Render Target %", name);
 
-	hr = s.d3dDevice->CreateRenderTargetView(renderTargetData.d3dRenderTexture.Get(), nullptr, &renderTargetData.d3dRenderTargetView);
+	hr = s.d3dDevice->CreateRenderTargetView(renderTargetData.d3dRenderTarget.Get(), nullptr, &renderTargetData.d3dRenderTargetView);
 	LOG_HRESULT_IF_FAILED(hr, return {},
 		Severity::Fatal, "Failed to create render target view");
 	SetDebugObjectName(renderTargetData.d3dRenderTargetView, "Render Target View %", name);
@@ -244,7 +244,7 @@ CreateRenderTargetImpl(RendererState& s, StringView name, b8 resource, D3D11_TEX
 	// Create Shader resource
 	if (resource)
 	{
-		s.d3dDevice->CreateShaderResourceView(renderTargetData.d3dRenderTexture.Get(), nullptr, &renderTargetData.d3dRenderTargetResourceView);
+		s.d3dDevice->CreateShaderResourceView(renderTargetData.d3dRenderTarget.Get(), nullptr, &renderTargetData.d3dRenderTargetResourceView);
 		SetDebugObjectName(renderTargetData.d3dRenderTargetResourceView, "Render Target Resource View %", name);
 	}
 
@@ -358,7 +358,6 @@ UpdateConstantBuffer(RendererState& s, ConstantBuffer& cBuf, void* data)
 // -------------------------------------------------------------------------------------------------
 // Public API Implementation - Resource Creation
 
-// TODO: Standardize RenderTexture vs RenderTarget
 // TODO: Try using the keyed mutex flag to synchronize sharing
 RenderTarget
 Renderer_CreateRenderTarget(RendererState& s, StringView name, b8 resource)
@@ -407,19 +406,19 @@ Renderer_CreateSharedRenderTarget(RendererState& s, StringView name, b8 resource
 
 	// TODO: Can this be simplified?
 	// Shared handle
-	ComPtr<ID3D11Resource> d3dRenderTextureResource;
-	renderTargetData.d3dRenderTargetView->GetResource(&d3dRenderTextureResource);
+	ComPtr<ID3D11Resource> d3dRenderTargetResource;
+	renderTargetData.d3dRenderTargetView->GetResource(&d3dRenderTargetResource);
 
-	ComPtr<IDXGIResource> dxgiRenderTexture;
-	hr = d3dRenderTextureResource.As(&dxgiRenderTexture);
+	ComPtr<IDXGIResource> dxgiRenderTarget;
+	hr = d3dRenderTargetResource.As(&dxgiRenderTarget);
 	LOG_HRESULT_IF_FAILED(hr, return {},
-		Severity::Error, "Failed to get DXGI render texture");
+		Severity::Error, "Failed to get DXGI render target");
 
 	// TODO: Docs recommend IDXGIResource1::CreateSharedHandle
 	// https://docs.microsoft.com/en-us/windows/win32/api/dxgi/nf-dxgi-idxgiresource-getsharedhandle
-	hr = dxgiRenderTexture->GetSharedHandle(&renderTargetData.sharedHandle);
+	hr = dxgiRenderTarget->GetSharedHandle(&renderTargetData.sharedHandle);
 	LOG_HRESULT_IF_FAILED(hr, return {},
-		Severity::Error, "Failed to get DXGI render texture handle");
+		Severity::Error, "Failed to get DXGI render target handle");
 
 	renderTargetGuard.dismiss = true;
 	return rt;
@@ -900,7 +899,7 @@ Renderer_PushPixelShaderResource(RendererState& s, RenderTarget renderTarget)
 {
 	RenderCommand& renderCommand = List_Append(s.commandList);
 	renderCommand.type = RenderCommandType::PushPixelShaderResource;
-	renderCommand.psResource.setRenderTexture = true;
+	renderCommand.psResource.setRenderTarget = true;
 	renderCommand.psResource.renderTarget = renderTarget;
 }
 
@@ -909,7 +908,7 @@ Renderer_PushPixelShaderResource(RendererState& s, DepthBuffer depthBuffer)
 {
 	RenderCommand& renderCommand = List_Append(s.commandList);
 	renderCommand.type = RenderCommandType::PushPixelShaderResource;
-	renderCommand.psResource.setRenderTexture = false;
+	renderCommand.psResource.setRenderTarget = false;
 	renderCommand.psResource.depthBuffer = depthBuffer;
 }
 
@@ -1088,7 +1087,7 @@ Renderer_Initialize(RendererState& s, v2u renderSize)
 
 		hr = s.d3dDevice->CheckMultisampleQualityLevels(s.renderFormat, s.multisampleCount, &s.qualityCountRender);
 		LOG_HRESULT_IF_FAILED(hr, return false,
-			Severity::Fatal, "Failed to query supported multisample levels for render textures");
+			Severity::Fatal, "Failed to query supported multisample levels for render targets");
 
 		hr = s.d3dDevice->CheckMultisampleQualityLevels(s.sharedFormat, s.multisampleCount, &s.qualityCountShared);
 		LOG_HRESULT_IF_FAILED(hr, return false,
@@ -1499,7 +1498,7 @@ Renderer_Render(RendererState& s)
 
 				List_Push(s.pixelShaderResourceStack, bindState.psr);
 
-				if (psr.setRenderTexture)
+				if (psr.setRenderTarget)
 				{
 					RenderTargetData& rt = s.renderTargets[psr.renderTarget];
 
@@ -1510,7 +1509,7 @@ Renderer_Render(RendererState& s)
 					}
 				}
 
-				if (!psr.setRenderTexture)
+				if (!psr.setRenderTarget)
 				{
 					DepthBufferData& db = s.depthBuffers[psr.depthBuffer];
 
@@ -1549,7 +1548,7 @@ Renderer_Render(RendererState& s)
 				CopyResource&     copy   = renderCommand.copy;
 				RenderTargetData& source = s.renderTargets[copy.source];
 				CPUTextureData&   dest   = s.cpuTextures[copy.dest];
-				s.d3dContext->CopyResource(dest.d3dCPUTexture.Get(), source.d3dRenderTexture.Get());
+				s.d3dContext->CopyResource(dest.d3dCPUTexture.Get(), source.d3dRenderTarget.Get());
 				break;
 			}
 		}

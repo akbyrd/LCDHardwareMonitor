@@ -69,9 +69,9 @@ D3D9_Teardown(
 b8
 D3D9_CreateSharedSurface(
 	IDirect3DDevice9Ex& d3d9Device,
-	IDirect3DTexture9*& d3d9RenderTexture,
+	IDirect3DTexture9*& d3d9RenderTarget,
 	IDirect3DSurface9*& d3d9RenderSurface0,
-	HANDLE              d3dRenderTextureSharedHandle,
+	HANDLE              d3dRenderTargetSharedHandle,
 	v2u                 renderSize)
 {
 	HRESULT hr;
@@ -85,13 +85,13 @@ D3D9_CreateSharedSurface(
 		D3DUSAGE_RENDERTARGET,
 		D3DFMT_A8R8G8B8,
 		D3DPOOL_DEFAULT,
-		&d3d9RenderTexture,
-		&d3dRenderTextureSharedHandle
+		&d3d9RenderTarget,
+		&d3dRenderTargetSharedHandle
 	);
 	LOG_HRESULT_IF_FAILED(hr, return false,
-		Severity::Error, "Failed to create D3D9 render texture");
+		Severity::Error, "Failed to create D3D9 render target");
 
-	hr = (*d3d9RenderTexture).GetSurfaceLevel(0, &d3d9RenderSurface0);
+	hr = (*d3d9RenderTarget).GetSurfaceLevel(0, &d3d9RenderSurface0);
 	LOG_HRESULT_IF_FAILED(hr, return false,
 		Severity::Error, "Failed to get D3D9 render surface");
 
@@ -100,13 +100,13 @@ D3D9_CreateSharedSurface(
 
 void
 D3D9_DestroySharedSurface(
-	IDirect3DTexture9*& d3d9RenderTexture,
+	IDirect3DTexture9*& d3d9RenderTarget,
 	IDirect3DSurface9*& d3d9RenderSurface0)
 {
-	if (d3d9RenderTexture)
+	if (d3d9RenderTarget)
 	{
-		(*d3d9RenderTexture).Release();
-		d3d9RenderTexture = nullptr;
+		(*d3d9RenderTarget).Release();
+		d3d9RenderTarget = nullptr;
 	}
 
 	if (d3d9RenderSurface0)

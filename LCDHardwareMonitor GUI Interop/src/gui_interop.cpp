@@ -22,7 +22,7 @@ struct State
 	ConnectionState     simConnection;
 	IDirect3D9Ex*       d3d9;
 	IDirect3DDevice9Ex* d3d9Device;
-	IDirect3DTexture9*  d3d9RenderTexture;
+	IDirect3DTexture9*  d3d9RenderTarget;
 	IDirect3DSurface9*  d3d9RenderSurface0;
 };
 static State state = {};
@@ -378,7 +378,7 @@ namespace LCDHardwareMonitor::GUI
 
 			b8 success = D3D9_CreateSharedSurface(
 				*state.d3d9Device,
-				state.d3d9RenderTexture,
+				state.d3d9RenderTarget,
 				state.d3d9RenderSurface0,
 				(HANDLE) connect.renderSurface,
 				connect.renderSize
@@ -398,7 +398,7 @@ namespace LCDHardwareMonitor::GUI
 			// DEBUG: Needed for the Watch window
 			State& s = state;
 
-			D3D9_DestroySharedSurface(s.d3d9RenderTexture, s.d3d9RenderSurface0);
+			D3D9_DestroySharedSurface(s.d3d9RenderTarget, s.d3d9RenderSurface0);
 			simState.RenderSurface = IntPtr::Zero;
 			simState.Plugins->Clear();
 			simState.Sensors->Clear();
@@ -626,7 +626,7 @@ namespace LCDHardwareMonitor::GUI
 			// DEBUG: Needed for the Watch window
 			State& s = state;
 
-			D3D9_DestroySharedSurface(s.d3d9RenderTexture, s.d3d9RenderSurface0);
+			D3D9_DestroySharedSurface(s.d3d9RenderTarget, s.d3d9RenderSurface0);
 			D3D9_Teardown(s.d3d9, s.d3d9Device);
 
 			ConnectionState& simCon = s.simConnection;
