@@ -298,9 +298,8 @@ DestroyMesh(RendererState& s, MeshData& mesh)
 }
 
 static b8
-CreateConstantBuffer(RendererState& s, ConstantBuffer& cBuf)
+CreateConstantBuffer(RendererState& s, StringView shaderName, u32 index, ConstantBuffer& cBuf)
 {
-	// TODO: Add more cbuf info to logging
 	// TODO: Decide where validation should be handled: simulation or renderer
 
 	LOG_IF(!IsMultipleOf(cBuf.size, 16), return false,
@@ -317,8 +316,7 @@ CreateConstantBuffer(RendererState& s, ConstantBuffer& cBuf)
 	HRESULT hr = s.d3dDevice->CreateBuffer(&d3dDesc, nullptr, &cBuf.d3dConstantBuffer);
 	LOG_HRESULT_IF_FAILED(hr, return false,
 		Severity::Error, "Failed to create constant buffer");
-	// TODO: Pass in shader type and buffer name for better errors?
-	SetDebugObjectName(cBuf.d3dConstantBuffer, "Constant Buffer");
+	SetDebugObjectName(cBuf.d3dConstantBuffer, "% Constant Buffer %", shaderName, index);
 
 	return true;
 }
@@ -675,7 +673,7 @@ Renderer_LoadVertexShader(RendererState& s, StringView name, StringView path, Sl
 			ConstantBuffer& cBuf = List_Append(vs.constantBuffers);
 			cBuf.size = cBufSizes[i];
 
-			b8 success = CreateConstantBuffer(s, cBuf);
+			b8 success = CreateConstantBuffer(s, name, i, cBuf);
 			LOG_IF(!success, return VertexShader::Null,
 				Severity::Error, "Failed to create VS constant buffer % for '%'", i, path);
 		}
@@ -778,7 +776,7 @@ Renderer_LoadPixelShader(RendererState& s, StringView name, StringView path, Sli
 			ConstantBuffer& cBuf = List_Append(ps.constantBuffers);
 			cBuf.size = cBufSizes[i];
 
-			b8 success = CreateConstantBuffer(s, cBuf);
+			b8 success = CreateConstantBuffer(s, name, i, cBuf);
 			LOG_IF(!success, return PixelShader::Null,
 				Severity::Error, "Failed to create PS constant buffer % for '%'", i, path);
 		}
