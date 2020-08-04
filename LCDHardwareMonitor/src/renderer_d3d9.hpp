@@ -4,7 +4,7 @@
 // For some GUID magic in the DirectX/DXGI headers. Must be included before them.
 #include <InitGuid.h>
 
-#ifdef DEBUG
+#if DEBUG
 	#define D3D_DEBUG_INFO
 #endif
 

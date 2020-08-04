@@ -7,7 +7,7 @@
 // For some GUID magic in the DirectX/DXGI headers. Must be included before them.
 #include <InitGuid.h>
 
-#ifdef DEBUG
+#if DEBUG
 	#define D3D_DEBUG_INFO
 	#include <d3d11sdklayers.h>
 	#include <dxgidebug.h>
@@ -209,7 +209,7 @@ template<typename T, typename... Args>
 static inline void
 SetDebugObjectNameImpl(ComPtr<T>& resource, StringView format, Args... args)
 {
-	#if defined(DEBUG)
+	#if DEBUG
 	String name = String_FormatImpl(format, args...);
 	defer { String_Free(name); };
 
@@ -977,15 +977,6 @@ Renderer_Initialize(RendererState& s, v2u renderSize)
 {
 	Assert(renderSize.x < i32Max && renderSize.y < i32Max);
 
-
-	// TODO: Switch to DXGI_FORMAT_B8G8R8A8_UNORM_SRGB for linear rendering
-	// DirectXMath colors are defined in sRGB colorspace. Update the clear:
-	// color.v = XMColorSRGBToRGB(Colors::CornflowerBlue);
-	// context->ClearRenderTargetView(renderTarget, color);
-	// https://blog.molecular-matters.com/2011/11/21/gamma-correct-rendering/
-	// http://http.developer.nvidia.com/GPUGems3/gpugems3_ch24.html
-	// http://filmicgames.com/archives/299
-
 	s.renderSize       = renderSize;
 	s.renderFormat     = DXGI_FORMAT_B5G6R5_UNORM;
 	s.sharedFormat     = DXGI_FORMAT_B8G8R8A8_UNORM;
@@ -1054,8 +1045,7 @@ Renderer_Initialize(RendererState& s, v2u renderSize)
 
 	// Configure debugging
 	{
-		// TODO: Maybe replace DEBUG with something app specific
-		#ifdef DEBUG
+		#if DEBUG
 		HRESULT hr;
 
 		ComPtr<IDXGIDebug1> dxgiDebug;
@@ -1279,7 +1269,7 @@ Renderer_Teardown(RendererState& s)
 
 	// Log live objects
 	{
-		#ifdef DEBUG
+		#if DEBUG
 		HRESULT hr;
 
 		ComPtr<IDXGIDebug1> dxgiDebug;

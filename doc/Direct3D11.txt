@@ -48,3 +48,15 @@ DirectX 11 launched with Windows 7, back-ported to Vista. First hardware 2009. D
 DirectX 11.1 launched with Windows 8 (2011). DXGI 1.2, WDDM 1.2. Mandatory 16 bit formats.
 DirectX 11.2 launched with Windows 8.1 (2013). DXGI 1.3,  WDDM 1.3.
 DirectX 11.3 launched with Windows 10 (2015).
+
+
+
+Linear Rendering
+----------------
+Consider switching to DXGI_FORMAT_B8G8R8A8_UNORM_SRGB for linear rendering
+DirectXMath colors are defined in sRGB colorspace. Update the clear:
+color.v = XMColorSRGBToRGB(Colors::CornflowerBlue);
+context->ClearRenderTargetView(renderTarget, color);
+https://blog.molecular-matters.com/2011/11/21/gamma-correct-rendering/
+http://http.developer.nvidia.com/GPUGems3/gpugems3_ch24.html
+http://filmicgames.com/archives/299

@@ -1,7 +1,9 @@
 Current
 -------
 Renderer TODOs
-
+Bring FT232H code over
+Bring ILI9341 code over
+Read from display
 
 
 
@@ -100,6 +102,13 @@ Need to actually avoid processing broken plugins
 Outline shader
 Users probably need to be able to create custom UI for plugin settings
 Watch plugin directory contents for registering, unregistering, and reloading plugins.
+
+
+
+Features - ILI9341 Communication
+--------------------------------
+Write to a buffer and only flush when full or need to sleep
+Add proper error handling
 
 
 
