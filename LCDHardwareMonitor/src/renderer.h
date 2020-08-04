@@ -68,8 +68,8 @@ void                  Renderer_PushDepthBuffer              (RendererState&, Dep
 void                  Renderer_PopDepthBuffer               (RendererState&);
 void                  Renderer_PushPixelShader              (RendererState&, PixelShader);
 void                  Renderer_PopPixelShader               (RendererState&);
-void                  Renderer_PushPixelShaderResource      (RendererState&, RenderTarget);
-void                  Renderer_PushPixelShaderResource      (RendererState&, DepthBuffer);
+void                  Renderer_PushPixelShaderResource      (RendererState&, RenderTarget, u32 slot);
+void                  Renderer_PushPixelShaderResource      (RendererState&, DepthBuffer, u32 slot);
 void                  Renderer_PopPixelShaderResource       (RendererState&);
 void                  Renderer_Copy                         (RendererState&, RenderTarget, CPUTexture);
 b8                    Renderer_Render                       (RendererState&);

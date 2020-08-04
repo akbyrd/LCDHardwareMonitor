@@ -1736,7 +1736,7 @@ Simulation_Update(SimulationState& s)
 
 		Renderer_PushRenderTarget(*s.renderer, s.renderTargetGUICopy);
 		Renderer_PushDepthBuffer(*s.renderer, StandardDepthBuffer::Null);
-		Renderer_PushPixelShaderResource(*s.renderer, StandardRenderTarget::Main);
+		Renderer_PushPixelShaderResource(*s.renderer, StandardRenderTarget::Main, 0);
 		Renderer_PushDrawCall(*s.renderer, drawCall);
 		Renderer_PopPixelShaderResource(*s.renderer);
 		Renderer_PopDepthBuffer(*s.renderer);

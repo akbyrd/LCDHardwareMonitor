@@ -89,12 +89,33 @@ struct CPUTextureData
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
 };
 
-// TODO: Use pointers like everything else in bind state?
+enum struct ResourceType
+{
+	Null,
+	RenderTarget,
+	DepthBuffer,
+};
+
 struct PixelShaderResource
 {
-	b8           setRenderTarget;
-	RenderTarget renderTarget;
-	DepthBuffer  depthBuffer;
+	ResourceType type;
+	u32          slot;
+	union
+	{
+		RenderTarget renderTarget;
+		DepthBuffer  depthBuffer;
+	};
+};
+
+struct BoundResource
+{
+	ResourceType type;
+	u32          slot;
+	union
+	{
+		RenderTargetData* renderTarget;
+		DepthBufferData*  depthBuffer;
+	};
 };
 
 struct CopyResource
@@ -167,7 +188,7 @@ struct RendererState
 	List<RenderTargetData*>       renderTargetStack;
 	List<DepthBufferData*>        depthBufferStack;
 	List<PixelShaderData*>        pixelShaderStack;
-	List<PixelShaderResource>     pixelShaderResourceStack;
+	List<BoundResource>           pixelShaderResourceStack;
 };
 
 // -------------------------------------------------------------------------------------------------
@@ -889,20 +910,22 @@ Renderer_PopPixelShader(RendererState& s)
 }
 
 void
-Renderer_PushPixelShaderResource(RendererState& s, RenderTarget rt)
+Renderer_PushPixelShaderResource(RendererState& s, RenderTarget rt, u32 slot)
 {
 	RenderCommand& renderCommand = List_Append(s.commandList);
 	renderCommand.type = RenderCommandType::PushPixelShaderResource;
-	renderCommand.psResource.setRenderTarget = true;
+	renderCommand.psResource.type = ResourceType::RenderTarget;
+	renderCommand.psResource.slot = 0;
 	renderCommand.psResource.renderTarget = rt;
 }
 
 void
-Renderer_PushPixelShaderResource(RendererState& s, DepthBuffer db)
+Renderer_PushPixelShaderResource(RendererState& s, DepthBuffer db, u32 slot)
 {
 	RenderCommand& renderCommand = List_Append(s.commandList);
 	renderCommand.type = RenderCommandType::PushPixelShaderResource;
-	renderCommand.psResource.setRenderTarget = false;
+	renderCommand.psResource.type = ResourceType::DepthBuffer;
+	renderCommand.psResource.slot = slot;
 	renderCommand.psResource.depthBuffer = db;
 }
 
@@ -1306,11 +1329,11 @@ Renderer_Render(RendererState& s)
 
 	struct BindState
 	{
-		RenderTargetData*   rt;
-		DepthBufferData*    db;
-		VertexShaderData*   vs;
-		PixelShaderData*    ps;
-		PixelShaderResource psr;
+		RenderTargetData* rt;
+		DepthBufferData*  db;
+		VertexShaderData* vs;
+		PixelShaderData*  ps;
+		BoundResource     psr;
 	};
 	BindState bindState = {};
 	bindState.rt = &s.nullRenderTarget;
@@ -1397,7 +1420,7 @@ Renderer_Render(RendererState& s)
 
 					for (u32 j = 0; j < ps.constantBuffers.length; j++)
 					{
-						ConstantBuffer cBuf = ps.constantBuffers[j];
+						ConstantBuffer& cBuf = ps.constantBuffers[j];
 						s.d3dContext->PSSetConstantBuffers(j, 1, cBuf.d3dConstantBuffer.GetAddressOf());
 					}
 				}
@@ -1460,7 +1483,7 @@ Renderer_Render(RendererState& s)
 			// TODO: This probably isn't interacting propertly with bindState.ps and Materials!
 			case RenderCommandType::PushPixelShader:
 			{
-				PixelShaderData ps = s.pixelShaders[renderCommand.pixelShader];
+				PixelShaderData& ps = s.pixelShaders[renderCommand.pixelShader];
 
 				List_Push(s.pixelShaderStack, bindState.ps);
 				s.d3dContext->PSSetShader(ps.d3dPixelShader.Get(), nullptr, 0);
@@ -1479,29 +1502,35 @@ Renderer_Render(RendererState& s)
 			case RenderCommandType::PushPixelShaderResource:
 			{
 				PixelShaderResource& psr = renderCommand.psResource;
-				Assert(psr.renderTarget || psr.depthBuffer);
 
+				bindState.psr.type = psr.type;
+				bindState.psr.slot = psr.slot;
 				List_Push(s.pixelShaderResourceStack, bindState.psr);
 
-				if (psr.setRenderTarget)
+				switch (psr.type)
 				{
-					RenderTargetData& rt = s.renderTargets[psr.renderTarget];
-
-					if (bindState.psr.renderTarget != rt.ref)
+					case ResourceType::RenderTarget:
 					{
-						s.d3dContext->PSSetShaderResources(0, 1, rt.d3dRenderTargetResourceView.GetAddressOf());
-						bindState.psr.renderTarget = rt.ref;
+						RenderTargetData& rt = s.renderTargets[psr.renderTarget];
+
+						if (bindState.psr.renderTarget != &rt)
+						{
+							bindState.psr.renderTarget = &rt;
+							s.d3dContext->PSSetShaderResources(psr.slot, 1, rt.d3dRenderTargetResourceView.GetAddressOf());
+						}
+						break;
 					}
-				}
 
-				if (!psr.setRenderTarget)
-				{
-					DepthBufferData& db = s.depthBuffers[psr.depthBuffer];
-
-					if (bindState.psr.depthBuffer != db.ref)
+					case ResourceType::DepthBuffer:
 					{
-						s.d3dContext->PSSetShaderResources(1, 1, db.d3dDepthBufferResourceView.GetAddressOf());
-						bindState.psr.depthBuffer = db.ref;
+						DepthBufferData& db = s.depthBuffers[psr.depthBuffer];
+
+						if (bindState.psr.depthBuffer != &db)
+						{
+							bindState.psr.depthBuffer = &db;
+							s.d3dContext->PSSetShaderResources(psr.slot, 1, db.d3dDepthBufferResourceView.GetAddressOf());
+						}
+						break;
 					}
 				}
 				break;
@@ -1510,20 +1539,31 @@ Renderer_Render(RendererState& s)
 			case RenderCommandType::PopPixelShaderResource:
 			{
 				Assert(s.pixelShaderResourceStack.length != 0);
-				PixelShaderResource psr = List_Pop(s.pixelShaderResourceStack);
+				BoundResource psr = List_Pop(s.pixelShaderResourceStack);
 
-				if (psr.renderTarget != bindState.psr.renderTarget)
+				switch (psr.type)
 				{
-					RenderTargetData& rt = psr.renderTarget ? s.renderTargets[psr.renderTarget] : s.nullRenderTarget;
-					s.d3dContext->PSSetShaderResources(0, 1, rt.d3dRenderTargetResourceView.GetAddressOf());
-					bindState.psr.renderTarget = rt.ref;
-				}
+					case ResourceType::RenderTarget:
+					{
+						RenderTargetData& rt = psr.renderTarget ? *psr.renderTarget : s.nullRenderTarget;
+						if (bindState.psr.renderTarget != &rt)
+						{
+							bindState.psr.renderTarget = &rt;
+							s.d3dContext->PSSetShaderResources(psr.slot, 1, rt.d3dRenderTargetResourceView.GetAddressOf());
+						}
+						break;
+					}
 
-				if (psr.depthBuffer != bindState.psr.depthBuffer)
-				{
-					DepthBufferData& db = psr.depthBuffer ? s.depthBuffers[psr.depthBuffer] : s.nullDepthBuffer;
-					s.d3dContext->PSSetShaderResources(1, 1, db.d3dDepthBufferResourceView.GetAddressOf());
-					bindState.psr.depthBuffer = db.ref;
+					case ResourceType::DepthBuffer:
+					{
+						DepthBufferData& db = psr.depthBuffer ? *psr.depthBuffer : s.nullDepthBuffer;
+						if (bindState.psr.depthBuffer != &db)
+						{
+							bindState.psr.depthBuffer = &db;
+							s.d3dContext->PSSetShaderResources(psr.slot, 1, db.d3dDepthBufferResourceView.GetAddressOf());
+						}
+						break;
+					}
 				}
 				break;
 			}
