@@ -22,11 +22,8 @@ struct WidgetAPI
 {
 	struct Initialize
 	{
-		using PushConstantBufferUpdateFn = void  (PluginContext&, Material, ShaderStage, u32 index, void* data);
-
-		Slice<Widget>               widgets;
-		ByteSlice                   widgetsUserData;
-		PushConstantBufferUpdateFn* PushConstantBufferUpdate;
+		Slice<Widget> widgets;
+		ByteSlice     widgetsUserData;
 	};
 
 	struct Update

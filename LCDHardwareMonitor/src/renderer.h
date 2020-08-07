@@ -62,10 +62,13 @@ CPUTexture            Renderer_CreateCPUTexture             (RendererState&, Str
 DepthBuffer           Renderer_CreateDepthBuffer            (RendererState&, StringView name, b8 resource);
 void                  Renderer_PushConstantBufferUpdate     (RendererState&, ConstantBufferUpdate&);
 void                  Renderer_PushDrawCall                 (RendererState&, DrawCall&);
+void                  Renderer_PushDrawMesh                 (RendererState&, Mesh);
 void                  Renderer_PushRenderTarget             (RendererState&, RenderTarget);
 void                  Renderer_PopRenderTarget              (RendererState&);
 void                  Renderer_PushDepthBuffer              (RendererState&, DepthBuffer);
 void                  Renderer_PopDepthBuffer               (RendererState&);
+void                  Renderer_PushVertexShader             (RendererState&, VertexShader);
+void                  Renderer_PopVertexShader              (RendererState&);
 void                  Renderer_PushPixelShader              (RendererState&, PixelShader);
 void                  Renderer_PopPixelShader               (RendererState&);
 void                  Renderer_PushPixelShaderResource      (RendererState&, RenderTarget, u32 slot);

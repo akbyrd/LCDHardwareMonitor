@@ -717,9 +717,9 @@ AddWidgets(SimulationState& s, WidgetPlugin& widgetPlugin, WidgetData& widgetDat
 	context.success      = true;
 
 	WidgetAPI::Initialize api = {};
-	api.widgets                  = List_Slice(widgetData.widgets, prevWidgetLen);
-	api.widgetsUserData          = List_Slice(widgetData.widgetsUserData, widgetData.desc.userDataSize * prevWidgetLen);
-	api.PushConstantBufferUpdate = PushConstantBufferUpdate;
+	api.widgets                = List_Slice(widgetData.widgets, prevWidgetLen);
+	api.widgetsUserData        = List_Slice(widgetData.widgetsUserData, widgetData.desc.userDataSize * prevWidgetLen);
+	api.widgetsUserData.stride = widgetData.desc.userDataSize;
 
 	widgetData.desc.Initialize(context, api);
 	if (!context.success) return;

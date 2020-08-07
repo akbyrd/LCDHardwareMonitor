@@ -133,6 +133,8 @@ enum struct RenderCommandType
 	PopRenderTarget,
 	PushDepthBuffer,
 	PopDepthBuffer,
+	PushVertexShader,
+	PopVertexShader,
 	PushPixelShader,
 	PopPixelShader,
 	PushPixelShaderResource,
@@ -149,6 +151,7 @@ struct RenderCommand
 		DrawCall             drawCall;
 		RenderTarget         renderTarget;
 		DepthBuffer          depthBuffer;
+		VertexShader         vertexShader;
 		PixelShader          pixelShader;
 		PixelShaderResource  psResource;
 		CopyResource         copy;
@@ -181,12 +184,16 @@ struct RendererState
 	List<RenderTargetData>        renderTargets;
 	List<CPUTextureData>          cpuTextures;
 	List<DepthBufferData>         depthBuffers;
+
 	RenderTargetData              nullRenderTarget;
 	DepthBufferData               nullDepthBuffer;
+	VertexShaderData              nullVertexShader;
+	PixelShaderData               nullPixelShader;
 
 	// Only here so we don't allocate every frame
 	List<RenderTargetData*>       renderTargetStack;
 	List<DepthBufferData*>        depthBufferStack;
+	List<VertexShaderData*>       vertexShaderStack;
 	List<PixelShaderData*>        pixelShaderStack;
 	List<BoundResource>           pixelShaderResourceStack;
 };
@@ -848,18 +855,33 @@ Renderer_ValidateConstantBufferUpdate(RendererState& s, ConstantBufferUpdate& cb
 	}
 }
 
+// TODO: Change the actual command to DrawMesh
 void
 Renderer_PushDrawCall(RendererState& s, DrawCall& dc)
 {
+	Renderer_PushVertexShader(s, dc.material.vs);
+	Renderer_PushPixelShader(s, dc.material.ps);
+
 	RenderCommand& renderCommand = List_Append(s.commandList);
 	renderCommand.type = RenderCommandType::DrawCall;
 	renderCommand.drawCall = dc;
+
+	Renderer_PopPixelShader(s);
+	Renderer_PopVertexShader(s);
 }
 
 void
 Renderer_ValidateDrawCall(RendererState& s, DrawCall& dc)
 {
 	Renderer_ValidateMaterial(s, dc.material);
+}
+
+void
+Renderer_PushDrawMesh(RendererState& s, Mesh mesh)
+{
+	RenderCommand& renderCommand = List_Append(s.commandList);
+	renderCommand.type = RenderCommandType::DrawCall;
+	renderCommand.drawCall.material.mesh = mesh;
 }
 
 void
@@ -893,6 +915,21 @@ Renderer_PopDepthBuffer(RendererState& s)
 }
 
 void
+Renderer_PushVertexShader(RendererState& s, VertexShader vs)
+{
+	RenderCommand& renderCommand = List_Append(s.commandList);
+	renderCommand.type = RenderCommandType::PushVertexShader;
+	renderCommand.vertexShader = vs;
+}
+
+void
+Renderer_PopVertexShader(RendererState& s)
+{
+	RenderCommand& renderCommand = List_Append(s.commandList);
+	renderCommand.type = RenderCommandType::PopVertexShader;
+}
+
+void
 Renderer_PushPixelShader(RendererState& s, PixelShader ps)
 {
 	RenderCommand& renderCommand = List_Append(s.commandList);
@@ -913,7 +950,7 @@ Renderer_PushPixelShaderResource(RendererState& s, RenderTarget rt, u32 slot)
 	RenderCommand& renderCommand = List_Append(s.commandList);
 	renderCommand.type = RenderCommandType::PushPixelShaderResource;
 	renderCommand.psResource.type = ResourceType::RenderTarget;
-	renderCommand.psResource.slot = 0;
+	renderCommand.psResource.slot = slot;
 	renderCommand.psResource.renderTarget = rt;
 }
 
@@ -1212,6 +1249,7 @@ Renderer_Teardown(RendererState& s)
 {
 	List_Free(s.pixelShaderResourceStack);
 	List_Free(s.pixelShaderStack);
+	List_Free(s.vertexShaderStack);
 	List_Free(s.depthBufferStack);
 	List_Free(s.renderTargetStack);
 	List_Free(s.commandList);
@@ -1315,6 +1353,7 @@ Renderer_Render(RendererState& s)
 		}
 	}
 
+	// TODO: No reason for this to be all one struct. Split it up.
 	struct BindState
 	{
 		RenderTargetData* rt;
@@ -1323,14 +1362,20 @@ Renderer_Render(RendererState& s)
 		PixelShaderData*  ps;
 		BoundResource     psr;
 	};
+
+	// TODO: Is there a better way to initialize these than having dummy null objects?
 	BindState bindState = {};
 	bindState.rt = &s.nullRenderTarget;
 	bindState.db = &s.nullDepthBuffer;
+	bindState.vs = &s.nullVertexShader;
+	bindState.ps = &s.nullPixelShader;
 
 	// OPTIMIZE: Sort draws?
 	// OPTIMIZE: Adding a "SetMaterial" command would remove some redundant shader lookups.
 	// OPTIMIZE: Add checks to only issue driver calls if state really changed
 	// OPTIMIZE: Don't reset the BindState every frame?
+
+	// TODO: Pixel shader blend appears wrong. Use a gray clear to diagnose.
 
 	for (u32 i = 0; i < s.commandList.length; i++)
 	{
@@ -1372,48 +1417,8 @@ Renderer_Render(RendererState& s)
 
 			case RenderCommandType::DrawCall:
 			{
-				DrawCall&         dc   = renderCommand.drawCall;
-				MeshData&         mesh = s.meshes[dc.material.mesh];
-				VertexShaderData& vs   = s.vertexShaders[dc.material.vs];
-				PixelShaderData&  ps   = s.pixelShaders[dc.material.ps];
-
-				// Vertex Shader
-				if (&vs != bindState.vs)
-				{
-					bindState.vs = &vs;
-
-					u32 vStride = (u32) sizeof(Vertex);
-					u32 vOffset = 0;
-
-					s.d3dContext->VSSetShader(vs.d3dVertexShader.Get(), nullptr, 0);
-					s.d3dContext->IASetInputLayout(vs.d3dInputLayout.Get());
-					s.d3dContext->IASetVertexBuffers(0, 1, s.d3dVertexBuffer.GetAddressOf(), &vStride, &vOffset);
-					s.d3dContext->IASetIndexBuffer(s.d3dIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
-					s.d3dContext->IASetPrimitiveTopology(vs.d3dPrimitveTopology);
-
-					for (u32 j = 0; j < vs.constantBuffers.length; j++)
-					{
-						ConstantBuffer& cBuf = vs.constantBuffers[j];
-						s.d3dContext->VSSetConstantBuffers(j, 1, cBuf.d3dConstantBuffer.GetAddressOf());
-					}
-				}
-
-				// Pixel Shader
-				if (&ps != bindState.ps)
-				{
-					Assert(s.pixelShaderStack.length == 0);
-					bindState.ps = &ps;
-
-					s.d3dContext->PSSetShader(ps.d3dPixelShader.Get(), nullptr, 0);
-
-					for (u32 j = 0; j < ps.constantBuffers.length; j++)
-					{
-						ConstantBuffer& cBuf = ps.constantBuffers[j];
-						s.d3dContext->PSSetConstantBuffers(j, 1, cBuf.d3dConstantBuffer.GetAddressOf());
-					}
-				}
-
-				// TODO: Leave constant buffers bound?
+				DrawCall& dc   = renderCommand.drawCall;
+				MeshData& mesh = s.meshes[dc.material.mesh];
 
 				Assert(mesh.vOffset < i32Max);
 				s.d3dContext->DrawIndexed(mesh.iCount, mesh.iOffset, (i32) mesh.vOffset);
@@ -1423,6 +1428,7 @@ Renderer_Render(RendererState& s)
 			case RenderCommandType::PushRenderTarget:
 			{
 				RenderTargetData& rt = renderCommand.renderTarget ? s.renderTargets[renderCommand.renderTarget] : s.nullRenderTarget;
+				// TODO: Why do we need null object here?
 				DepthBufferData&  db = bindState.db ? *bindState.db : s.nullDepthBuffer;
 
 				List_Push(s.renderTargetStack, bindState.rt);
@@ -1468,13 +1474,79 @@ Renderer_Render(RendererState& s)
 				break;
 			}
 
-			// TODO: This probably isn't interacting propertly with bindState.ps and Materials!
+			// TODO: Can't pop draw calls, so maybe don't call it a push?
+			case RenderCommandType::PushVertexShader:
+			{
+				VertexShaderData& vs = s.vertexShaders[renderCommand.vertexShader];
+
+				List_Push(s.vertexShaderStack, bindState.vs);
+
+				if (bindState.vs != &vs)
+				{
+					bindState.vs = &vs;
+
+					u32 vStride = (u32) sizeof(Vertex);
+					u32 vOffset = 0;
+
+					s.d3dContext->VSSetShader(vs.d3dVertexShader.Get(), nullptr, 0);
+					s.d3dContext->IASetInputLayout(vs.d3dInputLayout.Get());
+					s.d3dContext->IASetVertexBuffers(0, 1, s.d3dVertexBuffer.GetAddressOf(), &vStride, &vOffset);
+					s.d3dContext->IASetIndexBuffer(s.d3dIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+					s.d3dContext->IASetPrimitiveTopology(vs.d3dPrimitveTopology);
+
+					for (u32 j = 0; j < vs.constantBuffers.length; j++)
+					{
+						ConstantBuffer& cBuf = vs.constantBuffers[j];
+						s.d3dContext->VSSetConstantBuffers(j, 1, cBuf.d3dConstantBuffer.GetAddressOf());
+					}
+				}
+				break;
+			}
+
+			case RenderCommandType::PopVertexShader:
+			{
+				Assert(s.vertexShaderStack.length != 0);
+				VertexShaderData& vs = *List_Pop(s.vertexShaderStack);
+
+				if (bindState.vs != &vs)
+				{
+					bindState.vs = &vs;
+
+					u32 vStride = (u32) sizeof(Vertex);
+					u32 vOffset = 0;
+
+					s.d3dContext->VSSetShader(vs.d3dVertexShader.Get(), nullptr, 0);
+					s.d3dContext->IASetInputLayout(vs.d3dInputLayout.Get());
+					s.d3dContext->IASetVertexBuffers(0, 1, s.d3dVertexBuffer.GetAddressOf(), &vStride, &vOffset);
+					s.d3dContext->IASetIndexBuffer(s.d3dIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+					s.d3dContext->IASetPrimitiveTopology(vs.d3dPrimitveTopology);
+
+					for (u32 j = 0; j < vs.constantBuffers.length; j++)
+					{
+						ConstantBuffer& cBuf = vs.constantBuffers[j];
+						s.d3dContext->VSSetConstantBuffers(j, 1, cBuf.d3dConstantBuffer.GetAddressOf());
+					}
+				}
+				break;
+			}
+
 			case RenderCommandType::PushPixelShader:
 			{
 				PixelShaderData& ps = s.pixelShaders[renderCommand.pixelShader];
 
 				List_Push(s.pixelShaderStack, bindState.ps);
-				s.d3dContext->PSSetShader(ps.d3dPixelShader.Get(), nullptr, 0);
+
+				if (bindState.ps != &ps)
+				{
+					bindState.ps = &ps;
+					s.d3dContext->PSSetShader(ps.d3dPixelShader.Get(), nullptr, 0);
+
+					for (u32 j = 0; j < ps.constantBuffers.length; j++)
+					{
+						ConstantBuffer& cBuf = ps.constantBuffers[j];
+						s.d3dContext->PSSetConstantBuffers(j, 1, cBuf.d3dConstantBuffer.GetAddressOf());
+					}
+				}
 				break;
 			}
 
@@ -1483,7 +1555,17 @@ Renderer_Render(RendererState& s)
 				Assert(s.pixelShaderStack.length != 0);
 				PixelShaderData& ps = *List_Pop(s.pixelShaderStack);
 
-				s.d3dContext->PSSetShader(ps.d3dPixelShader.Get(), nullptr, 0);
+				if (bindState.ps != &ps)
+				{
+					bindState.ps = &ps;
+					s.d3dContext->PSSetShader(ps.d3dPixelShader.Get(), nullptr, 0);
+
+					for (u32 j = 0; j < ps.constantBuffers.length; j++)
+					{
+						ConstantBuffer& cBuf = ps.constantBuffers[j];
+						s.d3dContext->PSSetConstantBuffers(j, 1, cBuf.d3dConstantBuffer.GetAddressOf());
+					}
+				}
 				break;
 			}
 
@@ -1497,6 +1579,8 @@ Renderer_Render(RendererState& s)
 
 				switch (psr.type)
 				{
+					case ResourceType::Null: Assert(false); break;
+
 					case ResourceType::RenderTarget:
 					{
 						RenderTargetData& rt = s.renderTargets[psr.renderTarget];
@@ -1531,6 +1615,8 @@ Renderer_Render(RendererState& s)
 
 				switch (psr.type)
 				{
+					case ResourceType::Null: Assert(false); break;
+
 					case ResourceType::RenderTarget:
 					{
 						RenderTargetData& rt = psr.renderTarget ? *psr.renderTarget : s.nullRenderTarget;
@@ -1570,6 +1656,7 @@ Renderer_Render(RendererState& s)
 
 	Assert(s.renderTargetStack.length == 0);
 	Assert(s.depthBufferStack.length == 0);
+	Assert(s.vertexShaderStack.length == 0);
 	Assert(s.pixelShaderStack.length == 0);
 	Assert(s.pixelShaderResourceStack.length == 0);
 

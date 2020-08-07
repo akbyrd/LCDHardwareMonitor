@@ -1,6 +1,9 @@
 Current
 -------
 Renderer TODOs
+	// TODO: Can't pop draw calls, so maybe don't call it a push?
+	// TODO: Do validation in API call (ps & vs refs, shader stage, etc)
+	// TODO: Decide where validation should be handled: simulation or renderer
 Bring FT232H code over
 Bring ILI9341 code over
 Read from display
@@ -114,6 +117,7 @@ Add proper error handling
 
 Features - Rendering
 --------------------
+I'm no longer convince the Push/Pop model is all that useful. Why not just Set everything?
 Add a way to push both a render target and depth buffer in the same command
 Add a way to set multiple resources (and to specify the slot)
 Need sorting if we're actually going to support alpha for users

@@ -16,6 +16,8 @@ static Material filledBarMat = {};
 static b8
 InitializeBarWidgets(PluginContext& context, WidgetAPI::Initialize api)
 {
+	UNUSED(context);
+
 	for (u32 i = 0; i < api.widgets.length; i++)
 	{
 		Widget&    widget    = api.widgets[i];
@@ -32,9 +34,6 @@ InitializeBarWidgets(PluginContext& context, WidgetAPI::Initialize api)
 		barWidget.psInitialize.borderColor     = Color32(47, 112, 22, 255);
 		barWidget.psInitialize.fillColor       = Color32(47, 112, 22, 255);
 		barWidget.psInitialize.backgroundColor = Color32( 0,   0,  0, 255);
-
-		// TODO: Why is this here?
-		api.PushConstantBufferUpdate(context, filledBarMat, ShaderStage::Pixel, 0, &barWidget.psInitialize);
 	}
 	return true;
 }
@@ -42,6 +41,12 @@ InitializeBarWidgets(PluginContext& context, WidgetAPI::Initialize api)
 static void
 UpdateBarWidgets(PluginContext& context, WidgetAPI::Update api)
 {
+	if (api.widgets.length == 0) return;
+
+	// TODO:This shouldn't be stored on every widget!
+	BarWidget& barWidgetShared = (BarWidget&) api.widgetsUserData[0];
+	api.PushConstantBufferUpdate(context, filledBarMat, ShaderStage::Pixel, 0, &barWidgetShared.psInitialize);
+
 	for (u32 i = 0; i < api.widgets.length; i++)
 	{
 		Widget&    widget    = api.widgets[i];
