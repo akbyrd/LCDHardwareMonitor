@@ -128,7 +128,7 @@ enum struct RenderCommandType
 {
 	Null,
 	ConstantBufferUpdate,
-	DrawCall,
+	DrawMesh,
 	PushRenderTarget,
 	PopRenderTarget,
 	PushDepthBuffer,
@@ -148,7 +148,7 @@ struct RenderCommand
 	union
 	{
 		ConstantBufferUpdate cBufUpdate;
-		DrawCall             drawCall;
+		Mesh                 mesh;
 		RenderTarget         renderTarget;
 		DepthBuffer          depthBuffer;
 		VertexShader         vertexShader;
@@ -799,18 +799,6 @@ Renderer_ValidatePixelShader(RendererState& s, PixelShader ps)
 	Assert(List_IsRefValid(s.pixelShaders, ps));
 }
 
-Material
-Renderer_CreateMaterial(RendererState& s, Mesh mesh, VertexShader vs, PixelShader ps)
-{
-	UNUSED(s);
-
-	Material material = {};
-	material.mesh = mesh;
-	material.vs   = vs;
-	material.ps   = ps;
-	return material;
-}
-
 void
 Renderer_ValidateMaterial(RendererState& s, Material& material)
 {
@@ -855,33 +843,12 @@ Renderer_ValidateConstantBufferUpdate(RendererState& s, ConstantBufferUpdate& cb
 	}
 }
 
-// TODO: Change the actual command to DrawMesh
-void
-Renderer_PushDrawCall(RendererState& s, DrawCall& dc)
-{
-	Renderer_PushVertexShader(s, dc.material.vs);
-	Renderer_PushPixelShader(s, dc.material.ps);
-
-	RenderCommand& renderCommand = List_Append(s.commandList);
-	renderCommand.type = RenderCommandType::DrawCall;
-	renderCommand.drawCall = dc;
-
-	Renderer_PopPixelShader(s);
-	Renderer_PopVertexShader(s);
-}
-
-void
-Renderer_ValidateDrawCall(RendererState& s, DrawCall& dc)
-{
-	Renderer_ValidateMaterial(s, dc.material);
-}
-
 void
 Renderer_PushDrawMesh(RendererState& s, Mesh mesh)
 {
 	RenderCommand& renderCommand = List_Append(s.commandList);
-	renderCommand.type = RenderCommandType::DrawCall;
-	renderCommand.drawCall.material.mesh = mesh;
+	renderCommand.type = RenderCommandType::DrawMesh;
+	renderCommand.mesh = mesh;
 }
 
 void
@@ -1415,10 +1382,9 @@ Renderer_Render(RendererState& s)
 				break;
 			}
 
-			case RenderCommandType::DrawCall:
+			case RenderCommandType::DrawMesh:
 			{
-				DrawCall& dc   = renderCommand.drawCall;
-				MeshData& mesh = s.meshes[dc.material.mesh];
+				MeshData& mesh = s.meshes[renderCommand.mesh];
 
 				Assert(mesh.vOffset < i32Max);
 				s.d3dContext->DrawIndexed(mesh.iCount, mesh.iOffset, (i32) mesh.vOffset);

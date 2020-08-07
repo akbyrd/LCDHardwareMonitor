@@ -47,6 +47,9 @@ UpdateBarWidgets(PluginContext& context, WidgetAPI::Update api)
 	BarWidget& barWidgetShared = (BarWidget&) api.widgetsUserData[0];
 	api.PushConstantBufferUpdate(context, filledBarMat, ShaderStage::Pixel, 0, &barWidgetShared.psInitialize);
 
+	api.PushVertexShader(context, filledBarMat.vs);
+	api.PushPixelShader(context, filledBarMat.ps);
+
 	for (u32 i = 0; i < api.widgets.length; i++)
 	{
 		Widget&    widget    = api.widgets[i];
@@ -81,9 +84,12 @@ UpdateBarWidgets(PluginContext& context, WidgetAPI::Update api)
 
 			api.PushConstantBufferUpdate(context, filledBarMat, ShaderStage::Vertex, 0, &barWidget.vsPerObject);
 			api.PushConstantBufferUpdate(context, filledBarMat, ShaderStage::Pixel,  1, &barWidget.psPerObject);
-			api.PushDrawCall(context, filledBarMat);
+			api.PushDrawMesh(context, filledBarMat.mesh);
 		}
 	}
+
+	api.PopVertexShader(context);
+	api.PopPixelShader(context);
 }
 
 static b8
@@ -102,7 +108,9 @@ Initialize(PluginContext& context, WidgetPluginAPI::Initialize api)
 	};
 	PixelShader ps = api.LoadPixelShader(context, "Filled Bar.ps.cso", cBufSizes);
 
-	filledBarMat = api.CreateMaterial(context, StandardMesh::Quad, StandardVertexShader::WVP, ps);
+	filledBarMat.mesh = StandardMesh::Quad;
+	filledBarMat.vs   = StandardVertexShader::WVP;
+	filledBarMat.ps   = ps;
 	return true;
 }
 

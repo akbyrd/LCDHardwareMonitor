@@ -1,6 +1,7 @@
 Current
 -------
 Renderer TODOs
+	Rename/remove Material
 	// TODO: Can't pop draw calls, so maybe don't call it a push?
 	// TODO: Do validation in API call (ps & vs refs, shader stage, etc)
 	// TODO: Decide where validation should be handled: simulation or renderer

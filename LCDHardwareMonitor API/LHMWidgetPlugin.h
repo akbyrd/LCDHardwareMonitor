@@ -32,7 +32,11 @@ struct WidgetAPI
 		using GetProjectionMatrixFn      = Matrix(PluginContext&);
 		using GetViewProjectionMatrixFn  = Matrix(PluginContext&);
 		using PushConstantBufferUpdateFn = void  (PluginContext&, Material, ShaderStage, u32 index, void* data);
-		using PushDrawCallFn             = void  (PluginContext&, Material);
+		using PushDrawMeshFn             = void  (PluginContext&, Mesh);
+		using PushVertexShaderFn         = void  (PluginContext&, VertexShader);
+		using PushPixelShaderFn          = void  (PluginContext&, PixelShader);
+		using PopVertexShaderFn          = void  (PluginContext&);
+		using PopPixelShaderFn           = void  (PluginContext&);
 
 		r32                         t;
 		Slice<Widget>               widgets;
@@ -42,7 +46,11 @@ struct WidgetAPI
 		GetProjectionMatrixFn*      GetProjectionMatrix;
 		GetViewProjectionMatrixFn*  GetViewProjectionMatrix;
 		PushConstantBufferUpdateFn* PushConstantBufferUpdate;
-		PushDrawCallFn*             PushDrawCall;
+		PushDrawMeshFn*             PushDrawMesh;
+		PushVertexShaderFn*         PushVertexShader;
+		PushPixelShaderFn*          PushPixelShader;
+		PopVertexShaderFn*          PopVertexShader;
+		PopPixelShaderFn*           PopPixelShader;
 	};
 
 	struct Teardown
@@ -75,11 +83,9 @@ struct WidgetPluginAPI
 	{
 		using RegisterWidgetsFn = void       (PluginContext&, Slice<WidgetDesc>);
 		using LoadPixelShaderFn = PixelShader(PluginContext&, StringView relPath, Slice<u32> cBufSizes);
-		using CreateMaterialFn  = Material   (PluginContext&, Mesh, VertexShader, PixelShader);
 
 		RegisterWidgetsFn* RegisterWidgets;
 		LoadPixelShaderFn* LoadPixelShader;
-		CreateMaterialFn*  CreateMaterial;
 	};
 
 	struct Update   {};

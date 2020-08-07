@@ -159,15 +159,6 @@ LoadPixelShader(PluginContext& context, StringView relPath, Slice<u32> cBufSizes
 	return ps;
 }
 
-static Material
-CreateMaterial(PluginContext& context, Mesh mesh, VertexShader vs, PixelShader ps)
-{
-	RendererState& rendererState = *context.s->renderer;
-	Material material = Renderer_CreateMaterial(rendererState, mesh, vs, ps);
-	Renderer_ValidateMaterial(rendererState, material);
-	return material;
-}
-
 static Matrix
 GetViewMatrix(PluginContext& context)
 {
@@ -203,16 +194,49 @@ PushConstantBufferUpdate(PluginContext& context, Material material, ShaderStage 
 }
 
 static void
-PushDrawCall(PluginContext& context, Material material)
+PushDrawMesh(PluginContext& context, Mesh mesh)
 {
 	if (!context.success) return;
 
 	RendererState& rendererState = *context.s->renderer;
+	Renderer_PushDrawMesh(rendererState, mesh);
+}
 
-	DrawCall drawCall = {};
-	drawCall.material = material;
-	Renderer_ValidateDrawCall(rendererState, drawCall);
-	Renderer_PushDrawCall(rendererState, drawCall);
+// TODO: Validation
+static void
+PushVertexShader(PluginContext& context, VertexShader vs)
+{
+	if (!context.success) return;
+
+	RendererState& rendererState = *context.s->renderer;
+	Renderer_PushVertexShader(rendererState, vs);
+}
+
+static void
+PopVertexShader(PluginContext& context)
+{
+	if (!context.success) return;
+
+	RendererState& rendererState = *context.s->renderer;
+	Renderer_PopVertexShader(rendererState);
+}
+
+static void
+PushPixelShader(PluginContext& context, PixelShader ps)
+{
+	if (!context.success) return;
+
+	RendererState& rendererState = *context.s->renderer;
+	Renderer_PushPixelShader(rendererState, ps);
+}
+
+static void
+PopPixelShader(PluginContext& context)
+{
+	if (!context.success) return;
+
+	RendererState& rendererState = *context.s->renderer;
+	Renderer_PopPixelShader(rendererState);
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -602,7 +626,6 @@ LoadWidgetPlugin(SimulationState& s, Plugin& plugin)
 		WidgetPluginAPI::Initialize api = {};
 		api.RegisterWidgets = RegisterWidgets;
 		api.LoadPixelShader = LoadPixelShader;
-		api.CreateMaterial  = CreateMaterial;
 
 		success = widgetPlugin->functions.Initialize(context, api);
 		success &= context.success;
@@ -1556,7 +1579,11 @@ Simulation_Update(SimulationState& s)
 		widgetAPI.GetProjectionMatrix      = GetProjectionMatrix;
 		widgetAPI.GetViewProjectionMatrix  = GetViewProjectionMatrix;
 		widgetAPI.PushConstantBufferUpdate = PushConstantBufferUpdate;
-		widgetAPI.PushDrawCall             = PushDrawCall;
+		widgetAPI.PushDrawMesh             = PushDrawMesh;
+		widgetAPI.PushVertexShader         = PushVertexShader;
+		widgetAPI.PushPixelShader          = PushPixelShader;
+		widgetAPI.PopVertexShader          = PopVertexShader;
+		widgetAPI.PopPixelShader           = PopPixelShader;
 
 		for (u32 i = 0; i < s.widgetPlugins.length; i++)
 		{
@@ -1604,7 +1631,11 @@ Simulation_Update(SimulationState& s)
 		context.s = &s;
 
 		PushConstantBufferUpdate(context, material, ShaderStage::Vertex, 0, &wvp);
-		PushDrawCall(context, material);
+		PushVertexShader(context, material.vs);
+		PushPixelShader(context, material.ps);
+		PushDrawMesh(context, material.mesh);
+		PopVertexShader(context);
+		PopPixelShader(context);
 	}
 
 	// Select mouse over widget
@@ -1679,7 +1710,11 @@ Simulation_Update(SimulationState& s)
 
 		PushConstantBufferUpdate(context, material, ShaderStage::Vertex, 0, &wvp);
 		PushConstantBufferUpdate(context, material, ShaderStage::Pixel,  0, &color);
-		PushDrawCall(context, material);
+		PushVertexShader(context, material.vs);
+		PushPixelShader(context, material.ps);
+		PushDrawMesh(context, material.mesh);
+		PopVertexShader(context);
+		PopPixelShader(context);
 	}
 
 	// Draw Selection
@@ -1714,7 +1749,11 @@ Simulation_Update(SimulationState& s)
 
 		PushConstantBufferUpdate(context, material, ShaderStage::Vertex, 0, &wvp);
 		PushConstantBufferUpdate(context, material, ShaderStage::Pixel,  0, &color);
-		PushDrawCall(context, material);
+		PushVertexShader(context, material.vs);
+		PushPixelShader(context, material.ps);
+		PushDrawMesh(context, material.mesh);
+		PopVertexShader(context);
+		PopPixelShader(context);
 	}
 
 	// Update CPU texture
@@ -1731,13 +1770,14 @@ Simulation_Update(SimulationState& s)
 		copyMat.vs   = StandardVertexShader::ClipSpace;
 		copyMat.ps   = StandardPixelShader::Composite;
 
-		DrawCall drawCall = {};
-		drawCall.material = copyMat;
-
 		Renderer_PushRenderTarget(*s.renderer, s.renderTargetGUICopy);
 		Renderer_PushDepthBuffer(*s.renderer, StandardDepthBuffer::Null);
 		Renderer_PushPixelShaderResource(*s.renderer, StandardRenderTarget::Main, 0);
-		Renderer_PushDrawCall(*s.renderer, drawCall);
+		Renderer_PushVertexShader(*s.renderer, copyMat.vs);
+		Renderer_PushPixelShader(*s.renderer, copyMat.ps);
+		Renderer_PushDrawMesh(*s.renderer, copyMat.mesh);
+		Renderer_PopVertexShader(*s.renderer);
+		Renderer_PopPixelShader(*s.renderer);
 		Renderer_PopPixelShaderResource(*s.renderer);
 		Renderer_PopDepthBuffer(*s.renderer);
 		Renderer_PopRenderTarget(*s.renderer);
