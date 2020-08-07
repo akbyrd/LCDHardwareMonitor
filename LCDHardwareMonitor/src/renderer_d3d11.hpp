@@ -811,7 +811,7 @@ Renderer_ValidateMaterial(RendererState& s, Material& material)
 // Public API Implementation - Rendering Operations
 
 void
-Renderer_PushConstantBufferUpdate(RendererState& s, ConstantBufferUpdate& cbu)
+Renderer_UpdateConstantBuffer(RendererState& s, ConstantBufferUpdate& cbu)
 {
 	RenderCommand& renderCommand = List_Append(s.commandList);
 	renderCommand.type = RenderCommandType::ConstantBufferUpdate;
@@ -844,7 +844,7 @@ Renderer_ValidateConstantBufferUpdate(RendererState& s, ConstantBufferUpdate& cb
 }
 
 void
-Renderer_PushDrawMesh(RendererState& s, Mesh mesh)
+Renderer_DrawMesh(RendererState& s, Mesh mesh)
 {
 	RenderCommand& renderCommand = List_Append(s.commandList);
 	renderCommand.type = RenderCommandType::DrawMesh;
@@ -1440,7 +1440,6 @@ Renderer_Render(RendererState& s)
 				break;
 			}
 
-			// TODO: Can't pop draw calls, so maybe don't call it a push?
 			case RenderCommandType::PushVertexShader:
 			{
 				VertexShaderData& vs = s.vertexShaders[renderCommand.vertexShader];

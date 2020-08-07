@@ -45,7 +45,7 @@ UpdateBarWidgets(PluginContext& context, WidgetAPI::Update api)
 
 	// TODO:This shouldn't be stored on every widget!
 	BarWidget& barWidgetShared = (BarWidget&) api.widgetsUserData[0];
-	api.PushConstantBufferUpdate(context, filledBarMat, ShaderStage::Pixel, 0, &barWidgetShared.psInitialize);
+	api.UpdateConstantBuffer(context, filledBarMat, ShaderStage::Pixel, 0, &barWidgetShared.psInitialize);
 
 	api.PushVertexShader(context, filledBarMat.vs);
 	api.PushPixelShader(context, filledBarMat.ps);
@@ -82,9 +82,9 @@ UpdateBarWidgets(PluginContext& context, WidgetAPI::Update api)
 			SetScale   (world, size, 1.0f);
 			barWidget.vsPerObject.wvp = world * api.GetViewProjectionMatrix(context);
 
-			api.PushConstantBufferUpdate(context, filledBarMat, ShaderStage::Vertex, 0, &barWidget.vsPerObject);
-			api.PushConstantBufferUpdate(context, filledBarMat, ShaderStage::Pixel,  1, &barWidget.psPerObject);
-			api.PushDrawMesh(context, filledBarMat.mesh);
+			api.UpdateConstantBuffer(context, filledBarMat, ShaderStage::Vertex, 0, &barWidget.vsPerObject);
+			api.UpdateConstantBuffer(context, filledBarMat, ShaderStage::Pixel,  1, &barWidget.psPerObject);
+			api.DrawMesh(context, filledBarMat.mesh);
 		}
 	}
 

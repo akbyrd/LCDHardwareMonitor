@@ -62,7 +62,7 @@ Code Snippets
 	material.vs   = StandardVertexShader::WVP;
 	material.ps   = StandardPixelShader::VertexColored;
 
-	api.PushConstantBufferUpdate(context, filledBarMat, ShaderStage::Vertex, 0, &wvp);
+	api.UpdateConstantBuffer(context, filledBarMat, ShaderStage::Vertex, 0, &wvp);
 	api.PushDrawCall(context, material);
 }
 
@@ -82,6 +82,6 @@ Code Snippets
 	PluginContext context2 = {};
 	context2.success = true;
 	context2.s = s;
-	PushConstantBufferUpdate(&context2, material, ShaderStage::Vertex, 0, &wvp);
+	UpdateConstantBuffer(&context2, material, ShaderStage::Vertex, 0, &wvp);
 	PushDrawCall(&context2, material);
 }

@@ -28,29 +28,29 @@ struct WidgetAPI
 
 	struct Update
 	{
-		using GetViewMatrixFn            = Matrix(PluginContext&);
-		using GetProjectionMatrixFn      = Matrix(PluginContext&);
-		using GetViewProjectionMatrixFn  = Matrix(PluginContext&);
-		using PushConstantBufferUpdateFn = void  (PluginContext&, Material, ShaderStage, u32 index, void* data);
-		using PushDrawMeshFn             = void  (PluginContext&, Mesh);
-		using PushVertexShaderFn         = void  (PluginContext&, VertexShader);
-		using PushPixelShaderFn          = void  (PluginContext&, PixelShader);
-		using PopVertexShaderFn          = void  (PluginContext&);
-		using PopPixelShaderFn           = void  (PluginContext&);
+		using GetViewMatrixFn           = Matrix(PluginContext&);
+		using GetProjectionMatrixFn     = Matrix(PluginContext&);
+		using GetViewProjectionMatrixFn = Matrix(PluginContext&);
+		using UpdateConstantBufferFn    = void  (PluginContext&, Material, ShaderStage, u32 index, void* data);
+		using DrawMeshFn                = void  (PluginContext&, Mesh);
+		using PushVertexShaderFn        = void  (PluginContext&, VertexShader);
+		using PushPixelShaderFn         = void  (PluginContext&, PixelShader);
+		using PopVertexShaderFn         = void  (PluginContext&);
+		using PopPixelShaderFn          = void  (PluginContext&);
 
-		r32                         t;
-		Slice<Widget>               widgets;
-		ByteSlice                   widgetsUserData;
-		Slice<Sensor>               sensors;
-		GetViewMatrixFn*            GetViewMatrix;
-		GetProjectionMatrixFn*      GetProjectionMatrix;
-		GetViewProjectionMatrixFn*  GetViewProjectionMatrix;
-		PushConstantBufferUpdateFn* PushConstantBufferUpdate;
-		PushDrawMeshFn*             PushDrawMesh;
-		PushVertexShaderFn*         PushVertexShader;
-		PushPixelShaderFn*          PushPixelShader;
-		PopVertexShaderFn*          PopVertexShader;
-		PopPixelShaderFn*           PopPixelShader;
+		r32                        t;
+		Slice<Widget>              widgets;
+		ByteSlice                  widgetsUserData;
+		Slice<Sensor>              sensors;
+		GetViewMatrixFn*           GetViewMatrix;
+		GetProjectionMatrixFn*     GetProjectionMatrix;
+		GetViewProjectionMatrixFn* GetViewProjectionMatrix;
+		UpdateConstantBufferFn*    UpdateConstantBuffer;
+		DrawMeshFn*                DrawMesh;
+		PushVertexShaderFn*        PushVertexShader;
+		PushPixelShaderFn*         PushPixelShader;
+		PopVertexShaderFn*         PopVertexShader;
+		PopPixelShaderFn*          PopPixelShader;
 	};
 
 	struct Teardown
