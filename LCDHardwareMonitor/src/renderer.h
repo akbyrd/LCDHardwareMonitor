@@ -90,4 +90,6 @@ b8              Renderer_ValidateVSConstantBufferUpdate (RendererState&, VSConst
 b8              Renderer_ValidatePSConstantBufferUpdate (RendererState&, PSConstantBufferUpdate&);
 b8              Renderer_ValidateRenderTarget           (RendererState&, RenderTarget);
 b8              Renderer_ValidateDepthBuffer            (RendererState&, DepthBuffer);
+b8              Renderer_ValidatePixelShaderResource    (RendererState&, RenderTarget, u32 slot);
+b8              Renderer_ValidatePixelShaderResource    (RendererState&, DepthBuffer, u32 slot);
 b8              Renderer_ValidateCopy                   (RendererState&, RenderTarget, CPUTexture);

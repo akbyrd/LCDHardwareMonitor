@@ -194,13 +194,14 @@ struct RendererState
 	DepthBufferData               nullDepthBuffer;
 	VertexShaderData              nullVertexShader;
 	PixelShaderData               nullPixelShader;
+	BoundResource                 nullPixelShaderResource;
 
 	// Only here so we don't allocate every frame
 	List<RenderTargetData*>       renderTargetStack;
 	List<DepthBufferData*>        depthBufferStack;
 	List<VertexShaderData*>       vertexShaderStack;
 	List<PixelShaderData*>        pixelShaderStack;
-	List<BoundResource>           pixelShaderResourceStack;
+	List<BoundResource>           pixelShaderResourceStacks[2];
 };
 
 // -------------------------------------------------------------------------------------------------
@@ -932,6 +933,13 @@ Renderer_PopPixelShader(RendererState& s)
 	renderCommand.type = RenderCommandType::PopPixelShader;
 }
 
+b8
+Renderer_ValidatePixelShaderResource(RendererState& s, RenderTarget rt, u32 slot)
+{
+	if (!Renderer_ValidateRenderTarget(s, rt)) return false;
+	return slot < ArrayLength(s.pixelShaderResourceStacks);
+}
+
 void
 Renderer_PushPixelShaderResource(RendererState& s, RenderTarget rt, u32 slot)
 {
@@ -942,9 +950,17 @@ Renderer_PushPixelShaderResource(RendererState& s, RenderTarget rt, u32 slot)
 	renderCommand.psResource.renderTarget = rt;
 }
 
+b8
+Renderer_ValidatePixelShaderResource(RendererState& s, DepthBuffer db, u32 slot)
+{
+	if (!Renderer_ValidateDepthBuffer(s, db)) return false;
+	return slot < ArrayLength(s.pixelShaderResourceStacks);
+}
+
 void
 Renderer_PushPixelShaderResource(RendererState& s, DepthBuffer db, u32 slot)
 {
+	Assert(slot < ArrayLength(s.pixelShaderResourceStacks));
 	RenderCommand& renderCommand = List_Append(s.commandList);
 	renderCommand.type = RenderCommandType::PushPixelShaderResource;
 	renderCommand.psResource.type = ResourceType::DepthBuffer;
@@ -1242,7 +1258,9 @@ Renderer_Initialize(RendererState& s, v2u renderSize)
 void
 Renderer_Teardown(RendererState& s)
 {
-	List_Free(s.pixelShaderResourceStack);
+	for (u32 i = 0; i < ArrayLength(s.pixelShaderResourceStacks); i++)
+		List_Free(s.pixelShaderResourceStacks[i]);
+
 	List_Free(s.pixelShaderStack);
 	List_Free(s.vertexShaderStack);
 	List_Free(s.depthBufferStack);
@@ -1335,28 +1353,15 @@ Renderer_Render(RendererState& s)
 		}
 	}
 
-	// TODO: No reason for this to be all one struct. Split it up.
-	struct BindState
-	{
-		RenderTargetData* rt;
-		DepthBufferData*  db;
-		VertexShaderData* vs;
-		PixelShaderData*  ps;
-		BoundResource     psr;
-	};
-
+	// TODO: Stacks can be refs now
 	// TODO: Is there a better way to initialize these than having dummy null objects?
-	BindState bindState = {};
-	bindState.rt = &s.nullRenderTarget;
-	bindState.db = &s.nullDepthBuffer;
-	bindState.vs = &s.nullVertexShader;
-	bindState.ps = &s.nullPixelShader;
-
-	// TODO OPTIMIZE: Sort draws?
-	// TODO OPTIMIZE: Add checks to only issue driver calls if state really changed
-	// TODO: Don't reset the BindState every frame?
-	// TODO: Pixel shader blend appears wrong. Use a gray clear to diagnose.
-	// TODO: If we fail to update a constant buffer do we skip drawing?
+	// TODO: Resources are a special little snowflake
+	List_Push(s.renderTargetStack, &s.nullRenderTarget);
+	List_Push(s.depthBufferStack,  &s.nullDepthBuffer);
+	List_Push(s.vertexShaderStack, &s.nullVertexShader);
+	List_Push(s.pixelShaderStack,  &s.nullPixelShader);
+	for (u32 i = 0; i < ArrayLength(s.pixelShaderResourceStacks); i++)
+		List_Push(s.pixelShaderResourceStacks[i], s.nullPixelShaderResource);
 
 	for (u32 i = 0; i < s.commandList.length; i++)
 	{
@@ -1398,87 +1403,84 @@ Renderer_Render(RendererState& s)
 
 			case RenderCommandType::PushRenderTarget:
 			{
-				RenderTargetData& rt = renderCommand.renderTarget ? s.renderTargets[renderCommand.renderTarget] : s.nullRenderTarget;
 				// TODO: Why do we need null object here?
-				DepthBufferData&  db = bindState.db ? *bindState.db : s.nullDepthBuffer;
+				Assert(s.renderTargetStack.length != 0);
+				RenderTargetData& boundRT = *List_GetLast(s.renderTargetStack);
+				RenderTargetData& rt      = renderCommand.renderTarget ? s.renderTargets[renderCommand.renderTarget] : s.nullRenderTarget;
+				DepthBufferData&  db      = *List_GetLast(s.depthBufferStack);
 
-				List_Push(s.renderTargetStack, bindState.rt);
+				List_Push(s.renderTargetStack, &rt);
 
-				if (bindState.rt != &rt)
-				{
-					bindState.rt = &rt;
+				if (&boundRT != &rt)
 					s.d3dContext->OMSetRenderTargets(1, rt.d3dRenderTargetView.GetAddressOf(), db.d3dDepthBufferView.Get());
-				}
 				break;
 			}
 
 			case RenderCommandType::PopRenderTarget:
 			{
-				Assert(s.renderTargetStack.length != 0);
-				RenderTargetData& rt = *List_Pop(s.renderTargetStack);
-				DepthBufferData&  db = bindState.db ? *bindState.db : s.nullDepthBuffer;
+				// TODO: Change asserts for user mistakes to validation
+				Assert(s.renderTargetStack.length != 1);
+				RenderTargetData& boundRT = *List_Pop(s.renderTargetStack);
+				RenderTargetData& rt      = *List_GetLast(s.renderTargetStack);
+				DepthBufferData&  db      = *List_GetLast(s.depthBufferStack);
 
-				if (bindState.rt != &rt)
-				{
-					bindState.rt = &rt;
+				if (&boundRT != &rt)
 					s.d3dContext->OMSetRenderTargets(1, rt.d3dRenderTargetView.GetAddressOf(), db.d3dDepthBufferView.Get());
-				}
 				break;
 			}
 
 			case RenderCommandType::ClearRenderTarget:
 			{
-				RenderTargetData& rt = *bindState.rt;
+				Assert(s.renderTargetStack.length != 1);
+				RenderTargetData& rt = *List_GetLast(s.renderTargetStack);
 				s.d3dContext->ClearRenderTargetView(rt.d3dRenderTargetView.Get(), renderCommand.color.arr);
 				break;
 			}
 
 			case RenderCommandType::PushDepthBuffer:
 			{
-				DepthBufferData&  db = renderCommand.depthBuffer? s.depthBuffers[renderCommand.depthBuffer] : s.nullDepthBuffer;
-				RenderTargetData& rt = bindState.rt ? *bindState.rt : s.nullRenderTarget;
+				Assert(s.depthBufferStack.length != 0);
+				DepthBufferData&  boundDB = *List_GetLast(s.depthBufferStack);
+				DepthBufferData&  db      = renderCommand.depthBuffer ? s.depthBuffers[renderCommand.depthBuffer] : s.nullDepthBuffer;
+				RenderTargetData& rt      = *List_GetLast(s.renderTargetStack);
 
-				List_Push(s.depthBufferStack, bindState.db);
+				List_Push(s.depthBufferStack, &db);
 
-				if (bindState.db != &db)
-				{
-					bindState.db = &db;
+				if (&boundDB != &db)
 					s.d3dContext->OMSetRenderTargets(1, rt.d3dRenderTargetView.GetAddressOf(), db.d3dDepthBufferView.Get());
-				}
 				break;
 			}
 
 			case RenderCommandType::PopDepthBuffer:
 			{
-				Assert(s.depthBufferStack.length != 0);
-				DepthBufferData&  db = *List_Pop(s.depthBufferStack);
-				RenderTargetData& rt = bindState.rt ? *bindState.rt : s.nullRenderTarget;
+				Assert(s.depthBufferStack.length != 1);
+				DepthBufferData&  boundDB = *List_Pop(s.depthBufferStack);
+				DepthBufferData&  db      = *List_GetLast(s.depthBufferStack);
+				RenderTargetData& rt      = *List_GetLast(s.renderTargetStack);
 
-				if (bindState.db != &db)
-				{
-					bindState.db = &db;
+				if (&boundDB != &db)
 					s.d3dContext->OMSetRenderTargets(1, rt.d3dRenderTargetView.GetAddressOf(), db.d3dDepthBufferView.Get());
-				}
 				break;
 			}
 
 			case RenderCommandType::ClearDepthBuffer:
 			{
-				DepthBufferData& db = *bindState.db;
+				Assert(s.depthBufferStack.length != 1);
+				DepthBufferData& db = *List_GetLast(s.depthBufferStack);;
 				s.d3dContext->ClearDepthStencilView(db.d3dDepthBufferView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
 				break;
 			}
 
 			case RenderCommandType::PushVertexShader:
 			{
-				VertexShaderData& vs = s.vertexShaders[renderCommand.vertexShader];
+				Assert(s.vertexShaderStack.length != 0);
+				VertexShaderData& boundVS = *List_GetLast(s.vertexShaderStack);
+				VertexShaderData& vs      = s.vertexShaders[renderCommand.vertexShader];
 
-				List_Push(s.vertexShaderStack, bindState.vs);
+				List_Push(s.vertexShaderStack, &vs);
 
-				if (bindState.vs != &vs)
+				if (&boundVS != &vs)
 				{
-					bindState.vs = &vs;
-
 					u32 vStride = (u32) sizeof(Vertex);
 					u32 vOffset = 0;
 
@@ -1499,13 +1501,12 @@ Renderer_Render(RendererState& s)
 
 			case RenderCommandType::PopVertexShader:
 			{
-				Assert(s.vertexShaderStack.length != 0);
-				VertexShaderData& vs = *List_Pop(s.vertexShaderStack);
+				Assert(s.vertexShaderStack.length != 1);
+				VertexShaderData& boundVS = *List_Pop(s.vertexShaderStack);
+				VertexShaderData& vs      = *List_GetLast(s.vertexShaderStack);
 
-				if (bindState.vs != &vs)
+				if (&boundVS != &vs)
 				{
-					bindState.vs = &vs;
-
 					u32 vStride = (u32) sizeof(Vertex);
 					u32 vOffset = 0;
 
@@ -1526,13 +1527,14 @@ Renderer_Render(RendererState& s)
 
 			case RenderCommandType::PushPixelShader:
 			{
-				PixelShaderData& ps = s.pixelShaders[renderCommand.pixelShader];
+				Assert(s.pixelShaderStack.length != 0);
+				PixelShaderData& boundPS = *List_GetLast(s.pixelShaderStack);
+				PixelShaderData& ps      = s.pixelShaders[renderCommand.pixelShader];
 
-				List_Push(s.pixelShaderStack, bindState.ps);
+				List_Push(s.pixelShaderStack, &ps);
 
-				if (bindState.ps != &ps)
+				if (&boundPS != &ps)
 				{
-					bindState.ps = &ps;
 					s.d3dContext->PSSetShader(ps.d3dPixelShader.Get(), nullptr, 0);
 
 					for (u32 j = 0; j < ps.constantBuffers.length; j++)
@@ -1546,12 +1548,12 @@ Renderer_Render(RendererState& s)
 
 			case RenderCommandType::PopPixelShader:
 			{
-				Assert(s.pixelShaderStack.length != 0);
-				PixelShaderData& ps = *List_Pop(s.pixelShaderStack);
+				Assert(s.pixelShaderStack.length != 1);
+				PixelShaderData& boundPS = *List_Pop(s.pixelShaderStack);
+				PixelShaderData& ps      = *List_GetLast(s.pixelShaderStack);
 
-				if (bindState.ps != &ps)
+				if (&boundPS != &ps)
 				{
-					bindState.ps = &ps;
 					s.d3dContext->PSSetShader(ps.d3dPixelShader.Get(), nullptr, 0);
 
 					for (u32 j = 0; j < ps.constantBuffers.length; j++)
@@ -1565,37 +1567,37 @@ Renderer_Render(RendererState& s)
 
 			case RenderCommandType::PushPixelShaderResource:
 			{
-				PixelShaderResource& psr = renderCommand.psResource;
+				u32 slot = renderCommand.psResource.slot;
 
-				bindState.psr.type = psr.type;
-				bindState.psr.slot = psr.slot;
-				List_Push(s.pixelShaderResourceStack, bindState.psr);
+				Assert(s.pixelShaderResourceStacks[slot].length != 0);
+				BoundResource& boundPSR = List_GetLast(s.pixelShaderResourceStacks[slot]);
+				BoundResource& psr      = List_Push(s.pixelShaderResourceStacks[slot]);
 
+				psr.slot = slot;
+				psr.type = renderCommand.psResource.type;
+
+				b8 sameType = boundPSR.type == psr.type;
 				switch (psr.type)
 				{
 					case ResourceType::Null: Assert(false); break;
 
 					case ResourceType::RenderTarget:
 					{
-						RenderTargetData& rt = s.renderTargets[psr.renderTarget];
+						RenderTargetData& rt = s.renderTargets[renderCommand.psResource.renderTarget];
 
-						if (bindState.psr.renderTarget != &rt)
-						{
-							bindState.psr.renderTarget = &rt;
+						psr.renderTarget = &rt;
+						if (!sameType || boundPSR.renderTarget != &rt)
 							s.d3dContext->PSSetShaderResources(psr.slot, 1, rt.d3dRenderTargetResourceView.GetAddressOf());
-						}
 						break;
 					}
 
 					case ResourceType::DepthBuffer:
 					{
-						DepthBufferData& db = s.depthBuffers[psr.depthBuffer];
+						DepthBufferData& db = s.depthBuffers[renderCommand.psResource.depthBuffer];
 
-						if (bindState.psr.depthBuffer != &db)
-						{
-							bindState.psr.depthBuffer = &db;
+						psr.depthBuffer = &db;
+						if (!sameType || boundPSR.depthBuffer != &db)
 							s.d3dContext->PSSetShaderResources(psr.slot, 1, db.d3dDepthBufferResourceView.GetAddressOf());
-						}
 						break;
 					}
 				}
@@ -1604,32 +1606,53 @@ Renderer_Render(RendererState& s)
 
 			case RenderCommandType::PopPixelShaderResource:
 			{
-				Assert(s.pixelShaderResourceStack.length != 0);
-				BoundResource psr = List_Pop(s.pixelShaderResourceStack);
+				u32 slot = renderCommand.psResource.slot;
+				Assert(s.pixelShaderResourceStacks[slot].length != 1);
 
+				BoundResource  boundPSR = List_Pop(s.pixelShaderResourceStacks[slot]);
+				BoundResource& psr      = List_GetLast(s.pixelShaderResourceStacks[slot]);
+
+				if (psr.type == ResourceType::Null)
+				{
+					switch (boundPSR.type)
+					{
+						case ResourceType::Null:
+							psr.type = ResourceType::RenderTarget;
+							psr.renderTarget = &s.nullRenderTarget;
+							break;
+
+						case ResourceType::RenderTarget:
+							psr.type = ResourceType::RenderTarget;
+							psr.renderTarget = &s.nullRenderTarget;
+							break;
+
+						case ResourceType::DepthBuffer:
+							psr.type = ResourceType::DepthBuffer;
+							psr.depthBuffer = &s.nullDepthBuffer;
+							break;
+					}
+				}
+
+				b8 sameType = boundPSR.type == psr.type;
 				switch (psr.type)
 				{
 					case ResourceType::Null: Assert(false); break;
 
 					case ResourceType::RenderTarget:
 					{
-						RenderTargetData& rt = psr.renderTarget ? *psr.renderTarget : s.nullRenderTarget;
-						if (bindState.psr.renderTarget != &rt)
-						{
-							bindState.psr.renderTarget = &rt;
+						RenderTargetData& rt = *psr.renderTarget;
+
+						if (!sameType || boundPSR.renderTarget != &rt)
 							s.d3dContext->PSSetShaderResources(psr.slot, 1, rt.d3dRenderTargetResourceView.GetAddressOf());
-						}
 						break;
 					}
 
 					case ResourceType::DepthBuffer:
 					{
-						DepthBufferData& db = psr.depthBuffer ? *psr.depthBuffer : s.nullDepthBuffer;
-						if (bindState.psr.depthBuffer != &db)
-						{
-							bindState.psr.depthBuffer = &db;
+						DepthBufferData& db = *psr.depthBuffer;
+
+						if (!sameType || boundPSR.depthBuffer != &db)
 							s.d3dContext->PSSetShaderResources(psr.slot, 1, db.d3dDepthBufferResourceView.GetAddressOf());
-						}
 						break;
 					}
 				}
@@ -1648,11 +1671,19 @@ Renderer_Render(RendererState& s)
 	}
 	List_Clear(s.commandList);
 
+	List_Pop(s.renderTargetStack);
+	List_Pop(s.depthBufferStack);
+	List_Pop(s.vertexShaderStack);
+	List_Pop(s.pixelShaderStack);
+	for (u32 i = 0; i < ArrayLength(s.pixelShaderResourceStacks); i++)
+		List_Pop(s.pixelShaderResourceStacks[i]);
+
 	Assert(s.renderTargetStack.length == 0);
 	Assert(s.depthBufferStack.length == 0);
 	Assert(s.vertexShaderStack.length == 0);
 	Assert(s.pixelShaderStack.length == 0);
-	Assert(s.pixelShaderResourceStack.length == 0);
+	for (u32 i = 0; i < ArrayLength(s.pixelShaderResourceStacks); i++)
+		Assert(s.pixelShaderResourceStacks[i].length == 0);
 
 	// NOTE: Technically unnecessary, since the Map call will sync
 	// NOTE: This doesn't actually guarantee rendering has occurred
@@ -1670,3 +1701,8 @@ Renderer_Render(RendererState& s)
 
 	return true;
 }
+
+// TODO OPTIMIZE: Sort draws?
+// TODO: Keep resources bound across frames?
+// TODO: Pixel shader blend appears wrong. Use a gray clear to diagnose.
+// TODO: If we fail to update a constant buffer do we skip drawing?
