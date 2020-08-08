@@ -53,7 +53,7 @@ b8              Renderer_Initialize                     (RendererState&, v2u ren
 void            Renderer_Teardown                       (RendererState&);
 b8              Renderer_Render                         (RendererState&);
 
-b8              Renderer_RebuildSharedGeometryBuffers   (RendererState&);
+b8              Renderer_FinalizeResourceCreation       (RendererState&);
 Mesh            Renderer_CreateMesh                     (RendererState&, StringView name, Slice<Vertex> vertices, Slice<Index> indices);
 VertexShader    Renderer_LoadVertexShader               (RendererState&, StringView name, StringView path, Slice<VertexAttribute> attributes, Slice<u32> cBufSizes);
 PixelShader     Renderer_LoadPixelShader                (RendererState&, StringView name, StringView path, Slice<u32> cBufSizes);

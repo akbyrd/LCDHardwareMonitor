@@ -1503,7 +1503,7 @@ Simulation_Initialize(SimulationState& s, PluginLoaderState& pluginLoader, Rende
 			Severity::Error, "Failed to create pipe for GUI communication");
 	}
 
-	success = Renderer_RebuildSharedGeometryBuffers(*s.renderer);
+	success = Renderer_FinalizeResourceCreation(*s.renderer);
 	if (!success) return false;
 
 	return true;

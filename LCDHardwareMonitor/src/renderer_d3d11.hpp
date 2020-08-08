@@ -1,6 +1,6 @@
 #pragma comment(lib, "D3D11.lib")
 #pragma comment(lib, "DXGI.lib")
-#pragma comment(lib, "d3dcompiler.lib")
+//#pragma comment(lib, "d3dcompiler.lib")
 
 #pragma warning(push, 0)
 
@@ -15,10 +15,10 @@
 #endif
 
 #include <d3d11.h>
-#include <d3dcompiler.h>
-#include <DirectXMath.h>
-#include <DirectXColors.h>
-using namespace DirectX;
+//#include <d3dcompiler.h>
+//#include <DirectXMath.h>
+//#include <DirectXColors.h>
+//using namespace DirectX;
 
 #include <wrl\client.h>
 using Microsoft::WRL::ComPtr;
@@ -179,6 +179,7 @@ struct RendererState
 	u32                           qualityCountRender;
 	u32                           qualityCountShared;
 	b8                            isWireframeEnabled;
+	b8                            resourceCreationFinalized;
 
 	List<VertexShaderData>        vertexShaders;
 	List<PixelShaderData>         pixelShaders;
@@ -190,7 +191,6 @@ struct RendererState
 	List<CPUTextureData>          cpuTextures;
 	List<DepthBufferData>         depthBuffers;
 
-	// Only here so we don't allocate every frame
 	List<RenderTargetData*>       renderTargetStack;
 	List<DepthBufferData*>        depthBufferStack;
 	List<VertexShaderData*>       vertexShaderStack;
@@ -385,6 +385,8 @@ UpdateConstantBuffer(RendererState& s, ConstantBuffer& cBuf, void* data)
 RenderTarget
 Renderer_CreateRenderTarget(RendererState& s, StringView name, b8 resource)
 {
+	Assert(!s.resourceCreationFinalized);
+
 	D3D11_TEXTURE2D_DESC desc = {};
 	desc.Width              = s.renderSize.x;
 	desc.Height             = s.renderSize.y;
@@ -403,6 +405,8 @@ Renderer_CreateRenderTarget(RendererState& s, StringView name, b8 resource)
 RenderTarget
 Renderer_CreateSharedRenderTarget(RendererState& s, StringView name, b8 resource)
 {
+	Assert(!s.resourceCreationFinalized);
+
 	D3D11_TEXTURE2D_DESC desc = {};
 	desc.Width              = s.renderSize.x;
 	desc.Height             = s.renderSize.y;
@@ -446,6 +450,8 @@ Renderer_CreateSharedRenderTarget(RendererState& s, StringView name, b8 resource
 CPUTexture
 Renderer_CreateCPUTexture(RendererState& s, StringView name)
 {
+	Assert(!s.resourceCreationFinalized);
+
 	CPUTextureData& cpuTextureData = List_Append(s.cpuTextures);
 	cpuTextureData.ref = List_GetLastRef(s.cpuTextures);
 
@@ -487,6 +493,8 @@ Renderer_CreateCPUTexture(RendererState& s, StringView name)
 DepthBuffer
 Renderer_CreateDepthBuffer(RendererState& s, StringView name, b8 resource)
 {
+	Assert(!s.resourceCreationFinalized);
+
 	DepthBufferData& depthBufferData = List_Append(s.depthBuffers);
 	depthBufferData.ref = List_GetLastRef(s.depthBuffers);
 
@@ -562,59 +570,11 @@ Renderer_CreateDepthBuffer(RendererState& s, StringView name, b8 resource)
 	return depthBufferData.ref;
 }
 
-b8
-Renderer_RebuildSharedGeometryBuffers(RendererState&s)
-{
-	// Finalize vertex buffer
-	{
-		D3D11_BUFFER_DESC vertBuffDesc = {};
-		vertBuffDesc.ByteWidth           = (u32) List_SizeOf(s.vertexBuffer);
-		vertBuffDesc.Usage               = D3D11_USAGE_DYNAMIC;
-		vertBuffDesc.BindFlags           = D3D11_BIND_VERTEX_BUFFER;
-		vertBuffDesc.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
-		vertBuffDesc.MiscFlags           = 0;
-		vertBuffDesc.StructureByteStride = 0;
-
-		D3D11_SUBRESOURCE_DATA vertBuffInitData = {};
-		vertBuffInitData.pSysMem          = s.vertexBuffer.data;
-		vertBuffInitData.SysMemPitch      = 0;
-		vertBuffInitData.SysMemSlicePitch = 0;
-
-		s.d3dVertexBuffer.Reset();
-		HRESULT hr = s.d3dDevice->CreateBuffer(&vertBuffDesc, &vertBuffInitData, &s.d3dVertexBuffer);
-		LOG_HRESULT_IF_FAILED(hr, return false,
-			Severity::Fatal, "Failed to create shared vertex buffer");
-		SetDebugObjectName(s.d3dVertexBuffer, "Shared Vertex Buffer");
-	}
-
-	// Finalize index buffer
-	{
-		D3D11_BUFFER_DESC indexBuffDesc = {};
-		indexBuffDesc.ByteWidth           = (u32) List_SizeOf(s.indexBuffer);
-		indexBuffDesc.Usage               = D3D11_USAGE_IMMUTABLE;
-		indexBuffDesc.BindFlags           = D3D11_BIND_INDEX_BUFFER;
-		indexBuffDesc.CPUAccessFlags      = 0;
-		indexBuffDesc.MiscFlags           = 0;
-		indexBuffDesc.StructureByteStride = 0;
-
-		D3D11_SUBRESOURCE_DATA indexBuffInitData = {};
-		indexBuffInitData.pSysMem          = s.indexBuffer.data;
-		indexBuffInitData.SysMemPitch      = 0;
-		indexBuffInitData.SysMemSlicePitch = 0;
-
-		s.d3dIndexBuffer.Reset();
-		HRESULT hr = s.d3dDevice->CreateBuffer(&indexBuffDesc, &indexBuffInitData, &s.d3dIndexBuffer);
-		LOG_HRESULT_IF_FAILED(hr, return false,
-			Severity::Fatal, "Failed to create shared index buffer");
-		SetDebugObjectName(s.d3dIndexBuffer, "Shared Index Buffer");
-	}
-
-	return true;
-}
-
 Mesh
 Renderer_CreateMesh(RendererState& s, StringView name, Slice<Vertex> vertices, Slice<Index> indices)
 {
+	Assert(!s.resourceCreationFinalized);
+
 	MeshData& mesh = List_Append(s.meshes);
 	mesh.ref  = List_GetLastRef(s.meshes);
 	mesh.name = String_FromView(name);
@@ -636,6 +596,8 @@ Renderer_CreateMesh(RendererState& s, StringView name, Slice<Vertex> vertices, S
 VertexShader
 Renderer_LoadVertexShader(RendererState& s, StringView name, StringView path, Slice<VertexAttribute> attributes, Slice<u32> cBufSizes)
 {
+	Assert(!s.resourceCreationFinalized);
+
 	// Vertex Shader
 	VertexShaderData& vs = List_Append(s.vertexShaders);
 	vs.ref = List_GetLastRef(s.vertexShaders);
@@ -734,6 +696,8 @@ Renderer_LoadVertexShader(RendererState& s, StringView name, StringView path, Sl
 PixelShader
 Renderer_LoadPixelShader(RendererState& s, StringView name, StringView path, Slice<u32> cBufSizes)
 {
+	Assert(!s.resourceCreationFinalized);
+
 	PixelShaderData& ps = List_Append(s.pixelShaders);
 	ps.ref = List_GetLastRef(s.pixelShaders);
 
@@ -777,6 +741,74 @@ Renderer_LoadPixelShader(RendererState& s, StringView name, StringView path, Sli
 
 	psGuard.dismiss = true;
 	return ps.ref;
+}
+
+b8
+Renderer_FinalizeResourceCreation(RendererState& s)
+{
+	s.resourceCreationFinalized = true;
+
+	// Finalize vertex buffer
+	{
+		D3D11_BUFFER_DESC vertBuffDesc = {};
+		vertBuffDesc.ByteWidth           = (u32) List_SizeOf(s.vertexBuffer);
+		vertBuffDesc.Usage               = D3D11_USAGE_DYNAMIC;
+		vertBuffDesc.BindFlags           = D3D11_BIND_VERTEX_BUFFER;
+		vertBuffDesc.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
+		vertBuffDesc.MiscFlags           = 0;
+		vertBuffDesc.StructureByteStride = 0;
+
+		D3D11_SUBRESOURCE_DATA vertBuffInitData = {};
+		vertBuffInitData.pSysMem          = s.vertexBuffer.data;
+		vertBuffInitData.SysMemPitch      = 0;
+		vertBuffInitData.SysMemSlicePitch = 0;
+
+		s.d3dVertexBuffer.Reset();
+		HRESULT hr = s.d3dDevice->CreateBuffer(&vertBuffDesc, &vertBuffInitData, &s.d3dVertexBuffer);
+		LOG_HRESULT_IF_FAILED(hr, return false,
+			Severity::Fatal, "Failed to create shared vertex buffer");
+		SetDebugObjectName(s.d3dVertexBuffer, "Shared Vertex Buffer");
+	}
+
+	// Finalize index buffer
+	{
+		D3D11_BUFFER_DESC indexBuffDesc = {};
+		indexBuffDesc.ByteWidth           = (u32) List_SizeOf(s.indexBuffer);
+		indexBuffDesc.Usage               = D3D11_USAGE_IMMUTABLE;
+		indexBuffDesc.BindFlags           = D3D11_BIND_INDEX_BUFFER;
+		indexBuffDesc.CPUAccessFlags      = 0;
+		indexBuffDesc.MiscFlags           = 0;
+		indexBuffDesc.StructureByteStride = 0;
+
+		D3D11_SUBRESOURCE_DATA indexBuffInitData = {};
+		indexBuffInitData.pSysMem          = s.indexBuffer.data;
+		indexBuffInitData.SysMemPitch      = 0;
+		indexBuffInitData.SysMemSlicePitch = 0;
+
+		s.d3dIndexBuffer.Reset();
+		HRESULT hr = s.d3dDevice->CreateBuffer(&indexBuffDesc, &indexBuffInitData, &s.d3dIndexBuffer);
+		LOG_HRESULT_IF_FAILED(hr, return false,
+			Severity::Fatal, "Failed to create shared index buffer");
+		SetDebugObjectName(s.d3dIndexBuffer, "Shared Index Buffer");
+	}
+
+	// Initialize resource stacks
+	{
+		List_Push(s.renderTargetStack, &s.renderTargets[0]);
+		List_Push(s.depthBufferStack,  &s.depthBuffers[0]);
+		List_Push(s.vertexShaderStack, &s.vertexShaders[0]);
+		List_Push(s.pixelShaderStack,  &s.pixelShaders[0]);
+		for (u32 i = 0; i < ArrayLength(s.pixelShaderResourceStacks); i++)
+		{
+			BoundResource psr = {};
+			psr.slot         = i;
+			psr.type         = ResourceType::RenderTarget;
+			psr.renderTarget = &s.renderTargets[0];
+			List_Push(s.pixelShaderResourceStacks[i], psr);
+		}
+	}
+
+	return true;
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -1356,6 +1388,8 @@ Renderer_Teardown(RendererState& s)
 b8
 Renderer_Render(RendererState& s)
 {
+	Assert(s.resourceCreationFinalized);
+
 	for (u32 i = 0; i < s.cpuTextures.length; i++)
 	{
 		CPUTextureData& ct = s.cpuTextures[i];
@@ -1364,19 +1398,6 @@ Renderer_Render(RendererState& s)
 			s.d3dContext->Unmap(ct.d3dCPUTexture.Get(), 0);
 			ct.mappedResource = {};
 		}
-	}
-
-	List_Push(s.renderTargetStack, &s.renderTargets[0]);
-	List_Push(s.depthBufferStack,  &s.depthBuffers[0]);
-	List_Push(s.vertexShaderStack, &s.vertexShaders[0]);
-	List_Push(s.pixelShaderStack,  &s.pixelShaders[0]);
-	for (u32 i = 0; i < ArrayLength(s.pixelShaderResourceStacks); i++)
-	{
-		BoundResource psr = {};
-		psr.slot         = i;
-		psr.type         = ResourceType::RenderTarget;
-		psr.renderTarget = &s.renderTargets[0];
-		List_Push(s.pixelShaderResourceStacks[i], psr);
 	}
 
 	for (u32 i = 0; i < s.commandList.length; i++)
@@ -1659,19 +1680,12 @@ Renderer_Render(RendererState& s)
 	}
 	List_Clear(s.commandList);
 
-	List_Pop(s.renderTargetStack);
-	List_Pop(s.depthBufferStack);
-	List_Pop(s.vertexShaderStack);
-	List_Pop(s.pixelShaderStack);
+	Assert(s.renderTargetStack.length == 1);
+	Assert(s.depthBufferStack.length == 1);
+	Assert(s.vertexShaderStack.length == 1);
+	Assert(s.pixelShaderStack.length == 1);
 	for (u32 i = 0; i < ArrayLength(s.pixelShaderResourceStacks); i++)
-		List_Pop(s.pixelShaderResourceStacks[i]);
-
-	Assert(s.renderTargetStack.length == 0);
-	Assert(s.depthBufferStack.length == 0);
-	Assert(s.vertexShaderStack.length == 0);
-	Assert(s.pixelShaderStack.length == 0);
-	for (u32 i = 0; i < ArrayLength(s.pixelShaderResourceStacks); i++)
-		Assert(s.pixelShaderResourceStacks[i].length == 0);
+		Assert(s.pixelShaderResourceStacks[i].length == 1);
 
 	// NOTE: Technically unnecessary, since the Map call will sync
 	// NOTE: This doesn't actually guarantee rendering has occurred
