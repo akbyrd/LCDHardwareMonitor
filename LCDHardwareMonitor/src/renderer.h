@@ -81,8 +81,11 @@ void            Renderer_Copy                           (RendererState&, RenderT
 CPUTextureBytes Renderer_GetCPUTextureBytes             (RendererState&, CPUTexture);
 size            Renderer_GetSharedRenderTargetHandle    (RendererState&, RenderTarget);
 
-void            Renderer_ValidateMesh                   (RendererState&, Mesh);
-void            Renderer_ValidateVertexShader           (RendererState&, VertexShader);
-void            Renderer_ValidatePixelShader            (RendererState&, PixelShader);
-void            Renderer_ValidateVSConstantBufferUpdate (RendererState&, VSConstantBufferUpdate&);
-void            Renderer_ValidatePSConstantBufferUpdate (RendererState&, PSConstantBufferUpdate&);
+b8              Renderer_ValidateMesh                   (RendererState&, Mesh);
+b8              Renderer_ValidateVertexShader           (RendererState&, VertexShader);
+b8              Renderer_ValidatePixelShader            (RendererState&, PixelShader);
+b8              Renderer_ValidateVSConstantBufferUpdate (RendererState&, VSConstantBufferUpdate&);
+b8              Renderer_ValidatePSConstantBufferUpdate (RendererState&, PSConstantBufferUpdate&);
+b8              Renderer_ValidateRenderTarget           (RendererState&, RenderTarget);
+b8              Renderer_ValidateDepthBuffer            (RendererState&, DepthBuffer);
+b8              Renderer_ValidateCopy                   (RendererState&, RenderTarget, CPUTexture);

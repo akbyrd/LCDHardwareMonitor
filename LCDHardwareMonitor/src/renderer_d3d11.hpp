@@ -309,8 +309,6 @@ DestroyMesh(RendererState& s, MeshData& mesh)
 static b8
 CreateConstantBuffer(RendererState& s, StringView shaderName, u32 index, ConstantBuffer& cBuf)
 {
-	// TODO: Decide where validation should be handled: simulation or renderer
-
 	LOG_IF(!IsMultipleOf(cBuf.size, 16), return false,
 		Severity::Error, "Constant buffer size '%' is not a multiple of 16", cBuf.size);
 
@@ -786,16 +784,12 @@ Renderer_LoadPixelShader(RendererState& s, StringView name, StringView path, Sli
 // -------------------------------------------------------------------------------------------------
 // Public API Implementation - Rendering Operations
 
-void
-Renderer_ValidateVertexShader(RendererState& s, VertexShader vs)
+b8
+Renderer_ValidateVSConstantBufferUpdate(RendererState& s, VSConstantBufferUpdate& cbu)
 {
-	Assert(List_IsRefValid(s.vertexShaders, vs));
-}
-
-void
-Renderer_ValidatePixelShader(RendererState& s, PixelShader ps)
-{
-	Assert(List_IsRefValid(s.pixelShaders, ps));
+	if (!Renderer_ValidateVertexShader(s, cbu.vs)) return false;
+	VertexShaderData& vs = s.vertexShaders[cbu.vs];
+	return cbu.index < vs.constantBuffers.length;
 }
 
 void
@@ -806,6 +800,14 @@ Renderer_UpdateVSConstantBuffer(RendererState& s, VSConstantBufferUpdate& cbu)
 	renderCommand.vsCBufUpdate = cbu;
 }
 
+b8
+Renderer_ValidatePSConstantBufferUpdate(RendererState& s, PSConstantBufferUpdate& cbu)
+{
+	if (!Renderer_ValidatePixelShader(s, cbu.ps)) return false;
+	PixelShaderData& ps = s.pixelShaders[cbu.ps];
+	return cbu.index < ps.constantBuffers.length;
+}
+
 void
 Renderer_UpdatePSConstantBuffer(RendererState& s, PSConstantBufferUpdate& cbu)
 {
@@ -814,18 +816,10 @@ Renderer_UpdatePSConstantBuffer(RendererState& s, PSConstantBufferUpdate& cbu)
 	renderCommand.psCBufUpdate = cbu;
 }
 
-void
-Renderer_ValidateVSConstantBufferUpdate(RendererState& s, VSConstantBufferUpdate& cbu)
+b8
+Renderer_ValidateMesh(RendererState& s, Mesh mesh)
 {
-	VertexShaderData& vs = s.vertexShaders[cbu.vs];
-	Assert(cbu.index < vs.constantBuffers.length);
-}
-
-void
-Renderer_ValidatePSConstantBufferUpdate(RendererState& s, PSConstantBufferUpdate& cbu)
-{
-	PixelShaderData& ps = s.pixelShaders[cbu.ps];
-	Assert(cbu.index < ps.constantBuffers.length);
+	return List_IsRefValid(s.meshes, mesh);
 }
 
 void
@@ -836,10 +830,10 @@ Renderer_DrawMesh(RendererState& s, Mesh mesh)
 	renderCommand.mesh = mesh;
 }
 
-void
-Renderer_ValidateMesh(RendererState& s, Mesh mesh)
+b8
+Renderer_ValidateRenderTarget(RendererState& s, RenderTarget rt)
 {
-	Assert(List_IsRefValid(s.meshes, mesh));
+	return List_IsRefValid(s.renderTargets, rt);
 }
 
 void
@@ -857,6 +851,12 @@ Renderer_PopRenderTarget(RendererState& s)
 	renderCommand.type = RenderCommandType::PopRenderTarget;
 }
 
+b8
+Renderer_ValidateDepthBuffer(RendererState& s, DepthBuffer db)
+{
+	return List_IsRefValid(s.depthBuffers, db);
+}
+
 void
 Renderer_PushDepthBuffer(RendererState& s, DepthBuffer db)
 {
@@ -872,6 +872,12 @@ Renderer_PopDepthBuffer(RendererState& s)
 	renderCommand.type = RenderCommandType::PopDepthBuffer;
 }
 
+b8
+Renderer_ValidateVertexShader(RendererState& s, VertexShader vs)
+{
+	return List_IsRefValid(s.vertexShaders, vs);
+}
+
 void
 Renderer_PushVertexShader(RendererState& s, VertexShader vs)
 {
@@ -885,6 +891,12 @@ Renderer_PopVertexShader(RendererState& s)
 {
 	RenderCommand& renderCommand = List_Append(s.commandList);
 	renderCommand.type = RenderCommandType::PopVertexShader;
+}
+
+b8
+Renderer_ValidatePixelShader(RendererState& s, PixelShader ps)
+{
+	return List_IsRefValid(s.pixelShaders, ps);
 }
 
 void
@@ -927,6 +939,13 @@ Renderer_PopPixelShaderResource(RendererState& s)
 {
 	RenderCommand& renderCommand = List_Append(s.commandList);
 	renderCommand.type = RenderCommandType::PopPixelShaderResource;
+}
+
+b8
+Renderer_ValidateCopy(RendererState& s, RenderTarget rt, CPUTexture ct)
+{
+	if (!Renderer_ValidateRenderTarget(s, rt)) return false;
+	return List_IsRefValid(s.cpuTextures, ct);
 }
 
 void
@@ -1329,10 +1348,9 @@ Renderer_Render(RendererState& s)
 	bindState.ps = &s.nullPixelShader;
 
 	// TODO OPTIMIZE: Sort draws?
-	// TODO OPTIMIZE: Don't reset the BindState every frame?
 	// TODO OPTIMIZE: Add checks to only issue driver calls if state really changed
+	// TODO: Don't reset the BindState every frame?
 	// TODO: Pixel shader blend appears wrong. Use a gray clear to diagnose.
-	// TODO: Do validation in API call (ps & vs refs, shader stage, etc)
 	// TODO: If we fail to update a constant buffer do we skip drawing?
 
 	for (u32 i = 0; i < s.commandList.length; i++)

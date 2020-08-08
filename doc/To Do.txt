@@ -1,8 +1,10 @@
 Current
 -------
 Renderer TODOs
-	// TODO: Do validation in API call (ps & vs refs, shader stage, etc)
-	// TODO: Decide where validation should be handled: simulation or renderer
+	// TODO OPTIMIZE: Make clears a manual call so we don't do unnecessary clears
+	// TODO: No reason for this to be all one struct. Split it up.
+	// TODO: Is there a better way to initialize these than having dummy null objects?
+	// TODO OPTIMIZE: Add checks to only issue driver calls if state really changed
 Bring FT232H code over
 Bring ILI9341 code over
 Read from display
@@ -126,6 +128,7 @@ What happens if we call random renderer api and the device is disconnected? Pres
 	at any time, not just during an update?
 Should failing to load an asset mark the file as bad?
 Can we bundle setting shaders with setting and updating constant buffers?
+Consider compiling out renderer validation in plugin API functions in release
 
 
 

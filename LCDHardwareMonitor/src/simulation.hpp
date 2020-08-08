@@ -181,39 +181,64 @@ static void
 UpdateVSConstantBuffer(PluginContext& context, VertexShader vs, u32 index, void* data)
 {
 	if (!context.success) return;
+	context.success = false;
 
 	RendererState& rendererState = *context.s->renderer;
+	WidgetPlugin&  widgetPlugin  = *context.widgetPlugin;
 
 	VSConstantBufferUpdate cBufUpdate = {};
 	cBufUpdate.vs    = vs;
 	cBufUpdate.index = index;
 	cBufUpdate.data  = data;
-	Renderer_ValidateVSConstantBufferUpdate(rendererState, cBufUpdate);
+
+	b8 success = Renderer_ValidateVSConstantBufferUpdate(rendererState, cBufUpdate);
+	LOG_IF(!success, return,
+		Severity::Warning, "Updating invalid VS constant buffer from plugin '%'", widgetPlugin.name);
+
 	Renderer_UpdateVSConstantBuffer(rendererState, cBufUpdate);
+
+	context.success = true;
 }
 
 static void
 UpdatePSConstantBuffer(PluginContext& context, PixelShader ps, u32 index, void* data)
 {
 	if (!context.success) return;
+	context.success = false;
 
 	RendererState& rendererState = *context.s->renderer;
+	WidgetPlugin&  widgetPlugin  = *context.widgetPlugin;
 
 	PSConstantBufferUpdate cBufUpdate = {};
 	cBufUpdate.ps    = ps;
 	cBufUpdate.index = index;
 	cBufUpdate.data  = data;
-	Renderer_ValidatePSConstantBufferUpdate(rendererState, cBufUpdate);
+
+	b8 success = Renderer_ValidatePSConstantBufferUpdate(rendererState, cBufUpdate);
+	LOG_IF(!success, return,
+		Severity::Warning, "Updating invalid PS constant buffer from plugin '%'", widgetPlugin.name);
+
 	Renderer_UpdatePSConstantBuffer(rendererState, cBufUpdate);
+
+	context.success = true;
 }
 
 static void
 DrawMesh(PluginContext& context, Mesh mesh)
 {
 	if (!context.success) return;
+	context.success = false;
 
 	RendererState& rendererState = *context.s->renderer;
+	WidgetPlugin&  widgetPlugin  = *context.widgetPlugin;
+
+	b8 success = Renderer_ValidateMesh(rendererState, mesh);
+	LOG_IF(!success, return,
+		Severity::Warning, "Drawing invalid mesh from plugin '%'", widgetPlugin.name);
+
 	Renderer_DrawMesh(rendererState, mesh);
+
+	context.success = true;
 }
 
 // TODO: Validation
@@ -221,9 +246,18 @@ static void
 PushVertexShader(PluginContext& context, VertexShader vs)
 {
 	if (!context.success) return;
+	context.success = false;
 
 	RendererState& rendererState = *context.s->renderer;
+	WidgetPlugin&  widgetPlugin  = *context.widgetPlugin;
+
+	b8 success = Renderer_ValidateVertexShader(rendererState, vs);
+	LOG_IF(!success, return,
+		Severity::Warning, "Pushing invalid VS from plugin '%'", widgetPlugin.name);
+
 	Renderer_PushVertexShader(rendererState, vs);
+
+	context.success = true;
 }
 
 static void
@@ -239,9 +273,18 @@ static void
 PushPixelShader(PluginContext& context, PixelShader ps)
 {
 	if (!context.success) return;
+	context.success = false;
 
 	RendererState& rendererState = *context.s->renderer;
+	WidgetPlugin&  widgetPlugin  = *context.widgetPlugin;
+
+	b8 success = Renderer_ValidatePixelShader(rendererState, ps);
+	LOG_IF(!success, return,
+		Severity::Warning, "Pushing invalid PS from plugin '%'", widgetPlugin.name);
+
 	Renderer_PushPixelShader(rendererState, ps);
+
+	context.success = true;
 }
 
 static void
