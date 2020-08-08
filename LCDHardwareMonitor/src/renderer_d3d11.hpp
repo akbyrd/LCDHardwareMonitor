@@ -132,8 +132,10 @@ enum struct RenderCommandType
 	DrawMesh,
 	PushRenderTarget,
 	PopRenderTarget,
+	ClearRenderTarget,
 	PushDepthBuffer,
 	PopDepthBuffer,
+	ClearDepthBuffer,
 	PushVertexShader,
 	PopVertexShader,
 	PushPixelShader,
@@ -157,6 +159,7 @@ struct RenderCommand
 		PixelShader            pixelShader;
 		PixelShaderResource    psResource;
 		CopyResource           copy;
+		v4                     color;
 	};
 };
 
@@ -851,6 +854,14 @@ Renderer_PopRenderTarget(RendererState& s)
 	renderCommand.type = RenderCommandType::PopRenderTarget;
 }
 
+void
+Renderer_ClearRenderTarget(RendererState& s, v4 color)
+{
+	RenderCommand& renderCommand = List_Append(s.commandList);
+	renderCommand.type = RenderCommandType::ClearRenderTarget;
+	renderCommand.color = color;
+}
+
 b8
 Renderer_ValidateDepthBuffer(RendererState& s, DepthBuffer db)
 {
@@ -870,6 +881,13 @@ Renderer_PopDepthBuffer(RendererState& s)
 {
 	RenderCommand& renderCommand = List_Append(s.commandList);
 	renderCommand.type = RenderCommandType::PopDepthBuffer;
+}
+
+void
+Renderer_ClearDepthBuffer(RendererState& s)
+{
+	RenderCommand& renderCommand = List_Append(s.commandList);
+	renderCommand.type = RenderCommandType::ClearDepthBuffer;
 }
 
 b8
@@ -1307,19 +1325,6 @@ Renderer_Teardown(RendererState& s)
 b8
 Renderer_Render(RendererState& s)
 {
-	// TODO OPTIMIZE: Make clears a manual call so we don't do unnecessary clears
-	for (u32 i = 0; i < s.renderTargets.length; i++)
-	{
-		RenderTargetData& rt = s.renderTargets[i];
-		s.d3dContext->ClearRenderTargetView(rt.d3dRenderTargetView.Get(), DirectX::Colors::Black);
-	}
-
-	for (u32 i = 0; i < s.depthBuffers.length; i++)
-	{
-		DepthBufferData& db = s.depthBuffers[i];
-		s.d3dContext->ClearDepthStencilView(db.d3dDepthBufferView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
-	}
-
 	for (u32 i = 0; i < s.cpuTextures.length; i++)
 	{
 		CPUTextureData& ct = s.cpuTextures[i];
@@ -1421,6 +1426,13 @@ Renderer_Render(RendererState& s)
 				break;
 			}
 
+			case RenderCommandType::ClearRenderTarget:
+			{
+				RenderTargetData& rt = *bindState.rt;
+				s.d3dContext->ClearRenderTargetView(rt.d3dRenderTargetView.Get(), renderCommand.color.arr);
+				break;
+			}
+
 			case RenderCommandType::PushDepthBuffer:
 			{
 				DepthBufferData&  db = renderCommand.depthBuffer? s.depthBuffers[renderCommand.depthBuffer] : s.nullDepthBuffer;
@@ -1447,6 +1459,13 @@ Renderer_Render(RendererState& s)
 					bindState.db = &db;
 					s.d3dContext->OMSetRenderTargets(1, rt.d3dRenderTargetView.GetAddressOf(), db.d3dDepthBufferView.Get());
 				}
+				break;
+			}
+
+			case RenderCommandType::ClearDepthBuffer:
+			{
+				DepthBufferData& db = *bindState.db;
+				s.d3dContext->ClearDepthStencilView(db.d3dDepthBufferView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
 				break;
 			}
 

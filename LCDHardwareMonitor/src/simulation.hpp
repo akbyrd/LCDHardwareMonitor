@@ -1611,6 +1611,8 @@ Simulation_Update(SimulationState& s)
 
 	Renderer_PushRenderTarget(*s.renderer, StandardRenderTarget::Main);
 	Renderer_PushDepthBuffer(*s.renderer, StandardDepthBuffer::Main);
+	Renderer_ClearRenderTarget(*s.renderer, {});
+	Renderer_ClearDepthBuffer(*s.renderer);
 
 	// Update Widgets
 	{

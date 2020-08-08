@@ -64,8 +64,10 @@ DepthBuffer     Renderer_CreateDepthBuffer              (RendererState&, StringV
 
 void            Renderer_PushRenderTarget               (RendererState&, RenderTarget);
 void            Renderer_PopRenderTarget                (RendererState&);
+void            Renderer_ClearRenderTarget              (RendererState&, v4 color);
 void            Renderer_PushDepthBuffer                (RendererState&, DepthBuffer);
 void            Renderer_PopDepthBuffer                 (RendererState&);
+void            Renderer_ClearDepthBuffer               (RendererState&);
 void            Renderer_PushVertexShader               (RendererState&, VertexShader);
 void            Renderer_PopVertexShader                (RendererState&);
 void            Renderer_PushPixelShader                (RendererState&, PixelShader);
