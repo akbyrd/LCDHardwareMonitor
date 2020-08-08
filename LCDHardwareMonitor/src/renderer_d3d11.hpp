@@ -190,12 +190,6 @@ struct RendererState
 	List<CPUTextureData>          cpuTextures;
 	List<DepthBufferData>         depthBuffers;
 
-	RenderTargetData              nullRenderTarget;
-	DepthBufferData               nullDepthBuffer;
-	VertexShaderData              nullVertexShader;
-	PixelShaderData               nullPixelShader;
-	BoundResource                 nullPixelShaderResource;
-
 	// Only here so we don't allocate every frame
 	List<RenderTargetData*>       renderTargetStack;
 	List<DepthBufferData*>        depthBufferStack;
@@ -1224,6 +1218,25 @@ Renderer_Initialize(RendererState& s, v2u renderSize)
 	}
 
 
+	// Create null resources
+	{
+		RenderTargetData& nullRT = List_Push(s.renderTargets);
+		nullRT.ref = List_GetLastRef(s.renderTargets);
+
+		DepthBufferData& nullRB = List_Push(s.depthBuffers);
+		nullRB.ref = List_GetLastRef(s.depthBuffers);
+
+		MeshData& nullMesh = List_Push(s.meshes);
+		nullMesh.ref = List_GetLastRef(s.meshes);
+
+		VertexShaderData& nullVS = List_Push(s.vertexShaders);
+		nullVS.ref = List_GetLastRef(s.vertexShaders);
+
+		PixelShaderData& nullPS = List_Push(s.pixelShaders);
+		nullPS.ref = List_GetLastRef(s.pixelShaders);
+	}
+
+
 	// DEBUG: Default sampler
 	{
 		HRESULT hr;
@@ -1353,15 +1366,18 @@ Renderer_Render(RendererState& s)
 		}
 	}
 
-	// TODO: Stacks can be refs now
-	// TODO: Is there a better way to initialize these than having dummy null objects?
-	// TODO: Resources are a special little snowflake
-	List_Push(s.renderTargetStack, &s.nullRenderTarget);
-	List_Push(s.depthBufferStack,  &s.nullDepthBuffer);
-	List_Push(s.vertexShaderStack, &s.nullVertexShader);
-	List_Push(s.pixelShaderStack,  &s.nullPixelShader);
+	List_Push(s.renderTargetStack, &s.renderTargets[0]);
+	List_Push(s.depthBufferStack,  &s.depthBuffers[0]);
+	List_Push(s.vertexShaderStack, &s.vertexShaders[0]);
+	List_Push(s.pixelShaderStack,  &s.pixelShaders[0]);
 	for (u32 i = 0; i < ArrayLength(s.pixelShaderResourceStacks); i++)
-		List_Push(s.pixelShaderResourceStacks[i], s.nullPixelShaderResource);
+	{
+		BoundResource psr = {};
+		psr.slot         = i;
+		psr.type         = ResourceType::RenderTarget;
+		psr.renderTarget = &s.renderTargets[0];
+		List_Push(s.pixelShaderResourceStacks[i], psr);
+	}
 
 	for (u32 i = 0; i < s.commandList.length; i++)
 	{
@@ -1376,6 +1392,7 @@ Renderer_Render(RendererState& s)
 				VertexShaderData&       vs   = s.vertexShaders[cbu.vs];
 				ConstantBuffer&         cBuf = vs.constantBuffers[cbu.index];
 
+				// TODO: If we fail to update a constant buffer do we skip drawing?
 				b8 success = UpdateConstantBuffer(s, cBuf, cbu.data);
 				if (!success) break;
 				break;
@@ -1387,6 +1404,7 @@ Renderer_Render(RendererState& s)
 				PixelShaderData&        ps   = s.pixelShaders[cbu.ps];
 				ConstantBuffer&         cBuf = ps.constantBuffers[cbu.index];
 
+				// TODO: If we fail to update a constant buffer do we skip drawing?
 				b8 success = UpdateConstantBuffer(s, cBuf, cbu.data);
 				if (!success) break;
 				break;
@@ -1403,13 +1421,10 @@ Renderer_Render(RendererState& s)
 
 			case RenderCommandType::PushRenderTarget:
 			{
-				// TODO: Why do we need null object here?
 				Assert(s.renderTargetStack.length != 0);
 				RenderTargetData& boundRT = *List_GetLast(s.renderTargetStack);
-				RenderTargetData& rt      = renderCommand.renderTarget ? s.renderTargets[renderCommand.renderTarget] : s.nullRenderTarget;
+				RenderTargetData& rt      = *List_Push(s.renderTargetStack, &s.renderTargets[renderCommand.renderTarget]);
 				DepthBufferData&  db      = *List_GetLast(s.depthBufferStack);
-
-				List_Push(s.renderTargetStack, &rt);
 
 				if (&boundRT != &rt)
 					s.d3dContext->OMSetRenderTargets(1, rt.d3dRenderTargetView.GetAddressOf(), db.d3dDepthBufferView.Get());
@@ -1441,10 +1456,8 @@ Renderer_Render(RendererState& s)
 			{
 				Assert(s.depthBufferStack.length != 0);
 				DepthBufferData&  boundDB = *List_GetLast(s.depthBufferStack);
-				DepthBufferData&  db      = renderCommand.depthBuffer ? s.depthBuffers[renderCommand.depthBuffer] : s.nullDepthBuffer;
+				DepthBufferData&  db      = *List_Push(s.depthBufferStack, &s.depthBuffers[renderCommand.depthBuffer]);
 				RenderTargetData& rt      = *List_GetLast(s.renderTargetStack);
-
-				List_Push(s.depthBufferStack, &db);
 
 				if (&boundDB != &db)
 					s.d3dContext->OMSetRenderTargets(1, rt.d3dRenderTargetView.GetAddressOf(), db.d3dDepthBufferView.Get());
@@ -1475,9 +1488,7 @@ Renderer_Render(RendererState& s)
 			{
 				Assert(s.vertexShaderStack.length != 0);
 				VertexShaderData& boundVS = *List_GetLast(s.vertexShaderStack);
-				VertexShaderData& vs      = s.vertexShaders[renderCommand.vertexShader];
-
-				List_Push(s.vertexShaderStack, &vs);
+				VertexShaderData& vs      = *List_Push(s.vertexShaderStack, &s.vertexShaders[renderCommand.vertexShader]);
 
 				if (&boundVS != &vs)
 				{
@@ -1529,9 +1540,7 @@ Renderer_Render(RendererState& s)
 			{
 				Assert(s.pixelShaderStack.length != 0);
 				PixelShaderData& boundPS = *List_GetLast(s.pixelShaderStack);
-				PixelShaderData& ps      = s.pixelShaders[renderCommand.pixelShader];
-
-				List_Push(s.pixelShaderStack, &ps);
+				PixelShaderData& ps      = *List_Push(s.pixelShaderStack, &s.pixelShaders[renderCommand.pixelShader]);
 
 				if (&boundPS != &ps)
 				{
@@ -1612,27 +1621,6 @@ Renderer_Render(RendererState& s)
 				BoundResource  boundPSR = List_Pop(s.pixelShaderResourceStacks[slot]);
 				BoundResource& psr      = List_GetLast(s.pixelShaderResourceStacks[slot]);
 
-				if (psr.type == ResourceType::Null)
-				{
-					switch (boundPSR.type)
-					{
-						case ResourceType::Null:
-							psr.type = ResourceType::RenderTarget;
-							psr.renderTarget = &s.nullRenderTarget;
-							break;
-
-						case ResourceType::RenderTarget:
-							psr.type = ResourceType::RenderTarget;
-							psr.renderTarget = &s.nullRenderTarget;
-							break;
-
-						case ResourceType::DepthBuffer:
-							psr.type = ResourceType::DepthBuffer;
-							psr.depthBuffer = &s.nullDepthBuffer;
-							break;
-					}
-				}
-
 				b8 sameType = boundPSR.type == psr.type;
 				switch (psr.type)
 				{
@@ -1701,8 +1689,3 @@ Renderer_Render(RendererState& s)
 
 	return true;
 }
-
-// TODO OPTIMIZE: Sort draws?
-// TODO: Keep resources bound across frames?
-// TODO: Pixel shader blend appears wrong. Use a gray clear to diagnose.
-// TODO: If we fail to update a constant buffer do we skip drawing?
