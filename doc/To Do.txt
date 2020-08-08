@@ -4,7 +4,6 @@ Renderer TODOs
 	// TODO OPTIMIZE: Make clears a manual call so we don't do unnecessary clears
 	// TODO: No reason for this to be all one struct. Split it up.
 	// TODO: Is there a better way to initialize these than having dummy null objects?
-	// TODO OPTIMIZE: Add checks to only issue driver calls if state really changed
 Bring FT232H code over
 Bring ILI9341 code over
 Read from display

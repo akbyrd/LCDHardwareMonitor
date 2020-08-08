@@ -1398,9 +1398,12 @@ Renderer_Render(RendererState& s)
 				DepthBufferData&  db = bindState.db ? *bindState.db : s.nullDepthBuffer;
 
 				List_Push(s.renderTargetStack, bindState.rt);
-				bindState.rt = &rt;
 
-				s.d3dContext->OMSetRenderTargets(1, rt.d3dRenderTargetView.GetAddressOf(), db.d3dDepthBufferView.Get());
+				if (bindState.rt != &rt)
+				{
+					bindState.rt = &rt;
+					s.d3dContext->OMSetRenderTargets(1, rt.d3dRenderTargetView.GetAddressOf(), db.d3dDepthBufferView.Get());
+				}
 				break;
 			}
 
@@ -1410,9 +1413,11 @@ Renderer_Render(RendererState& s)
 				RenderTargetData& rt = *List_Pop(s.renderTargetStack);
 				DepthBufferData&  db = bindState.db ? *bindState.db : s.nullDepthBuffer;
 
-				bindState.rt = &rt;
-
-				s.d3dContext->OMSetRenderTargets(1, rt.d3dRenderTargetView.GetAddressOf(), db.d3dDepthBufferView.Get());
+				if (bindState.rt != &rt)
+				{
+					bindState.rt = &rt;
+					s.d3dContext->OMSetRenderTargets(1, rt.d3dRenderTargetView.GetAddressOf(), db.d3dDepthBufferView.Get());
+				}
 				break;
 			}
 
@@ -1422,9 +1427,12 @@ Renderer_Render(RendererState& s)
 				RenderTargetData& rt = bindState.rt ? *bindState.rt : s.nullRenderTarget;
 
 				List_Push(s.depthBufferStack, bindState.db);
-				bindState.db = &db;
 
-				s.d3dContext->OMSetRenderTargets(1, rt.d3dRenderTargetView.GetAddressOf(), db.d3dDepthBufferView.Get());
+				if (bindState.db != &db)
+				{
+					bindState.db = &db;
+					s.d3dContext->OMSetRenderTargets(1, rt.d3dRenderTargetView.GetAddressOf(), db.d3dDepthBufferView.Get());
+				}
 				break;
 			}
 
@@ -1434,9 +1442,11 @@ Renderer_Render(RendererState& s)
 				DepthBufferData&  db = *List_Pop(s.depthBufferStack);
 				RenderTargetData& rt = bindState.rt ? *bindState.rt : s.nullRenderTarget;
 
-				bindState.db = &db;
-
-				s.d3dContext->OMSetRenderTargets(1, rt.d3dRenderTargetView.GetAddressOf(), db.d3dDepthBufferView.Get());
+				if (bindState.db != &db)
+				{
+					bindState.db = &db;
+					s.d3dContext->OMSetRenderTargets(1, rt.d3dRenderTargetView.GetAddressOf(), db.d3dDepthBufferView.Get());
+				}
 				break;
 			}
 
