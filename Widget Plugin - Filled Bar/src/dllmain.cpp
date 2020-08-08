@@ -11,7 +11,7 @@ struct BarWidget
 	PSPerObject  psPerObject;
 };
 
-static Material filledBarMat = {};
+static PixelShader filledBarPS = {};
 
 static b8
 InitializeBarWidgets(PluginContext& context, WidgetAPI::Initialize api)
@@ -45,10 +45,10 @@ UpdateBarWidgets(PluginContext& context, WidgetAPI::Update api)
 
 	// TODO:This shouldn't be stored on every widget!
 	BarWidget& barWidgetShared = (BarWidget&) api.widgetsUserData[0];
-	api.UpdateConstantBuffer(context, filledBarMat, ShaderStage::Pixel, 0, &barWidgetShared.psInitialize);
+	api.UpdatePSConstantBuffer(context, filledBarPS, 0, &barWidgetShared.psInitialize);
 
-	api.PushVertexShader(context, filledBarMat.vs);
-	api.PushPixelShader(context, filledBarMat.ps);
+	api.PushVertexShader(context, StandardVertexShader::WVP);
+	api.PushPixelShader(context, filledBarPS);
 
 	for (u32 i = 0; i < api.widgets.length; i++)
 	{
@@ -82,9 +82,9 @@ UpdateBarWidgets(PluginContext& context, WidgetAPI::Update api)
 			SetScale   (world, size, 1.0f);
 			barWidget.vsPerObject.wvp = world * api.GetViewProjectionMatrix(context);
 
-			api.UpdateConstantBuffer(context, filledBarMat, ShaderStage::Vertex, 0, &barWidget.vsPerObject);
-			api.UpdateConstantBuffer(context, filledBarMat, ShaderStage::Pixel,  1, &barWidget.psPerObject);
-			api.DrawMesh(context, filledBarMat.mesh);
+			api.UpdateVSConstantBuffer(context, StandardVertexShader::WVP, 0, &barWidget.vsPerObject);
+			api.UpdatePSConstantBuffer(context, filledBarPS, 1, &barWidget.psPerObject);
+			api.DrawMesh(context, StandardMesh::Quad);
 		}
 	}
 
@@ -106,11 +106,9 @@ Initialize(PluginContext& context, WidgetPluginAPI::Initialize api)
 		{ sizeof(PSInitialize) },
 		{ sizeof(PSPerObject)  }
 	};
-	PixelShader ps = api.LoadPixelShader(context, "Filled Bar.ps.cso", cBufSizes);
+	filledBarPS = api.LoadPixelShader(context, "Filled Bar.ps.cso", cBufSizes);
+	// TODO: Assert shader
 
-	filledBarMat.mesh = StandardMesh::Quad;
-	filledBarMat.vs   = StandardVertexShader::WVP;
-	filledBarMat.ps   = ps;
 	return true;
 }
 

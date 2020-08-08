@@ -31,7 +31,8 @@ struct WidgetAPI
 		using GetViewMatrixFn           = Matrix(PluginContext&);
 		using GetProjectionMatrixFn     = Matrix(PluginContext&);
 		using GetViewProjectionMatrixFn = Matrix(PluginContext&);
-		using UpdateConstantBufferFn    = void  (PluginContext&, Material, ShaderStage, u32 index, void* data);
+		using UpdateVSConstantBufferFn  = void  (PluginContext&, VertexShader, u32 index, void* data);
+		using UpdatePSConstantBufferFn  = void  (PluginContext&, PixelShader, u32 index, void* data);
 		using DrawMeshFn                = void  (PluginContext&, Mesh);
 		using PushVertexShaderFn        = void  (PluginContext&, VertexShader);
 		using PushPixelShaderFn         = void  (PluginContext&, PixelShader);
@@ -45,7 +46,8 @@ struct WidgetAPI
 		GetViewMatrixFn*           GetViewMatrix;
 		GetProjectionMatrixFn*     GetProjectionMatrix;
 		GetViewProjectionMatrixFn* GetViewProjectionMatrix;
-		UpdateConstantBufferFn*    UpdateConstantBuffer;
+		UpdateVSConstantBufferFn*  UpdateVSConstantBuffer;
+		UpdatePSConstantBufferFn*  UpdatePSConstantBuffer;
 		DrawMeshFn*                DrawMesh;
 		PushVertexShaderFn*        PushVertexShader;
 		PushPixelShaderFn*         PushPixelShader;

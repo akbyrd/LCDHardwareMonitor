@@ -178,19 +178,33 @@ GetViewProjectionMatrix(PluginContext& context)
 }
 
 static void
-UpdateConstantBuffer(PluginContext& context, Material material, ShaderStage shaderStage, u32 index, void* data)
+UpdateVSConstantBuffer(PluginContext& context, VertexShader vs, u32 index, void* data)
 {
 	if (!context.success) return;
 
 	RendererState& rendererState = *context.s->renderer;
 
-	ConstantBufferUpdate cBufUpdate = {};
-	cBufUpdate.material    = material;
-	cBufUpdate.shaderStage = shaderStage;
-	cBufUpdate.index       = index;
-	cBufUpdate.data        = data;
-	Renderer_ValidateConstantBufferUpdate(rendererState, cBufUpdate);
-	Renderer_UpdateConstantBuffer(rendererState, cBufUpdate);
+	VSConstantBufferUpdate cBufUpdate = {};
+	cBufUpdate.vs    = vs;
+	cBufUpdate.index = index;
+	cBufUpdate.data  = data;
+	Renderer_ValidateVSConstantBufferUpdate(rendererState, cBufUpdate);
+	Renderer_UpdateVSConstantBuffer(rendererState, cBufUpdate);
+}
+
+static void
+UpdatePSConstantBuffer(PluginContext& context, PixelShader ps, u32 index, void* data)
+{
+	if (!context.success) return;
+
+	RendererState& rendererState = *context.s->renderer;
+
+	PSConstantBufferUpdate cBufUpdate = {};
+	cBufUpdate.ps    = ps;
+	cBufUpdate.index = index;
+	cBufUpdate.data  = data;
+	Renderer_ValidatePSConstantBufferUpdate(rendererState, cBufUpdate);
+	Renderer_UpdatePSConstantBuffer(rendererState, cBufUpdate);
 }
 
 static void
@@ -1578,7 +1592,8 @@ Simulation_Update(SimulationState& s)
 		widgetAPI.GetViewMatrix            = GetViewMatrix;
 		widgetAPI.GetProjectionMatrix      = GetProjectionMatrix;
 		widgetAPI.GetViewProjectionMatrix  = GetViewProjectionMatrix;
-		widgetAPI.UpdateConstantBuffer     = UpdateConstantBuffer;
+		widgetAPI.UpdateVSConstantBuffer   = UpdateVSConstantBuffer;
+		widgetAPI.UpdatePSConstantBuffer   = UpdatePSConstantBuffer;
 		widgetAPI.DrawMesh                 = DrawMesh;
 		widgetAPI.PushVertexShader         = PushVertexShader;
 		widgetAPI.PushPixelShader          = PushPixelShader;
@@ -1621,19 +1636,14 @@ Simulation_Update(SimulationState& s)
 		static Matrix wvp;
 		wvp = world * s.vp;
 
-		Material material = {};
-		material.mesh = StandardMesh::Cube;
-		material.vs   = StandardVertexShader::WVP;
-		material.ps   = StandardPixelShader::DebugCoordinates;
-
 		PluginContext context = {};
 		context.success = true;
 		context.s = &s;
 
-		UpdateConstantBuffer(context, material, ShaderStage::Vertex, 0, &wvp);
-		PushVertexShader(context, material.vs);
-		PushPixelShader(context, material.ps);
-		DrawMesh(context, material.mesh);
+		UpdateVSConstantBuffer(context, StandardVertexShader::WVP, 0, &wvp);
+		PushVertexShader(context, StandardVertexShader::WVP);
+		PushPixelShader(context, StandardPixelShader::DebugCoordinates);
+		DrawMesh(context, StandardMesh::Cube);
 		PopVertexShader(context);
 		PopPixelShader(context);
 	}
@@ -1699,20 +1709,15 @@ Simulation_Update(SimulationState& s)
 		wvp = world * s.vp;
 		static v4 color = Color32(28, 151, 234, 255);
 
-		Material material = {};
-		material.mesh = StandardMesh::Quad;
-		material.vs   = StandardVertexShader::WVP;
-		material.ps   = StandardPixelShader::SolidColored;
-
 		PluginContext context = {};
 		context.success = true;
 		context.s = &s;
 
-		UpdateConstantBuffer(context, material, ShaderStage::Vertex, 0, &wvp);
-		UpdateConstantBuffer(context, material, ShaderStage::Pixel,  0, &color);
-		PushVertexShader(context, material.vs);
-		PushPixelShader(context, material.ps);
-		DrawMesh(context, material.mesh);
+		UpdateVSConstantBuffer(context, StandardVertexShader::WVP, 0, &wvp);
+		UpdatePSConstantBuffer(context, StandardPixelShader::SolidColored, 0, &color);
+		PushVertexShader(context, StandardVertexShader::WVP);
+		PushPixelShader(context, StandardPixelShader::SolidColored);
+		DrawMesh(context, StandardMesh::Quad);
 		PopVertexShader(context);
 		PopPixelShader(context);
 	}
@@ -1738,20 +1743,15 @@ Simulation_Update(SimulationState& s)
 		Matrix& wvp = List_Append(wvps);
 		wvp = world * s.vp;
 
-		Material material = {};
-		material.mesh = StandardMesh::Quad;
-		material.vs   = StandardVertexShader::WVP;
-		material.ps   = StandardPixelShader::SolidColored;
-
 		PluginContext context = {};
 		context.success = true;
 		context.s = &s;
 
-		UpdateConstantBuffer(context, material, ShaderStage::Vertex, 0, &wvp);
-		UpdateConstantBuffer(context, material, ShaderStage::Pixel,  0, &color);
-		PushVertexShader(context, material.vs);
-		PushPixelShader(context, material.ps);
-		DrawMesh(context, material.mesh);
+		UpdateVSConstantBuffer(context, StandardVertexShader::WVP, 0, &wvp);
+		UpdatePSConstantBuffer(context, StandardPixelShader::SolidColored,  0, &color);
+		PushVertexShader(context, StandardVertexShader::WVP);
+		PushPixelShader(context, StandardPixelShader::SolidColored);
+		DrawMesh(context, StandardMesh::Quad);
 		PopVertexShader(context);
 		PopPixelShader(context);
 	}
@@ -1765,17 +1765,12 @@ Simulation_Update(SimulationState& s)
 
 	// Update GUI preview texture
 	{
-		Material copyMat = {};
-		copyMat.mesh = StandardMesh::Fullscreen;
-		copyMat.vs   = StandardVertexShader::ClipSpace;
-		copyMat.ps   = StandardPixelShader::Composite;
-
 		Renderer_PushRenderTarget(*s.renderer, s.renderTargetGUICopy);
 		Renderer_PushDepthBuffer(*s.renderer, StandardDepthBuffer::Null);
 		Renderer_PushPixelShaderResource(*s.renderer, StandardRenderTarget::Main, 0);
-		Renderer_PushVertexShader(*s.renderer, copyMat.vs);
-		Renderer_PushPixelShader(*s.renderer, copyMat.ps);
-		Renderer_DrawMesh(*s.renderer, copyMat.mesh);
+		Renderer_PushVertexShader(*s.renderer, StandardVertexShader::ClipSpace);
+		Renderer_PushPixelShader(*s.renderer, StandardPixelShader::Composite);
+		Renderer_DrawMesh(*s.renderer, StandardMesh::Fullscreen);
 		Renderer_PopVertexShader(*s.renderer);
 		Renderer_PopPixelShader(*s.renderer);
 		Renderer_PopPixelShaderResource(*s.renderer);

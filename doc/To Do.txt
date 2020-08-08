@@ -1,7 +1,6 @@
 Current
 -------
 Renderer TODOs
-	Rename/remove Material
 	// TODO: Do validation in API call (ps & vs refs, shader stage, etc)
 	// TODO: Decide where validation should be handled: simulation or renderer
 Bring FT232H code over
@@ -126,6 +125,7 @@ Implement unloading assets. Will require reference counting, I think. Needed for
 What happens if we call random renderer api and the device is disconnected? Presumably it can happen
 	at any time, not just during an update?
 Should failing to load an asset mark the file as bad?
+Can we bundle setting shaders with setting and updating constant buffers?
 
 
 

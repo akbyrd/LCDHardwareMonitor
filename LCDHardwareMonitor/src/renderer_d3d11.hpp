@@ -127,7 +127,8 @@ struct CopyResource
 enum struct RenderCommandType
 {
 	Null,
-	ConstantBufferUpdate,
+	VSConstantBufferUpdate,
+	PSConstantBufferUpdate,
 	DrawMesh,
 	PushRenderTarget,
 	PopRenderTarget,
@@ -147,14 +148,15 @@ struct RenderCommand
 	RenderCommandType type;
 	union
 	{
-		ConstantBufferUpdate cBufUpdate;
-		Mesh                 mesh;
-		RenderTarget         renderTarget;
-		DepthBuffer          depthBuffer;
-		VertexShader         vertexShader;
-		PixelShader          pixelShader;
-		PixelShaderResource  psResource;
-		CopyResource         copy;
+		VSConstantBufferUpdate vsCBufUpdate;
+		PSConstantBufferUpdate psCBufUpdate;
+		Mesh                   mesh;
+		RenderTarget           renderTarget;
+		DepthBuffer            depthBuffer;
+		VertexShader           vertexShader;
+		PixelShader            pixelShader;
+		PixelShaderResource    psResource;
+		CopyResource           copy;
 	};
 };
 
@@ -635,12 +637,6 @@ Renderer_CreateMesh(RendererState& s, StringView name, Slice<Vertex> vertices, S
 	return mesh.ref;
 }
 
-void
-Renderer_ValidateMesh(RendererState& s, Mesh mesh)
-{
-	Assert(List_IsRefValid(s.meshes, mesh));
-}
-
 VertexShader
 Renderer_LoadVertexShader(RendererState& s, StringView name, StringView path, Slice<VertexAttribute> attributes, Slice<u32> cBufSizes)
 {
@@ -739,12 +735,6 @@ Renderer_LoadVertexShader(RendererState& s, StringView name, StringView path, Sl
 	return vs.ref;
 }
 
-void
-Renderer_ValidateVertexShader(RendererState& s, VertexShader vs)
-{
-	Assert(List_IsRefValid(s.vertexShaders, vs));
-}
-
 PixelShader
 Renderer_LoadPixelShader(RendererState& s, StringView name, StringView path, Slice<u32> cBufSizes)
 {
@@ -793,6 +783,15 @@ Renderer_LoadPixelShader(RendererState& s, StringView name, StringView path, Sli
 	return ps.ref;
 }
 
+// -------------------------------------------------------------------------------------------------
+// Public API Implementation - Rendering Operations
+
+void
+Renderer_ValidateVertexShader(RendererState& s, VertexShader vs)
+{
+	Assert(List_IsRefValid(s.vertexShaders, vs));
+}
+
 void
 Renderer_ValidatePixelShader(RendererState& s, PixelShader ps)
 {
@@ -800,47 +799,33 @@ Renderer_ValidatePixelShader(RendererState& s, PixelShader ps)
 }
 
 void
-Renderer_ValidateMaterial(RendererState& s, Material& material)
-{
-	Renderer_ValidateMesh(s, material.mesh);
-	Renderer_ValidateVertexShader(s, material.vs);
-	Renderer_ValidatePixelShader(s, material.ps);
-}
-
-// -------------------------------------------------------------------------------------------------
-// Public API Implementation - Rendering Operations
-
-void
-Renderer_UpdateConstantBuffer(RendererState& s, ConstantBufferUpdate& cbu)
+Renderer_UpdateVSConstantBuffer(RendererState& s, VSConstantBufferUpdate& cbu)
 {
 	RenderCommand& renderCommand = List_Append(s.commandList);
-	renderCommand.type = RenderCommandType::ConstantBufferUpdate;
-	renderCommand.cBufUpdate = cbu;
+	renderCommand.type = RenderCommandType::VSConstantBufferUpdate;
+	renderCommand.vsCBufUpdate = cbu;
 }
 
 void
-Renderer_ValidateConstantBufferUpdate(RendererState& s, ConstantBufferUpdate& cbu)
+Renderer_UpdatePSConstantBuffer(RendererState& s, PSConstantBufferUpdate& cbu)
 {
-	Renderer_ValidateMaterial(s, cbu.material);
+	RenderCommand& renderCommand = List_Append(s.commandList);
+	renderCommand.type = RenderCommandType::PSConstantBufferUpdate;
+	renderCommand.psCBufUpdate = cbu;
+}
 
-	switch (cbu.shaderStage)
-	{
-		case ShaderStage::Null: Assert(false); break;
+void
+Renderer_ValidateVSConstantBufferUpdate(RendererState& s, VSConstantBufferUpdate& cbu)
+{
+	VertexShaderData& vs = s.vertexShaders[cbu.vs];
+	Assert(cbu.index < vs.constantBuffers.length);
+}
 
-		case ShaderStage::Vertex:
-		{
-			VertexShaderData& vs = s.vertexShaders[cbu.material.vs];
-			Assert(cbu.index < vs.constantBuffers.length);
-			break;
-		}
-
-		case ShaderStage::Pixel:
-		{
-			PixelShaderData& ps = s.pixelShaders[cbu.material.ps];
-			Assert(cbu.index < ps.constantBuffers.length);
-			break;
-		}
-	}
+void
+Renderer_ValidatePSConstantBufferUpdate(RendererState& s, PSConstantBufferUpdate& cbu)
+{
+	PixelShaderData& ps = s.pixelShaders[cbu.ps];
+	Assert(cbu.index < ps.constantBuffers.length);
 }
 
 void
@@ -849,6 +834,12 @@ Renderer_DrawMesh(RendererState& s, Mesh mesh)
 	RenderCommand& renderCommand = List_Append(s.commandList);
 	renderCommand.type = RenderCommandType::DrawMesh;
 	renderCommand.mesh = mesh;
+}
+
+void
+Renderer_ValidateMesh(RendererState& s, Mesh mesh)
+{
+	Assert(List_IsRefValid(s.meshes, mesh));
 }
 
 void
@@ -1297,7 +1288,7 @@ Renderer_Teardown(RendererState& s)
 b8
 Renderer_Render(RendererState& s)
 {
-	// OPTIMIZE: Make clears a manual call so we don't do unnecessary clears
+	// TODO OPTIMIZE: Make clears a manual call so we don't do unnecessary clears
 	for (u32 i = 0; i < s.renderTargets.length; i++)
 	{
 		RenderTargetData& rt = s.renderTargets[i];
@@ -1337,12 +1328,12 @@ Renderer_Render(RendererState& s)
 	bindState.vs = &s.nullVertexShader;
 	bindState.ps = &s.nullPixelShader;
 
-	// OPTIMIZE: Sort draws?
-	// OPTIMIZE: Adding a "SetMaterial" command would remove some redundant shader lookups.
-	// OPTIMIZE: Add checks to only issue driver calls if state really changed
-	// OPTIMIZE: Don't reset the BindState every frame?
-
+	// TODO OPTIMIZE: Sort draws?
+	// TODO OPTIMIZE: Don't reset the BindState every frame?
+	// TODO OPTIMIZE: Add checks to only issue driver calls if state really changed
 	// TODO: Pixel shader blend appears wrong. Use a gray clear to diagnose.
+	// TODO: Do validation in API call (ps & vs refs, shader stage, etc)
+	// TODO: If we fail to update a constant buffer do we skip drawing?
 
 	for (u32 i = 0; i < s.commandList.length; i++)
 	{
@@ -1351,33 +1342,24 @@ Renderer_Render(RendererState& s)
 		{
 			case RenderCommandType::Null: Assert(false); break;
 
-			case RenderCommandType::ConstantBufferUpdate:
+			case RenderCommandType::VSConstantBufferUpdate:
 			{
-				ConstantBufferUpdate& cbu = renderCommand.cBufUpdate;
+				VSConstantBufferUpdate& cbu  = renderCommand.vsCBufUpdate;
+				VertexShaderData&       vs   = s.vertexShaders[cbu.vs];
+				ConstantBuffer&         cBuf = vs.constantBuffers[cbu.index];
 
-				// TODO: Do validation in API call (ps & vs refs, shader stage, etc)
-				// TODO: If we fail to update a constant buffer do we skip drawing?
-				ConstantBuffer* cBuf = nullptr;
-				switch (cbu.shaderStage)
-				{
-					case ShaderStage::Null: Assert(false); break;
+				b8 success = UpdateConstantBuffer(s, cBuf, cbu.data);
+				if (!success) break;
+				break;
+			}
 
-					case ShaderStage::Vertex:
-					{
-						VertexShaderData& vs = s.vertexShaders[cbu.material.vs];
-						cBuf = &vs.constantBuffers[cbu.index];
-						break;
-					}
+			case RenderCommandType::PSConstantBufferUpdate:
+			{
+				PSConstantBufferUpdate& cbu  = renderCommand.psCBufUpdate;
+				PixelShaderData&        ps   = s.pixelShaders[cbu.ps];
+				ConstantBuffer&         cBuf = ps.constantBuffers[cbu.index];
 
-					case ShaderStage::Pixel:
-					{
-						PixelShaderData& ps = s.pixelShaders[cbu.material.ps];
-						cBuf = &ps.constantBuffers[cbu.index];
-						break;
-					}
-				}
-
-				b8 success = UpdateConstantBuffer(s, *cBuf, cbu.data);
+				b8 success = UpdateConstantBuffer(s, cBuf, cbu.data);
 				if (!success) break;
 				break;
 			}

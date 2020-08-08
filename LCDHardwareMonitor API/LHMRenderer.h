@@ -15,13 +15,6 @@ enum struct ShaderStage
 	Pixel,
 };
 
-struct Material
-{
-	Mesh         mesh;
-	VertexShader vs;
-	PixelShader  ps;
-};
-
 struct Vertex
 {
 	v3 position;
