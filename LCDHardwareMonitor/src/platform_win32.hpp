@@ -31,7 +31,7 @@ inline void
 Platform_PrintImpl(StringView format, Args... args)
 {
 	String message = String_FormatImpl(format, args...);
-	defer { List_Free(message); };
+	defer { String_Free(message); };
 
 	Platform_PrintImpl(message);
 }
@@ -101,7 +101,7 @@ inline void
 LogFormatMessage(u32 messageID, Severity severity, Location location, StringView format, Args... args)
 {
 	String message = String_FormatImpl(format, args...);
-	defer { List_Free(message); };
+	defer { String_Free(message); };
 
 	LogFormatMessage(messageID, severity, location, message);
 }
