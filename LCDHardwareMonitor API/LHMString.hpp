@@ -291,7 +291,7 @@ String_FormatChecked(StringView format, Args&&... args)
 
 template<typename T>
 inline u32
-ToStringImpl_Format(String& string, StringView format, T value)
+ToStringf(String& string, StringView format, T value)
 {
 	b8 lengthOnly = !string.data;
 	u32 written = 0;
@@ -302,19 +302,19 @@ ToStringImpl_Format(String& string, StringView format, T value)
 }
 
 // TODO: Might want to add a 'context' parameter that can keep track of nested indentation
-u32 ToString(String& string, u8        value) { return ToStringImpl_Format(string, "%hu",  value); }
-u32 ToString(String& string, u16       value) { return ToStringImpl_Format(string, "%u",   value); }
-u32 ToString(String& string, u32       value) { return ToStringImpl_Format(string, "%lu",  value); }
-u32 ToString(String& string, u64       value) { return ToStringImpl_Format(string, "%llu", value); }
-u32 ToString(String& string, i8        value) { return ToStringImpl_Format(string, "%hi",  value); }
-u32 ToString(String& string, i16       value) { return ToStringImpl_Format(string, "%i",   value); }
-u32 ToString(String& string, i32       value) { return ToStringImpl_Format(string, "%li",  value); }
-u32 ToString(String& string, i64       value) { return ToStringImpl_Format(string, "%lli", value); }
-u32 ToString(String& string, r32       value) { return ToStringImpl_Format(string, "%f",   value); }
-u32 ToString(String& string, r64       value) { return ToStringImpl_Format(string, "%f",   value); }
-u32 ToString(String& string, c8        value) { return ToStringImpl_Format(string, "%c",   value); }
-u32 ToString(String& string, const c8* value) { return ToStringImpl_Format(string, "%s",   value); }
-u32 ToString(String& string, b8        value) { return ToStringImpl_Format(string, "%s",   value ? "true" : "false"); }
+u32 ToString(String& string, u8        value) { return ToStringf(string, "%hu",  value); }
+u32 ToString(String& string, u16       value) { return ToStringf(string, "%u",   value); }
+u32 ToString(String& string, u32       value) { return ToStringf(string, "%lu",  value); }
+u32 ToString(String& string, u64       value) { return ToStringf(string, "%llu", value); }
+u32 ToString(String& string, i8        value) { return ToStringf(string, "%hi",  value); }
+u32 ToString(String& string, i16       value) { return ToStringf(string, "%i",   value); }
+u32 ToString(String& string, i32       value) { return ToStringf(string, "%li",  value); }
+u32 ToString(String& string, i64       value) { return ToStringf(string, "%lli", value); }
+u32 ToString(String& string, r32       value) { return ToStringf(string, "%f",   value); }
+u32 ToString(String& string, r64       value) { return ToStringf(string, "%f",   value); }
+u32 ToString(String& string, c8        value) { return ToStringf(string, "%c",   value); }
+u32 ToString(String& string, const c8* value) { return ToStringf(string, "%s",   value); }
+u32 ToString(String& string, b8        value) { return ToStringf(string, "%s",   value ? "true" : "false"); }
 
 u32
 ToString(String& string, String value)
@@ -343,52 +343,6 @@ ToString(String& string, StringSlice value)
 	u32 written = value.length;
 	if (!lengthOnly) strncpy_s(&string.data[string.length], string.capacity - string.length, value.data, value.length);
 	string.length += written * !lengthOnly;
-	return written;
-}
-
-template<typename T>
-u32
-ToString(String& string, List<T>& list)
-{
-	u32 written = 0;
-	if (list.length == 0)
-	{
-		written += ToString(string, "List: {}");
-	}
-	else
-	{
-		written += ToString(string, "List: {\n");
-		for (u32 i = 0; i < list.length; i++)
-		{
-			written += ToString(string, "\t");
-			written += ToString(string, list[i]);
-			written += ToString(string, ",\n");
-		}
-		written += ToString(string, "}");
-	}
-	return written;
-}
-
-template<typename T>
-u32
-ToString(String& string, Slice<T>& list)
-{
-	u32 written = 0;
-	if (list.length == 0)
-	{
-		written += ToString(string, "Slice: {}");
-	}
-	else
-	{
-		written += ToString(string, "Slice: {\n");
-		for (u32 i = 0; i < list.length; i++)
-		{
-			written += ToString(string, "\t");
-			written += ToString(string, list[i]);
-			written += ToString(string, ",\n");
-		}
-		written += ToString(string, "}");
-	}
 	return written;
 }
 

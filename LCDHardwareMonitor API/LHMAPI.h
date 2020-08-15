@@ -7,9 +7,9 @@
 #include "LHMMath.hpp"
 #include "LHMDefer.hpp"
 #include "LHMMemory.hpp"
+#include "LHMString.hpp"
 #include "LHMList.hpp"
 #include "LHMBytes.hpp"
-#include "LHMString.hpp"
 #include "LHMHash.hpp"
 
 // Systems

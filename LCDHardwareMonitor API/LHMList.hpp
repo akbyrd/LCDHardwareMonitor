@@ -515,6 +515,52 @@ Slice_MemberSlice(Slice<T>& slice, U T::* memberPtr)
 	return result;
 }
 
+template<typename T>
+u32
+ToString(String& string, List<T>& list)
+{
+	u32 written = 0;
+	if (list.length == 0)
+	{
+		written += ToString(string, "List: {}");
+	}
+	else
+	{
+		written += ToString(string, "List: {\n");
+		for (u32 i = 0; i < list.length; i++)
+		{
+			written += ToString(string, "\t");
+			written += ToString(string, list[i]);
+			written += ToString(string, ",\n");
+		}
+		written += ToString(string, "}");
+	}
+	return written;
+}
+
+template<typename T>
+u32
+ToString(String& string, Slice<T>& list)
+{
+	u32 written = 0;
+	if (list.length == 0)
+	{
+		written += ToString(string, "Slice: {}");
+	}
+	else
+	{
+		written += ToString(string, "Slice: {\n");
+		for (u32 i = 0; i < list.length; i++)
+		{
+			written += ToString(string, "\t");
+			written += ToString(string, list[i]);
+			written += ToString(string, ",\n");
+		}
+		written += ToString(string, "}");
+	}
+	return written;
+}
+
 // TODO: Change most of the API to take a Slice (have to deal with T deduction on the functions)
 // TODO: This data structure needs to be reworked entirely. The API is all over the place and
 // generally garbage.
