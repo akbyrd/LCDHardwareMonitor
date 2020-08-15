@@ -1,10 +1,9 @@
 Current
 -------
-Renderer TODOs
-	// TODO: Using this flag causes a crash when RTSS tries to hook the process
-	// TODO: Change asserts for user mistakes to validation
-	// TODO: Keep resources bound across frames?
 Bring FT232H code over
+	Simulation should control ft232h. Init if connected after startup, for example
+	Ensure we can always init, even if in a bad state
+
 Bring ILI9341 code over
 Read from display
 
@@ -220,3 +219,5 @@ Remove WRL dependency
 Remove all unused Windows link dependencies
 Add UTF-8 support?
 Reduce link dependencies
+Implement a way to get errors from users. Event tracing? Windows error reporting? Dumps? Telemetry?
+Reset state structs if Initialize fails

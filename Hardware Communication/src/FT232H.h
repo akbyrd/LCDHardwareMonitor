@@ -398,6 +398,7 @@ void FT232H_Initialize(FT232H::State* ft232h)
 	u8 pinInitHCmd[] = { FT232H::Command::SetDataBitsHighByte, ft232h->highPinValues, ft232h->highPinDirections };
 	FT232H_Write(ft232h, pinInitHCmd);
 
+	// TODO: Is this needed to set pin states? Why is it down here?
 	FT232H_Write(ft232h, FT232H::Command::DisableLoopback, false);
 	// NOTE: Just following AN_135
 	// TODO: Do we need to wait here?

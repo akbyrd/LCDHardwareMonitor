@@ -7,9 +7,11 @@
 #include "renderer.h"
 #include "plugin_shared.h"
 #include "gui_protocol.hpp"
+#include "ft232h.h"
 #include "simulation.hpp"
 
 #include "platform_win32.hpp"
+#include "ft232h_win32.hpp"
 #include "pluginloader_win32.hpp"
 #include "renderer_d3d11.hpp"
 #include "previewwindow_win32_d3d11.hpp"
@@ -60,6 +62,7 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 		#define DEFER_TEARDOWN [&]
 	#endif
 
+	FT232HState        ft232hState       = {};
 	RendererState      rendererState     = {};
 	SimulationState    simulationState   = {};
 	PluginLoaderState  pluginLoaderState = {};
@@ -68,8 +71,16 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 	// HACK: Remove this
 	simulationState.renderSize = { 320, 240 };
 
+	// LCD Hardware
+	FT232H_SetTracing(ft232hState, false);
+	FT232H_SetDebugChecks(ft232hState, false);
+	b8 success = FT232H_Initialize(ft232hState);
+	LOG_IF(!success, IGNORE, Severity::Warning, "Failed to initialize the FT232H");
+	DEFER_TEARDOWN { FT232H_Teardown(ft232hState); };
+
+
 	// Renderer
-	b8 success = Renderer_Initialize(rendererState, simulationState.renderSize);
+	success = Renderer_Initialize(rendererState, simulationState.renderSize);
 	LOG_IF(!success, return -1, Severity::Fatal, "Failed to initialize the renderer");
 	DEFER_TEARDOWN { Renderer_Teardown(rendererState); };
 
