@@ -73,7 +73,7 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 
 	// LCD Hardware
 	FT232H_SetTracing(ft232hState, false);
-	FT232H_SetDebugChecks(ft232hState, false);
+	FT232H_SetDebugChecks(ft232hState, true);
 	b8 success = FT232H_Initialize(ft232hState);
 	LOG_IF(!success, IGNORE, Severity::Warning, "Failed to initialize the FT232H");
 	DEFER_TEARDOWN { FT232H_Teardown(ft232hState); };

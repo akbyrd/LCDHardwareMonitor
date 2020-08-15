@@ -3,6 +3,8 @@ Current
 Bring FT232H code over
 	Simulation should control ft232h. Init if connected after startup, for example
 	Ensure we can always init, even if in a bad state
+	Coalesce writes
+	Consider adding 'last command time'
 
 Bring ILI9341 code over
 Read from display

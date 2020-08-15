@@ -85,7 +85,11 @@ TraceBytes(StringView prefix, ByteSlice bytes)
 			String_Reserve(string, length + 2);
 	}
 	string.data[string.length++] = '\n';
-	string.data[string.length++] = '\0';
+	string.data[string.length] = '\0';
+
+	// TODO: Doesn't work :(
+	//Platform_Print(string);
+	Platform_Print("%", string.data);
 }
 
 static void
@@ -101,6 +105,7 @@ DrainRead(FT232HState& ft232h, StringView prefix)
 	if (bytesInReadBuffer > 0)
 	{
 		Bytes buffer = {};
+		defer { List_Free(buffer); };
 		List_Reserve(buffer, bytesInReadBuffer);
 
 		status = FT_Read(ft232h.device, buffer.data, bytesInReadBuffer, (DWORD*) &buffer.length);
@@ -195,12 +200,6 @@ FT232H_Write(FT232HState& ft232h, u8 command)
 
 	if (ft232h.enableTracing)
 		TraceBytes("command", command);
-
-	if (ft232h.enableDebugChecks)
-	{
-		WaitForResponse(ft232h);
-		AssertEmptyReadBuffer(ft232h);
-	}
 };
 
 void
@@ -216,12 +215,6 @@ FT232H_Write(FT232HState& ft232h, ByteSlice bytes)
 
 	if (ft232h.enableTracing)
 		TraceBytes("write", bytes);
-
-	if (ft232h.enableDebugChecks)
-	{
-		WaitForResponse(ft232h);
-		AssertEmptyReadBuffer(ft232h);
-	}
 };
 
 void
@@ -231,8 +224,6 @@ FT232H_Read(FT232HState& ft232h, Bytes& buffer, u32 numBytesToRead)
 
 	FT_STATUS status;
 
-	List_Reserve(buffer, buffer.length + numBytesToRead);
-
 	// NOTE: ILI9341 shifts on the falling edge, therefore read on the rising edge
 	u32 numBytesWritten;
 	u8 ftcmd[] = { FT232H::Command::RecvBytesRisingMSB, Byte(0, numBytesToRead - 1), Byte(1, numBytesToRead - 1) };
@@ -240,6 +231,16 @@ FT232H_Read(FT232HState& ft232h, Bytes& buffer, u32 numBytesToRead)
 	LOG_IF(status != FT_OK, EnterErrorMode(ft232h); return,
 		Severity::Error, "Failed to write to device: %", status);
 	Assert(ArrayLength(ftcmd) == numBytesWritten);
+
+	FT232H_ReadQueued(ft232h, buffer, numBytesToRead);
+}
+
+void
+FT232H_ReadQueued(FT232HState& ft232h, Bytes& buffer, u32 numBytesToRead)
+{
+	if (ft232h.errorMode) return;
+
+	FT_STATUS status;
 
 	if (ft232h.enableDebugChecks)
 	{
@@ -249,6 +250,8 @@ FT232H_Read(FT232HState& ft232h, Bytes& buffer, u32 numBytesToRead)
 			Severity::Error, "Failed to get queue status: %", status);
 		Assert(bytesInReadBuffer >= numBytesToRead);
 	}
+
+	List_Reserve(buffer, buffer.length + numBytesToRead);
 
 	status = FT_Read(ft232h.device, buffer.data, numBytesToRead, (DWORD*) &buffer.length);
 	LOG_IF(status != FT_OK, EnterErrorMode(ft232h); return,
@@ -315,15 +318,6 @@ FT232H_Initialize(FT232HState& ft232h)
 	LOG_IF(status != FT_OK, return false,
 		Severity::Error, "Failed to reset device: %", status);
 
-	// TODO: Is it worth deferring the init process so we don't block?
-	Sleep(50);
-
-	// TODO: I don't think we really need to drain here? We sync later with a bad command, seems
-	// better to do it there.
-	// NOTE: Flush device read buffer
-	DrainRead(ft232h, "initial drain");
-	if (ft232h.errorMode) return false;
-
 	// NOTE: This drops any data held in the driver
 	// NOTE: Supposedly, only "in" actually works
 	// NOTE: 64 B - 64 kB (4096 B default)
@@ -363,46 +357,33 @@ FT232H_Initialize(FT232HState& ft232h)
 	LOG_IF(status != FT_OK, return false,
 		Severity::Error, "Failed to reset MPSSE: %", status);
 
+	// Enable the MPSSE controller
 	status = FT_SetBitMode(ft232h.device, mask, FT_BITMODE_MPSSE);
 	LOG_IF(status != FT_OK, return false,
 		Severity::Error, "Failed to enable MPSSE: %", status);
 
+	// TODO: Is it worth deferring the init process so we don't block?
+	Sleep(50);
+
 	// NOTE: MPSSE is ready to accept commands
 
-	// TODO: Refactor this whole sync process
+	// NOTE: Sync MPSSE by writing a bogus command and reading the result
 	{
+		// NOTE: Flush device read buffer
+		DrainRead(ft232h, "initial drain");
+
 		FT232H_Write(ft232h, FT232H::Command::EnableLoopback);
-		// TODO: Do we need to wait here?
-		// NOTE: Just following AN_135
-		AssertEmptyReadBuffer(ft232h);
-
-		// NOTE: Sync MPSSE by writing a bogus command and reading the result
 		FT232H_Write(ft232h, FT232H::Command::BadCommand);
+		WaitForResponse(ft232h);
 
-		// TODO: Can we use FT232H_WaitForResponse?
-		// NOTE: It takes a bit for the response to show up
-		u32 bytesInReadBuffer = 0;
-		while (bytesInReadBuffer == 0)
-		{
-			status = FT_GetQueueStatus(ft232h.device, (DWORD*) &bytesInReadBuffer);
-			LOG_IF(status != FT_OK, return false,
-				Severity::Error, "Failed to get queue status: %", status);
-		}
+		Bytes buffer = {};
+		defer { List_Free(buffer); };
 
-		// TODO: Seems like we kinda need a flush after enabling MPSSE
-		if (bytesInReadBuffer != 2)
-			DrainRead(ft232h, "initial sync");
-		Assert(bytesInReadBuffer == 2);
-
-		u8 buffer[2];
-		DWORD numBytesRead = 0;
-		status = FT_Read(ft232h.device, buffer, (u32) ArrayLength(buffer), &numBytesRead);
-		LOG_IF(status != FT_OK, return false,
-			Severity::Error, "Failed to read from device: %", status);
-		Assert(bytesInReadBuffer == numBytesRead);
-
+		FT232H_ReadQueued(ft232h, buffer, 2);
 		Assert(buffer[0] == FT232H::Response::BadCommand);
 		Assert(buffer[1] == FT232H::Command::BadCommand);
+
+		FT232H_Write(ft232h, FT232H::Command::DisableLoopback);
 	}
 
 	FT232H_Write(ft232h, FT232H::Command::EnableClockDivide);
@@ -426,11 +407,11 @@ FT232H_Initialize(FT232HState& ft232h)
 	u8 pinInitHCmd[] = { FT232H::Command::SetDataBitsHighByte, ft232h.highPinValues, ft232h.highPinDirections };
 	FT232H_Write(ft232h, pinInitHCmd);
 
-	// TODO: Is this needed to set pin states? Why is it down here?
-	FT232H_Write(ft232h, FT232H::Command::DisableLoopback);
-	// NOTE: Just following AN_135
-	// TODO: Do we need to wait here?
-	AssertEmptyReadBuffer(ft232h);
+	if (ft232h.enableDebugChecks)
+	{
+		WaitForResponse(ft232h);
+		AssertEmptyReadBuffer(ft232h);
+	}
 
 	if (ft232h.errorMode) return false;
 	return true;
