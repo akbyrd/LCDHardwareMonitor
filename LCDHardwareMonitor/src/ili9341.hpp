@@ -49,6 +49,10 @@ namespace ILI9341
 static inline u8
 GetByte(u8 index, u32 value) { return (value >> (index * 8)) & 0xFF; }
 
+#define Unpack2(x) GetByte(1, x), GetByte(0, x)
+#define Unpack3(x) GetByte(2, x), GetByte(1, x), GetByte(0, x)
+#define Unpack4(x) GetByte(3, x), GetByte(2, x), GetByte(1, x), GetByte(0, x)
+
 void
 ILI9341_WriteCmd(ILI9341State& ili9341, u8 cmd)
 {
@@ -72,19 +76,18 @@ ILI9341_Write(ILI9341State& ili9341, u8 cmd, ByteSlice bytes)
 	FT232H_SendBytes(*ili9341.ft232h, bytes);
 }
 
-// -------------------------------------------------------------------------------------------------
-// Public API - Logic Functions
-
+// TODO: Can this be constrained to u8 only?
+template <typename ...Args>
 void
-ILI9341_Reset(ILI9341State& ili9341)
+ILI9341_Write(ILI9341State& ili9341, u8 cmd, Args... bytes)
 {
-	//NOTE: Resets device state to defaults
-	ILI9341_WriteCmd(ili9341, ILI9341::Command::SoftwareReset);
-	ili9341.sleep = true;
-	ili9341.sleepTime = Platform_GetTicks();
-	Platform_Sleep(5);
-	//ili9341->nextCommandTime = ili9341->sleepTime + 5ms
+	u8 data[] = { u8(bytes)... };
+	ILI9341_WriteCmd(ili9341, cmd);
+	ILI9341_WriteData(ili9341, data);
 }
+
+// -------------------------------------------------------------------------------------------------
+// Public API - Configuration Functions
 
 // TODO: Revisit this when displaying LHM frames.
 void
@@ -155,8 +158,7 @@ ILI9341_FrameRateControl_Normal(ILI9341State& ili9341)
 
 	u8 frc_divisionRatio = divisionRatio_1;
 	u8 frc_clocksPerLine = frameRate_119;
-	u8 params[] = { frc_divisionRatio, frc_clocksPerLine };
-	ILI9341_Write(ili9341, ILI9341::Command::FrameRateControlNormal, params);
+	ILI9341_Write(ili9341, ILI9341::Command::FrameRateControlNormal, frc_divisionRatio, frc_clocksPerLine);
 }
 
 void
@@ -180,8 +182,7 @@ ILI9341_PowerControl(ILI9341State& ili9341)
 	u8 pcb_p1 = pcb_p1_default;
 	u8 pcb_p2 = (u8) (pcb_p2_default | pcb_p2_pceq_enable);
 
-	u8 params[] = { pcb_p1, pcb_p2 };
-	ILI9341_Write(ili9341, ILI9341::Command::PowerControlB, params);
+	ILI9341_Write(ili9341, ILI9341::Command::PowerControlB, pcb_p1, pcb_p2);
 	// NOTE: Leave parameter 3 at default
 	ILI9341_WriteCmd(ili9341, ILI9341::Command::Nop);
 }
@@ -201,16 +202,14 @@ ILI9341_DriverTimingControl(ILI9341State& ili9341)
 	// NOTE: Driver Timing Control A (2) isn't used by any example code
 
 	// NOTE: Just doing what everyone else does...
-	u8 params[] = { 0x00, 0x00 };
-	ILI9341_Write(ili9341, ILI9341::Command::DriverTimingControlB, params);
+	ILI9341_Write(ili9341, ILI9341::Command::DriverTimingControlB, 0x00, 0x00);
 }
 
 void
 ILI9341_PowerOnSequenceControl(ILI9341State& ili9341)
 {
 	// NOTE: Just doing what everyone else does...
-	u8 params[] = { 0x64, 0x03, 0x12, 0x81 };
-	ILI9341_Write(ili9341, ILI9341::Command::PowerOnSequenceControl, params);
+	ILI9341_Write(ili9341, ILI9341::Command::PowerOnSequenceControl, 0x64, 0x03, 0x12, 0x81);
 }
 
 void
@@ -230,10 +229,135 @@ ILI9341_SetGamma(ILI9341State& ili9341)
 	// NOTE: Gamma Set default is fine
 
 	// NOTE: Just doing what everyone else does...
-	u8 posParams[] = { 0x0F, 0x31, 0x2B, 0x0C, 0x0E, 0x08, 0x4E, 0xF1, 0x37, 0x07, 0x10, 0x03, 0x0E, 0x09, 0x00 };
-	ILI9341_Write(ili9341, ILI9341::Command::PositiveGammaCorrection, posParams);
-	u8 negParams[] = { 0x00, 0x0E, 0x14, 0x03, 0x11, 0x07, 0x31, 0xC1, 0x48, 0x08, 0x0F, 0x0C, 0x31, 0x36, 0x0F };
-	ILI9341_Write(ili9341, ILI9341::Command::NegativeGammaCorrection, negParams);
+	ILI9341_Write(ili9341, ILI9341::Command::PositiveGammaCorrection,
+		0x0F, 0x31, 0x2B, 0x0C, 0x0E, 0x08, 0x4E, 0xF1, 0x37, 0x07, 0x10, 0x03, 0x0E, 0x09, 0x00);
+	ILI9341_Write(ili9341, ILI9341::Command::NegativeGammaCorrection,
+		0x00, 0x0E, 0x14, 0x03, 0x11, 0x07, 0x31, 0xC1, 0x48, 0x08, 0x0F, 0x0C, 0x31, 0x36, 0x0F);
+}
+
+// -------------------------------------------------------------------------------------------------
+// Public API - Logic Functions
+
+void
+ILI9341_Reset(ILI9341State& ili9341)
+{
+	//NOTE: Resets device state to defaults
+	ILI9341_WriteCmd(ili9341, ILI9341::Command::SoftwareReset);
+	ili9341.sleep = true;
+	ili9341.sleepTime = Platform_GetTicks();
+	Platform_Sleep(5);
+	//ili9341.nextCommandTime = ili9341.sleepTime + 5ms
+}
+
+void
+ILI9341_Sleep(ILI9341State& ili9341)
+{
+	// NOTE: MCU and memory are still working. Memory maintains contents.
+	Assert(!ili9341.sleep);
+
+	u32 sinceWake = (u32) Platform_GetElapsedMilliseconds(ili9341.wakeTime);
+	if (sinceWake < 120)
+			Platform_Sleep(120 - sinceWake);
+
+	ILI9341_WriteCmd(ili9341, ILI9341::Command::SleepIn);
+	ili9341.sleep = true;
+	ili9341.sleepTime = Platform_GetTicks();
+	Platform_Sleep(5);
+	//ili9341.nextCommandTime = ili9341.sleepTime + 5ms;
+}
+
+void
+ILI9341_Wake(ILI9341State& ili9341)
+{
+	Assert(ili9341.sleep);
+
+	u32 sinceSleep = (u32) Platform_GetElapsedMilliseconds(ili9341.sleepTime);
+	if (sinceSleep < 120)
+		Platform_Sleep(120 - sinceSleep);
+
+	ILI9341_WriteCmd(ili9341, ILI9341::Command::SleepOut);
+	ili9341.sleep = false;
+	ili9341.wakeTime = Platform_GetTicks();
+	// NOTE: Docs contradict themselves. Is it 5 ms or 120 ms?
+	Platform_Sleep(5);
+	//ili9341.nextCommandTime = ili9341.wakeTime + 5ms
+}
+
+void
+ILI9341_SetRect(ILI9341State& ili9341, u16 x1, u16 y1, u16 x2, u16 y2, u16 color)
+{
+	Assert(x1 <= x2);
+	Assert(ili9341.rowColSwap ? x2 < 320 : x2 < 240);
+	ILI9341_Write(ili9341, ILI9341::Command::ColumnAddressSet, Unpack2(x1), Unpack2(x2));
+	Assert(y1 <= y2);
+	Assert(ili9341.rowColSwap ? y2 < 240 : y2 < 320);
+	ILI9341_Write(ili9341, ILI9341::Command::PageAddressSet, Unpack2(y1), Unpack2(y2));
+
+	const u32 maxWrite = 0xFFFE;
+	u8 colorData[maxWrite];
+	u32 dataLen = (u32) (2 * (x2 - x1 + 1) * (y2 - y1 + 1));
+	for (u32 i = 0; i < Min(dataLen, maxWrite); i += 2)
+	{
+		colorData[i + 0] = GetByte(1, color);
+		colorData[i + 1] = GetByte(0, color);
+	}
+
+	ILI9341_WriteCmd(ili9341, ILI9341::Command::MemoryWrite);
+
+	u32 remainingLen = dataLen;
+	while (remainingLen > 0)
+	{
+		ByteSlice bytes = {};
+		bytes.data   = colorData;
+		bytes.length = Min(remainingLen, maxWrite);
+
+		ILI9341_WriteData(ili9341, bytes);
+		remainingLen -= bytes.length;
+	}
+}
+
+void
+ILI9341_SetPixel(ILI9341State& ili9341, u16 x, u16 y, u16 color)
+{
+	ILI9341_SetRect(ili9341, x, y, x, y, color);
+}
+
+void
+ILI9341_Clear(ILI9341State& ili9341, u16 color)
+{
+	ILI9341_SetRect(ili9341, 0, 0, 240 - 1, 320 - 1, color);
+}
+
+void
+ILI9341_DisplayTest(ILI9341State& ili9341)
+{
+	for (u16 i = 0; i < 120; i++)
+	{
+		u16 l = (u16) (  0 - 0 + i);
+		u16 r = (u16) (240 - 1 - i);
+		u16 t = (u16) (  0 - 0 + i);
+		u16 b = (u16) (320 - 1 - i);
+
+		ILI9341_SetPixel(ili9341, l, t, Colors16::Red);
+		ILI9341_SetPixel(ili9341, r, t, Colors16::Green);
+		ILI9341_SetPixel(ili9341, l, b, Colors16::Blue);
+		ILI9341_SetPixel(ili9341, r, b, Colors16::Gray);
+	}
+
+	for (u16 i = 0; i < 80; i++)
+	{
+		u16 l = (u16) (240 / 2 - 0);
+		u16 r = (u16) (240 / 2 - 1);
+		u16 m = (u16) (120 + i);
+
+		ILI9341_SetPixel(ili9341, l, m, Colors16::Black);
+		ILI9341_SetPixel(ili9341, r, m, Colors16::Black);
+	}
+
+	ILI9341_SetRect(ili9341, 120 - 10,  60 - 10, 120 + 10,  60 + 10, Colors16::Yellow);
+	ILI9341_SetRect(ili9341,  60 - 10, 160 - 10,  60 + 10, 160 + 10, Colors16::Magenta);
+	ILI9341_SetRect(ili9341, 180 - 10, 160 - 10, 180 + 10, 160 + 10, Colors16::Gray);
+	ILI9341_SetRect(ili9341, 120 - 10, 260 - 10, 120 + 10, 260 + 10, Colors16::Cyan);
 }
 
 // -------------------------------------------------------------------------------------------------

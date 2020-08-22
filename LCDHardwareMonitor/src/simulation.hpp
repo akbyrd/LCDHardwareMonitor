@@ -1752,7 +1752,7 @@ Simulation_Update(SimulationState& s)
 		SetScale   (world, size, 1.0f);
 		static Matrix wvp;
 		wvp = world * s.vp;
-		static v4 color = Color32(28, 151, 234, 255);
+		static v4 color = Color128(28, 151, 234, 255);
 
 		PluginContext context = {};
 		context.success = true;
@@ -1769,7 +1769,7 @@ Simulation_Update(SimulationState& s)
 
 	// Draw Selection
 	// TODO: Use a fancy shader to draw outlines
-	static v4 color = Color32(0, 122, 204, 255);
+	static v4 color = Color128(0, 122, 204, 255);
 	static List<Matrix> wvps = {}; // TODO: Leak
 	List_Clear(wvps);
 

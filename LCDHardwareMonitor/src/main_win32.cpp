@@ -84,6 +84,10 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 	LOG_IF(!success, IGNORE, Severity::Warning, "Failed to initialize the ILI9341");
 	DEFER_TEARDOWN { ILI9341_Teardown(ili9341State); };
 
+	// DEBUG: Test ILI9341
+	ILI9341_Clear(ili9341State, Colors16::White);
+	ILI9341_DisplayTest(ili9341State);
+
 
 	// Renderer
 	success = Renderer_Initialize(rendererState, simulationState.renderSize);

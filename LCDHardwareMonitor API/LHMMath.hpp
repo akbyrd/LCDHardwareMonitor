@@ -127,10 +127,11 @@ union v2t
 	template<typename U> explicit operator v4t<U>();
 };
 
-using v2  = v2t<r32>;
-using v2r = v2t<r32>;
-using v2i = v2t<i32>;
-using v2u = v2t<u32>;
+using v2   = v2t<r32>;
+using v2r  = v2t<r32>;
+using v2i  = v2t<i32>;
+using v2u  = v2t<u32>;
+using v2u8 = v2t<u8>;
 
 // Operators
 template<typename T, typename U>
@@ -376,10 +377,11 @@ union v3t
 	template<typename U> explicit operator v4t<U>();
 };
 
-using v3  = v3t<r32>;
-using v3r = v3t<r32>;
-using v3i = v3t<i32>;
-using v3u = v3t<u32>;
+using v3   = v3t<r32>;
+using v3r  = v3t<r32>;
+using v3i  = v3t<i32>;
+using v3u  = v3t<u32>;
+using v3u8 = v3t<u8>;
 
 // Operators
 template<typename T, typename U>
@@ -650,10 +652,11 @@ union v4t
 	template<typename U> explicit operator v4t<U>();
 };
 
-using v4  = v4t<r32>;
-using v4r = v4t<r32>;
-using v4i = v4t<i32>;
-using v4u = v4t<u32>;
+using v4   = v4t<r32>;
+using v4r  = v4t<r32>;
+using v4i  = v4t<i32>;
+using v4u  = v4t<u32>;
+using v4u8 = v4t<u8>;
 
 // Operators
 template<typename T, typename U>
@@ -832,18 +835,6 @@ ClampRect(v4t<T> rect, v4t<U> bounds)
 	v4t<T> result = {};
 	result.pos  = Clamp(rect.pos, min, max);
 	result.size = rect.size;
-	return result;
-}
-
-inline v4
-Color32(u8 r, u8 g, u8 b, u8 a)
-{
-	v4 result = {
-		r / 255.0f,
-		g / 255.0f,
-		b / 255.0f,
-		a / 255.0f
-	};
 	return result;
 }
 
@@ -1442,5 +1433,57 @@ GetRT(v2t<T>& yp, v2t<U> pos)
 	SetRT(result, yp, pos);
 	return result;
 }
+
+// -------------------------------------------------------------------------------------------------
+// Color
+
+constexpr inline u16
+Color16(u8 r, u8 g, u8 b);
+
+constexpr inline u16
+Color16(u8 r, u8 g, u8 b)
+{
+	u16 rp = (u16) ((r & 0b1111'1000) << 8);
+	u16 gp = (u16) ((g & 0b1111'1100) << 3);
+	u16 bp = (u16) ((b & 0b1111'1000) >> 3);
+	u16 result = (u16) (rp | gp | bp);
+	return result;
+}
+
+constexpr inline u32
+Color32(u8 r, u8 g, u8 b, u8 a)
+{
+	u32 rp = (u32) (r << 24);
+	u32 gp = (u32) (g << 16);
+	u32 bp = (u32) (b <<  8);
+	u32 ap = (u32) (a <<  0);
+	u32 result = rp | gp | bp | ap;
+	return result;
+}
+
+constexpr inline v4
+Color128(u8 r, u8 g, u8 b, u8 a)
+{
+	v4 result = {
+		r / 255.0f,
+		g / 255.0f,
+		b / 255.0f,
+		a / 255.0f
+	};
+	return result;
+}
+
+struct Colors16
+{
+	static const u16 Black   = Color16(0x00, 0x00, 0x00);
+	static const u16 Gray    = Color16(0x80, 0x80, 0x80);
+	static const u16 White   = Color16(0xFF, 0xFF, 0xFF);
+	static const u16 Red     = Color16(0xFF, 0x00, 0x00);
+	static const u16 Green   = Color16(0x00, 0xFF, 0x00);
+	static const u16 Blue    = Color16(0x00, 0x00, 0xFF);
+	static const u16 Cyan    = Color16(0x00, 0xFF, 0xFF);
+	static const u16 Magenta = Color16(0xFF, 0x00, 0xFF);
+	static const u16 Yellow  = Color16(0xFF, 0xFF, 0x00);
+};
 
 #endif

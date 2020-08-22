@@ -31,9 +31,9 @@ InitializeBarWidgets(PluginContext& context, WidgetAPI::Initialize api)
 		v2 pixelsPerUV = 1.0f / widget.size;
 		barWidget.psInitialize.borderSizeUV    = barWidget.borderSize * pixelsPerUV;
 		barWidget.psInitialize.borderBlurUV    = barWidget.borderBlur * pixelsPerUV;
-		barWidget.psInitialize.borderColor     = Color32(47, 112, 22, 255);
-		barWidget.psInitialize.fillColor       = Color32(47, 112, 22, 255);
-		barWidget.psInitialize.backgroundColor = Color32( 0,   0,  0, 255);
+		barWidget.psInitialize.borderColor     = Color128(47, 112, 22, 255);
+		barWidget.psInitialize.fillColor       = Color128(47, 112, 22, 255);
+		barWidget.psInitialize.backgroundColor = Color128( 0,   0,  0, 255);
 	}
 	return true;
 }

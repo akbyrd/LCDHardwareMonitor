@@ -1,12 +1,13 @@
 Current
 -------
+Bring ILI9341 code over
+	Can Initialize fail?
+
 Bring FT232H code over
 	Simulation should control ft232h. Init if connected after startup, for example
 	Ensure we can always init, even if in a bad state
 	Coalesce writes
 	Consider adding 'last command time'
-
-Bring ILI9341 code over
 Read from display
 
 
@@ -59,6 +60,7 @@ Consider using premake
 
 Refactoring - Memory handling
 -----------------------------
+Run gflags and sanitizers
 Figure out what happens when memory allocations fail
 Re-use memory when formatting
 Use an arena for logging
