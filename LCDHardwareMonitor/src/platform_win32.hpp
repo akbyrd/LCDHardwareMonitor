@@ -308,6 +308,12 @@ Platform_GetElapsedMilliseconds(i64 startTicks)
 }
 
 void
+Platform_Sleep(u32 ms)
+{
+	Sleep(ms);
+}
+
+void
 Platform_RequestQuit()
 {
 	PostQuitMessage(0);

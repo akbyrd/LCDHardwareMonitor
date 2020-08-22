@@ -50,6 +50,15 @@
     <ClInclude Include="..\..\LCDHardwareMonitor\src\Solid Colored.ps.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\LCDHardwareMonitor\src\ft232h.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\LCDHardwareMonitor\src\ft232h_win32.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\LCDHardwareMonitor\src\ili9341.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\..\LCDHardwareMonitor\res\Vertex Colored.ps">

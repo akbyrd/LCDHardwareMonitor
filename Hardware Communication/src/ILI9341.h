@@ -156,7 +156,7 @@ void ILI9341_Reset(ILI9341::State* ili9341)
 
 void ILI9341_Sleep(ILI9341::State* ili9341)
 {
-	// NOTE: MCU are memory are still working. Memory maintains contents.
+	// NOTE: MCU and memory are still working. Memory maintains contents.
 	Assert(!ili9341->sleep);
 
 	u32 sinceWake = u32(GetElapsedMs(ili9341->wakeTime));

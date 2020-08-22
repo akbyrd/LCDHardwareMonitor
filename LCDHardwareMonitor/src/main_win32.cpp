@@ -8,6 +8,7 @@
 #include "plugin_shared.h"
 #include "gui_protocol.hpp"
 #include "ft232h.h"
+#include "ili9341.hpp"
 #include "simulation.hpp"
 
 #include "platform_win32.hpp"
@@ -63,6 +64,7 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 	#endif
 
 	FT232HState        ft232hState       = {};
+	ILI9341State       ili9341State      = {};
 	RendererState      rendererState     = {};
 	SimulationState    simulationState   = {};
 	PluginLoaderState  pluginLoaderState = {};
@@ -77,6 +79,10 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 	b8 success = FT232H_Initialize(ft232hState);
 	LOG_IF(!success, IGNORE, Severity::Warning, "Failed to initialize the FT232H");
 	DEFER_TEARDOWN { FT232H_Teardown(ft232hState); };
+
+	success = ILI9341_Initialize(ili9341State, ft232hState);
+	LOG_IF(!success, IGNORE, Severity::Warning, "Failed to initialize the ILI9341");
+	DEFER_TEARDOWN { ILI9341_Teardown(ili9341State); };
 
 
 	// Renderer

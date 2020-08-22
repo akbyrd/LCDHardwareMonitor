@@ -61,6 +61,7 @@ i64        Platform_GetTicks               ();
 r32        Platform_TicksToSeconds         (i64 ticks);
 r32        Platform_GetElapsedSeconds      (i64 startTicks);
 r32        Platform_GetElapsedMilliseconds (i64 startTicks);
+void       Platform_Sleep                  (u32 ms);
 void       Platform_RequestQuit            ();
 
 PipeResult Platform_CreatePipeServer       (StringView name, Pipe&);

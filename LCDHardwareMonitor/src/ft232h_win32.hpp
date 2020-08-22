@@ -71,8 +71,8 @@ namespace FT232H
 // -------------------------------------------------------------------------------------------------
 // Internal functions
 
-static inline u8
-GetByte(u8 index, u32 value) { return (value >> (index * 8)) & 0xFF; }
+//static inline u8
+//Byte(u8 index, u32 value) { return (value >> (index * 8)) & 0xFF; }
 
 static inline u8
 GetBit(u8 value, u8 index) { return (u8) ((value >> index) & 0x1); }
