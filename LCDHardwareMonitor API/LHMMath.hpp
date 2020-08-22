@@ -19,11 +19,23 @@
 // -------------------------------------------------------------------------------------------------
 // General
 
-const i32 i32Min = -2147483647 - 1;
-const i32 i32Max = 2147483647;
-const u32 u32Max = 4294967295;
-const r32 r32Min = 1.175494351e-38f;
-const r32 r32Max = 3.402823466e+38f;
+const i8  i8Min  = -0x80;                  // -128;
+const i8  i8Max  =  0x7F;                  //  127;
+const i16 i16Min = -0x8000;                // -32'768;
+const i16 i16Max =  0x7FFF;                //  32'767;
+const i32 i32Min =  0x8000'0000;           // -2'147'483'648;
+const i32 i32Max =  0x7FFF'FFFF;           //  2'147'483'647;
+const i64 i64Min =  0x8000'0000'0000'0000; // -9'223'372'036'854'775'808;
+const i64 i64Max =  0x7FFF'FFFF'FFFF'FFFF; //  9'223'372'036'854'775'807;
+
+const u8  u8Max  =  0xFF;                  //  255;
+const u16 u16Max =  0xFFFF;                //  65'535;
+const u32 u32Max =  0xFFFF'FFFF;           //  4'294'967'295;
+const u64 u64Max =  0xFFFF'FFFF'FFFF'FFFF; //  18'446'744'073'709'551'615;
+
+// TODO: Change to bit patterns like ints
+const r32 r32Min =  1.175494351e-38f;
+const r32 r32Max =  3.402823466e+38f;
 
 const r32 r32Epsilon = 31.192092896e-07f;
 const r32 r32Pi      = 3.141592654f;

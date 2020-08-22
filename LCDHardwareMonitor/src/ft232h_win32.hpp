@@ -22,6 +22,28 @@ namespace FT232H
 	static const u32   SerialNumber = 0x04036014;
 	static const char* Description  = "FT232H";
 
+	struct LowPins
+	{
+		static const u8 TCKBit = 0;
+		static const u8 D0Bit  = 1;
+		static const u8 DIBit  = 2;
+
+		static const u8 TCKMask = 1 << TCKBit;
+		static const u8 D0Mask  = 1 << D0Bit;
+		static const u8 DIMask  = 1 << DIBit;
+	};
+
+	struct HighPins
+	{
+		static const u8 CSBit  = 0;
+		static const u8 DCBit  = 1;
+		static const u8 RSTBit = 2;
+
+		static const u8 CSMask  = 1 << CSBit;
+		static const u8 DCMask  = 1 << DCBit;
+		static const u8 RSTMask = 1 << RSTBit;
+	};
+
 	struct Command
 	{
 		static const u8 SendBytesFallingMSB  = 0x11;
@@ -50,7 +72,18 @@ namespace FT232H
 // Internal functions
 
 static inline u8
-Byte(u8 index, u32 value) { return (value >> (index * 8)) & 0xFF; }
+GetByte(u8 index, u32 value) { return (value >> (index * 8)) & 0xFF; }
+
+static inline u8
+GetBit(u8 value, u8 index) { return (u8) ((value >> index) & 0x1); }
+
+static inline u8
+SetBit(u8 value, u8 bitIndex, u8 bitValue)
+{
+	value &= ~(1 << bitIndex);
+	value |= bitValue << bitIndex;
+	return value;
+}
 
 static void
 EnterErrorMode(FT232HState& ft232h)
@@ -188,6 +221,25 @@ FT232H_SetDebugChecks(FT232HState& ft232h, b8 enable)
 }
 
 void
+FT232H_SetDC(FT232HState& ft232h, Signal signal)
+{
+	if (ft232h.errorMode) return;
+
+	if (ft232h.enableTracing)
+		TraceBytes("dc", ((u8*) &signal)[3]);
+
+	Assert(signal == Signal::Low || signal == Signal::High);
+	u8 newValues = SetBit(ft232h.highPinValues, FT232H::HighPins::DCBit, (u8) signal);
+
+	if (ft232h.highPinValues != newValues)
+	{
+		ft232h.highPinValues = newValues;
+		u8 pinInitCmd[] = { FT232H::Command::SetDataBitsHighByte, ft232h.highPinValues, ft232h.highPinDirections };
+		FT232H_Write(ft232h, pinInitCmd);
+	}
+}
+
+void
 FT232H_Write(FT232HState& ft232h, u8 command)
 {
 	if (ft232h.errorMode) return;
@@ -218,15 +270,18 @@ FT232H_Write(FT232HState& ft232h, ByteSlice bytes)
 };
 
 void
-FT232H_Read(FT232HState& ft232h, Bytes& buffer, u32 numBytesToRead)
+FT232H_Read(FT232HState& ft232h, Bytes& buffer, u16 numBytesToRead)
 {
+	Assert(numBytesToRead != 0);
 	if (ft232h.errorMode) return;
 
 	FT_STATUS status;
 
 	// NOTE: ILI9341 shifts on the falling edge, therefore read on the rising edge
+	u16 numBytesEnc = (u16) (numBytesToRead - 1);
+	u8 ftcmd[] = { FT232H::Command::RecvBytesRisingMSB, GetByte(0, numBytesEnc), GetByte(1, numBytesEnc) };
+
 	u32 numBytesWritten;
-	u8 ftcmd[] = { FT232H::Command::RecvBytesRisingMSB, Byte(0, numBytesToRead - 1), Byte(1, numBytesToRead - 1) };
 	status = FT_Write(ft232h.device, ftcmd, ArrayLength(ftcmd), (DWORD*) &numBytesWritten);
 	LOG_IF(status != FT_OK, EnterErrorMode(ft232h); return,
 		Severity::Error, "Failed to write to device: %", status);
@@ -236,8 +291,9 @@ FT232H_Read(FT232HState& ft232h, Bytes& buffer, u32 numBytesToRead)
 }
 
 void
-FT232H_ReadQueued(FT232HState& ft232h, Bytes& buffer, u32 numBytesToRead)
+FT232H_ReadQueued(FT232HState& ft232h, Bytes& buffer, u16 numBytesToRead)
 {
+	Assert(numBytesToRead != 0);
 	if (ft232h.errorMode) return;
 
 	FT_STATUS status;
@@ -265,6 +321,20 @@ FT232H_ReadQueued(FT232HState& ft232h, Bytes& buffer, u32 numBytesToRead)
 		slice.length = numBytesToRead;
 		TraceBytes("read", slice);
 	}
+}
+
+void
+FT232H_SendBytes(FT232HState& ft232h, ByteSlice bytes)
+{
+	Assert(bytes.length != 0);
+	Assert(bytes.length <= u16Max);
+	if (ft232h.errorMode) return;
+
+	// NOTE: LCD reads on the rising edge so write on the falling edge
+	u16 numBytesEnc = (u16) (bytes.length - 1);
+	u8 ftcmd[] = { FT232H::Command::SendBytesFallingMSB, GetByte(0, numBytesEnc), GetByte(1, numBytesEnc) };
+	FT232H_Write(ft232h, ftcmd);
+	FT232H_Write(ft232h, bytes);
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -392,7 +462,7 @@ FT232H_Initialize(FT232HState& ft232h)
 
 	// NOTE: SCL Frequency = 60 Mhz / ((1 + divisor) * 2 * 5or1)
 	u16 clockDivisor = 0x0000;
-	u8 clockCmd[] = { FT232H::Command::SetClockDivisor, Byte(0, clockDivisor), Byte(1, clockDivisor) };
+	u8 clockCmd[] = { FT232H::Command::SetClockDivisor, GetByte(0, clockDivisor), GetByte(1, clockDivisor) };
 	FT232H_Write(ft232h, clockCmd);
 
 	// Pin 2: DI, 1: DO, 0: TCK

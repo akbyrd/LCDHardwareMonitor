@@ -157,6 +157,8 @@
     <ClCompile Include="..\..\LCDHardwareMonitor\src\main_win32.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\LCDHardwareMonitor\src\ft232h.h" />
+    <ClInclude Include="..\..\LCDHardwareMonitor\src\ft232h_win32.hpp" />
     <ClInclude Include="..\..\LCDHardwareMonitor\src\gui_protocol.hpp" />
     <ClInclude Include="..\..\LCDHardwareMonitor\src\pluginloader.h" />
     <ClInclude Include="..\..\LCDHardwareMonitor\src\pluginloader_win32.hpp" />
