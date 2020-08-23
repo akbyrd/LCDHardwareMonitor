@@ -103,7 +103,7 @@ ILI9341_MemoryAccessControl(ILI9341State& ili9341)
 	u8 colAddressOrder_LeftToRight        = 1 << 6;
 	u8 rowColExchange_Yes                 = 1 << 5;
 	u8 verticalRefreshOrder_TopToBottom   = 0 << 4;
-	u8 rgbOrder_RGB                       = 0 << 3;
+	u8 rgbOrder_RGB                       = 1 << 3;
 	u8 horizontalRefershOrder_LeftToRight = 0 << 2;
 
 	u8 mac = 0;
@@ -338,12 +338,16 @@ ILI9341_Wake(ILI9341State& ili9341)
 void
 ILI9341_SetRect(ILI9341State& ili9341, u16 xMin, u16 yMin, u16 xMax, u16 yMax, u16 color)
 {
+	// NOTE: Each MemoryWrite command resets the page and column register to the previous set value
+	// TODO: Maybe we should take advantage of that?
+
 	Assert(xMin <= xMax);
 	Assert(xMax <= ili9341.xMax);
 	ILI9341_Write(ili9341, ILI9341::Command::ColumnAddressSet, UnpackMSB2(xMin), UnpackMSB2(xMax));
 	Assert(yMin <= yMax);
 	Assert(yMax <= ili9341.yMax);
 	ILI9341_Write(ili9341, ILI9341::Command::PageAddressSet, UnpackMSB2(yMin), UnpackMSB2(yMax));
+	ILI9341_WriteCmd(ili9341, ILI9341::Command::MemoryWrite);
 
 	u32 totalDataLen = (u32) (2 * (xMax - xMin + 1) * (yMax - yMin + 1));
 
@@ -351,14 +355,13 @@ ILI9341_SetRect(ILI9341State& ili9341, u16 xMin, u16 yMin, u16 xMax, u16 yMax, u
 	// need to make a buffer that big and can send it multiple times.
 	u8 colorData[FT232H::MaxSendBytes];
 	u32 colorDataLen = Min(totalDataLen, FT232H::MaxSendBytes);
+	// TODO: Try using wmemset and profiling the difference
 	for (u32 i = 0; i < colorDataLen; i += 2)
 	{
-		// TODO: Need to fully understand this byte swap in order to fix sim texture colors
+		// TODO: Remove endian swap when using parallel interface
 		colorData[i + 0] = GetByte(1, color);
 		colorData[i + 1] = GetByte(0, color);
 	}
-
-	ILI9341_WriteCmd(ili9341, ILI9341::Command::MemoryWrite);
 
 	u32 remainingLen = totalDataLen;
 	while (remainingLen > 0)
@@ -456,6 +459,16 @@ ILI9341_DrawFrame(ILI9341State& ili9341, ByteSlice bytes)
 {
 	Assert(ili9341.drawingFrames);
 	Assert(bytes.stride == 1);
+
+	// TODO: Remove endian swap when using parallel interface
+	Assert(bytes.length % 2 == 0);
+	for (u32 i = 0; i < bytes.length; i += 2)
+	{
+		u8 temp = bytes[i];
+		bytes[i + 0] = bytes[i + 1];
+		bytes[i + 1] = temp;
+	}
+
 	ILI9341_WriteData(ili9341, bytes);
 }
 
@@ -490,6 +503,10 @@ ILI9341_Initialize(ILI9341State& ili9341, FT232HState& ft232h)
 	ILI9341_SetGamma(ili9341);
 	ILI9341_WriteCmd(ili9341, ILI9341::Command::SleepOut);
 	ILI9341_WriteCmd(ili9341, ILI9341::Command::DisplayOn);
+
+	// TODO: The screen can do an endian swap, but only in the parallel interface. Once we're using
+	// the parallel interface remove the byte-swaps in SetRect and DrawFrame and set the endianness
+	// mode with Interface Control 0xF6.
 
 	return true;
 }

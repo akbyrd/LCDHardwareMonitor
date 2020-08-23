@@ -1,29 +1,24 @@
 Current
 -------
-Get a frame displaying?!!?!?!?!
-	Color by order appears to be swapped
-		16-bit format (565) - MSBit->R
-		ILI9341 recv order  - MSBit first
-		ILI9341 mem order   - RGB
-		FT232H write order  - MSByte & MSBit
-		FT232H send order   - MSByte & MSBit
-		Memory write order  - RGB, MSByte
-		Memory read order   -
-		Texture order       -
-	Rows and columns appear swapped
-	Use SetBit to simplify config
+Fix MADCTL settings
+	Column order reversed
+	RGB reversed
 
 Bring ILI9341 code over
 	Can Initialize fail?
 	Use vectors
 	Add a tracing option
+	Use SetBit to simplify config
 
 Bring FT232H code over
 	Simulation should control ft232h. Init if connected after startup, for example
 	Ensure we can always init, even if in a bad state
 	Coalesce writes
 	Consider adding 'last command time'
+
+Compare writes to python code (ft232h and ili9341)
 Delete HardwareCommunication
+Compare reads to python code (ft232h and ili9341)
 Read from display
 
 

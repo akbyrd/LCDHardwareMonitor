@@ -387,6 +387,7 @@ class Display:
         """Encode a postion into bytes."""
         return struct.pack(self._ENCODE_POS, x, y)
 
+    # This is a big endian conversion
     def _encode_pixel(self, color):
         """Encode a pixel color into bytes."""
         return struct.pack(self._ENCODE_PIXEL, color)
