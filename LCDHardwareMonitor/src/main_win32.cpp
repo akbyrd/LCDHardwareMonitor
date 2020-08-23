@@ -86,10 +86,6 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 	ILI9341_BeginDrawFrames(ili9341State);
 	DEFER_TEARDOWN { ILI9341_EndDrawFrames(ili9341State); };
 
-	// DEBUG: Test ILI9341
-	//ILI9341_Clear(ili9341State, Colors16::White);
-	//ILI9341_DisplayTest(ili9341State);
-
 
 	// Renderer
 	success = Renderer_Initialize(rendererState, simulationState.renderSize);
@@ -189,7 +185,6 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 		CPUTextureBytes frame = Renderer_GetCPUTextureBytes(rendererState, simulationState.renderTargetCPUCopy);
 		Assert(frame.pixelStride == sizeof(u16));
 		Assert(frame.rowStride == frame.pixelStride * frame.size.x);
-		Assert(frame.bytes.stride == 1);
 		ILI9341_DrawFrame(ili9341State, frame.bytes);
 
 		// TODO: Probably not a good idea when using fibers

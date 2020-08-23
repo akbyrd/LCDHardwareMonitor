@@ -90,17 +90,15 @@ ILI9341_MemoryAccessControl(ILI9341State& ili9341)
 {
 	// NOTE: I have no idea why bits 3 and 6 have to be flipped, but every other piece of code I can
 	// find does the same, including an example program from the manufacturer of one of these
-	// screens. Despite the documentation, I guess the hardware defaults to top right and BGR?
-
-	// NOTE: If the display clears "top to bottom" then 0, 0 defaults to the top right. This is why
-	// column address order below is swapped.
+	// screens. Despite the documentation, I guess the hardware defaults to top right and BGR? Also,
+	// note swapping rows and columns (using a landscape layout) requires flipping the column order,
+	// so those two effects are canceling out in the code below.
 
 	u8 rowColExchangeBit = 5;
 
-	// Vertical
-	#if true
+	// Landscape layout
 	u8 rowAddressOrder_TopToBottom        = 0 << 7;
-	u8 colAddressOrder_LeftToRight        = 1 << 6;
+	u8 colAddressOrder_LeftToRight        = 0 << 6;
 	u8 rowColExchange_Yes                 = 1 << 5;
 	u8 verticalRefreshOrder_TopToBottom   = 0 << 4;
 	u8 rgbOrder_RGB                       = 1 << 3;
@@ -113,24 +111,6 @@ ILI9341_MemoryAccessControl(ILI9341State& ili9341)
 	mac |= verticalRefreshOrder_TopToBottom;
 	mac |= rgbOrder_RGB;
 	mac |= horizontalRefershOrder_LeftToRight;
-
-	// Horizontal
-	#else
-	u8 rowAddressOrder_TopToBottom        = 0 << 7;
-	u8 colAddressOrder_LeftToRight        = 1 << 6;
-	u8 rowColExchange_Yes                 = 1 << 5;
-	u8 verticalRefreshOrder_TopToBottom   = 0 << 4;
-	u8 rgbOrder_BGR                       = 0 << 3;
-	u8 horizontalRefershOrder_LeftToRight = 0 << 2;
-
-	u8 mac = 0;
-	mac |= rowAddressOrder_TopToBottom;
-	mac |= colAddressOrder_LeftToRight;
-	mac |= rowColExchange_Yes;
-	mac |= verticalRefreshOrder_TopToBottom;
-	mac |= rgbOrder_RGB;
-	mac |= horizontalRefershOrder_LeftToRight;
-	#endif
 
 	ILI9341_Write(ili9341, ILI9341::Command::MemoryAccessControl, mac);
 

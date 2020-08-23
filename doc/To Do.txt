@@ -1,9 +1,5 @@
 Current
 -------
-Fix MADCTL settings
-	Column order reversed
-	RGB reversed
-
 Bring ILI9341 code over
 	Can Initialize fail?
 	Use vectors
