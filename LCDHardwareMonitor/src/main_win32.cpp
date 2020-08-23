@@ -83,6 +83,8 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 	success = ILI9341_Initialize(ili9341State, ft232hState);
 	LOG_IF(!success, IGNORE, Severity::Warning, "Failed to initialize the ILI9341");
 	DEFER_TEARDOWN { ILI9341_Teardown(ili9341State); };
+	ILI9341_BeginDrawFrames(ili9341State);
+	DEFER_TEARDOWN { ILI9341_EndDrawFrames(ili9341State); };
 
 	// DEBUG: Test ILI9341
 	//ILI9341_Clear(ili9341State, Colors16::White);
@@ -188,7 +190,7 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 		Assert(frame.pixelStride == sizeof(u16));
 		Assert(frame.rowStride == frame.pixelStride * frame.size.x);
 		Assert(frame.bytes.stride == 1);
-		ILI9341_WriteFrame(ili9341State, frame.bytes);
+		ILI9341_DrawFrame(ili9341State, frame.bytes);
 
 		// TODO: Probably not a good idea when using fibers
 		// BUG: This seems to lock up and causes VS to crash

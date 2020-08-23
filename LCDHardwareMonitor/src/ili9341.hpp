@@ -8,6 +8,7 @@ struct ILI9341State
 	b8  rowColSwap;
 	u16 xMax;
 	u16 yMax;
+	b8  drawingFrames;
 };
 
 namespace ILI9341
@@ -378,26 +379,6 @@ ILI9341_SetPixel(ILI9341State& ili9341, u16 x, u16 y, u16 color)
 }
 
 void
-ILI9341_Clear(ILI9341State& ili9341, u16 color)
-{
-	ILI9341_SetRect(ili9341, 0, 0, ili9341.xMax, ili9341.yMax, color);
-}
-
-void
-ILI9341_WriteFrame(ILI9341State& ili9341, ByteSlice bytes)
-{
-	Assert(bytes.stride == 1);
-
-	u16 xMin = 0;
-	u16 yMin = 0;
-	// TODO: Don't do this every frame, let the wrap around take care of it
-	ILI9341_Write(ili9341, ILI9341::Command::ColumnAddressSet, UnpackMSB2(xMin), UnpackMSB2(ili9341.xMax));
-	ILI9341_Write(ili9341, ILI9341::Command::PageAddressSet,   UnpackMSB2(yMin), UnpackMSB2(ili9341.yMax));
-	ILI9341_WriteCmd(ili9341, ILI9341::Command::MemoryWrite);
-	ILI9341_WriteData(ili9341, bytes);
-}
-
-void
 ILI9341_DisplayTest(ILI9341State& ili9341)
 {
 	for (u16 i = 0; i < 120; i++)
@@ -442,6 +423,48 @@ ILI9341_DisplayTest(ILI9341State& ili9341)
 	ILI9341_SetRect(ili9341, (u16) (1 * xQuarter - 10), (u16) (2 * yQuarter - 10), (u16) (1 * xQuarter + 10), (u16) (2 * yQuarter + 10), Colors16::Magenta); // L
 	ILI9341_SetRect(ili9341, (u16) (3 * xQuarter - 10), (u16) (2 * yQuarter - 10), (u16) (3 * xQuarter + 10), (u16) (2 * yQuarter + 10), Colors16::Gray);    // R
 	ILI9341_SetRect(ili9341, (u16) (2 * xQuarter - 10), (u16) (3 * yQuarter - 10), (u16) (2 * xQuarter + 10), (u16) (3 * yQuarter + 10), Colors16::Cyan);    // B
+}
+
+void
+ILI9341_Clear(ILI9341State& ili9341, u16 color)
+{
+	ILI9341_SetRect(ili9341, 0, 0, ili9341.xMax, ili9341.yMax, color);
+}
+
+void
+ILI9341_BeginDrawFrames(ILI9341State& ili9341)
+{
+	Assert(!ili9341.drawingFrames);
+	ili9341.drawingFrames = true;
+
+	u16 xMin = 0;
+	u16 yMin = 0;
+	ILI9341_Write(ili9341, ILI9341::Command::ColumnAddressSet, UnpackMSB2(xMin), UnpackMSB2(ili9341.xMax));
+	ILI9341_Write(ili9341, ILI9341::Command::PageAddressSet,   UnpackMSB2(yMin), UnpackMSB2(ili9341.yMax));
+	ILI9341_WriteCmd(ili9341, ILI9341::Command::MemoryWrite);
+}
+
+void
+ILI9341_EndDrawFrames(ILI9341State& ili9341)
+{
+	Assert(ili9341.drawingFrames);
+	ili9341.drawingFrames = false;
+}
+
+void
+ILI9341_DrawFrame(ILI9341State& ili9341, ByteSlice bytes)
+{
+	Assert(ili9341.drawingFrames);
+	Assert(bytes.stride == 1);
+	ILI9341_WriteData(ili9341, bytes);
+}
+
+void
+ILI9341_DrawSingleFrame(ILI9341State& ili9341, ByteSlice bytes)
+{
+	ILI9341_BeginDrawFrames(ili9341);
+	ILI9341_DrawFrame(ili9341, bytes);
+	ILI9341_EndDrawFrames(ili9341);
 }
 
 // -------------------------------------------------------------------------------------------------
