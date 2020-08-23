@@ -1,5 +1,10 @@
 struct FT232HState;
 
+namespace FT232H
+{
+	static const u32 MaxSendBytes = 0xFFFF + 1;
+}
+
 enum struct Signal : u8
 {
 	Low  = 0b0,

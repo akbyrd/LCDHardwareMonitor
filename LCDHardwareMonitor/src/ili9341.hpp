@@ -344,24 +344,27 @@ ILI9341_SetRect(ILI9341State& ili9341, u16 xMin, u16 yMin, u16 xMax, u16 yMax, u
 	Assert(yMax <= ili9341.yMax);
 	ILI9341_Write(ili9341, ILI9341::Command::PageAddressSet, UnpackMSB2(yMin), UnpackMSB2(yMax));
 
-	// TODO: Handle the 64k split in FT232H code!
-	const u32 maxWrite = 0xFFFE;
-	u8 colorData[maxWrite];
-	u32 dataLen = (u32) (2 * (xMax - xMin + 1) * (yMax - yMin + 1));
-	for (u32 i = 0; i < Min(dataLen, maxWrite); i += 2)
+	u32 totalDataLen = (u32) (2 * (xMax - xMin + 1) * (yMax - yMin + 1));
+
+	// NOTE: The FT232H has a maximum number of bytes it can send in a single command, so we only
+	// need to make a buffer that big and can send it multiple times.
+	u8 colorData[FT232H::MaxSendBytes];
+	u32 colorDataLen = Min(totalDataLen, FT232H::MaxSendBytes);
+	for (u32 i = 0; i < colorDataLen; i += 2)
 	{
+		// TODO: Need to fully understand this byte swap in order to fix sim texture colors
 		colorData[i + 0] = GetByte(1, color);
 		colorData[i + 1] = GetByte(0, color);
 	}
 
 	ILI9341_WriteCmd(ili9341, ILI9341::Command::MemoryWrite);
 
-	u32 remainingLen = dataLen;
+	u32 remainingLen = totalDataLen;
 	while (remainingLen > 0)
 	{
 		ByteSlice bytes = {};
 		bytes.data   = colorData;
-		bytes.length = Min(remainingLen, maxWrite);
+		bytes.length = Min(remainingLen, colorDataLen);
 
 		ILI9341_WriteData(ili9341, bytes);
 		remainingLen -= bytes.length;
@@ -391,19 +394,7 @@ ILI9341_WriteFrame(ILI9341State& ili9341, ByteSlice bytes)
 	ILI9341_Write(ili9341, ILI9341::Command::ColumnAddressSet, UnpackMSB2(xMin), UnpackMSB2(ili9341.xMax));
 	ILI9341_Write(ili9341, ILI9341::Command::PageAddressSet,   UnpackMSB2(yMin), UnpackMSB2(ili9341.yMax));
 	ILI9341_WriteCmd(ili9341, ILI9341::Command::MemoryWrite);
-
-	// TODO: Handle the 64k split in FT232H code!
-	u32 maxWrite = 0xFFFE;
-	u32 remainingLen = bytes.length;
-	while (remainingLen > 0)
-	{
-		ByteSlice chunk = {};
-		chunk.data   = bytes.data + bytes.length - remainingLen;
-		chunk.length = Min(remainingLen, maxWrite);
-
-		ILI9341_WriteData(ili9341, chunk);
-		remainingLen -= chunk.length;
-	}
+	ILI9341_WriteData(ili9341, bytes);
 }
 
 void

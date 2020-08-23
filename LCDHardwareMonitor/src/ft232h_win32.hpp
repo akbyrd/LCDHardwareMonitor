@@ -313,14 +313,22 @@ void
 FT232H_SendBytes(FT232HState& ft232h, ByteSlice bytes)
 {
 	Assert(bytes.length != 0);
-	Assert(bytes.length <= u16Max);
 	if (ft232h.errorMode) return;
 
-	// NOTE: LCD reads on the rising edge so write on the falling edge
-	u16 numBytesEnc = (u16) (bytes.length - 1);
-	u8 ftcmd[] = { FT232H::Command::SendBytesFallingMSB, UnpackLSB2(numBytesEnc) };
-	FT232H_Write(ft232h, ftcmd);
-	FT232H_Write(ft232h, bytes);
+	u32 remainingLen = bytes.length;
+	while (remainingLen > 0)
+	{
+		ByteSlice chunk = {};
+		chunk.data   = bytes.data + bytes.length - remainingLen;
+		chunk.length = Min(remainingLen, FT232H::MaxSendBytes);
+
+		// NOTE: LCD reads on the rising edge so write on the falling edge
+		u16 numBytesEnc = (u16) (chunk.length - 1);
+		u8 ftcmd[] = { FT232H::Command::SendBytesFallingMSB, UnpackLSB2(numBytesEnc) };
+		FT232H_Write(ft232h, ftcmd);
+		FT232H_Write(ft232h, chunk);
+		remainingLen -= chunk.length;
+	}
 }
 
 // -------------------------------------------------------------------------------------------------

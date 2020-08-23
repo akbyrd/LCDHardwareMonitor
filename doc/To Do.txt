@@ -11,7 +11,6 @@ Get a frame displaying?!!?!?!?!
 		Memory read order   -
 		Texture order       -
 	Rows and columns appear swapped
-	Double check maxWrite
 	Use SetBit to simplify config
 
 Bring ILI9341 code over
