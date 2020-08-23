@@ -6,6 +6,8 @@ struct ILI9341State
 	i64 sleepTime;
 	i64 wakeTime;
 	b8  rowColSwap;
+	u16 xMax;
+	u16 yMax;
 };
 
 namespace ILI9341
@@ -46,13 +48,6 @@ namespace ILI9341
 // -------------------------------------------------------------------------------------------------
 // Public API - Fundamental Functions
 
-static inline u8
-GetByte(u8 index, u32 value) { return (value >> (index * 8)) & 0xFF; }
-
-#define Unpack2(x) GetByte(1, x), GetByte(0, x)
-#define Unpack3(x) GetByte(2, x), GetByte(1, x), GetByte(0, x)
-#define Unpack4(x) GetByte(3, x), GetByte(2, x), GetByte(1, x), GetByte(0, x)
-
 void
 ILI9341_WriteCmd(ILI9341State& ili9341, u8 cmd)
 {
@@ -87,9 +82,8 @@ ILI9341_Write(ILI9341State& ili9341, u8 cmd, Args... bytes)
 }
 
 // -------------------------------------------------------------------------------------------------
-// Public API - Configuration Functions
+// Internal Configuration Functions
 
-// TODO: Revisit this when displaying LHM frames.
 void
 ILI9341_MemoryAccessControl(ILI9341State& ili9341)
 {
@@ -97,22 +91,60 @@ ILI9341_MemoryAccessControl(ILI9341State& ili9341)
 	// find does the same, including an example program from the manufacturer of one of these
 	// screens. Despite the documentation, I guess the hardware defaults to top right and BGR?
 
+	// NOTE: If the display clears "top to bottom" then 0, 0 defaults to the top right. This is why
+	// column address order below is swapped.
+
+	u8 rowColExchangeBit = 5;
+
+	// Vertical
+	#if true
 	u8 rowAddressOrder_TopToBottom        = 0 << 7;
 	u8 colAddressOrder_LeftToRight        = 1 << 6;
-	u8 rowColExchange_No                  = 0 << 5;
-	u8 berticalRefreshOrder_TopToBottom   = 0 << 4;
-	u8 rgbOrder_RGB                       = 1 << 3;
+	u8 rowColExchange_Yes                 = 1 << 5;
+	u8 verticalRefreshOrder_TopToBottom   = 0 << 4;
+	u8 rgbOrder_RGB                       = 0 << 3;
 	u8 horizontalRefershOrder_LeftToRight = 0 << 2;
 
 	u8 mac = 0;
 	mac |= rowAddressOrder_TopToBottom;
 	mac |= colAddressOrder_LeftToRight;
-	mac |= rowColExchange_No;
-	mac |= berticalRefreshOrder_TopToBottom;
+	mac |= rowColExchange_Yes;
+	mac |= verticalRefreshOrder_TopToBottom;
 	mac |= rgbOrder_RGB;
 	mac |= horizontalRefershOrder_LeftToRight;
+
+	// Horizontal
+	#else
+	u8 rowAddressOrder_TopToBottom        = 0 << 7;
+	u8 colAddressOrder_LeftToRight        = 1 << 6;
+	u8 rowColExchange_Yes                 = 1 << 5;
+	u8 verticalRefreshOrder_TopToBottom   = 0 << 4;
+	u8 rgbOrder_BGR                       = 0 << 3;
+	u8 horizontalRefershOrder_LeftToRight = 0 << 2;
+
+	u8 mac = 0;
+	mac |= rowAddressOrder_TopToBottom;
+	mac |= colAddressOrder_LeftToRight;
+	mac |= rowColExchange_Yes;
+	mac |= verticalRefreshOrder_TopToBottom;
+	mac |= rgbOrder_RGB;
+	mac |= horizontalRefershOrder_LeftToRight;
+	#endif
+
 	ILI9341_Write(ili9341, ILI9341::Command::MemoryAccessControl, mac);
-	ili9341.rowColSwap = false;
+
+	if (GetBit(mac, rowColExchangeBit) == 0)
+	{
+		ili9341.rowColSwap = false;
+		ili9341.xMax = 240 - 1;
+		ili9341.yMax = 320 - 1;
+	}
+	else
+	{
+		ili9341.rowColSwap = true;
+		ili9341.xMax = 320 - 1;
+		ili9341.yMax = 240 - 1;
+	}
 }
 
 void
@@ -235,6 +267,25 @@ ILI9341_SetGamma(ILI9341State& ili9341)
 		0x00, 0x0E, 0x14, 0x03, 0x11, 0x07, 0x31, 0xC1, 0x48, 0x08, 0x0F, 0x0C, 0x31, 0x36, 0x0F);
 }
 
+void
+ILI9341_SetColumnAddress(ILI9341State& ili9341, u16 xMin, u16 xMax)
+{
+	ILI9341_Write(ili9341, ILI9341::Command::ColumnAddressSet, UnpackMSB2(xMin), UnpackMSB2(xMax));
+}
+
+void
+ILI9341_SetRowAddress(ILI9341State& ili9341, u16 yMin, u16 yMax)
+{
+	ILI9341_Write(ili9341, ILI9341::Command::PageAddressSet, UnpackMSB2(yMin), UnpackMSB2(yMax));
+}
+
+void
+ILI9341_SetWriteAddress(ILI9341State& ili9341, u16 xMin, u16 xMax, u16 yMin, u16 yMax)
+{
+	ILI9341_Write(ili9341, ILI9341::Command::ColumnAddressSet, UnpackMSB2(xMin), UnpackMSB2(xMax));
+	ILI9341_Write(ili9341, ILI9341::Command::PageAddressSet, UnpackMSB2(yMin), UnpackMSB2(yMax));
+}
+
 // -------------------------------------------------------------------------------------------------
 // Public API - Logic Functions
 
@@ -284,18 +335,19 @@ ILI9341_Wake(ILI9341State& ili9341)
 }
 
 void
-ILI9341_SetRect(ILI9341State& ili9341, u16 x1, u16 y1, u16 x2, u16 y2, u16 color)
+ILI9341_SetRect(ILI9341State& ili9341, u16 xMin, u16 yMin, u16 xMax, u16 yMax, u16 color)
 {
-	Assert(x1 <= x2);
-	Assert(ili9341.rowColSwap ? x2 < 320 : x2 < 240);
-	ILI9341_Write(ili9341, ILI9341::Command::ColumnAddressSet, Unpack2(x1), Unpack2(x2));
-	Assert(y1 <= y2);
-	Assert(ili9341.rowColSwap ? y2 < 240 : y2 < 320);
-	ILI9341_Write(ili9341, ILI9341::Command::PageAddressSet, Unpack2(y1), Unpack2(y2));
+	Assert(xMin <= xMax);
+	Assert(xMax <= ili9341.xMax);
+	ILI9341_Write(ili9341, ILI9341::Command::ColumnAddressSet, UnpackMSB2(xMin), UnpackMSB2(xMax));
+	Assert(yMin <= yMax);
+	Assert(yMax <= ili9341.yMax);
+	ILI9341_Write(ili9341, ILI9341::Command::PageAddressSet, UnpackMSB2(yMin), UnpackMSB2(yMax));
 
+	// TODO: Handle the 64k split in FT232H code!
 	const u32 maxWrite = 0xFFFE;
 	u8 colorData[maxWrite];
-	u32 dataLen = (u32) (2 * (x2 - x1 + 1) * (y2 - y1 + 1));
+	u32 dataLen = (u32) (2 * (xMax - xMin + 1) * (yMax - yMin + 1));
 	for (u32 i = 0; i < Min(dataLen, maxWrite); i += 2)
 	{
 		colorData[i + 0] = GetByte(1, color);
@@ -325,7 +377,33 @@ ILI9341_SetPixel(ILI9341State& ili9341, u16 x, u16 y, u16 color)
 void
 ILI9341_Clear(ILI9341State& ili9341, u16 color)
 {
-	ILI9341_SetRect(ili9341, 0, 0, 240 - 1, 320 - 1, color);
+	ILI9341_SetRect(ili9341, 0, 0, ili9341.xMax, ili9341.yMax, color);
+}
+
+void
+ILI9341_WriteFrame(ILI9341State& ili9341, ByteSlice bytes)
+{
+	Assert(bytes.stride == 1);
+
+	u16 xMin = 0;
+	u16 yMin = 0;
+	// TODO: Don't do this every frame, let the wrap around take care of it
+	ILI9341_Write(ili9341, ILI9341::Command::ColumnAddressSet, UnpackMSB2(xMin), UnpackMSB2(ili9341.xMax));
+	ILI9341_Write(ili9341, ILI9341::Command::PageAddressSet,   UnpackMSB2(yMin), UnpackMSB2(ili9341.yMax));
+	ILI9341_WriteCmd(ili9341, ILI9341::Command::MemoryWrite);
+
+	// TODO: Handle the 64k split in FT232H code!
+	u32 maxWrite = 0xFFFE;
+	u32 remainingLen = bytes.length;
+	while (remainingLen > 0)
+	{
+		ByteSlice chunk = {};
+		chunk.data   = bytes.data + bytes.length - remainingLen;
+		chunk.length = Min(remainingLen, maxWrite);
+
+		ILI9341_WriteData(ili9341, chunk);
+		remainingLen -= chunk.length;
+	}
 }
 
 void
@@ -333,31 +411,46 @@ ILI9341_DisplayTest(ILI9341State& ili9341)
 {
 	for (u16 i = 0; i < 120; i++)
 	{
-		u16 l = (u16) (  0 - 0 + i);
-		u16 r = (u16) (240 - 1 - i);
-		u16 t = (u16) (  0 - 0 + i);
-		u16 b = (u16) (320 - 1 - i);
-
+		u16 l = (u16) (0 + i);
+		u16 r = (u16) (ili9341.xMax - i);
+		u16 t = (u16) (0 + i);
+		u16 b = (u16) (ili9341.yMax - i);
 		ILI9341_SetPixel(ili9341, l, t, Colors16::Red);
 		ILI9341_SetPixel(ili9341, r, t, Colors16::Green);
 		ILI9341_SetPixel(ili9341, l, b, Colors16::Blue);
 		ILI9341_SetPixel(ili9341, r, b, Colors16::Gray);
 	}
 
-	for (u16 i = 0; i < 80; i++)
-	{
-		u16 l = (u16) (240 / 2 - 0);
-		u16 r = (u16) (240 / 2 - 1);
-		u16 m = (u16) (120 + i);
+	u16 xQuarter = (u16) ((ili9341.xMax + 1) / 4);
+	u16 yQuarter = (u16) ((ili9341.yMax + 1) / 4);
 
-		ILI9341_SetPixel(ili9341, l, m, Colors16::Black);
-		ILI9341_SetPixel(ili9341, r, m, Colors16::Black);
+	if (ili9341.rowColSwap)
+	{
+		for (u16 i = 0; i < 80; i++)
+		{
+			u16 m = (u16) (120 + i);
+			u16 t = (u16) (2 * yQuarter + 0);
+			u16 b = (u16) (2 * yQuarter + 1);
+			ILI9341_SetPixel(ili9341, m, t, Colors16::Black);
+			ILI9341_SetPixel(ili9341, m, b, Colors16::Black);
+		}
+	}
+	else
+	{
+		for (u16 i = 0; i < 80; i++)
+		{
+			u16 l = (u16) (2 * xQuarter + 0);
+			u16 r = (u16) (2 * xQuarter + 1);
+			u16 m = (u16) (120 + i);
+			ILI9341_SetPixel(ili9341, l, m, Colors16::Black);
+			ILI9341_SetPixel(ili9341, r, m, Colors16::Black);
+		}
 	}
 
-	ILI9341_SetRect(ili9341, 120 - 10,  60 - 10, 120 + 10,  60 + 10, Colors16::Yellow);
-	ILI9341_SetRect(ili9341,  60 - 10, 160 - 10,  60 + 10, 160 + 10, Colors16::Magenta);
-	ILI9341_SetRect(ili9341, 180 - 10, 160 - 10, 180 + 10, 160 + 10, Colors16::Gray);
-	ILI9341_SetRect(ili9341, 120 - 10, 260 - 10, 120 + 10, 260 + 10, Colors16::Cyan);
+	ILI9341_SetRect(ili9341, (u16) (2 * xQuarter - 10), (u16) (1 * yQuarter - 10), (u16) (2 * xQuarter + 10), (u16) (1 * yQuarter + 10), Colors16::Yellow);  // T
+	ILI9341_SetRect(ili9341, (u16) (1 * xQuarter - 10), (u16) (2 * yQuarter - 10), (u16) (1 * xQuarter + 10), (u16) (2 * yQuarter + 10), Colors16::Magenta); // L
+	ILI9341_SetRect(ili9341, (u16) (3 * xQuarter - 10), (u16) (2 * yQuarter - 10), (u16) (3 * xQuarter + 10), (u16) (2 * yQuarter + 10), Colors16::Gray);    // R
+	ILI9341_SetRect(ili9341, (u16) (2 * xQuarter - 10), (u16) (3 * yQuarter - 10), (u16) (2 * xQuarter + 10), (u16) (3 * yQuarter + 10), Colors16::Cyan);    // B
 }
 
 // -------------------------------------------------------------------------------------------------

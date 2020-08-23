@@ -1,13 +1,30 @@
 Current
 -------
+Get a frame displaying?!!?!?!?!
+	Color by order appears to be swapped
+		16-bit format (565) - MSBit->R
+		ILI9341 recv order  - MSBit first
+		ILI9341 mem order   - RGB
+		FT232H write order  - MSByte & MSBit
+		FT232H send order   - MSByte & MSBit
+		Memory write order  - RGB, MSByte
+		Memory read order   -
+		Texture order       -
+	Rows and columns appear swapped
+	Double check maxWrite
+	Use SetBit to simplify config
+
 Bring ILI9341 code over
 	Can Initialize fail?
+	Use vectors
+	Add a tracing option
 
 Bring FT232H code over
 	Simulation should control ft232h. Init if connected after startup, for example
 	Ensure we can always init, even if in a bad state
 	Coalesce writes
 	Consider adding 'last command time'
+Delete HardwareCommunication
 Read from display
 
 
@@ -35,6 +52,7 @@ There's a frame of flicker where the old image size is drawn when zooming. Is th
 There's some sort of mouse position jump on my laptop when rotating the camera
 I think pipes want to be no-wait
 Ensure we're handling CloseHandle failures correctly
+Double check anywhere we index bytes.data in case we're forgetting stride
 
 
 
@@ -112,6 +130,7 @@ Watch plugin directory contents for registering, unregistering, and reloading pl
 
 Features - ILI9341 Communication
 --------------------------------
+Profile and compare 16bit and 18bit modes. 16bit uses a lookup table. 18bit uses 50% more bandwidth.
 Write to a buffer and only flush when full or need to sleep
 Add proper error handling
 
@@ -134,6 +153,7 @@ Should failing to load an asset mark the file as bad?
 Can we bundle setting shaders with setting and updating constant buffers?
 Consider compiling out renderer validation in plugin API functions in release
 Ensure the update API can't create resources and let the command list store pointers.
+Double buffer CPU texture to prevent syncing?
 
 
 

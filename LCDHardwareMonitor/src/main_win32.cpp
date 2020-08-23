@@ -85,8 +85,8 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 	DEFER_TEARDOWN { ILI9341_Teardown(ili9341State); };
 
 	// DEBUG: Test ILI9341
-	ILI9341_Clear(ili9341State, Colors16::White);
-	ILI9341_DisplayTest(ili9341State);
+	//ILI9341_Clear(ili9341State, Colors16::White);
+	//ILI9341_DisplayTest(ili9341State);
 
 
 	// Renderer
@@ -182,6 +182,13 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 
 		// BUG: Looks like it's possible to get WM_PREVIEWWINDOWCLOSED without WM_QUIT
 		PreviewWindow_Render(previewState);
+
+		// TODO: Handle pixel and row strides
+		CPUTextureBytes frame = Renderer_GetCPUTextureBytes(rendererState, simulationState.renderTargetCPUCopy);
+		Assert(frame.pixelStride == sizeof(u16));
+		Assert(frame.rowStride == frame.pixelStride * frame.size.x);
+		Assert(frame.bytes.stride == 1);
+		ILI9341_WriteFrame(ili9341State, frame.bytes);
 
 		// TODO: Probably not a good idea when using fibers
 		// BUG: This seems to lock up and causes VS to crash

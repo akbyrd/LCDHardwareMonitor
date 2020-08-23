@@ -1438,11 +1438,10 @@ GetRT(v2t<T>& yp, v2t<U> pos)
 // Color
 
 constexpr inline u16
-Color16(u8 r, u8 g, u8 b);
-
-constexpr inline u16
 Color16(u8 r, u8 g, u8 b)
 {
+	// |<- MSB
+	// RRRR'RGGG'GGGB'BBBB
 	u16 rp = (u16) ((r & 0b1111'1000) << 8);
 	u16 gp = (u16) ((g & 0b1111'1100) << 3);
 	u16 bp = (u16) ((b & 0b1111'1000) >> 3);
@@ -1485,5 +1484,30 @@ struct Colors16
 	static const u16 Magenta = Color16(0xFF, 0x00, 0xFF);
 	static const u16 Yellow  = Color16(0xFF, 0xFF, 0x00);
 };
+
+// -------------------------------------------------------------------------------------------------
+// Bit Manipulation
+
+constexpr inline u8
+GetByte(u8 index, u32 value) { return (value >> (index * 8)) & 0xFF; }
+
+#define UnpackLSB2(x) GetByte(0, x), GetByte(1, x)
+#define UnpackLSB3(x) GetByte(0, x), GetByte(1, x), GetByte(2, x)
+#define UnpackLSB4(x) GetByte(0, x), GetByte(1, x), GetByte(2, x), GetByte(3, x)
+
+#define UnpackMSB2(x) GetByte(1, x), GetByte(0, x)
+#define UnpackMSB3(x) GetByte(2, x), GetByte(1, x), GetByte(0, x)
+#define UnpackMSB4(x) GetByte(3, x), GetByte(2, x), GetByte(1, x), GetByte(0, x)
+
+constexpr inline u8
+GetBit(u8 value, u8 index) { return (u8) ((value >> index) & 0x1); }
+
+constexpr inline u8
+SetBit(u8 value, u8 bitIndex, u8 bitValue)
+{
+	value &= ~(1 << bitIndex);
+	value |= bitValue << bitIndex;
+	return value;
+}
 
 #endif

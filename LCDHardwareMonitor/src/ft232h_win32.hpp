@@ -71,20 +71,6 @@ namespace FT232H
 // -------------------------------------------------------------------------------------------------
 // Internal functions
 
-//static inline u8
-//Byte(u8 index, u32 value) { return (value >> (index * 8)) & 0xFF; }
-
-static inline u8
-GetBit(u8 value, u8 index) { return (u8) ((value >> index) & 0x1); }
-
-static inline u8
-SetBit(u8 value, u8 bitIndex, u8 bitValue)
-{
-	value &= ~(1 << bitIndex);
-	value |= bitValue << bitIndex;
-	return value;
-}
-
 static void
 EnterErrorMode(FT232HState& ft232h)
 {
@@ -279,7 +265,7 @@ FT232H_Read(FT232HState& ft232h, Bytes& buffer, u16 numBytesToRead)
 
 	// NOTE: ILI9341 shifts on the falling edge, therefore read on the rising edge
 	u16 numBytesEnc = (u16) (numBytesToRead - 1);
-	u8 ftcmd[] = { FT232H::Command::RecvBytesRisingMSB, GetByte(0, numBytesEnc), GetByte(1, numBytesEnc) };
+	u8 ftcmd[] = { FT232H::Command::RecvBytesRisingMSB, UnpackLSB2(numBytesEnc) };
 
 	u32 numBytesWritten;
 	status = FT_Write(ft232h.device, ftcmd, ArrayLength(ftcmd), (DWORD*) &numBytesWritten);
@@ -332,7 +318,7 @@ FT232H_SendBytes(FT232HState& ft232h, ByteSlice bytes)
 
 	// NOTE: LCD reads on the rising edge so write on the falling edge
 	u16 numBytesEnc = (u16) (bytes.length - 1);
-	u8 ftcmd[] = { FT232H::Command::SendBytesFallingMSB, GetByte(0, numBytesEnc), GetByte(1, numBytesEnc) };
+	u8 ftcmd[] = { FT232H::Command::SendBytesFallingMSB, UnpackLSB2(numBytesEnc) };
 	FT232H_Write(ft232h, ftcmd);
 	FT232H_Write(ft232h, bytes);
 }
@@ -456,13 +442,13 @@ FT232H_Initialize(FT232HState& ft232h)
 		FT232H_Write(ft232h, FT232H::Command::DisableLoopback);
 	}
 
-	FT232H_Write(ft232h, FT232H::Command::EnableClockDivide);
+	FT232H_Write(ft232h, FT232H::Command::DisableClockDivide);
 	FT232H_Write(ft232h, FT232H::Command::DisableAdaptiveClock);
 	FT232H_Write(ft232h, FT232H::Command::Disable3PhaseClock);
 
 	// NOTE: SCL Frequency = 60 Mhz / ((1 + divisor) * 2 * 5or1)
 	u16 clockDivisor = 0x0000;
-	u8 clockCmd[] = { FT232H::Command::SetClockDivisor, GetByte(0, clockDivisor), GetByte(1, clockDivisor) };
+	u8 clockCmd[] = { FT232H::Command::SetClockDivisor, UnpackLSB2(clockDivisor) };
 	FT232H_Write(ft232h, clockCmd);
 
 	// Pin 2: DI, 1: DO, 0: TCK
