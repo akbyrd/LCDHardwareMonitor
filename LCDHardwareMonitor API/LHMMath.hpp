@@ -13,6 +13,10 @@
 //   m12 = M[2][1] = y.z
 //   Transformations are applied S then R then T
 
+// TODO: Remove different types for second parameters. Impossible to solve casting issues due to integer promotion.
+// TODO: Use vectors for color functions?
+// TODO: Need to think real hard about allowing multiple types in math functions
+// TODO: Why do operator +=, -=, *=, /= use U instead of vt<U>?
 // TODO: Can't use operators from the VS Watch window if they are
 // pass-by-value, but passing by reference requires const everywhere. Ugh.
 
@@ -118,6 +122,11 @@ union v2t
 		T yaw;
 		T pitch;
 	};
+	struct
+	{
+		T pos;
+		T size;
+	};
 	T arr[2];
 
 	T& operator[] (u32 index);
@@ -127,11 +136,12 @@ union v2t
 	template<typename U> explicit operator v4t<U>();
 };
 
-using v2   = v2t<r32>;
-using v2r  = v2t<r32>;
-using v2i  = v2t<i32>;
-using v2u  = v2t<u32>;
-using v2u8 = v2t<u8>;
+using v2    = v2t<r32>;
+using v2r   = v2t<r32>;
+using v2i   = v2t<i32>;
+using v2u   = v2t<u32>;
+using v2u8  = v2t<u8>;
+using v2u16 = v2t<u16>;
 
 // Operators
 template<typename T, typename U>
@@ -377,11 +387,12 @@ union v3t
 	template<typename U> explicit operator v4t<U>();
 };
 
-using v3   = v3t<r32>;
-using v3r  = v3t<r32>;
-using v3i  = v3t<i32>;
-using v3u  = v3t<u32>;
-using v3u8 = v3t<u8>;
+using v3    = v3t<r32>;
+using v3r   = v3t<r32>;
+using v3i   = v3t<i32>;
+using v3u   = v3t<u32>;
+using v3u8  = v3t<u8>;
+using v3u16 = v3t<u16>;
 
 // Operators
 template<typename T, typename U>
@@ -652,11 +663,12 @@ union v4t
 	template<typename U> explicit operator v4t<U>();
 };
 
-using v4   = v4t<r32>;
-using v4r  = v4t<r32>;
-using v4i  = v4t<i32>;
-using v4u  = v4t<u32>;
-using v4u8 = v4t<u8>;
+using v4    = v4t<r32>;
+using v4r   = v4t<r32>;
+using v4i   = v4t<i32>;
+using v4u   = v4t<u32>;
+using v4u8  = v4t<u8>;
+using v4u16 = v4t<u16>;
 
 // Operators
 template<typename T, typename U>
@@ -826,19 +838,6 @@ Clamp(v4t<T> v, v4t<U> min, v4t<V> max)
 }
 
 template<typename T, typename U>
-inline v4t<T>
-ClampRect(v4t<T> rect, v4t<U> bounds)
-{
-	v2t<T> min = bounds.pos              + Min(v2t<T>{ 0, 0 }, bounds.size - rect.size);
-	v2t<T> max = bounds.size - rect.size - Min(v2t<T>{ 0, 0 }, bounds.size - rect.size);
-
-	v4t<T> result = {};
-	result.pos  = Clamp(rect.pos, min, max);
-	result.size = rect.size;
-	return result;
-}
-
-template<typename T, typename U>
 inline T
 Dot(v4t<T> lhs, v4t<U> rhs)
 {
@@ -896,30 +895,6 @@ Normalize(v4t<T> v)
 		v.z / magnitude,
 		v.w / magnitude
 	};
-	return result;
-}
-
-template<typename T, typename U>
-inline b8
-RectContains(v4t<T> rect, v2t<U> pos)
-{
-	b8 result = true;
-	result &= pos.x >= rect.pos.x;
-	result &= pos.x <  rect.pos.x + rect.size.x;
-	result &= pos.y >= rect.pos.y;
-	result &= pos.y <  rect.pos.y + rect.size.y;
-	return result;
-}
-
-template<typename T, typename U>
-inline v4t<T>
-RectCombine(v4t<T> lhs, v4t<U> rhs)
-{
-	v4t<T> result = {};
-	result.pos.x  = Min(lhs.pos.x,  rhs.pos.x);
-	result.pos.y  = Min(lhs.pos.y,  rhs.pos.y);
-	result.size.x = Max(lhs.size.x, rhs.size.x);
-	result.size.y = Max(lhs.size.y, rhs.size.y);
 	return result;
 }
 
@@ -1431,6 +1406,108 @@ GetRT(v2t<T>& yp, v2t<U> pos)
 {
 	Matrix result = Identity();
 	SetRT(result, yp, pos);
+	return result;
+}
+
+// -------------------------------------------------------------------------------------------------
+// Rect
+
+// TODO: Use pos and size instead of min and max?
+
+template<typename T, typename U>
+inline v4t<T>
+ClampRect(v4t<T> rect, v4t<U> bounds)
+{
+	v2t<T> min = bounds.pos              + Min(v2t<T>{ 0, 0 }, bounds.size - rect.size);
+	v2t<T> max = bounds.size - rect.size - Min(v2t<T>{ 0, 0 }, bounds.size - rect.size);
+
+	v4t<T> result = {};
+	result.pos  = Clamp(rect.pos, min, max);
+	result.size = rect.size;
+	return result;
+}
+
+template<typename T, typename U>
+inline v4t<T>
+GrowRect(v4t<T> rect, U radius)
+{
+	v4t<T> result = {};
+	result.pos  = rect.pos  - v2t<T>{ 1 * radius, 1 * radius };
+	result.size = rect.size + v2t<T>{ 2 * radius, 2 * radius };
+	return result;
+}
+
+template<typename T, typename U>
+inline v4t<T>
+GrowRect(v4t<T> rect, v2t<U> radii)
+{
+	v4t<T> result = {};
+	result.pos  = rect.pos  - v2t<T>{ 1 * radii.x, 1 * radii.y };
+	result.size = rect.size + v2t<T>{ 2 * radii.x, 2 * radii.y };
+	return result;
+}
+
+template<typename T, typename U>
+inline v4t<T>
+GrowRect(v4t<T> rect, v4t<U> radii)
+{
+	v4t<T> result = {};
+	result.pos  = rect.pos  - v2t<T>{ radii.x, radii.y };
+	result.size = rect.size + v2t<T>{ radii.z, radii.w };
+	return result;
+}
+
+template<typename T, typename U>
+inline v4t<T>
+MakeRect(v2t<T> center, U radius)
+{
+	v4t<T> result = {};
+	result.pos  = center - v2t<T>{ radius, radius };
+	result.size =      2 * v2t<T>{ radius, radius };
+	return result;
+}
+
+template<typename T, typename U>
+inline v4t<T>
+MakeRect(v2t<T> center, v2t<U> radii)
+{
+	v4t<T> result = {};
+	result.pos  = center - radii;
+	result.size =      2 * radii;
+	return result;
+}
+
+template<typename T, typename U>
+inline v4t<T>
+MakeRect(v2t<T> center, v4t<U> radii)
+{
+	v4t<T> result = {};
+	result.pos  = center - v2t<T>{ radii.x, radii.y };
+	result.size = { radii.x + radii.z, radii.y + radii.w };
+	return result;
+}
+
+template<typename T, typename U>
+inline b8
+RectContains(v4t<T> rect, v2t<U> pos)
+{
+	b8 result = true;
+	result &= pos.x >= rect.pos.x;
+	result &= pos.x <  rect.pos.x + rect.size.x;
+	result &= pos.y >= rect.pos.y;
+	result &= pos.y <  rect.pos.y + rect.size.y;
+	return result;
+}
+
+template<typename T, typename U>
+inline v4t<T>
+RectCombine(v4t<T> lhs, v4t<U> rhs)
+{
+	v4t<T> result = {};
+	result.pos.x  = Min(lhs.pos.x,  rhs.pos.x);
+	result.pos.y  = Min(lhs.pos.y,  rhs.pos.y);
+	result.size.x = Max(lhs.size.x, rhs.size.x);
+	result.size.y = Max(lhs.size.y, rhs.size.y);
 	return result;
 }
 

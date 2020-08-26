@@ -2,13 +2,12 @@ struct ILI9341State
 {
 	FT232HState* ft232h;
 
-	b8  sleep;
-	i64 sleepTime;
-	i64 wakeTime;
-	b8  rowColSwap;
-	u16 xMax;
-	u16 yMax;
-	b8  drawingFrames;
+	b8    sleep;
+	i64   sleepTime;
+	i64   wakeTime;
+	b8    rowColSwap;
+	v2u16 size;
+	b8    drawingFrames;
 };
 
 namespace ILI9341
@@ -88,17 +87,19 @@ ILI9341_Write(ILI9341State& ili9341, u8 cmd, Args... bytes)
 void
 ILI9341_MemoryAccessControl(ILI9341State& ili9341)
 {
-	// NOTE: I have no idea why bits 3 and 6 have to be flipped, but every other piece of code I can
-	// find does the same, including an example program from the manufacturer of one of these
-	// screens. Despite the documentation, I guess the hardware defaults to top right and BGR? Also,
-	// note swapping rows and columns (using a landscape layout) requires flipping the column order,
-	// so those two effects are canceling out in the code below.
+	// NOTE: I have no idea why bits 3 (rgb) and 6 (column order) have to be flipped, but every other
+	// piece of code I can find does the same, including an example program from the manufacturer of
+	// one of these screens. Despite the documentation, I guess the hardware defaults to top right
+	// and BGR? Also, note that landscape layout requires swapping rows and columns and flipping the
+	// column order, so the two column order swaps cancel out.
 
-	u8 rowColExchangeBit = 5;
+	b8 portrait = false;
 
 	// Landscape layout
 	u8 rowAddressOrder_TopToBottom        = 0 << 7;
-	u8 colAddressOrder_LeftToRight        = 0 << 6;
+	u8 colAddressOrder_LeftToRight        = 1 << 6;
+	u8 colAddressOrder_RightToLeft        = 0 << 6;
+	u8 rowColExchange_No                  = 0 << 5;
 	u8 rowColExchange_Yes                 = 1 << 5;
 	u8 verticalRefreshOrder_TopToBottom   = 0 << 4;
 	u8 rgbOrder_RGB                       = 1 << 3;
@@ -106,25 +107,22 @@ ILI9341_MemoryAccessControl(ILI9341State& ili9341)
 
 	u8 mac = 0;
 	mac |= rowAddressOrder_TopToBottom;
-	mac |= colAddressOrder_LeftToRight;
-	mac |= rowColExchange_Yes;
+	mac |= portrait ? colAddressOrder_LeftToRight : colAddressOrder_RightToLeft;
+	mac |= portrait ? rowColExchange_No : rowColExchange_Yes;
 	mac |= verticalRefreshOrder_TopToBottom;
 	mac |= rgbOrder_RGB;
 	mac |= horizontalRefershOrder_LeftToRight;
-
 	ILI9341_Write(ili9341, ILI9341::Command::MemoryAccessControl, mac);
 
-	if (GetBit(mac, rowColExchangeBit) == 0)
+	if (portrait)
 	{
 		ili9341.rowColSwap = false;
-		ili9341.xMax = 240 - 1;
-		ili9341.yMax = 320 - 1;
+		ili9341.size = { 240, 320 };
 	}
 	else
 	{
 		ili9341.rowColSwap = true;
-		ili9341.xMax = 320 - 1;
-		ili9341.yMax = 240 - 1;
+		ili9341.size = { 320, 240 };
 	}
 }
 
@@ -249,22 +247,22 @@ ILI9341_SetGamma(ILI9341State& ili9341)
 }
 
 void
-ILI9341_SetColumnAddress(ILI9341State& ili9341, u16 xMin, u16 xMax)
+ILI9341_SetColumnAddress(ILI9341State& ili9341, v2u16 xRange)
 {
-	ILI9341_Write(ili9341, ILI9341::Command::ColumnAddressSet, UnpackMSB2(xMin), UnpackMSB2(xMax));
+	ILI9341_Write(ili9341, ILI9341::Command::ColumnAddressSet, UnpackMSB2(xRange.pos), UnpackMSB2((u32) (xRange.pos + xRange.size - 1)));
 }
 
 void
-ILI9341_SetRowAddress(ILI9341State& ili9341, u16 yMin, u16 yMax)
+ILI9341_SetRowAddress(ILI9341State& ili9341, v2u16 yRange)
 {
-	ILI9341_Write(ili9341, ILI9341::Command::PageAddressSet, UnpackMSB2(yMin), UnpackMSB2(yMax));
+	ILI9341_Write(ili9341, ILI9341::Command::PageAddressSet, UnpackMSB2(yRange.pos), UnpackMSB2((u32) (yRange.pos + yRange.size - 1)));
 }
 
 void
-ILI9341_SetWriteAddress(ILI9341State& ili9341, u16 xMin, u16 xMax, u16 yMin, u16 yMax)
+ILI9341_SetWriteAddress(ILI9341State& ili9341, v4u16 rect)
 {
-	ILI9341_Write(ili9341, ILI9341::Command::ColumnAddressSet, UnpackMSB2(xMin), UnpackMSB2(xMax));
-	ILI9341_Write(ili9341, ILI9341::Command::PageAddressSet, UnpackMSB2(yMin), UnpackMSB2(yMax));
+	ILI9341_Write(ili9341, ILI9341::Command::ColumnAddressSet, UnpackMSB2(rect.pos.x), UnpackMSB2((u32) (rect.pos.x + rect.size.x - 1)));
+	ILI9341_Write(ili9341, ILI9341::Command::PageAddressSet, UnpackMSB2(rect.pos.y), UnpackMSB2((u32) (rect.pos.y + rect.size.y - 1)));
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -316,20 +314,19 @@ ILI9341_Wake(ILI9341State& ili9341)
 }
 
 void
-ILI9341_SetRect(ILI9341State& ili9341, u16 xMin, u16 yMin, u16 xMax, u16 yMax, u16 color)
+ILI9341_SetRect(ILI9341State& ili9341, v4u16 rect, u16 color)
 {
 	// NOTE: Each MemoryWrite command resets the page and column register to the previous set value
 	// TODO: Maybe we should take advantage of that?
 
-	Assert(xMin <= xMax);
-	Assert(xMax <= ili9341.xMax);
-	ILI9341_Write(ili9341, ILI9341::Command::ColumnAddressSet, UnpackMSB2(xMin), UnpackMSB2(xMax));
-	Assert(yMin <= yMax);
-	Assert(yMax <= ili9341.yMax);
-	ILI9341_Write(ili9341, ILI9341::Command::PageAddressSet, UnpackMSB2(yMin), UnpackMSB2(yMax));
+	Assert(rect.size.x != 0);
+	Assert(rect.pos.x + rect.size.x <= ili9341.size.x);
+	Assert(rect.size.y != 0);
+	Assert(rect.pos.y + rect.size.y <= ili9341.size.y);
+	ILI9341_SetWriteAddress(ili9341, rect);
 	ILI9341_WriteCmd(ili9341, ILI9341::Command::MemoryWrite);
 
-	u32 totalDataLen = (u32) (2 * (xMax - xMin + 1) * (yMax - yMin + 1));
+	u32 totalDataLen = (u32) (2 * rect.size.x * rect.size.y);
 
 	// NOTE: The FT232H has a maximum number of bytes it can send in a single command, so we only
 	// need to make a buffer that big and can send it multiple times.
@@ -356,9 +353,12 @@ ILI9341_SetRect(ILI9341State& ili9341, u16 xMin, u16 yMin, u16 xMax, u16 yMax, u
 }
 
 void
-ILI9341_SetPixel(ILI9341State& ili9341, u16 x, u16 y, u16 color)
+ILI9341_SetPixel(ILI9341State& ili9341, v2u16 pos, u16 color)
 {
-	ILI9341_SetRect(ili9341, x, y, x, y, color);
+	v4u16 rect = {};
+	rect.pos  = pos;
+	rect.size = { 1, 1 };
+	ILI9341_SetRect(ili9341, rect, color);
 }
 
 void
@@ -367,51 +367,57 @@ ILI9341_DisplayTest(ILI9341State& ili9341)
 	for (u16 i = 0; i < 120; i++)
 	{
 		u16 l = (u16) (0 + i);
-		u16 r = (u16) (ili9341.xMax - i);
+		u16 r = (u16) (ili9341.size.x - 1 - i);
 		u16 t = (u16) (0 + i);
-		u16 b = (u16) (ili9341.yMax - i);
-		ILI9341_SetPixel(ili9341, l, t, Colors16::Red);
-		ILI9341_SetPixel(ili9341, r, t, Colors16::Green);
-		ILI9341_SetPixel(ili9341, l, b, Colors16::Blue);
-		ILI9341_SetPixel(ili9341, r, b, Colors16::Gray);
+		u16 b = (u16) (ili9341.size.y - 1 - i);
+		ILI9341_SetPixel(ili9341, { l, t }, Colors16::Red);
+		ILI9341_SetPixel(ili9341, { r, t }, Colors16::Green);
+		ILI9341_SetPixel(ili9341, { l, b }, Colors16::Blue);
+		ILI9341_SetPixel(ili9341, { r, b }, Colors16::Gray);
 	}
 
-	u16 xQuarter = (u16) ((ili9341.xMax + 1) / 4);
-	u16 yQuarter = (u16) ((ili9341.yMax + 1) / 4);
+	v2u16 quarter = ili9341.size / 4;
 
 	if (ili9341.rowColSwap)
 	{
 		for (u16 i = 0; i < 80; i++)
 		{
 			u16 m = (u16) (120 + i);
-			u16 t = (u16) (2 * yQuarter + 0);
-			u16 b = (u16) (2 * yQuarter + 1);
-			ILI9341_SetPixel(ili9341, m, t, Colors16::Black);
-			ILI9341_SetPixel(ili9341, m, b, Colors16::Black);
+			u16 t = (u16) (2 * quarter.y - 1);
+			u16 b = (u16) (2 * quarter.y - 0);
+			ILI9341_SetPixel(ili9341, { m, t }, Colors16::Black);
+			ILI9341_SetPixel(ili9341, { m, b }, Colors16::Black);
 		}
 	}
 	else
 	{
 		for (u16 i = 0; i < 80; i++)
 		{
-			u16 l = (u16) (2 * xQuarter + 0);
-			u16 r = (u16) (2 * xQuarter + 1);
+			u16 l = (u16) (2 * quarter.x - 1);
+			u16 r = (u16) (2 * quarter.x - 0);
 			u16 m = (u16) (120 + i);
-			ILI9341_SetPixel(ili9341, l, m, Colors16::Black);
-			ILI9341_SetPixel(ili9341, r, m, Colors16::Black);
+			ILI9341_SetPixel(ili9341, { l, m }, Colors16::Black);
+			ILI9341_SetPixel(ili9341, { r, m }, Colors16::Black);
 		}
 	}
 
-	ILI9341_SetRect(ili9341, (u16) (2 * xQuarter - 10), (u16) (1 * yQuarter - 10), (u16) (2 * xQuarter + 10), (u16) (1 * yQuarter + 10), Colors16::Yellow);  // T
-	ILI9341_SetRect(ili9341, (u16) (1 * xQuarter - 10), (u16) (2 * yQuarter - 10), (u16) (1 * xQuarter + 10), (u16) (2 * yQuarter + 10), Colors16::Magenta); // L
-	ILI9341_SetRect(ili9341, (u16) (3 * xQuarter - 10), (u16) (2 * yQuarter - 10), (u16) (3 * xQuarter + 10), (u16) (2 * yQuarter + 10), Colors16::Gray);    // R
-	ILI9341_SetRect(ili9341, (u16) (2 * xQuarter - 10), (u16) (3 * yQuarter - 10), (u16) (2 * xQuarter + 10), (u16) (3 * yQuarter + 10), Colors16::Cyan);    // B
+	v4u16 lRect = MakeRect(v2u16{ 1, 2 } * quarter, (u16) 10);
+	v4u16 rRect = MakeRect(v2u16{ 3, 2 } * quarter, (u16) 10);
+	v4u16 tRect = MakeRect(v2u16{ 2, 1 } * quarter, (u16) 10);
+	v4u16 bRect = MakeRect(v2u16{ 2, 3 } * quarter, (u16) 10);
+	ILI9341_SetRect(ili9341, lRect, Colors16::Magenta);
+	ILI9341_SetRect(ili9341, rRect, Colors16::Gray);
+	ILI9341_SetRect(ili9341, tRect, Colors16::Yellow);
+	ILI9341_SetRect(ili9341, bRect, Colors16::Cyan);
 }
 
 void
 ILI9341_Clear(ILI9341State& ili9341, u16 color)
 {
-	ILI9341_SetRect(ili9341, 0, 0, ili9341.xMax, ili9341.yMax, color);
+	v4u16 rect = {};
+	rect.pos  = { 0, 0 };
+	rect.size = ili9341.size;
+	ILI9341_SetRect(ili9341, rect, color);
 }
 
 void
@@ -420,10 +426,10 @@ ILI9341_BeginDrawFrames(ILI9341State& ili9341)
 	Assert(!ili9341.drawingFrames);
 	ili9341.drawingFrames = true;
 
-	u16 xMin = 0;
-	u16 yMin = 0;
-	ILI9341_Write(ili9341, ILI9341::Command::ColumnAddressSet, UnpackMSB2(xMin), UnpackMSB2(ili9341.xMax));
-	ILI9341_Write(ili9341, ILI9341::Command::PageAddressSet,   UnpackMSB2(yMin), UnpackMSB2(ili9341.yMax));
+	u16 xMax = (u16) (ili9341.size.x - 1);
+	u16 yMax = (u16) (ili9341.size.y - 1);
+	ILI9341_Write(ili9341, ILI9341::Command::ColumnAddressSet, UnpackMSB2(0), UnpackMSB2(xMax));
+	ILI9341_Write(ili9341, ILI9341::Command::PageAddressSet,   UnpackMSB2(0), UnpackMSB2(yMax));
 	ILI9341_WriteCmd(ili9341, ILI9341::Command::MemoryWrite);
 }
 
