@@ -1804,4 +1804,24 @@ SetBit(u8 value, u8 bitIndex, u8 bitValue)
 	return value;
 }
 
+// -------------------------------------------------------------------------------------------------
+// Type Traits
+// TODO: Move to a separate header
+
+template <typename T, typename U>
+constexpr b8
+IsSameType = false;
+
+template<typename T>
+constexpr b8
+IsSameType<T, T> = true;
+
+template<typename T>
+constexpr b8
+IsSigned = !((T) 0 < (T) -1);
+
+template<typename T>
+constexpr b8
+IsUnsigned = (T) 0 < (T) -1;
+
 #endif
