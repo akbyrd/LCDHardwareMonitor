@@ -376,7 +376,7 @@ ILI9341_DisplayTest(ILI9341State& ili9341)
 		ILI9341_SetPixel(ili9341, { r, b }, Colors16::Gray);
 	}
 
-	v2u16 quarter = ili9341.size / 4;
+	v2u16 quarter = ili9341.size / (u16) 4;
 
 	if (ili9341.rowColSwap)
 	{

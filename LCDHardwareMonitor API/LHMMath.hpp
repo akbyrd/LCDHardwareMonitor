@@ -13,53 +13,63 @@
 //   m12 = M[2][1] = y.z
 //   Transformations are applied S then R then T
 
-// TODO: Remove different types for second parameters. Impossible to solve casting issues due to integer promotion.
+// TODO: Try to collapse the various r32/r64 duplication
 // TODO: Use vectors for color functions?
-// TODO: Need to think real hard about allowing multiple types in math functions
-// TODO: Why do operator +=, -=, *=, /= use U instead of vt<U>?
 // TODO: Can't use operators from the VS Watch window if they are
 // pass-by-value, but passing by reference requires const everywhere. Ugh.
 
 // -------------------------------------------------------------------------------------------------
 // General
 
-const i8  i8Min  = -0x80;                  // -128;
-const i8  i8Max  =  0x7F;                  //  127;
-const i16 i16Min = -0x8000;                // -32'768;
-const i16 i16Max =  0x7FFF;                //  32'767;
-const i32 i32Min =  0x8000'0000;           // -2'147'483'648;
-const i32 i32Max =  0x7FFF'FFFF;           //  2'147'483'647;
-const i64 i64Min =  0x8000'0000'0000'0000; // -9'223'372'036'854'775'808;
-const i64 i64Max =  0x7FFF'FFFF'FFFF'FFFF; //  9'223'372'036'854'775'807;
+constexpr i8  i8Min  = -0x80;                  // -128;
+constexpr i8  i8Max  =  0x7F;                  //  127;
+constexpr i16 i16Min = -0x8000;                // -32'768;
+constexpr i16 i16Max =  0x7FFF;                //  32'767;
+constexpr i32 i32Min =  0x8000'0000;           // -2'147'483'648;
+constexpr i32 i32Max =  0x7FFF'FFFF;           //  2'147'483'647;
+constexpr i64 i64Min =  0x8000'0000'0000'0000; // -9'223'372'036'854'775'808;
+constexpr i64 i64Max =  0x7FFF'FFFF'FFFF'FFFF; //  9'223'372'036'854'775'807;
 
-const u8  u8Max  =  0xFF;                  //  255;
-const u16 u16Max =  0xFFFF;                //  65'535;
-const u32 u32Max =  0xFFFF'FFFF;           //  4'294'967'295;
-const u64 u64Max =  0xFFFF'FFFF'FFFF'FFFF; //  18'446'744'073'709'551'615;
+constexpr u8  u8Max  =  0xFF;                  //  255;
+constexpr u16 u16Max =  0xFFFF;                //  65'535;
+constexpr u32 u32Max =  0xFFFF'FFFF;           //  4'294'967'295;
+constexpr u64 u64Max =  0xFFFF'FFFF'FFFF'FFFF; //  18'446'744'073'709'551'615;
 
 // TODO: Change to bit patterns like ints
-const r32 r32Min =  1.175494351e-38f;
-const r32 r32Max =  3.402823466e+38f;
+constexpr r32 r32Min =  1.175494351e-38f;
+constexpr r32 r32Max =  3.402823466e+38f;
 
-const r32 r32Epsilon = 31.192092896e-07f;
-const r32 r32Pi      = 3.141592654f;
+constexpr r32 r32Epsilon = 31.192092896e-07f;
+constexpr r32 r32Pi      = 3.141592654f;
 
 template<typename T>
-inline T
+constexpr inline T
 Abs(T value)
 {
 	return value < 0 ? -value : value;
 }
 
-inline b8
+constexpr inline b8
 ApproximatelyZero(r32 value)
 {
 	b8 result = Abs(value) < r32Epsilon;
 	return result;
 }
 
+inline r32
+Cos(r32 theta)
+{
+	return cosf(theta);
+}
+
+inline r64
+Cos(r64 theta)
+{
+	return cos(theta);
+}
+
 template<typename T, typename U, typename V>
-inline T
+constexpr inline T
 Clamp(T value, U min, V max)
 {
 	T result = value < min ? min
@@ -69,7 +79,7 @@ Clamp(T value, U min, V max)
 }
 
 template<typename T, typename U>
-inline b8
+constexpr inline b8
 IsMultipleOf(T size, U multiple)
 {
 	T mod = size % multiple;
@@ -77,15 +87,15 @@ IsMultipleOf(T size, U multiple)
 }
 
 template<typename T, typename U>
-inline T
+constexpr inline T
 Lerp(T lhs, U rhs, r32 t)
 {
-	T result = (1.0f - t)*lhs + t*rhs;
+	T result = (T) ((1.0f - t)*lhs + t*rhs);
 	return result;
 }
 
 template<typename T, typename U>
-inline T
+constexpr inline T
 Max(T lhs, U rhs)
 {
 	T result = lhs > rhs ? lhs : rhs;
@@ -93,11 +103,35 @@ Max(T lhs, U rhs)
 }
 
 template<typename T, typename U>
-inline T
+constexpr inline T
 Min(T lhs, U rhs)
 {
 	T result = lhs < rhs ? lhs : rhs;
 	return result;
+}
+
+inline r32
+Sin(r32 theta)
+{
+	return sinf(theta);
+}
+
+inline r64
+Sin(r64 theta)
+{
+	return sin(theta);
+}
+
+inline r32
+Sqrt(r32 theta)
+{
+	return sqrtf(theta);
+}
+
+inline r64
+Sqrt(r64 theta)
+{
+	return sqrt(theta);
 }
 
 template<typename T> union v2t;
@@ -129,131 +163,166 @@ union v2t
 	};
 	T arr[2];
 
-	T& operator[] (u32 index);
-	const T& operator[] (u32 index) const;
-	template<typename U> explicit operator v2t<U>();
-	template<typename U> explicit operator v3t<U>();
-	template<typename U> explicit operator v4t<U>();
+	constexpr T& operator[] (u32 index);
+	constexpr const T& operator[] (u32 index) const;
+	template<typename U> constexpr explicit operator v2t<U>();
+	template<typename U> constexpr explicit operator v3t<U>();
+	template<typename U> constexpr explicit operator v4t<U>();
 };
 
 using v2    = v2t<r32>;
-using v2r   = v2t<r32>;
+using v2r64 = v2t<r64>;
 using v2i   = v2t<i32>;
 using v2u   = v2t<u32>;
+using v2r64 = v2t<r64>;
+using v2i8  = v2t<i8>;
+using v2i16 = v2t<i16>;
+using v2i64 = v2t<i64>;
 using v2u8  = v2t<u8>;
 using v2u16 = v2t<u16>;
+using v2u64 = v2t<u64>;
 
 // Operators
-template<typename T, typename U>
-inline b8
-operator== (v2t<T> lhs, v2t<U> rhs)
+template<typename T>
+constexpr inline b8
+operator== (v2t<T> lhs, v2t<T> rhs)
 {
 	b8 result = lhs.x == rhs.x && lhs.y == rhs.y;
 	return result;
 }
 
-template<typename T, typename U>
-inline b8
-operator!= (v2t<T> lhs, v2t<U> rhs)
+template<typename T>
+constexpr inline b8
+operator!= (v2t<T> lhs, v2t<T> rhs)
 {
 	b8 result = !(lhs.x == rhs.x && lhs.y == rhs.y);
 	return result;
 }
 
-template<typename T, typename U>
-inline v2t<T>
-operator+ (v2t<T> lhs, v2t<U> rhs)
+template<typename T>
+constexpr inline v2t<T>
+operator+ (v2t<T> v)
 {
-	v2t<T> result = { lhs.x + rhs.x, lhs.y + rhs.y };
+	v2t<T> result = { +v.x, +v.y };
 	return result;
 }
 
-template<typename T, typename U>
-inline void
-operator+= (v2t<T>& lhs, U rhs)
+template<typename T>
+constexpr inline v2t<T>
+operator+ (v2t<T> lhs, v2t<T> rhs)
+{
+	v2t<T> result = { (T) (lhs.x + rhs.x), (T) (lhs.y + rhs.y) };
+	return result;
+}
+
+template<typename T>
+constexpr inline void
+operator+= (v2t<T>& lhs, v2t<T> rhs)
 {
 	lhs = lhs + rhs;
 }
 
 template<typename T>
-inline v2t<T>
+constexpr inline v2t<T>
 operator- (v2t<T> v)
 {
 	v2t<T> result = { -v.x, -v.y };
 	return result;
 }
 
-template<typename T, typename U>
-inline v2t<T>
-operator- (v2t<T> lhs, v2t<U> rhs)
+template<typename T>
+constexpr inline v2t<T>
+operator- (v2t<T> lhs, v2t<T> rhs)
 {
-	v2t<T> result = { lhs.x - rhs.x, lhs.y - rhs.y };
+	v2t<T> result = { (T) (lhs.x - rhs.x), (T) (lhs.y - rhs.y) };
 	return result;
 }
 
-template<typename T, typename U>
-inline void
-operator-= (v2t<T>& lhs, U rhs)
+template<typename T>
+constexpr inline void
+operator-= (v2t<T>& lhs, v2t<T> rhs)
 {
 	lhs = lhs - rhs;
 }
 
-template<typename T, typename U>
-inline v2t<T>
-operator* (v2t<T> v, U multiplier)
+template<typename T>
+constexpr inline v2t<T>
+operator* (T lhs, v2t<T> rhs)
 {
-	v2t<T> result = { multiplier * v.x, multiplier * v.y };
+	v2t<T> result = { (T) (lhs * rhs.x), (T) (lhs * rhs.y) };
 	return result;
 }
 
-template<typename T, typename U>
-inline v2t<T>
-operator* (U multiplier, v2t<T> v)
+template<typename T>
+constexpr inline v2t<T>
+operator* (v2t<T> lhs, T rhs)
 {
-	v2t<T> result = { multiplier * v.x, multiplier * v.y };
+	v2t<T> result = { (T) (lhs.x * rhs), (T) (lhs.y * rhs) };
 	return result;
 }
 
-template<typename T, typename U>
-inline v2t<T>
-operator* (v2t<T> lhs, v2t<U> rhs)
+template<typename T>
+constexpr inline v2t<T>
+operator* (v2t<T> lhs, v2t<T> rhs)
 {
-	v2t<T> result = { lhs.x * rhs.x, lhs.y * rhs.y };
+	v2t<T> result = { (T) (lhs.x * rhs.x), (T) (lhs.y * rhs.y) };
 	return result;
 }
 
-template<typename T, typename U>
-inline void
-operator*= (v2t<T>& lhs, U rhs)
+template<typename T>
+constexpr inline void
+operator*= (v2t<T>& lhs, T rhs)
 {
 	lhs = lhs * rhs;
 }
 
-template<typename T, typename U>
-inline v2t<T>
-operator/ (v2t<T> v, U divisor)
+template<typename T>
+constexpr inline void
+operator*= (v2t<T>& lhs, v2t<T> rhs)
 {
-	v2t<T> result = { v.x / divisor, v.y / divisor };
+	lhs = lhs * rhs;
+}
+
+template<typename T>
+constexpr inline v2t<T>
+operator/ (v2t<T> lhs, T rhs)
+{
+	v2t<T> result = { (T) (lhs.x / rhs), (T) (lhs.y / rhs) };
 	return result;
 }
 
-template<typename T, typename U>
-inline v2t<T>
-operator/ (U dividend, v2t<T> v)
+template<typename T>
+constexpr inline v2t<T>
+operator/ (T lhs, v2t<T> rhs)
 {
-	v2t<T> result = { dividend / v.x, dividend / v.y };
+	v2t<T> result = { (T) (lhs / rhs.x), (T) (lhs / rhs.y) };
 	return result;
 }
 
-template<typename T, typename U>
-inline void
-operator/= (v2t<T>& lhs, U rhs)
+template<typename T>
+constexpr inline v2t<T>
+operator/ (v2t<T> lhs, v2t<T> rhs)
+{
+	v2t<T> result = { (T) (lhs.x / rhs.x), (T) (lhs.y / rhs.y) };
+	return result;
+}
+
+template<typename T>
+constexpr inline void
+operator/= (v2t<T>& lhs, T rhs)
 {
 	lhs = lhs / rhs;
 }
 
 template<typename T>
-inline T&
+constexpr inline void
+operator/= (v2t<T>& lhs, v2t<T> rhs)
+{
+	lhs = lhs / rhs;
+}
+
+template<typename T>
+constexpr inline T&
 v2t<T>::operator[] (u32 index)
 {
 	Assert(index < ArrayLength(arr));
@@ -262,7 +331,7 @@ v2t<T>::operator[] (u32 index)
 }
 
 template<typename T>
-inline const T&
+constexpr inline const T&
 v2t<T>::operator[] (u32 index) const
 {
 	Assert(index < ArrayLength(arr));
@@ -272,7 +341,7 @@ v2t<T>::operator[] (u32 index) const
 
 template<typename T>
 template<typename U>
-inline
+constexpr inline
 v2t<T>::operator v2t<U>()
 {
 	v2t<U> result = { (U) x, (U) y };
@@ -281,7 +350,7 @@ v2t<T>::operator v2t<U>()
 
 template<typename T>
 template<typename U>
-inline
+constexpr inline
 v2t<T>::operator v3t<U>()
 {
 	v3t<U> result = { (U) x, (U) y, 0 };
@@ -290,59 +359,66 @@ v2t<T>::operator v3t<U>()
 
 template<typename T>
 template<typename U>
-inline
+constexpr inline
 v2t<T>::operator v4t<U>()
 {
 	v4t<U> result = { (U) x, (U) y, 0, 0 };
 	return result;
 }
 
-template<typename T, typename U>
-inline T
-Dot(v2t<T> lhs, v2t<U> rhs)
+template<typename T>
+constexpr inline T
+Dot(v2t<T> lhs, v2t<T> rhs)
 {
-	T result = lhs.x*rhs.x + lhs.y*rhs.y;
+	T result = (T) (lhs.x*rhs.x + lhs.y*rhs.y);
 	return result;
 }
 
-template<typename T, typename U, typename V>
-inline v2t<T>
-Clamp(v2t<T> v, v2t<U> min, v2t<V> max)
+template<typename T>
+constexpr inline v2t<T>
+Clamp(v2t<T> v, v2t<T> min, v2t<T> max)
 {
 	v2t<T> result = { Clamp(v.x, min.x, max.x), Clamp(v.y, min.y, max.y) };
 	return result;
 }
 
-template<typename T, typename U>
-inline v2t<T>
-Lerp(v2t<T> lhs, v2t<U> rhs, r32 t)
+template<typename T>
+constexpr inline v2t<T>
+Lerp(v2t<T> lhs, v2t<T> rhs, r32 t)
 {
 	v2t<T> result = { Lerp(lhs.x, rhs.x, t), Lerp(lhs.y, rhs.y, t) };
 	return result;
 }
 
-template<typename T, typename U>
-inline v2t<T>
-Max(v2t<T> lhs, v2t<U> rhs)
+template<typename T>
+constexpr inline v2t<T>
+Max(v2t<T> lhs, v2t<T> rhs)
 {
 	v2t<T> result = { Max(lhs.x, rhs.x), Max(lhs.y, rhs.y) };
 	return result;
 }
 
-template<typename T, typename U>
-inline v2t<T>
-Min(v2t<T> lhs, v2t<U> rhs)
+template<typename T>
+constexpr inline v2t<T>
+Min(v2t<T> lhs, v2t<T> rhs)
 {
 	v2t<T> result = { Min(lhs.x, rhs.x), Min(lhs.y, rhs.y) };
 	return result;
 }
 
-template<typename T>
-inline v2t<T>
-Normalize(v2t<T> v)
+inline v2
+Normalize(v2 v)
 {
-	r32 magnitude = sqrt(v.x*v.x + v.y*v.y);
-	v2t<T> result = { v.x / magnitude, v.y / magnitude };
+	r32 magnitude = Sqrt(v.x*v.x + v.y*v.y);
+	v2 result = { v.x / magnitude, v.y / magnitude };
+	return result;
+}
+
+inline v2t<r64>
+Normalize(v2t<r64> v)
+{
+	r64 magnitude = Sqrt(v.x*v.x + v.y*v.y);
+	v2t<r64> result = { v.x / magnitude, v.y / magnitude };
 	return result;
 }
 
@@ -380,131 +456,165 @@ union v3t
 	};
 	T arr[3];
 
-	T& operator[] (u32 index);
-	const T& operator[] (u32 index) const;
-	template<typename U> explicit operator v2t<U>();
-	template<typename U> explicit operator v3t<U>();
-	template<typename U> explicit operator v4t<U>();
+	constexpr T& operator[] (u32 index);
+	constexpr const T& operator[] (u32 index) const;
+	template<typename U> constexpr explicit operator v2t<U>();
+	template<typename U> constexpr explicit operator v3t<U>();
+	template<typename U> constexpr explicit operator v4t<U>();
 };
 
 using v3    = v3t<r32>;
-using v3r   = v3t<r32>;
+using v3r64 = v3t<r64>;
 using v3i   = v3t<i32>;
+using v3i8  = v3t<i8>;
+using v3i16 = v3t<i16>;
+using v3i64 = v3t<i64>;
 using v3u   = v3t<u32>;
 using v3u8  = v3t<u8>;
 using v3u16 = v3t<u16>;
+using v3u64 = v3t<u64>;
 
 // Operators
-template<typename T, typename U>
-inline b8
-operator== (v3t<T> lhs, v3t<U> rhs)
+template<typename T>
+constexpr inline b8
+operator== (v3t<T> lhs, v3t<T> rhs)
 {
 	b8 result = lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z;
 	return result;
 }
 
-template<typename T, typename U>
-inline b8
-operator!= (v3t<T> lhs, v3t<U> rhs)
+template<typename T>
+constexpr inline b8
+operator!= (v3t<T> lhs, v3t<T> rhs)
 {
 	b8 result = !(lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z);
 	return result;
 }
 
-template<typename T, typename U>
-inline v3t<T>
-operator+ (v3t<T> lhs, v3t<U> rhs)
+template<typename T>
+constexpr inline v3t<T>
+operator+ (v3t<T> v)
 {
-	v3t<T> result = { lhs.x + rhs.x, lhs.y + rhs.y, lhs.z + rhs.z };
+	v3t<T> result = { +v.x, +v.y, +v.z };
 	return result;
 }
 
-template<typename T, typename U>
-inline void
-operator+= (v3t<T>& lhs, U rhs)
+template<typename T>
+constexpr inline v3t<T>
+operator+ (v3t<T> lhs, v3t<T> rhs)
+{
+	v3t<T> result = { (T) (lhs.x + rhs.x), (T) (lhs.y + rhs.y), (T) (lhs.z + rhs.z) };
+	return result;
+}
+
+template<typename T>
+constexpr inline void
+operator+= (v3t<T>& lhs, v3t<T> rhs)
 {
 	lhs = lhs + rhs;
 }
 
 template<typename T>
-inline v3t<T>
+constexpr inline v3t<T>
 operator- (v3t<T> v)
 {
 	v3t<T> result = { -v.x, -v.y, -v.z };
 	return result;
 }
 
-template<typename T, typename U>
-inline v3t<T>
-operator- (v3t<T> lhs, v3t<U> rhs)
+template<typename T>
+constexpr inline v3t<T>
+operator- (v3t<T> lhs, v3t<T> rhs)
 {
-	v3t<T> result = { lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z };
-	return result;
-}
-
-template<typename T, typename U>
-inline void
-operator-= (v3t<T>& lhs, U rhs)
-{
-	lhs = lhs - rhs;
-}
-
-template<typename T, typename U>
-inline v3t<T>
-operator* (U multiplier, v3t<T> v)
-{
-	v3t<T> result = { multiplier * v.x, multiplier * v.y, multiplier * v.z };
-	return result;
-}
-
-template<typename T, typename U>
-inline v3t<T>
-operator* (v3t<T> v, U multiplier)
-{
-	v3t<T> result = { multiplier * v.x, multiplier * v.y, multiplier * v.z };
-	return result;
-}
-
-template<typename T, typename U>
-inline v3t<T>
-operator* (v3t<T> lhs, v3t<U> rhs)
-{
-	v3t<T> result = { lhs.x * rhs.x, lhs.y * rhs.y, lhs.z * rhs.z };
-	return result;
-}
-
-template<typename T, typename U>
-inline void
-operator*= (v3t<T>& lhs, U rhs)
-{
-	lhs = lhs * rhs;
-}
-
-template<typename T, typename U>
-inline v3t<T>
-operator/ (v3t<T> v, U divisor)
-{
-	v3t<T> result = { v.x / divisor, v.y / divisor, v.z / divisor };
-	return result;
-}
-
-template<typename T, typename U>
-inline void
-operator/= (v3t<T>& lhs, U rhs)
-{
-	lhs = lhs / rhs;
-}
-
-template<typename T, typename U>
-inline v3t<T>
-operator/ (U dividend, v3t<T> v)
-{
-	v3t<T> result = { dividend / v.x, dividend / v.y, dividend / v.z };
+	v3t<T> result = { (T) (lhs.x - rhs.x), (T) (lhs.y - rhs.y), (T) (lhs.z - rhs.z) };
 	return result;
 }
 
 template<typename T>
-inline T&
+constexpr inline void
+operator-= (v3t<T>& lhs, v3t<T> rhs)
+{
+	lhs = lhs - rhs;
+}
+
+template<typename T>
+constexpr inline v3t<T>
+operator* (T lhs, v3t<T> rhs)
+{
+	v3t<T> result = { (T) (lhs * rhs.x), (T) (lhs * rhs.y), (T) (lhs * rhs.z) };
+	return result;
+}
+
+template<typename T>
+constexpr inline v3t<T>
+operator* (v3t<T> lhs, T rhs)
+{
+	v3t<T> result = { (T) (lhs.x * rhs), (T) (lhs.y * rhs), (T) (lhs.z * rhs) };
+	return result;
+}
+
+template<typename T>
+constexpr inline v3t<T>
+operator* (v3t<T> lhs, v3t<T> rhs)
+{
+	v3t<T> result = { (T) (lhs.x * rhs.x), (T) (lhs.y * rhs.y), (T) (lhs.z * rhs.z) };
+	return result;
+}
+
+template<typename T>
+constexpr inline void
+operator*= (v3t<T>& lhs, T rhs)
+{
+	lhs = lhs * rhs;
+}
+
+template<typename T>
+constexpr inline void
+operator*= (v3t<T>& lhs, v3t<T> rhs)
+{
+	lhs = lhs * rhs;
+}
+
+template<typename T>
+constexpr inline v3t<T>
+operator/ (v3t<T> lhs, T rhs)
+{
+	v3t<T> result = { (T) (lhs.x / rhs), (T) (lhs.y / rhs), (T) (lhs.z / rhs) };
+	return result;
+}
+
+template<typename T>
+constexpr inline v3t<T>
+operator/ (T lhs, v3t<T> rhs)
+{
+	v3t<T> result = { (T) (lhs / rhs.x), (T) (lhs / rhs.y), (T) (lhs / rhs.z) };
+	return result;
+}
+
+template<typename T>
+constexpr inline v3t<T>
+operator/ (v3t<T> lhs, v3t<T> rhs)
+{
+	v3t<T> result = { (T) (lhs.x / rhs.x), (T) (lhs.y / rhs.y), (T) (lhs.z / rhs.z) };
+	return result;
+}
+
+template<typename T>
+constexpr inline void
+operator/= (v3t<T>& lhs, T rhs)
+{
+	lhs = lhs / rhs;
+}
+
+template<typename T>
+constexpr inline void
+operator/= (v3t<T>& lhs, v3t<T> rhs)
+{
+	lhs = lhs / rhs;
+}
+
+template<typename T>
+constexpr inline T&
 v3t<T>::operator[] (u32 index)
 {
 	Assert(index < ArrayLength(arr));
@@ -513,7 +623,7 @@ v3t<T>::operator[] (u32 index)
 }
 
 template<typename T>
-inline const T&
+constexpr inline const T&
 v3t<T>::operator[] (u32 index) const
 {
 	Assert(index < ArrayLength(arr));
@@ -523,7 +633,7 @@ v3t<T>::operator[] (u32 index) const
 
 template<typename T>
 template<typename U>
-inline
+constexpr inline
 v3t<T>::operator v2t<U>()
 {
 	v2t<U> result = { (U) x, (U) y };
@@ -532,7 +642,7 @@ v3t<T>::operator v2t<U>()
 
 template<typename T>
 template<typename U>
-inline
+constexpr inline
 v3t<T>::operator v3t<U>()
 {
 	v3t<U> result = { (U) x, (U) y, (U) z };
@@ -541,52 +651,51 @@ v3t<T>::operator v3t<U>()
 
 template<typename T>
 template<typename U>
-inline
+constexpr inline
 v3t<T>::operator v4t<U>()
 {
 	v4t<U> result = { (U) x, (U) y, (U) z, 0 };
 	return result;
 }
 
-template<typename T, typename U, typename V>
-inline v3t<T>
-Clamp(v3t<T> v, v3t<U> min, v3t<V> max)
+template<typename T>
+constexpr inline v3t<T>
+Clamp(v3t<T> v, v3t<T> min, v3t<T> max)
 {
 	v3t<T> result = { Clamp(v.x, min.x, max.x), Clamp(v.y, min.y, max.y), Clamp(v.z, min.z, max.z) };
 	return result;
 }
 
-template<typename T, typename U>
-inline v3t<T>
-Cross(v3t<T> lhs, v3t<U> rhs)
+template<typename T>
+constexpr inline v3t<T>
+Cross(v3t<T> lhs, v3t<T> rhs)
 {
 	// TODO: This is right handed. What's our system?
 	v3t<T> result = {
-		lhs.y*rhs.z - lhs.z*rhs.y,
-		lhs.z*rhs.x - lhs.x*rhs.z,
-		lhs.x*rhs.y - lhs.y*rhs.x
+		(T) (lhs.y*rhs.z - lhs.z*rhs.y),
+		(T) (lhs.z*rhs.x - lhs.x*rhs.z),
+		(T) (lhs.x*rhs.y - lhs.y*rhs.x)
 	};
 	return result;
 }
 
-template<typename T, typename U>
-inline T
-Dot(v3t<T> lhs, v3t<U> rhs)
+template<typename T>
+constexpr inline T
+Dot(v3t<T> lhs, v3t<T> rhs)
 {
-	T result = lhs.x*rhs.x + lhs.y*rhs.y + lhs.z*rhs.z;
+	T result = (T) (lhs.x*rhs.x + lhs.y*rhs.y + lhs.z*rhs.z);
 	return result;
 }
 
-template<typename T, typename U>
 inline v3
-GetOrbitPos(v3t<T> target, v2t<U> yp, r32 radius)
+GetOrbitPos(v3 target, v2 yp, r32 radius)
 {
 	// NOTE: Pitch, then yaw
 
-	r32 cy = cosf(-yp.yaw);
-	r32 sy = sinf(-yp.yaw);
-	r32 cp = cosf(yp.pitch);
-	r32 sp = sinf(yp.pitch);
+	r32 cy = Cos(-yp.yaw);
+	r32 sy = Sin(-yp.yaw);
+	r32 cp = Cos(yp.pitch);
+	r32 sp = Sin(yp.pitch);
 
 	v3 offset = radius * v3 { sy*cp, -sp, cy*cp };
 
@@ -594,36 +703,59 @@ GetOrbitPos(v3t<T> target, v2t<U> yp, r32 radius)
 	return pos;
 }
 
-template<typename T, typename U>
-inline v3t<T>
-Lerp(v3t<T> lhs, v3t<U> rhs, r32 t)
+inline v3t<r64>
+GetOrbitPos(v3t<r64> target, v2t<r64> yp, r64 radius)
+{
+	// NOTE: Pitch, then yaw
+
+	r64 cy = Cos(-yp.yaw);
+	r64 sy = Sin(-yp.yaw);
+	r64 cp = Cos(yp.pitch);
+	r64 sp = Sin(yp.pitch);
+
+	v3t<r64> offset = radius * v3t<r64> { sy*cp, -sp, cy*cp };
+
+	v3t<r64> pos = target + offset;
+	return pos;
+}
+
+template<typename T>
+constexpr inline v3t<T>
+Lerp(v3t<T> lhs, v3t<T> rhs, r32 t)
 {
 	v3t<T> result = { Lerp(lhs.x, rhs.x, t), Lerp(lhs.y, rhs.y, t), Lerp(lhs.z, rhs.z, t) };
 	return result;
 }
 
-template<typename T, typename U>
-inline v3t<T>
-Max(v3t<T> lhs, v3t<U> rhs)
+template<typename T>
+constexpr inline v3t<T>
+Max(v3t<T> lhs, v3t<T> rhs)
 {
 	v3t<T> result = { Max(lhs.x, rhs.x), Max(lhs.y, rhs.y), Max(lhs.z, rhs.z) };
 	return result;
 }
 
-template<typename T, typename U>
-inline v3t<T>
-Min(v3t<T> lhs, v3t<U> rhs)
+template<typename T>
+constexpr inline v3t<T>
+Min(v3t<T> lhs, v3t<T> rhs)
 {
 	v3t<T> result = { Min(lhs.x, rhs.x), Min(lhs.y, rhs.y), Min(lhs.z, rhs.z) };
 	return result;
 }
 
-template<typename T>
-inline v3t<T>
-Normalize(v3t<T> v)
+inline v3
+Normalize(v3 v)
 {
-	r32 magnitude = sqrtf(v.x*v.x + v.y*v.y + v.z*v.z);
-	v3t<T> result = { v.x / magnitude, v.y / magnitude, v.z / magnitude };
+	r32 magnitude = Sqrt(v.x*v.x + v.y*v.y + v.z*v.z);
+	v3 result = { v.x / magnitude, v.y / magnitude, v.z / magnitude };
+	return result;
+}
+
+inline v3t<r64>
+Normalize(v3t<r64> v)
+{
+	r64 magnitude = Sqrt(v.x*v.x + v.y*v.y + v.z*v.z);
+	v3t<r64> result = { v.x / magnitude, v.y / magnitude, v.z / magnitude };
 	return result;
 }
 
@@ -656,131 +788,165 @@ union v4t
 	};
 	T arr[4];
 
-	T& operator[] (u32 index);
-	const T& operator[] (u32 index) const;
-	template<typename U> explicit operator v2t<U>();
-	template<typename U> explicit operator v3t<U>();
-	template<typename U> explicit operator v4t<U>();
+	constexpr T& operator[] (u32 index);
+	constexpr const T& operator[] (u32 index) const;
+	template<typename U> constexpr explicit operator v2t<U>();
+	template<typename U> constexpr explicit operator v3t<U>();
+	template<typename U> constexpr explicit operator v4t<U>();
 };
 
 using v4    = v4t<r32>;
-using v4r   = v4t<r32>;
+using v4r64 = v4t<r64>;
 using v4i   = v4t<i32>;
+using v4i8  = v4t<i8>;
+using v416  = v4t<i16>;
+using v4i64 = v4t<i64>;
 using v4u   = v4t<u32>;
 using v4u8  = v4t<u8>;
 using v4u16 = v4t<u16>;
+using v4u64 = v4t<u64>;
 
 // Operators
-template<typename T, typename U>
-inline b8
-operator== (v4t<T> lhs, v4t<U> rhs)
+template<typename T>
+constexpr inline b8
+operator== (v4t<T> lhs, v4t<T> rhs)
 {
 	b8 result = lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z && lhs.w == rhs.w;
 	return result;
 }
 
-template<typename T, typename U>
-inline b8
-operator!= (v4t<T> lhs, v4t<U> rhs)
+template<typename T>
+constexpr inline b8
+operator!= (v4t<T> lhs, v4t<T> rhs)
 {
-	v4t<T> result = !(lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z && lhs.w == rhs.w);
+	b8 result = !(lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z && lhs.w == rhs.w);
 	return result;
 }
 
-template<typename T, typename U>
-inline v4t<T>
-operator+ (v4t<T> lhs, v4t<U> rhs)
+template<typename T>
+constexpr inline v4t<T>
+operator+ (v4t<T> v)
 {
-	v4t<T> result = { lhs.x + rhs.x, lhs.y + rhs.y, lhs.z + rhs.z, lhs.w + rhs.w };
+	v4t<T> result = { +v.x, +v.y, +v.z, +v.w };
 	return result;
 }
 
-template<typename T, typename U>
-inline void
-operator+= (v4t<T>& lhs, U rhs)
+template<typename T>
+constexpr inline v4t<T>
+operator+ (v4t<T> lhs, v4t<T> rhs)
+{
+	v4t<T> result = { (T) (lhs.x + rhs.x), (T) (lhs.y + rhs.y), (T) (lhs.z + rhs.z), (T) (lhs.w + rhs.w) };
+	return result;
+}
+
+template<typename T>
+constexpr inline void
+operator+= (v4t<T>& lhs, v4t<T> rhs)
 {
 	lhs = lhs + rhs;
 }
 
 template<typename T>
-inline v4t<T>
+constexpr inline v4t<T>
 operator- (v4t<T> v)
 {
 	v4t<T> result = { -v.x, -v.y, -v.z, -v.w };
 	return result;
 }
 
-template<typename T, typename U>
-inline v4t<T>
-operator- (v4t<T> lhs, v4t<U> rhs)
+template<typename T>
+constexpr inline v4t<T>
+operator- (v4t<T> lhs, v4t<T> rhs)
 {
-	v4t<T> result = { lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z, lhs.w - rhs.w };
+	v4t<T> result = { (T) (lhs.x - rhs.x), (T) (lhs.y - rhs.y), (T) (lhs.z - rhs.z), (T) (lhs.w - rhs.w) };
 	return result;
 }
 
-template<typename T, typename U>
-inline void
-operator-= (v4t<T>& lhs, U rhs)
+template<typename T>
+constexpr inline void
+operator-= (v4t<T>& lhs, v4t<T> rhs)
 {
 	lhs = lhs - rhs;
 }
 
-template<typename T, typename U>
-inline v4t<T>
-operator* (U multiplier, v4t<T> v)
+template<typename T>
+constexpr inline v4t<T>
+operator* (T lhs, v4t<T> rhs)
 {
-	v4t<T> result = { multiplier * v.x, multiplier * v.y, multiplier * v.z, multiplier * v.w };
+	v4t<T> result = { (T) (lhs * rhs.x), (T) (lhs * rhs.y), (T) (lhs * rhs.z), (T) (lhs * rhs.w) };
 	return result;
 }
 
-template<typename T, typename U>
-inline v4t<T>
-operator* (v4t<T> v, U multiplier)
+template<typename T>
+constexpr inline v4t<T>
+operator* (v4t<T> lhs, T rhs)
 {
-	v4t<T> result = { multiplier * v.x, multiplier * v.y, multiplier * v.z, multiplier * v.w };
+	v4t<T> result = { (T) (lhs.x * rhs), (T) (lhs.y * rhs), (T) (lhs.z * rhs), (T) (lhs.w * rhs) };
 	return result;
 }
 
-template<typename T, typename U>
-inline v4t<T>
-operator* (v4t<T> lhs, v4t<U> rhs)
+template<typename T>
+constexpr inline v4t<T>
+operator* (v4t<T> lhs, v4t<T> rhs)
 {
-	v4t<T> result = { lhs.x * rhs.x, lhs.y * rhs.y, lhs.z * rhs.z, lhs.w * rhs.w };
+	v4t<T> result = { (T) (lhs.x * rhs.x), (T) (lhs.y * rhs.y), (T) (lhs.z * rhs.z), (T) (lhs.w * rhs.w) };
 	return result;
 }
 
-template<typename T, typename U>
-inline void
-operator*= (v4t<T>& lhs, U rhs)
+template<typename T>
+constexpr inline void
+operator*= (v4t<T>& lhs, T rhs)
 {
 	lhs = lhs * rhs;
 }
 
-template<typename T, typename U>
-inline v4t<T>
-operator/ (v4t<T> v, U divisor)
+template<typename T>
+constexpr inline void
+operator*= (v4t<T>& lhs, v4t<T> rhs)
 {
-	v4t<T> result = { v.x / divisor, v.y / divisor, v.z / divisor, v.w / divisor };
+	lhs = lhs * rhs;
+}
+
+template<typename T>
+constexpr inline v4t<T>
+operator/ (v4t<T> lhs, T rhs)
+{
+	v4t<T> result = { (T) (lhs.x / rhs), (T) (lhs.y / rhs), (T) (lhs.z / rhs), (T) (lhs.w / rhs) };
 	return result;
 }
 
-template<typename T, typename U>
-inline v4t<T>
-operator/ (U dividend, v4t<T> v)
+template<typename T>
+constexpr inline v4t<T>
+operator/ (T lhs, v4t<T> rhs)
 {
-	v4t<T> result = { dividend / v.x, dividend / v.y, dividend / v.z, dividend / v.w };
+	v4t<T> result = { (T) (lhs / rhs.x), (T) (lhs / rhs.y), (T) (lhs / rhs.z), (T) (lhs / rhs.w) };
 	return result;
 }
 
-template<typename T, typename U>
-inline void
-operator/= (v4t<T>& lhs, U rhs)
+template<typename T>
+constexpr inline v4t<T>
+operator/ (v4t<T> lhs, v4t<T> rhs)
+{
+	v4t<T> result = { (T) (lhs.x / rhs.x), (T) (lhs.y / rhs.y), (T) (lhs.z / rhs.z), (T) (lhs.w / rhs.w) };
+	return result;
+}
+
+template<typename T>
+constexpr inline void
+operator/= (v4t<T>& lhs, T rhs)
 {
 	lhs = lhs / rhs;
 }
 
 template<typename T>
-inline T&
+constexpr inline void
+operator/= (v4t<T>& lhs, v4t<T> rhs)
+{
+	lhs = lhs / rhs;
+}
+
+template<typename T>
+constexpr inline T&
 v4t<T>::operator[] (u32 index)
 {
 	Assert(index < ArrayLength(arr));
@@ -789,7 +955,7 @@ v4t<T>::operator[] (u32 index)
 }
 
 template<typename T>
-inline const T&
+constexpr inline const T&
 v4t<T>::operator[] (u32 index) const
 {
 	Assert(index < ArrayLength(arr));
@@ -799,7 +965,7 @@ v4t<T>::operator[] (u32 index) const
 
 template<typename T>
 template<typename U>
-inline
+constexpr inline
 v4t<T>::operator v2t<U>()
 {
 	v2t<U> result = { (U) x, (U) y };
@@ -808,7 +974,7 @@ v4t<T>::operator v2t<U>()
 
 template<typename T>
 template<typename U>
-inline
+constexpr inline
 v4t<T>::operator v3t<U>()
 {
 	v3t<U> result = { (U) x, (U) y, (U) z };
@@ -817,16 +983,16 @@ v4t<T>::operator v3t<U>()
 
 template<typename T>
 template<typename U>
-inline
+constexpr inline
 v4t<T>::operator v4t<U>()
 {
 	v4t<U> result = { (U) x, (U) y, (U) z, (U) w };
 	return result;
 }
 
-template<typename T, typename U, typename V>
-inline v4t<T>
-Clamp(v4t<T> v, v4t<U> min, v4t<V> max)
+template<typename T>
+constexpr inline v4t<T>
+Clamp(v4t<T> v, v4t<T> min, v4t<T> max)
 {
 	v4t<T> result = {
 		Clamp(v.x, min.x, max.x),
@@ -837,17 +1003,17 @@ Clamp(v4t<T> v, v4t<U> min, v4t<V> max)
 	return result;
 }
 
-template<typename T, typename U>
-inline T
-Dot(v4t<T> lhs, v4t<U> rhs)
+template<typename T>
+constexpr inline T
+Dot(v4t<T> lhs, v4t<T> rhs)
 {
-	T result = lhs.x*rhs.x + lhs.y*rhs.y + lhs.z*rhs.z + lhs.w*rhs.w;
+	T result = (T) (lhs.x*rhs.x + lhs.y*rhs.y + lhs.z*rhs.z + lhs.w*rhs.w);
 	return result;
 }
 
-template<typename T, typename U>
-inline v4t<T>
-Lerp(v4t<T> lhs, v4t<U> rhs, r32 t)
+template<typename T>
+constexpr inline v4t<T>
+Lerp(v4t<T> lhs, v4t<T> rhs, r32 t)
 {
 	v4t<T> result = {
 		Lerp(lhs.x, rhs.x, t),
@@ -858,9 +1024,9 @@ Lerp(v4t<T> lhs, v4t<U> rhs, r32 t)
 	return result;
 }
 
-template<typename T, typename U>
-inline v4t<T>
-Max(v4t<T> lhs, v4t<U> rhs)
+template<typename T>
+constexpr inline v4t<T>
+Max(v4t<T> lhs, v4t<T> rhs)
 {
 	v4t<T> result = {
 		Max(lhs.x, rhs.x),
@@ -871,9 +1037,9 @@ Max(v4t<T> lhs, v4t<U> rhs)
 	return result;
 }
 
-template<typename T, typename U>
-inline v4t<T>
-Min(v4t<T> lhs, v4t<U> rhs)
+template<typename T>
+constexpr inline v4t<T>
+Min(v4t<T> lhs, v4t<T> rhs)
 {
 	v4t<T> result = {
 		Min(lhs.x, rhs.x),
@@ -884,12 +1050,24 @@ Min(v4t<T> lhs, v4t<U> rhs)
 	return result;
 }
 
-template<typename T>
-inline v4t<T>
-Normalize(v4t<T> v)
+inline v4
+Normalize(v4 v)
 {
-	r32 magnitude = sqrt(v.x*v.x + v.y*v.y + v.z*v.z + v.w*v.w);
-	v4t<T> result = {
+	r32 magnitude = Sqrt(v.x*v.x + v.y*v.y + v.z*v.z + v.w*v.w);
+	v4 result = {
+		v.x / magnitude,
+		v.y / magnitude,
+		v.z / magnitude,
+		v.w / magnitude
+	};
+	return result;
+}
+
+inline v4t<r64>
+Normalize(v4t<r64> v)
+{
+	r64 magnitude = Sqrt(v.x*v.x + v.y*v.y + v.z*v.z + v.w*v.w);
+	v4t<r64> result = {
 		v.x / magnitude,
 		v.y / magnitude,
 		v.z / magnitude,
@@ -931,25 +1109,25 @@ union Matrix
 	r32 arr[4][4];
 	v4 col[4];
 
-	v4& operator[] (u32 _col);
-	const v4& operator[] (u32 _col) const;
+	constexpr v4& operator[] (u32 _col);
+	constexpr const v4& operator[] (u32 _col) const;
 };
 
-inline v4
+constexpr inline v4
 Row(const Matrix& m, u32 row)
 {
 	v4 result = { m[0][row], m[1][row], m[2][row], m[3][row] };
 	return result;
 }
 
-inline const v4&
+constexpr inline const v4&
 Col(const Matrix& m, u32 col)
 {
 	const v4& result = m.col[col];
 	return result;
 }
 
-inline Matrix
+constexpr inline Matrix
 operator* (const Matrix& lhs, const Matrix& rhs)
 {
 	Matrix result = {
@@ -961,12 +1139,22 @@ operator* (const Matrix& lhs, const Matrix& rhs)
 	return result;
 }
 
-// TODO: Versions for v3?
-template<typename T>
-inline v4t<T>
-operator* (v4t<T> lhs, const Matrix& rhs)
+constexpr inline void
+operator*= (Matrix& lhs, const Matrix& rhs)
 {
-	v4t<T> result = {
+	lhs = {
+		Dot(Row(lhs, 0), Col(rhs, 0)), Dot(Row(lhs, 1), Col(rhs, 0)), Dot(Row(lhs, 2), Col(rhs, 0)), Dot(Row(lhs, 3), Col(rhs, 0)),
+		Dot(Row(lhs, 0), Col(rhs, 1)), Dot(Row(lhs, 1), Col(rhs, 1)), Dot(Row(lhs, 2), Col(rhs, 1)), Dot(Row(lhs, 3), Col(rhs, 1)),
+		Dot(Row(lhs, 0), Col(rhs, 2)), Dot(Row(lhs, 1), Col(rhs, 2)), Dot(Row(lhs, 2), Col(rhs, 2)), Dot(Row(lhs, 3), Col(rhs, 2)),
+		Dot(Row(lhs, 0), Col(rhs, 3)), Dot(Row(lhs, 1), Col(rhs, 3)), Dot(Row(lhs, 2), Col(rhs, 3)), Dot(Row(lhs, 3), Col(rhs, 3))
+	};
+}
+
+// TODO: Versions for v3?
+constexpr inline v4
+operator* (v4 lhs, const Matrix& rhs)
+{
+	v4 result = {
 		Dot(lhs, rhs.col[0]),
 		Dot(lhs, rhs.col[1]),
 		Dot(lhs, rhs.col[2]),
@@ -975,7 +1163,13 @@ operator* (v4t<T> lhs, const Matrix& rhs)
 	return result;
 }
 
-inline v4&
+constexpr inline void
+operator*= (v4& lhs, const Matrix& rhs)
+{
+	lhs = lhs * rhs;
+}
+
+constexpr inline v4&
 Matrix::operator[] (u32 _col)
 {
 	Assert(_col < ArrayLength(col));
@@ -983,7 +1177,7 @@ Matrix::operator[] (u32 _col)
 	return result;
 }
 
-inline const v4&
+constexpr inline const v4&
 Matrix::operator[] (u32 _col) const
 {
 	Assert(_col < ArrayLength(arr));
@@ -991,7 +1185,7 @@ Matrix::operator[] (u32 _col) const
 	return result;
 }
 
-inline Matrix
+constexpr inline Matrix
 Identity()
 {
 	Matrix result = {
@@ -1004,7 +1198,7 @@ Identity()
 }
 
 // TODO: What about scale?
-inline Matrix
+constexpr inline Matrix
 InvertRT(const Matrix& m)
 {
 	Matrix result = {
@@ -1016,9 +1210,8 @@ InvertRT(const Matrix& m)
 	return result;
 }
 
-template<typename T, typename U>
 inline Matrix
-LookAt(v3t<T> pos, v3t<U> target)
+LookAt(v3 pos, v3 target)
 {
 	v3 u = { 0.0f, 1.0f, 0.0f };
 	v3 z = Normalize(pos - target);
@@ -1035,16 +1228,15 @@ LookAt(v3t<T> pos, v3t<U> target)
 	return result;
 }
 
-template<typename T, typename U>
 inline Matrix
-Orbit(v3t<T> target, v2t<U> yp, r32 radius)
+Orbit(v3 target, v2 yp, r32 radius)
 {
 	// NOTE:Pitch, then yaw
 
-	r32 cy = cos(-yp.yaw);
-	r32 sy = sin(-yp.yaw);
-	r32 cp = cos(yp.pitch);
-	r32 sp = sin(yp.pitch);
+	r32 cy = Cos(-yp.yaw);
+	r32 sy = Sin(-yp.yaw);
+	r32 cp = Cos(yp.pitch);
+	r32 sp = Sin(yp.pitch);
 
 	v3 offset = radius * v3 { sy*cp, -sp, cy*cp };
 
@@ -1052,9 +1244,8 @@ Orbit(v3t<T> target, v2t<U> yp, r32 radius)
 	return LookAt(pos, target);
 }
 
-template<typename T>
-inline Matrix
-Orthographic(v2t<T> size, r32 near, r32 far)
+constexpr inline Matrix
+Orthographic(v2 size, r32 near, r32 far)
 {
 	Matrix result = {};
 	result[0][0] = 2.0f / size.x;
@@ -1065,7 +1256,7 @@ Orthographic(v2t<T> size, r32 near, r32 far)
 	return result;
 }
 
-inline Matrix
+constexpr inline Matrix
 Transpose(const Matrix& m)
 {
 	Matrix result = {
@@ -1077,61 +1268,54 @@ Transpose(const Matrix& m)
 	return result;
 }
 
-template<typename T>
-inline void
-SetPosition(Matrix& m, v2t<T> pos)
+constexpr inline void
+SetPosition(Matrix& m, v2 pos)
 {
 	m.tx = pos.x;
 	m.ty = pos.y;
 }
 
-template<typename T, typename U>
-inline void
-SetPosition(Matrix& m, v2t<T> pos, U zPos)
+constexpr inline void
+SetPosition(Matrix& m, v2 pos, r32 zPos)
 {
 	m.tx = pos.x;
 	m.ty = pos.y;
 	m.tz = zPos;
 }
 
-template<typename T>
-inline void
-SetPosition(Matrix& m, v3t<T> pos)
+constexpr inline void
+SetPosition(Matrix& m, v3 pos)
 {
 	m.tx = pos.x;
 	m.ty = pos.y;
 	m.tz = pos.z;
 }
 
-template<typename T>
-inline void
-SetTranslation(Matrix& m, v2t<T> pos)
+constexpr inline void
+SetTranslation(Matrix& m, v2 pos)
 {
 	SetPosition(m, pos);
 }
 
-template<typename T, typename U>
-inline void
-SetTranslation(Matrix& m, v2t<T> pos, U zPos)
+constexpr inline void
+SetTranslation(Matrix& m, v2 pos, r32 zPos)
 {
 	SetPosition(m, pos, zPos);
 }
 
-template<typename T>
-inline void
-SetTranslation(Matrix& m, v3t<T> pos)
+constexpr inline void
+SetTranslation(Matrix& m, v3 pos)
 {
 	SetPosition(m, pos);
 }
 
-template<typename T>
 inline void
-SetRotation(Matrix& m, v2t<T> yp)
+SetRotation(Matrix& m, v2 yp)
 {
-	r32 cy = cos(yp.yaw);
-	r32 sy = sin(yp.yaw);
-	r32 cp = cos(-yp.pitch);
-	r32 sp = sin(-yp.pitch);
+	r32 cy = Cos(yp.yaw);
+	r32 sy = Sin(yp.yaw);
+	r32 cp = Cos(-yp.pitch);
+	r32 sp = Sin(-yp.pitch);
 
 	m.m00 = cy;
 	m.m10 = sy*sp;
@@ -1144,9 +1328,8 @@ SetRotation(Matrix& m, v2t<T> yp)
 	m.m22 = cy*cp;
 }
 
-template<typename T>
 inline void
-SetRotation(Matrix& m, v3t<T> ypr)
+SetRotation(Matrix& m, v3 ypr)
 {
 	// NOTE: Conventions
 	// Tait-Bryan
@@ -1156,12 +1339,12 @@ SetRotation(Matrix& m, v3t<T> ypr)
 	// Positive pitch rotates up
 	// Positive rolls rotates right
 
-	r32 cy = cos(ypr.yaw);
-	r32 sy = sin(ypr.yaw);
-	r32 cp = cos(-ypr.pitch);
-	r32 sp = sin(-ypr.pitch);
-	r32 cr = cos(ypr.roll);
-	r32 sr = sin(ypr.roll);
+	r32 cy = Cos(ypr.yaw);
+	r32 sy = Sin(ypr.yaw);
+	r32 cp = Cos(-ypr.pitch);
+	r32 sp = Sin(-ypr.pitch);
+	r32 cr = Cos(ypr.roll);
+	r32 sr = Sin(ypr.roll);
 
 	m.m00 = cr*cy;
 	m.m10 = cr*sy*sp - sr*cp;
@@ -1174,35 +1357,31 @@ SetRotation(Matrix& m, v3t<T> ypr)
 	m.m22 = cy*cp;
 }
 
-template<typename T>
-inline void
-SetScale(Matrix& m, v2t<T> scale)
+constexpr inline void
+SetScale(Matrix& m, v2 scale)
 {
 	m.sx = scale.x;
 	m.sy = scale.y;
 }
 
-template<typename T, typename U>
-inline void
-SetScale(Matrix& m, v2t<T> scale, U zScale)
+constexpr inline void
+SetScale(Matrix& m, v2 scale, r32 zScale)
 {
 	m.sx = scale.x;
 	m.sy = scale.y;
 	m.sz = zScale;
 }
 
-template<typename T>
-inline void
-SetScale(Matrix& m, v3t<T> scale)
+constexpr inline void
+SetScale(Matrix& m, v3 scale)
 {
 	m.sx = scale.x;
 	m.sy = scale.y;
 	m.sz = scale.z;
 }
 
-template<typename T, typename U, typename V>
 inline void
-SetSRT(Matrix& m, v3t<T> scale, v3t<U> ypr, v3t<V> pos)
+SetSRT(Matrix& m, v3 scale, v3 ypr, v3 pos)
 {
 	m.tx = pos.x;
 	m.ty = pos.y;
@@ -1223,9 +1402,8 @@ SetSRT(Matrix& m, v3t<T> scale, v3t<U> ypr, v3t<V> pos)
 	m.zz *= scale.z;
 }
 
-template<typename T, typename U, typename V>
 inline void
-SetSRT(Matrix& m, v2t<T> scale, v2t<U> yp, v2t<V> pos)
+SetSRT(Matrix& m, v2 scale, v2 yp, v2 pos)
 {
 	m.tx = pos.x;
 	m.ty = pos.y;
@@ -1241,27 +1419,24 @@ SetSRT(Matrix& m, v2t<T> scale, v2t<U> yp, v2t<V> pos)
 	m.yz *= scale.y;
 }
 
-template<typename T, typename U, typename V>
 inline Matrix
-GetSRT(v3t<T>& scale, v3t<U> ypr, v3t<V> pos)
+GetSRT(v3 scale, v3 ypr, v3 pos)
 {
 	Matrix result = Identity();
 	SetSRT(result, scale, ypr, pos);
 	return result;
 }
 
-template<typename T, typename U, typename V>
 inline Matrix
-GetSRT(v2t<T>& scale, v2t<U> yp, v2t<V> pos)
+GetSRT(v2 scale, v2 yp, v2 pos)
 {
 	Matrix result = Identity();
 	SetSRT(result, scale, yp, pos);
 	return result;
 }
 
-template<typename T, typename U>
 inline void
-SetSR(Matrix& m, v3t<T> scale, v3t<U> ypr)
+SetSR(Matrix& m, v3 scale, v3 ypr)
 {
 	SetRotation(m, ypr);
 
@@ -1278,9 +1453,8 @@ SetSR(Matrix& m, v3t<T> scale, v3t<U> ypr)
 	m.zz *= scale.z;
 }
 
-template<typename T, typename U>
 inline void
-SetSR(Matrix& m, v2t<T> scale, v2t<U> yp)
+SetSR(Matrix& m, v2 scale, v2 yp)
 {
 	SetRotation(m, yp);
 
@@ -1293,27 +1467,24 @@ SetSR(Matrix& m, v2t<T> scale, v2t<U> yp)
 	m.yz *= scale.y;
 }
 
-template<typename T, typename U>
 inline Matrix
-GetSR(v3t<T>& scale, v3t<U> ypr)
+GetSR(v3 scale, v3 ypr)
 {
 	Matrix result = Identity();
-	SetSR(result, scale, ypr, pos);
+	SetSR(result, scale, ypr);
 	return result;
 }
 
-template<typename T, typename U>
 inline Matrix
-GetSR(v2t<T> scale, v2t<U> yp)
+GetSR(v2 scale, v2 yp)
 {
 	Matrix result = Identity();
-	SetSR(result, scale, yp, pos);
+	SetSR(result, scale, yp);
 	return result;
 }
 
-template<typename T, typename U>
-inline void
-SetST(Matrix& m, v3t<T> scale, v3t<U> pos)
+constexpr inline void
+SetST(Matrix& m, v3 scale, v3 pos)
 {
 	m.tx = pos.x;
 	m.ty = pos.y;
@@ -1332,9 +1503,8 @@ SetST(Matrix& m, v3t<T> scale, v3t<U> pos)
 	m.zz = scale.z;
 }
 
-template<typename T, typename U>
-inline void
-SetST(Matrix& m, v2t<T> scale, v2t<U> pos)
+constexpr inline void
+SetST(Matrix& m, v2 scale, v2 pos)
 {
 	m.tx = pos.x;
 	m.ty = pos.y;
@@ -1352,27 +1522,24 @@ SetST(Matrix& m, v2t<T> scale, v2t<U> pos)
 	m.zz = 0.0f;
 }
 
-template<typename T, typename U>
-inline Matrix
-GetST(v3t<T>& scale, v3t<U> pos)
+constexpr inline Matrix
+GetST(v3 scale, v3 pos)
 {
 	Matrix result = Identity();
 	SetST(result, scale, pos);
 	return result;
 }
 
-template<typename T, typename U>
-inline Matrix
-GetST(v2t<T>& scale, v2t<U> pos)
+constexpr inline Matrix
+GetST(v2 scale, v2 pos)
 {
 	Matrix result = Identity();
 	SetST(result, scale, pos);
 	return result;
 }
 
-template<typename T, typename U>
 inline void
-SetRT(Matrix& m, v3t<T> ypr, v3t<U> pos)
+SetRT(Matrix& m, v3 ypr, v3 pos)
 {
 	SetRotation(m, ypr);
 
@@ -1381,9 +1548,8 @@ SetRT(Matrix& m, v3t<T> ypr, v3t<U> pos)
 	m.tz = pos.z;
 }
 
-template<typename T, typename U>
 inline void
-SetRT(Matrix& m, v2t<T> yp, v2t<U> pos)
+SetRT(Matrix& m, v2 yp, v2 pos)
 {
 	SetRotation(m, yp);
 
@@ -1391,18 +1557,16 @@ SetRT(Matrix& m, v2t<T> yp, v2t<U> pos)
 	m.ty = pos.y;
 }
 
-template<typename T, typename U>
 inline Matrix
-GetRT(v3t<T>& ypr, v3t<U> pos)
+GetRT(v3 ypr, v3 pos)
 {
 	Matrix result = Identity();
 	SetRT(result, ypr, pos);
 	return result;
 }
 
-template<typename T, typename U>
 inline Matrix
-GetRT(v2t<T>& yp, v2t<U> pos)
+GetRT(v2 yp, v2 pos)
 {
 	Matrix result = Identity();
 	SetRT(result, yp, pos);
@@ -1412,11 +1576,9 @@ GetRT(v2t<T>& yp, v2t<U> pos)
 // -------------------------------------------------------------------------------------------------
 // Rect
 
-// TODO: Use pos and size instead of min and max?
-
-template<typename T, typename U>
+template<typename T>
 inline v4t<T>
-ClampRect(v4t<T> rect, v4t<U> bounds)
+ClampRect(v4t<T> rect, v4t<T> bounds)
 {
 	v2t<T> min = bounds.pos              + Min(v2t<T>{ 0, 0 }, bounds.size - rect.size);
 	v2t<T> max = bounds.size - rect.size - Min(v2t<T>{ 0, 0 }, bounds.size - rect.size);
@@ -1427,29 +1589,29 @@ ClampRect(v4t<T> rect, v4t<U> bounds)
 	return result;
 }
 
-template<typename T, typename U>
+template<typename T>
 inline v4t<T>
-GrowRect(v4t<T> rect, U radius)
+GrowRect(v4t<T> rect, T radius)
 {
 	v4t<T> result = {};
-	result.pos  = rect.pos  - v2t<T>{ 1 * radius, 1 * radius };
-	result.size = rect.size + v2t<T>{ 2 * radius, 2 * radius };
+	result.pos  = rect.pos  - v2t<T>{ (T) (1 * radius), (T) (1 * radius) };
+	result.size = rect.size + v2t<T>{ (T) (2 * radius), (T) (2 * radius) };
 	return result;
 }
 
-template<typename T, typename U>
+template<typename T>
 inline v4t<T>
-GrowRect(v4t<T> rect, v2t<U> radii)
+GrowRect(v4t<T> rect, v2t<T> radii)
 {
 	v4t<T> result = {};
-	result.pos  = rect.pos  - v2t<T>{ 1 * radii.x, 1 * radii.y };
-	result.size = rect.size + v2t<T>{ 2 * radii.x, 2 * radii.y };
+	result.pos  = rect.pos  - v2t<T>{ (T) (1 * radii.x), (T) (1 * radii.y) };
+	result.size = rect.size + v2t<T>{ (T) (2 * radii.x), (T) (2 * radii.y) };
 	return result;
 }
 
-template<typename T, typename U>
+template<typename T>
 inline v4t<T>
-GrowRect(v4t<T> rect, v4t<U> radii)
+GrowRect(v4t<T> rect, v4t<T> radii)
 {
 	v4t<T> result = {};
 	result.pos  = rect.pos  - v2t<T>{ radii.x, radii.y };
@@ -1457,39 +1619,39 @@ GrowRect(v4t<T> rect, v4t<U> radii)
 	return result;
 }
 
-template<typename T, typename U>
+template<typename T>
 inline v4t<T>
-MakeRect(v2t<T> center, U radius)
+MakeRect(v2t<T> center, T radius)
 {
 	v4t<T> result = {};
 	result.pos  = center - v2t<T>{ radius, radius };
-	result.size =      2 * v2t<T>{ radius, radius };
+	result.size =  (T) 2 * v2t<T>{ radius, radius };
 	return result;
 }
 
-template<typename T, typename U>
+template<typename T>
 inline v4t<T>
-MakeRect(v2t<T> center, v2t<U> radii)
+MakeRect(v2t<T> center, v2t<T> radii)
 {
 	v4t<T> result = {};
 	result.pos  = center - radii;
-	result.size =      2 * radii;
+	result.size =  (T) 2 * radii;
 	return result;
 }
 
-template<typename T, typename U>
+template<typename T>
 inline v4t<T>
-MakeRect(v2t<T> center, v4t<U> radii)
+MakeRect(v2t<T> center, v4t<T> radii)
 {
 	v4t<T> result = {};
 	result.pos  = center - v2t<T>{ radii.x, radii.y };
-	result.size = { radii.x + radii.z, radii.y + radii.w };
+	result.size = { (T) (radii.x + radii.z), (T) (radii.y + radii.w) };
 	return result;
 }
 
-template<typename T, typename U>
+template<typename T>
 inline b8
-RectContains(v4t<T> rect, v2t<U> pos)
+RectContains(v4t<T> rect, v2t<T> pos)
 {
 	b8 result = true;
 	result &= pos.x >= rect.pos.x;
@@ -1499,9 +1661,9 @@ RectContains(v4t<T> rect, v2t<U> pos)
 	return result;
 }
 
-template<typename T, typename U>
+template<typename T>
 inline v4t<T>
-RectCombine(v4t<T> lhs, v4t<U> rhs)
+RectCombine(v4t<T> lhs, v4t<T> rhs)
 {
 	v4t<T> result = {};
 	result.pos.x  = Min(lhs.pos.x,  rhs.pos.x);

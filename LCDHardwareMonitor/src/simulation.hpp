@@ -946,7 +946,7 @@ static void
 MouseLook(SimulationState& s)
 {
 	v2i deltaPos = s.mousePos - s.mousePosStart;
-	s.cameraRot = 0.0005f * (v2) deltaPos * 2*r32Pi;
+	s.cameraRot = 0.0005f * (v2) deltaPos * (2*r32Pi);
 
 	v2 rot = s.cameraRotStart + s.cameraRot;
 	rot.pitch = Clamp(rot.pitch, -0.49f*r32Pi, 0.49f*r32Pi);
@@ -1007,7 +1007,7 @@ DragSelection(SimulationState& s)
 			FullWidgetRef selected = s.selected[i];
 
 			Widget& widget = GetWidget(s, selected);
-			widget.position += deltaPos;
+			widget.position += (v2) deltaPos;
 		}
 	}
 }

@@ -2,7 +2,6 @@ Current
 -------
 Bring ILI9341 code over
 	Can Initialize fail?
-	Use vectors
 	Add a tracing option
 	Use SetBit to simplify config
 
@@ -13,8 +12,8 @@ Bring FT232H code over
 	Consider adding 'last command time'
 
 Compare writes to python code (ft232h and ili9341)
-Delete HardwareCommunication
 Compare reads to python code (ft232h and ili9341)
+Delete HardwareCommunication
 Read from display
 
 

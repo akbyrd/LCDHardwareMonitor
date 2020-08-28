@@ -229,7 +229,7 @@ static v2i
 GetMousePosition(LPARAM lParam, u16 zoomFactor, v2u renderSize)
 {
 	v2i pos = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
-	pos /= zoomFactor;
+	pos /= (i32) zoomFactor;
 	pos.y = (i32) renderSize.y - 1 - pos.y;
 	return pos;
 }
@@ -395,7 +395,7 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 				windowCenter.x = (windowRect.right + windowRect.left) / 2;
 				windowCenter.y = (windowRect.bottom + windowRect.top) / 2;
 
-				v2u newClientSize = newZoomFactor * s->renderSize;
+				v2u newClientSize = (u32) newZoomFactor * s->renderSize;
 
 				RECT usableDesktopRect;
 				success = SystemParametersInfoA(SPI_GETWORKAREA, 0, &usableDesktopRect, 0);
