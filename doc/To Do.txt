@@ -10,11 +10,13 @@ Bring FT232H code over
 	Ensure we can always init, even if in a bad state
 	Coalesce writes
 	Consider adding 'last command time'
+	Switch to parallel interface
 
 Compare writes to python code (ft232h and ili9341)
 Compare reads to python code (ft232h and ili9341)
 Delete HardwareCommunication
 Read from display
+Run without LCD present!!
 
 
 

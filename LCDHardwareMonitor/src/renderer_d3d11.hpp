@@ -381,6 +381,26 @@ UpdateConstantBuffer(RendererState& s, ConstantBuffer& cBuf, void* data)
 // -------------------------------------------------------------------------------------------------
 // Public API Implementation - Resource Creation
 
+void
+Renderer_SetRenderSize(RendererState& s, v2u renderSize)
+{
+	Assert(!s.resourceCreationFinalized);
+	s.renderSize = renderSize;
+
+	// Initialize viewport
+	{
+		D3D11_VIEWPORT viewport = {};
+		viewport.TopLeftX = 0;
+		viewport.TopLeftY = 0;
+		viewport.Width    = (r32) s.renderSize.x;
+		viewport.Height   = (r32) s.renderSize.y;
+		viewport.MinDepth = 0;
+		viewport.MaxDepth = 1;
+
+		s.d3dContext->RSSetViewports(1, &viewport);
+	}
+}
+
 // TODO: Try using the keyed mutex flag to synchronize sharing
 RenderTarget
 Renderer_CreateRenderTarget(RendererState& s, StringView name, b8 resource)
@@ -746,6 +766,7 @@ Renderer_LoadPixelShader(RendererState& s, StringView name, StringView path, Sli
 b8
 Renderer_FinalizeResourceCreation(RendererState& s)
 {
+	Assert(!s.resourceCreationFinalized);
 	s.resourceCreationFinalized = true;
 
 	// Finalize vertex buffer
@@ -1047,11 +1068,8 @@ Renderer_GetCPUTextureBytes(RendererState& s, CPUTexture ct)
 // Public API Implementation - Core Functions
 
 b8
-Renderer_Initialize(RendererState& s, v2u renderSize)
+Renderer_Initialize(RendererState& s)
 {
-	Assert(renderSize.x < i32Max && renderSize.y < i32Max);
-
-	s.renderSize       = renderSize;
 	s.renderFormat     = DXGI_FORMAT_B5G6R5_UNORM;
 	s.sharedFormat     = DXGI_FORMAT_B8G8R8A8_UNORM;
 	s.multisampleCount = 1;
@@ -1164,20 +1182,6 @@ Renderer_Initialize(RendererState& s, v2u renderSize)
 		hr = s.d3dDevice->CheckMultisampleQualityLevels(s.sharedFormat, s.multisampleCount, &s.qualityCountShared);
 		LOG_HRESULT_IF_FAILED(hr, return false,
 			Severity::Fatal, "Failed to query supported multisample levels for shared textures");
-	}
-
-
-	// Initialize viewport
-	{
-		D3D11_VIEWPORT viewport = {};
-		viewport.TopLeftX = 0;
-		viewport.TopLeftY = 0;
-		viewport.Width    = (r32) s.renderSize.x;
-		viewport.Height   = (r32) s.renderSize.y;
-		viewport.MinDepth = 0;
-		viewport.MaxDepth = 1;
-
-		s.d3dContext->RSSetViewports(1, &viewport);
 	}
 
 

@@ -49,10 +49,11 @@ struct CPUTextureBytes
 	u32 rowStride;
 };
 
-b8              Renderer_Initialize                     (RendererState&, v2u renderSize);
+b8              Renderer_Initialize                     (RendererState&);
 void            Renderer_Teardown                       (RendererState&);
 b8              Renderer_Render                         (RendererState&);
 
+void            Renderer_SetRenderSize                  (RendererState&, v2u renderSize);
 b8              Renderer_FinalizeResourceCreation       (RendererState&);
 Mesh            Renderer_CreateMesh                     (RendererState&, StringView name, Slice<Vertex> vertices, Slice<Index> indices);
 VertexShader    Renderer_LoadVertexShader               (RendererState&, StringView name, StringView path, Slice<VertexAttribute> attributes, Slice<u32> cBufSizes);

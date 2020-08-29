@@ -70,9 +70,6 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 	PluginLoaderState  pluginLoaderState = {};
 	PreviewWindowState previewState      = {};
 
-	// HACK: Remove this
-	simulationState.renderSize = { 320, 240 };
-
 	// LCD Hardware
 	FT232H_SetTracing(ft232hState, false);
 	FT232H_SetDebugChecks(ft232hState, true);
@@ -88,7 +85,7 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 
 
 	// Renderer
-	success = Renderer_Initialize(rendererState, simulationState.renderSize);
+	success = Renderer_Initialize(rendererState);
 	LOG_IF(!success, return -1, Severity::Fatal, "Failed to initialize the renderer");
 	DEFER_TEARDOWN { Renderer_Teardown(rendererState); };
 

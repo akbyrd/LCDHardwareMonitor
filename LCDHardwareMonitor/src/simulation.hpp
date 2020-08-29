@@ -1270,6 +1270,8 @@ Simulation_Initialize(SimulationState& s, PluginLoaderState& pluginLoader, Rende
 
 	// Create Standard Rendering Resources
 	{
+		Renderer_SetRenderSize(*s.renderer, s.renderSize);
+
 		RenderTarget rt = Renderer_CreateRenderTarget(*s.renderer, "Main", true);
 		if (!rt) return false;
 		Assert(rt == StandardRenderTarget::Main);
