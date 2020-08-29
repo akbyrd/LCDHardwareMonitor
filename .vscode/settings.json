@@ -19,15 +19,15 @@
   },
 
   "C_Cpp.default.windowsSdkVersion": "8.1",
-  "C_Cpp.default.compilerPath": "C:/Program Files (x86)/Microsoft Visual Studio/2017/BuildTools/VC/Tools/MSVC/14.15.26726/bin/Hostx64/x64/cl.exe /clr",
-  "C_Cpp.default.cppStandard": "c++14",
+  "C_Cpp.default.compilerPath": "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.26.28801/bin/Hostx64/x64/cl.exe",
+  "C_Cpp.default.cppStandard": "c++17",
   "C_Cpp.default.intelliSenseMode": "msvc-x64",
   "C_Cpp.default.includePath": [
-      "C:/Program Files (x86)/Windows Kits/10/Include/10.0.17763.0/shared",
-      "C:/Program Files (x86)/Windows Kits/10/Include/10.0.17763.0/ucrt",
-      "C:/Program Files (x86)/Windows Kits/10/Include/10.0.17763.0/um",
-      "C:/Program Files (x86)/Windows Kits/10/Include/10.0.17763.0/winrt",
-      "C:/Program Files (x86)/Windows Kits/NETFXSDK/4.6.1/Include/um",
+      "C:/Program Files (x86)/Windows Kits/10/Include/10.0.18362.0/shared",
+      "C:/Program Files (x86)/Windows Kits/10/Include/10.0.18362.0/ucrt",
+      "C:/Program Files (x86)/Windows Kits/10/Include/10.0.18362.0/um",
+      "C:/Program Files (x86)/Windows Kits/10/Include/10.0.18362.0/winrt",
+      "C:/Program Files (x86)/Windows Kits/NETFXSDK/4.7.2/Include/um",
       "${workspaceFolder}/LCDHardwareMonitor API",
       "${workspaceFolder}/LCDHardwareMonitor/src"
   ],

@@ -1702,11 +1702,12 @@ Color32(u8 r, u8 g, u8 b, u8 a)
 constexpr inline v4
 Color128(u8 r, u8 g, u8 b, u8 a)
 {
+	// https://developercommunity.visualstudio.com/content/problem/1167562/spurious-warning-c5219-in-1672.html
 	v4 result = {
-		r / 255.0f,
-		g / 255.0f,
-		b / 255.0f,
-		a / 255.0f
+		(r32) r / 255.0f,
+		(r32) g / 255.0f,
+		(r32) b / 255.0f,
+		(r32) a / 255.0f
 	};
 	return result;
 }
