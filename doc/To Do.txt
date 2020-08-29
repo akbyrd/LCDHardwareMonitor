@@ -16,7 +16,6 @@ Compare writes to python code (ft232h and ili9341)
 Compare reads to python code (ft232h and ili9341)
 Delete HardwareCommunication
 Read from display
-Run without LCD present!!
 
 
 
@@ -116,6 +115,13 @@ Need to actually avoid processing broken plugins
 Outline shader
 Users probably need to be able to create custom UI for plugin settings
 Watch plugin directory contents for registering, unregistering, and reloading plugins.
+
+
+
+
+Features - FT232H Communication
+-------------------------------
+Think about reconnection strategy. Exponential backoff? Simple timer? Respond to OS USB events?
 
 
 

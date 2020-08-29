@@ -124,6 +124,8 @@ PluginLoader_Teardown(PluginLoaderState& s)
 
 		s.clrHost.Reset();
 	}
+
+	s = {};
 }
 
 static b8

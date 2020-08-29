@@ -199,6 +199,8 @@ Connection_Teardown(ConnectionState& con)
 	for (u32 i = 0; i < con.queue.capacity; i++)
 		List_Free(con.queue.data[i]);
 	List_Free(con.queue);
+
+	con = {};
 }
 
 // NOTE: There's one small gotcha with this serialization approach. We use

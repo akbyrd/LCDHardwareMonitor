@@ -12,8 +12,8 @@ struct SimulationState
 {
 	PluginLoaderState*  pluginLoader;
 	RendererState*      renderer;
-	ConnectionState     guiConnection;
-	b8                  previewWindow;
+	FT232HState*        ft232h;
+	ILI9341State*       ili9341;
 
 	List<Plugin>        plugins;
 	List<SensorPlugin>  sensorPlugins;
@@ -31,14 +31,18 @@ struct SimulationState
 	i64                 startTime;
 	r32                 currentTime;
 
+	b8                  ft232hInitialized;
+	u32                 ft232hRetryCount;
+
+	b8                  previewWindow;
+	ConnectionState     guiConnection;
 	GUIInteraction      guiInteraction;
+	v4i                 interactionRect;
+	v2i                 interactionRelPosStart;
 	v2i                 mousePos;
 	v2i                 mousePosStart;
 	v2                  cameraRot;
 	v2                  cameraRotStart;
-
-	v4i                 interactionRect;
-	v2i                 interactionRelPosStart;
 
 	FullWidgetRef       hovered;
 	List<FullWidgetRef> selected;
@@ -1252,10 +1256,17 @@ FromGUI_SetWidgetSelection(SimulationState& s, FromGUI::SetWidgetSelection& widg
 // -------------------------------------------------------------------------------------------------
 
 b8
-Simulation_Initialize(SimulationState& s, PluginLoaderState& pluginLoader, RendererState& renderer)
+Simulation_Initialize(
+	SimulationState&   s,
+	PluginLoaderState& pluginLoader,
+	RendererState&     renderer,
+	FT232HState&       ft232h,
+	ILI9341State&      ili9341)
 {
 	s.pluginLoader = &pluginLoader;
 	s.renderer     = &renderer;
+	s.ft232h       = &ft232h;
+	s.ili9341      = &ili9341;
 	s.startTime    = Platform_GetTicks();
 	s.renderSize   = { 320, 240 };
 
@@ -1827,6 +1838,45 @@ Simulation_Update(SimulationState& s)
 
 	Renderer_PopDepthBuffer(*s.renderer);
 	Renderer_PopRenderTarget(*s.renderer);
+	Renderer_Render(*s.renderer);
+
+	// Hardware Communication
+	{
+		if (FT232H_HasError(*s.ft232h))
+		{
+			s.ft232hRetryCount++;
+			s.ft232hInitialized = false;
+			ILI9341_Teardown(*s.ili9341);
+			FT232H_Teardown(*s.ft232h);
+		}
+
+		if (!s.ft232hInitialized && s.ft232hRetryCount < 3)
+		{
+			FT232H_SetTracing(*s.ft232h, false);
+			FT232H_SetDebugChecks(*s.ft232h, true);
+
+			s.ft232hInitialized = FT232H_Initialize(*s.ft232h);
+			if (s.ft232hInitialized)
+			{
+				s.ft232hRetryCount = 0;
+				ILI9341_Initialize(*s.ili9341, *s.ft232h);
+				ILI9341_BeginDrawFrames(*s.ili9341);
+			}
+			else
+			{
+				s.ft232hRetryCount++;
+			}
+		}
+
+		if (s.ft232hInitialized)
+		{
+			// TODO: Handle pixel and row strides
+			CPUTextureBytes frame = Renderer_GetCPUTextureBytes(*s.renderer, s.renderTargetCPUCopy);
+			Assert(frame.pixelStride == sizeof(u16));
+			Assert(frame.rowStride == frame.pixelStride * frame.size.x);
+			ILI9341_DrawFrame(*s.ili9341, frame.bytes);
+		}
+	}
 }
 
 void
@@ -1842,6 +1892,13 @@ Simulation_Teardown(SimulationState& s)
 	if (guiCon.pipe.state == PipeState::Connected)
 		OnTeardown(guiCon);
 	Connection_Teardown(guiCon);
+
+	if (s.ft232hInitialized)
+	{
+		s.ft232hInitialized = false;
+		ILI9341_Teardown(*s.ili9341);
+		FT232H_Teardown(*s.ft232h);
+	}
 
 	for (u32 i = 0; i < s.plugins.length; i++)
 	{
@@ -1864,4 +1921,6 @@ Simulation_Teardown(SimulationState& s)
 	List_Free(s.plugins);
 
 	PluginLoader_Teardown(*s.pluginLoader);
+
+	s = {};
 }

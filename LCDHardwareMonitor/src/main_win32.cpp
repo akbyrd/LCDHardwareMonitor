@@ -63,6 +63,7 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 		#define DEFER_TEARDOWN [&]
 	#endif
 
+	// TODO: Do plugin loader, ft232h, and ili9341 belong in the simulation?
 	FT232HState        ft232hState       = {};
 	ILI9341State       ili9341State      = {};
 	RendererState      rendererState     = {};
@@ -70,28 +71,15 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 	PluginLoaderState  pluginLoaderState = {};
 	PreviewWindowState previewState      = {};
 
-	// LCD Hardware
-	FT232H_SetTracing(ft232hState, false);
-	FT232H_SetDebugChecks(ft232hState, true);
-	b8 success = FT232H_Initialize(ft232hState);
-	LOG_IF(!success, IGNORE, Severity::Warning, "Failed to initialize the FT232H");
-	DEFER_TEARDOWN { FT232H_Teardown(ft232hState); };
-
-	success = ILI9341_Initialize(ili9341State, ft232hState);
-	LOG_IF(!success, IGNORE, Severity::Warning, "Failed to initialize the ILI9341");
-	DEFER_TEARDOWN { ILI9341_Teardown(ili9341State); };
-	ILI9341_BeginDrawFrames(ili9341State);
-	DEFER_TEARDOWN { ILI9341_EndDrawFrames(ili9341State); };
-
 
 	// Renderer
-	success = Renderer_Initialize(rendererState);
+	b8 success = Renderer_Initialize(rendererState);
 	LOG_IF(!success, return -1, Severity::Fatal, "Failed to initialize the renderer");
 	DEFER_TEARDOWN { Renderer_Teardown(rendererState); };
 
 
 	// Simulation
-	success = Simulation_Initialize(simulationState, pluginLoaderState, rendererState);
+	success = Simulation_Initialize(simulationState, pluginLoaderState, rendererState, ft232hState, ili9341State);
 	LOG_IF(!success, return -1, Severity::Fatal, "Failed to initialize the simulation");
 	DEFER_TEARDOWN { Simulation_Teardown(simulationState); };
 
@@ -104,7 +92,7 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 
 	// Debug
 	auto previewGuard = guard { PreviewWindow_Teardown(previewState); };
-	#if false
+	#if true
 	PreviewWindow_Initialize(previewState, simulationState, rendererState, hInstance, nullptr);
 	#else
 	previewGuard.dismiss = true;
@@ -173,16 +161,8 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 		// Tick
 		Simulation_Update(simulationState);
 
-		Renderer_Render(rendererState);
-
 		// BUG: Looks like it's possible to get WM_PREVIEWWINDOWCLOSED without WM_QUIT
 		PreviewWindow_Render(previewState);
-
-		// TODO: Handle pixel and row strides
-		CPUTextureBytes frame = Renderer_GetCPUTextureBytes(rendererState, simulationState.renderTargetCPUCopy);
-		Assert(frame.pixelStride == sizeof(u16));
-		Assert(frame.rowStride == frame.pixelStride * frame.size.x);
-		ILI9341_DrawFrame(ili9341State, frame.bytes);
 
 		// TODO: Probably not a good idea when using fibers
 		// BUG: This seems to lock up and causes VS to crash

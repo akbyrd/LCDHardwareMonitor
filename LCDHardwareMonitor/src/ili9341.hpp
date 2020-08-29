@@ -1,5 +1,6 @@
 struct ILI9341State
 {
+	// TODO: Consider removing this
 	FT232HState* ft232h;
 
 	b8    sleep;
@@ -469,7 +470,7 @@ ILI9341_DrawSingleFrame(ILI9341State& ili9341, ByteSlice bytes)
 // -------------------------------------------------------------------------------------------------
 // Public API - Core Functions
 
-b8
+void
 ILI9341_Initialize(ILI9341State& ili9341, FT232HState& ft232h)
 {
 	ili9341.ft232h = &ft232h;
@@ -493,9 +494,10 @@ ILI9341_Initialize(ILI9341State& ili9341, FT232HState& ft232h)
 	// TODO: The screen can do an endian swap, but only in the parallel interface. Once we're using
 	// the parallel interface remove the byte-swaps in SetRect and DrawFrame and set the endianness
 	// mode with Interface Control 0xF6.
-
-	return true;
 }
 
 void
-ILI9341_Teardown(ILI9341State&) {}
+ILI9341_Teardown(ILI9341State& ili9341)
+{
+	ili9341 = {};
+}

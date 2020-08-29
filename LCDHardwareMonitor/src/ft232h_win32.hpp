@@ -206,6 +206,12 @@ FT232H_SetDebugChecks(FT232HState& ft232h, b8 enable)
 	ft232h.enableDebugChecks = enable;
 }
 
+b8
+FT232H_HasError(FT232HState& ft232h)
+{
+	return ft232h.errorMode;
+}
+
 void
 FT232H_SetDC(FT232HState& ft232h, Signal signal)
 {
@@ -375,7 +381,7 @@ FT232H_Initialize(FT232HState& ft232h)
 	}
 
 	LOG_IF(!ft232h.device, return false,
-		Severity::Warning, "Failed to find a device");
+		Severity::Info, "Failed to find a device");
 
 	// NOTE: Just following AN_135
 	status = FT_ResetDevice(ft232h.device);
@@ -484,11 +490,14 @@ FT232H_Initialize(FT232HState& ft232h)
 void
 FT232H_Teardown(FT232HState& ft232h)
 {
-	// TODO: If we don't have this sleep here the device gets into a bad state. It seems either
-	// resetting or closing the device while data is pending is a bad idea. We'll need to account for
-	// this since it can happen in the wild if e.g. a user unplugs the device.
-	WaitForResponse(ft232h);
-	AssertEmptyReadBuffer(ft232h);
+	if (!ft232h.errorMode)
+	{
+		// TODO: If we don't have this sleep here the device gets into a bad state. It seems either
+		// resetting or closing the device while data is pending is a bad idea. We'll need to account
+		// for this since it can happen in the wild if e.g. a user unplugs the device.
+		WaitForResponse(ft232h);
+		AssertEmptyReadBuffer(ft232h);
+	}
 
 	FT_STATUS status;
 
@@ -502,4 +511,6 @@ FT232H_Teardown(FT232HState& ft232h)
 	status = FT_Close(ft232h.device);
 	LOG_IF(status != FT_OK, IGNORE,
 		Severity::Error, "Failed to close device: %", status);
+
+	ft232h = {};
 }

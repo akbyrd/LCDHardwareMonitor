@@ -16,6 +16,7 @@ void FT232H_Teardown       (FT232HState&);
 
 void FT232H_SetTracing     (FT232HState&, b8 enable);
 void FT232H_SetDebugChecks (FT232HState&, b8 enable);
+b8   FT232H_HasError       (FT232HState&);
 
 void FT232H_SetDC          (FT232HState&, Signal signal);
 void FT232H_Write          (FT232HState&, u8 command);

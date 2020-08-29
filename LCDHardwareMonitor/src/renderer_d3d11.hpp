@@ -1387,6 +1387,8 @@ Renderer_Teardown(RendererState& s)
 		Platform_Print("\n");
 		#endif
 	}
+
+	s = {};
 }
 
 b8
