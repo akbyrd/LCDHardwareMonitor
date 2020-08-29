@@ -1,15 +1,12 @@
 Current
 -------
 Bring ILI9341 code over
-	Can Initialize fail?
 	Add a tracing option
 	Use SetBit to simplify config
 
 Bring FT232H code over
-	Simulation should control ft232h. Init if connected after startup, for example
 	Ensure we can always init, even if in a bad state
 	Coalesce writes
-	Consider adding 'last command time'
 	Switch to parallel interface
 
 Compare writes to python code (ft232h and ili9341)
@@ -130,6 +127,7 @@ Features - ILI9341 Communication
 Profile and compare 16bit and 18bit modes. 16bit uses a lookup table. 18bit uses 50% more bandwidth.
 Write to a buffer and only flush when full or need to sleep
 Add proper error handling
+Implement hardware reset
 
 
 

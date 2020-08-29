@@ -1503,7 +1503,7 @@ Simulation_Initialize(
 		{
 			Widget& widget = widgetData.widgets[i];
 			widget.position    = ((v2) s.renderSize) / 2.0f;
-			widget.position.y += (2 - (i32) i) * (widget.size.y + 3.0f);
+			widget.position.y += (2.0f - (r32) i) * (widget.size.y + 3.0f);
 			widget.sensorRef   = ToRef<Sensor>(debugSensorIndices[i]);
 		}
 	}
