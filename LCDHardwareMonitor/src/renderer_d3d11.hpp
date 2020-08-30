@@ -1016,10 +1016,11 @@ Renderer_PushPixelShaderResource(RendererState& s, DepthBuffer db, u32 slot)
 }
 
 void
-Renderer_PopPixelShaderResource(RendererState& s)
+Renderer_PopPixelShaderResource(RendererState& s, u32 slot)
 {
 	RenderCommand& renderCommand = List_Append(s.commandList);
 	renderCommand.type = RenderCommandType::PopPixelShaderResource;
+	renderCommand.psResource.slot = slot;
 }
 
 b8

@@ -75,7 +75,8 @@ void            Renderer_PushPixelShader                (RendererState&, PixelSh
 void            Renderer_PopPixelShader                 (RendererState&);
 void            Renderer_PushPixelShaderResource        (RendererState&, RenderTarget, u32 slot);
 void            Renderer_PushPixelShaderResource        (RendererState&, DepthBuffer, u32 slot);
-void            Renderer_PopPixelShaderResource         (RendererState&);
+// TODO: I don't like having to specify the slot here...
+void            Renderer_PopPixelShaderResource         (RendererState&, u32 slot);
 void            Renderer_UpdateVSConstantBuffer         (RendererState&, VSConstantBufferUpdate&);
 void            Renderer_UpdatePSConstantBuffer         (RendererState&, PSConstantBufferUpdate&);
 void            Renderer_DrawMesh                       (RendererState&, Mesh);

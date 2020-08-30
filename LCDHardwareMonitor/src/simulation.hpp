@@ -1831,7 +1831,7 @@ Simulation_Update(SimulationState& s)
 		Renderer_DrawMesh(*s.renderer, StandardMesh::Fullscreen);
 		Renderer_PopVertexShader(*s.renderer);
 		Renderer_PopPixelShader(*s.renderer);
-		Renderer_PopPixelShaderResource(*s.renderer);
+		Renderer_PopPixelShaderResource(*s.renderer, 0);
 		Renderer_PopDepthBuffer(*s.renderer);
 		Renderer_PopRenderTarget(*s.renderer);
 	}
