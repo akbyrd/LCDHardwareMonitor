@@ -1,4 +1,4 @@
-Texture2D sourceDepth;
+Texture2D srcDepthTex;
 SamplerState samplerState;
 
 struct PixelFragment
@@ -10,7 +10,7 @@ struct PixelFragment
 
 float4 main(PixelFragment pIn) : SV_TARGET
 {
-	float srcDepth = sourceDepth.Sample(samplerState, pIn.UV).r;
+	float srcDepth = srcDepthTex.Sample(samplerState, pIn.UV).r;
 	float a = srcDepth != 1;
 	return float4(a, a, a, a);
 }

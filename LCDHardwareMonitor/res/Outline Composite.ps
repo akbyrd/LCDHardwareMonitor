@@ -1,7 +1,8 @@
 #include "../src/Outline.ps.h"
 
-Texture2D source;
-Texture2D sourceDepth;
+Texture2D srcTex;
+Texture2D srcDepthTex;
+//Texture2D dstDepthTex;
 SamplerState samplerState;
 
 struct PixelFragment
@@ -13,13 +14,21 @@ struct PixelFragment
 
 float4 main(PixelFragment pIn) : SV_TARGET
 {
-	float srcDepth = sourceDepth.Sample(samplerState, pIn.UV).r;
+	float srcDepth = srcDepthTex.Sample(samplerState, pIn.UV).r;
 	clip(srcDepth - 1);
 
-	float4 srcColor = source.Sample(samplerState, pIn.UV);
+	float4 srcColor = srcTex.Sample(samplerState, pIn.UV);
+	//float dstDepth = dstDepthTex.Sample(samplerState, pIn.UV).r;
+
+	//if (srcDepth > dstDepth)
+	//	srcColor.rgb *= 0.5;
 
 	float4 src    = srcColor * outlineColor;
 	float4 dst    = float4(0, 0, 0, 0.5f);
 	float4 result = float4(lerp(dst.rgb, src.rgb, src.a), max(dst.a, src.a));
 	return result;
+
+	// TODO: Even though this is returning the correct color, it's slightly off in the destination
+	// Returned: 0.082352940  0.521568700 0.709803900 1.000000000
+	// Actual:   0.0645161271 0.523809552 0.709677398
 }

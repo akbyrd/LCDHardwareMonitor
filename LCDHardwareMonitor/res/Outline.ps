@@ -1,7 +1,6 @@
 #include "../src/Outline.ps.h"
 
-Texture2D source;
-Texture2D sourceDepth;
+Texture2D srcTex;
 SamplerState samplerState;
 
 struct PixelFragment
@@ -13,26 +12,27 @@ struct PixelFragment
 
 float4 main(PixelFragment pIn) : SV_TARGET
 {
-	int radius = 1;
+	// TODO: Move to constant buffer (screws with loop unrolling)
+	int blurRadius = 16;
+	float slope = -1.0 / blurRadius;
 	float2 texelStep = 1.0 / textureSize * blurDirection;
 
-	float4 maxColor = float4(0, 0, 0, 0);
-	float maxLength = 0;
-	for (int i = -radius; i <= radius; i++)
+	float maxAlpha = 0;
+	for (int i = 1; i <= blurRadius; i++)
 	{
-		float2 sampleUV = pIn.UV + (i * texelStep);
-		float4 srcColor = source.Sample(samplerState, sampleUV);
+		float src1 = srcTex.Sample(samplerState, pIn.UV + (i * texelStep)).a;
+		float src2 = srcTex.Sample(samplerState, pIn.UV - (i * texelStep)).a;
+		float src = max(src1, src2);
 
-		float srcLength = length(srcColor.rgb);
-		maxColor.rgb = lerp(maxColor.rgb, srcColor.rgb, srcLength > maxLength);
-		maxLength = max(maxLength, srcLength);
-		maxColor.a += srcColor.a;
+		float dist = i;
+		float alpha = sqrt((slope * (dist - 1)) + 1) * src;
+		maxAlpha = max(maxAlpha, alpha);
 	}
-	// This extra divide is to make the falloff slower
-	maxColor.a /= (2.f * radius + 1.f) / 1.2f;
 
-	float4 origColor = source.Sample(samplerState, pIn.UV);
-	float origDepth = sourceDepth.Sample(samplerState, pIn.UV).r;
-	bool isOriginalPixel = origDepth != 1;
-	return lerp(maxColor, origColor, isOriginalPixel);
+	// If this pixel is in the shape we're outlining don't modify it
+	float4 origColor = srcTex.Sample(samplerState, pIn.UV);
+	if (origColor.a == 1)
+		return origColor;
+
+	return float4(maxAlpha, maxAlpha, maxAlpha, maxAlpha);
 }

@@ -1,25 +1,16 @@
 Current
 -------
-Features - Outline shader
--------------------------
-[ ] Reduce Outline to single pass
-[ ] Outline only needs to produce alpha. Composite can add color.
-[ ] Darken highlight when failing depth test
-[ ] Review shaders
-[ ]
+Outline
 [ ] Use for hover
-[ ] Optimize (re-shade, blur, and blit in one step)
 [ ] Choose better selection colors
-[ ]
-[ ] Move push/pop near actual code. Let it be ever so slightly inefficient
-[ ] Clamp outline to screen edges
-[ ] See how outline works at edges of screen
-[ ] Consider using a UAV for simultaneous read and write
+[ ] Darken highlight when failing depth test
+	Need to use the depth of the widget for the outline
 
 // TODO: Shouldn't this be after mouse selection?
 // TODO: Add GPU events / labels
 // TODO: Remove types from resource names
 // TODO: Try different selection colors (what were we using before?)
+Add push and pop for blend modes
 
 Bring ILI9341 code over
 	Add a tracing option
@@ -253,6 +244,16 @@ Decide whether plugins needing elevation should be expressed in the plugin
 	to ship with elevation enabled by default.
 MSI Afterburner uses SMART.dll, PerfCounter.dll, HwInfo.dll, AIDA64.dll.
 	Would any of these be useful plugins?
+
+
+
+Features - Outline shader
+-------------------------
+Consider removing the depth to alpha pass
+Outline only needs to produce alpha
+Clamp outline to screen edges
+See how outline works at edges of screen
+Consider using a UAV for simultaneous read and write
 
 
 

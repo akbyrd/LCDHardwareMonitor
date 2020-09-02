@@ -200,7 +200,7 @@ struct RendererState
 	List<DepthBufferData*>        depthBufferStack;
 	List<VertexShaderData*>       vertexShaderStack;
 	List<PixelShaderData*>        pixelShaderStack;
-	List<BoundResource>           pixelShaderResourceStacks[2];
+	List<BoundResource>           pixelShaderResourceStacks[3];
 };
 
 // -------------------------------------------------------------------------------------------------

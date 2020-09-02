@@ -47,8 +47,8 @@ struct SimulationState
 
 	FullWidgetRef       hovered;
 	List<FullWidgetRef> selected;
-	RenderTarget        tempRenderTargets[3];
-	DepthBuffer         tempDepthBuffers[3];
+	RenderTarget        tempRenderTargets[2];
+	DepthBuffer         tempDepthBuffers[1];
 	PixelShader         outlineShader;
 	PixelShader         outlineCompositeShader;
 	PixelShader         depthToAlphaShader;
@@ -1301,7 +1301,7 @@ Simulation_Initialize(
 		if (!rt) return false;
 		Assert(rt == StandardRenderTarget::Main);
 
-		DepthBuffer db = Renderer_CreateDepthBuffer(*s.renderer, "Main", false);
+		DepthBuffer db = Renderer_CreateDepthBuffer(*s.renderer, "Main", true);
 		if (!db) return false;
 		Assert(db == StandardDepthBuffer::Main);
 
@@ -1514,7 +1514,7 @@ Simulation_Initialize(
 		LOG_IF(!s.outlineShader, return false,
 			Severity::Error, "Failed to load outline pixel shader");
 
-		s.outlineCompositeShader = Renderer_LoadPixelShader(*s.renderer, "Blur Composite", "Shaders/Blur Composite.ps.cso", outlineCBufSizes);
+		s.outlineCompositeShader = Renderer_LoadPixelShader(*s.renderer, "Outline Composite", "Shaders/Outline Composite.ps.cso", outlineCBufSizes);
 		LOG_IF(!s.outlineCompositeShader, return false,
 			Severity::Error, "Failed to load outline composite pixel shader");
 
@@ -1811,14 +1811,13 @@ Simulation_Update(SimulationState& s)
 
 		Renderer_PushDepthBuffer(*s.renderer, StandardDepthBuffer::Null);
 		Renderer_PushVertexShader(*s.renderer, StandardVertexShader::ClipSpace);
-		Renderer_PushPixelShaderResource(*s.renderer, s.tempDepthBuffers[0], 1);
 
 		// Copy depth as solid color
-		// Depth 0 -> Temp 1
+		// Depth 0 -> Temp 0
 		{
-			Renderer_PushRenderTarget(*s.renderer, s.tempRenderTargets[1]);
+			Renderer_SetBlendMode(*s.renderer, false);
+			Renderer_PushRenderTarget(*s.renderer, s.tempRenderTargets[0]);
 			Renderer_PushPixelShaderResource(*s.renderer, s.tempDepthBuffers[0], 0);
-			Renderer_ClearRenderTarget(*s.renderer, Color128(0, 0, 0, 0));
 			Renderer_PushPixelShader(*s.renderer, s.depthToAlphaShader);
 			Renderer_DrawMesh(*s.renderer, StandardMesh::Fullscreen);
 			Renderer_PopPixelShader(*s.renderer);
@@ -1827,47 +1826,42 @@ Simulation_Update(SimulationState& s)
 		}
 
 		// Blur to create outline
-		// Temp 1 -> Temp 2 -> Temp 1
+		// Temp 0 -> Temp 1 -> Temp 0
 		{
-			Renderer_PushRenderTarget(*s.renderer, s.tempRenderTargets[2]);
-			Renderer_ClearRenderTarget(*s.renderer, Color128(0, 0, 0, 0));
-			Renderer_PopRenderTarget(*s.renderer);
 			Renderer_SetBlendMode(*s.renderer, false);
+			Renderer_PushPixelShader(*s.renderer, s.outlineShader);
 
+			// Horizontal blur
 			PSConstantBufferUpdate hCBufUpdate = {};
 			hCBufUpdate.ps    = s.outlineShader;
 			hCBufUpdate.index = 0;
 			hCBufUpdate.data  = &s.outlinePSPerPass[0];
 
+			Renderer_PushRenderTarget(*s.renderer, s.tempRenderTargets[1]);
+			Renderer_PushPixelShaderResource(*s.renderer, s.tempRenderTargets[0], 0);
+			Renderer_UpdatePSConstantBuffer(*s.renderer, hCBufUpdate);
+			Renderer_DrawMesh(*s.renderer, StandardMesh::Fullscreen);
+			Renderer_PopPixelShaderResource(*s.renderer, 0);
+			Renderer_PopRenderTarget(*s.renderer);
+
+			// Vertical blur
 			PSConstantBufferUpdate vCBufUpdate = {};
 			vCBufUpdate.ps    = s.outlineShader;
 			vCBufUpdate.index = 0;
 			vCBufUpdate.data  = &s.outlinePSPerPass[1];
 
-			Renderer_PushPixelShader(*s.renderer, s.outlineShader);
-			for (u32 i = 0; i < 8; i++)
-			{
-				// Horizontal blur
-				Renderer_PushRenderTarget(*s.renderer, s.tempRenderTargets[2]);
-				Renderer_PushPixelShaderResource(*s.renderer, s.tempRenderTargets[1], 0);
-				Renderer_UpdatePSConstantBuffer(*s.renderer, hCBufUpdate);
-				Renderer_DrawMesh(*s.renderer, StandardMesh::Fullscreen);
-				Renderer_PopPixelShaderResource(*s.renderer, 0);
-				Renderer_PopRenderTarget(*s.renderer);
+			Renderer_PushRenderTarget(*s.renderer, s.tempRenderTargets[0]);
+			Renderer_PushPixelShaderResource(*s.renderer, s.tempRenderTargets[1], 0);
+			Renderer_UpdatePSConstantBuffer(*s.renderer, vCBufUpdate);
+			Renderer_DrawMesh(*s.renderer, StandardMesh::Fullscreen);
+			Renderer_PopPixelShaderResource(*s.renderer, 0);
+			Renderer_PopRenderTarget(*s.renderer);
 
-				// Vertical blur
-				Renderer_PushRenderTarget(*s.renderer, s.tempRenderTargets[1]);
-				Renderer_PushPixelShaderResource(*s.renderer, s.tempRenderTargets[2], 0);
-				Renderer_UpdatePSConstantBuffer(*s.renderer, vCBufUpdate);
-				Renderer_DrawMesh(*s.renderer, StandardMesh::Fullscreen);
-				Renderer_PopPixelShaderResource(*s.renderer, 0);
-				Renderer_PopRenderTarget(*s.renderer);
-			}
 			Renderer_PopPixelShader(*s.renderer);
 		}
 
 		// Composite outline back into main render target
-		// Temp 1 -> Main
+		// Temp 0 -> Main
 		{
 			PSConstantBufferUpdate cBufUpdate = {};
 			cBufUpdate.ps    = s.outlineCompositeShader;
@@ -1876,16 +1870,19 @@ Simulation_Update(SimulationState& s)
 
 			Renderer_SetBlendMode(*s.renderer, true);
 			Renderer_PushRenderTarget(*s.renderer, StandardRenderTarget::Main);
-			Renderer_PushPixelShaderResource(*s.renderer, s.tempRenderTargets[1], 0);
+			Renderer_PushPixelShaderResource(*s.renderer, s.tempRenderTargets[0], 0);
+			Renderer_PushPixelShaderResource(*s.renderer, s.tempDepthBuffers[0], 1);
+			//Renderer_PushPixelShaderResource(*s.renderer, StandardDepthBuffer::Main, 2);
 			Renderer_PushPixelShader(*s.renderer, s.outlineCompositeShader);
 			Renderer_UpdatePSConstantBuffer(*s.renderer, cBufUpdate);
 			Renderer_DrawMesh(*s.renderer, StandardMesh::Fullscreen);
 			Renderer_PopPixelShader(*s.renderer);
+			//Renderer_PopPixelShaderResource(*s.renderer, 2);
+			Renderer_PopPixelShaderResource(*s.renderer, 1);
 			Renderer_PopPixelShaderResource(*s.renderer, 0);
 			Renderer_PopRenderTarget(*s.renderer);
 		}
 
-		Renderer_PopPixelShaderResource(*s.renderer, 1);
 		Renderer_PopVertexShader(*s.renderer);
 		Renderer_PopDepthBuffer(*s.renderer);
 	}
