@@ -14,7 +14,7 @@ struct PixelFragment
 float4 main(PixelFragment pIn) : SV_TARGET
 {
 	int radius = 1;
-	float2 texelStep = 1.0 / textureSize * direction;
+	float2 texelStep = 1.0 / textureSize * blurDirection;
 
 	float4 maxColor = float4(0, 0, 0, 0);
 	float maxLength = 0;

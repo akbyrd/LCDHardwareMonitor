@@ -1,6 +1,5 @@
 #include "Solid Colored.ps.h"
 #include "Blur.ps.h"
-#include "Blur Composite.ps.h"
 
 enum struct GUIInteraction
 {
@@ -52,9 +51,8 @@ struct SimulationState
 	DepthBuffer         tempDepthBuffers[3];
 	PixelShader         blurShader;
 	PixelShader         blurCompositeShader;
-	Blur::PSPerObject   blurPSPerObject[2];
-	BlurComposite::PSPerObject blurCompositePSPerObject1;
-	BlurComposite::PSPerObject blurCompositePSPerObject2;
+	PixelShader         depthToAlphaShader;
+	Blur::PSPerPass     blurPSBlurPass[2];
 };
 
 struct PluginContext
@@ -1279,10 +1277,12 @@ Simulation_Initialize(
 	s.startTime    = Platform_GetTicks();
 	s.renderSize   = { 320, 240 };
 
-	s.blurPSPerObject[0].textureSize = s.renderSize;
-	s.blurPSPerObject[0].direction   = v2{ 1.0f, 0.0f };
-	s.blurPSPerObject[1].textureSize = s.renderSize;
-	s.blurPSPerObject[1].direction   = v2{ 0.0f, 1.0f };
+	s.blurPSBlurPass[0].textureSize   = s.renderSize;
+	s.blurPSBlurPass[0].blurDirection = v2{ 1.0f, 0.0f };
+	s.blurPSBlurPass[0].outlineColor  = Color128(21, 133, 181, 255);
+
+	s.blurPSBlurPass[1] = s.blurPSBlurPass[0];
+	s.blurPSBlurPass[1].blurDirection = v2{ 0.0f, 1.0f };
 
 	b8 success = PluginLoader_Initialize(*s.pluginLoader);
 	if (!success) return false;
@@ -1508,18 +1508,22 @@ Simulation_Initialize(
 		}
 
 		u32 blurCBufSizes[] = {
-			{ sizeof(Blur::PSPerObject) }
+			{ sizeof(Blur::PSPerPass) }
 		};
-		s.blurShader = Renderer_LoadPixelShader(*s.renderer, "Default", "Shaders/Blur.ps.cso", blurCBufSizes);
+		s.blurShader = Renderer_LoadPixelShader(*s.renderer, "Blur", "Shaders/Blur.ps.cso", blurCBufSizes);
 		LOG_IF(!s.blurShader, return false,
 			Severity::Error, "Failed to load blur pixel shader");
 
-		u32 blurCompositeCBufSizes[] = {
-			{ sizeof(BlurComposite::PSPerObject) }
+		u32 compositeCBufSizes[] = {
+			{ sizeof(Blur::PSPerPass) }
 		};
-		s.blurCompositeShader = Renderer_LoadPixelShader(*s.renderer, "Default", "Shaders/Blur Composite.ps.cso", blurCompositeCBufSizes);
+		s.blurCompositeShader = Renderer_LoadPixelShader(*s.renderer, "Blur Composite", "Shaders/Blur Composite.ps.cso", compositeCBufSizes);
 		LOG_IF(!s.blurCompositeShader, return false,
 			Severity::Error, "Failed to load blur composite pixel shader");
+
+		s.depthToAlphaShader = Renderer_LoadPixelShader(*s.renderer, "Depth to Alpha", "Shaders/Depth to Alpha.ps.cso", {});
+		LOG_IF(!s.depthToAlphaShader, return false,
+			Severity::Error, "Failed to load depth to alpha pixel shader");
 	}
 
 	// DEBUG: Testing
@@ -1815,19 +1819,10 @@ Simulation_Update(SimulationState& s)
 		// Copy depth as solid color
 		// Depth 0 -> Temp 1
 		{
-			s.blurCompositePSPerObject1.useSourceColor = false;
-			s.blurCompositePSPerObject1.compositeColor = Color128(21, 133, 181, 255);
-
-			PSConstantBufferUpdate blurCompositeCBufUpdate1 = {};
-			blurCompositeCBufUpdate1.ps    = s.blurCompositeShader;
-			blurCompositeCBufUpdate1.index = 0;
-			blurCompositeCBufUpdate1.data  = &s.blurCompositePSPerObject1;
-
 			Renderer_PushRenderTarget(*s.renderer, s.tempRenderTargets[1]);
 			Renderer_PushPixelShaderResource(*s.renderer, s.tempDepthBuffers[0], 0);
 			Renderer_ClearRenderTarget(*s.renderer, Color128(0, 0, 0, 0));
-			Renderer_UpdatePSConstantBuffer(*s.renderer, blurCompositeCBufUpdate1);
-			Renderer_PushPixelShader(*s.renderer, s.blurCompositeShader);
+			Renderer_PushPixelShader(*s.renderer, s.depthToAlphaShader);
 			Renderer_DrawMesh(*s.renderer, StandardMesh::Fullscreen);
 			Renderer_PopPixelShader(*s.renderer);
 			Renderer_PopPixelShaderResource(*s.renderer, 0);
@@ -1842,15 +1837,15 @@ Simulation_Update(SimulationState& s)
 			Renderer_PopRenderTarget(*s.renderer);
 			Renderer_SetBlendMode(*s.renderer, false);
 
-			PSConstantBufferUpdate hBlurCBufUpdate = {};
-			hBlurCBufUpdate.ps    = s.blurShader;
-			hBlurCBufUpdate.index = 0;
-			hBlurCBufUpdate.data  = &s.blurPSPerObject[0];
+			PSConstantBufferUpdate hCBufUpdate = {};
+			hCBufUpdate.ps    = s.blurShader;
+			hCBufUpdate.index = 0;
+			hCBufUpdate.data  = &s.blurPSBlurPass[0];
 
-			PSConstantBufferUpdate vBlurCBufUpdate = {};
-			vBlurCBufUpdate.ps    = s.blurShader;
-			vBlurCBufUpdate.index = 0;
-			vBlurCBufUpdate.data  = &s.blurPSPerObject[1];
+			PSConstantBufferUpdate vCBufUpdate = {};
+			vCBufUpdate.ps    = s.blurShader;
+			vCBufUpdate.index = 0;
+			vCBufUpdate.data  = &s.blurPSBlurPass[1];
 
 			Renderer_PushPixelShader(*s.renderer, s.blurShader);
 			for (u32 i = 0; i < 8; i++)
@@ -1858,7 +1853,7 @@ Simulation_Update(SimulationState& s)
 				// Horizontal blur
 				Renderer_PushRenderTarget(*s.renderer, s.tempRenderTargets[2]);
 				Renderer_PushPixelShaderResource(*s.renderer, s.tempRenderTargets[1], 0);
-				Renderer_UpdatePSConstantBuffer(*s.renderer, hBlurCBufUpdate);
+				Renderer_UpdatePSConstantBuffer(*s.renderer, hCBufUpdate);
 				Renderer_DrawMesh(*s.renderer, StandardMesh::Fullscreen);
 				Renderer_PopPixelShaderResource(*s.renderer, 0);
 				Renderer_PopRenderTarget(*s.renderer);
@@ -1866,7 +1861,7 @@ Simulation_Update(SimulationState& s)
 				// Vertical blur
 				Renderer_PushRenderTarget(*s.renderer, s.tempRenderTargets[1]);
 				Renderer_PushPixelShaderResource(*s.renderer, s.tempRenderTargets[2], 0);
-				Renderer_UpdatePSConstantBuffer(*s.renderer, vBlurCBufUpdate);
+				Renderer_UpdatePSConstantBuffer(*s.renderer, vCBufUpdate);
 				Renderer_DrawMesh(*s.renderer, StandardMesh::Fullscreen);
 				Renderer_PopPixelShaderResource(*s.renderer, 0);
 				Renderer_PopRenderTarget(*s.renderer);
@@ -1877,18 +1872,16 @@ Simulation_Update(SimulationState& s)
 		// Composite blur back into main render target
 		// Temp 1 -> Main
 		{
-			s.blurCompositePSPerObject2.useSourceColor = true;
-
-			PSConstantBufferUpdate blurCompositeCBufUpdate2 = {};
-			blurCompositeCBufUpdate2.ps    = s.blurCompositeShader;
-			blurCompositeCBufUpdate2.index = 0;
-			blurCompositeCBufUpdate2.data  = &s.blurCompositePSPerObject2;
+			PSConstantBufferUpdate cBufUpdate = {};
+			cBufUpdate.ps    = s.blurCompositeShader;
+			cBufUpdate.index = 0;
+			cBufUpdate.data  = &s.blurPSBlurPass[0];
 
 			Renderer_SetBlendMode(*s.renderer, true);
 			Renderer_PushRenderTarget(*s.renderer, StandardRenderTarget::Main);
 			Renderer_PushPixelShaderResource(*s.renderer, s.tempRenderTargets[1], 0);
-			Renderer_UpdatePSConstantBuffer(*s.renderer, blurCompositeCBufUpdate2);
 			Renderer_PushPixelShader(*s.renderer, s.blurCompositeShader);
+			Renderer_UpdatePSConstantBuffer(*s.renderer, cBufUpdate);
 			Renderer_DrawMesh(*s.renderer, StandardMesh::Fullscreen);
 			Renderer_PopPixelShader(*s.renderer);
 			Renderer_PopPixelShaderResource(*s.renderer, 0);

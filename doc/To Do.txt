@@ -2,12 +2,10 @@ Current
 -------
 Features - Outline shader
 -------------------------
-[x] Re-add darken
 [ ] Darken highlight when failing depth test
 [ ] Review shaders
 [ ] Change Blur to Outline
 [ ] Reduce Outline to single pass
-[ ] Share constant buffer between Outline and Outline Composite
 [ ] Outline only needs to produce alpha. Composite can add color.
 [ ]
 [ ] Use for hover

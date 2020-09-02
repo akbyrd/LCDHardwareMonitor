@@ -1,4 +1,4 @@
-#include "../src/Blur Composite.ps.h"
+#include "../src/Blur.ps.h"
 
 Texture2D source;
 Texture2D sourceDepth;
@@ -13,22 +13,13 @@ struct PixelFragment
 
 float4 main(PixelFragment pIn) : SV_TARGET
 {
-	// https://docs.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-operators
-
 	float srcDepth = sourceDepth.Sample(samplerState, pIn.UV).r;
-	clip(((srcDepth == 1) == useSourceColor) ? 1 : -1);
+	clip(srcDepth - 1);
 
 	float4 srcColor = source.Sample(samplerState, pIn.UV);
-	//return lerp(compositeColor, srcColor, useSourceColor);
-	if (useSourceColor)
-	{
-		float4 src = srcColor;
-		float4 dst = float4(0, 0, 0, 0.5f);
-		float4 result = float4(lerp(dst.rgb, src.rgb, src.a), max(dst.a, src.a));
-		return result;
-	}
-	else
-	{
-		return compositeColor;
-	}
+
+	float4 src    = srcColor * outlineColor;
+	float4 dst    = float4(0, 0, 0, 0.5f);
+	float4 result = float4(lerp(dst.rgb, src.rgb, src.a), max(dst.a, src.a));
+	return result;
 }
