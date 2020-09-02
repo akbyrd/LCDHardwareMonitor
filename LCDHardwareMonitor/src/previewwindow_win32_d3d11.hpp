@@ -12,6 +12,7 @@ struct PreviewWindowState
 	ComPtr<ID3D11Texture2D> backBuffer;
 	v2u                     renderSize;
 	v2u                     nonClientSize;
+	v2i                     mousePos;
 	u16                     zoomFactor;
 	i16                     mouseWheelAccumulator;
 	SimulationState*        simulationState;
@@ -283,11 +284,22 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 			break;
 		}
 
+		case WM_ACTIVATE:
+		{
+			if (LOWORD(wParam) == WA_ACTIVE || LOWORD(wParam) == WA_CLICKACTIVE)
+			{
+				FromGUI::MouseMove mouseMove = {};
+				mouseMove.pos = s->mousePos;
+				FromGUI_MouseMove(*s->simulationState, mouseMove);
+			}
+			break;
+		}
+
 		case WM_MOUSEMOVE:
 		{
-			v2i pos = GetMousePosition(lParam, s->zoomFactor, s->renderSize);
+			s->mousePos = GetMousePosition(lParam, s->zoomFactor, s->renderSize);
 			FromGUI::MouseMove mouseMove = {};
-			mouseMove.pos = pos;
+			mouseMove.pos = s->mousePos;
 			FromGUI_MouseMove(*s->simulationState, mouseMove);
 			break;
 		}
@@ -297,6 +309,8 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 			// TODO: If you move the mouse quickly and click it's possible to get this without a
 			// corresponding mouse move. Maybe they come out of order? This probably applies to all
 			// mouse buttons. Maybe also keyboard? Ugh.
+			// TODO: Assertion fires occasionally if GUI and preview are open. They're fighting to set
+			// mouse the position.
 			v2i pos = GetMousePosition(lParam, s->zoomFactor, s->renderSize);
 			Assert(pos == s->simulationState->mousePos);
 
@@ -330,13 +344,14 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 
 		case WM_RBUTTONDOWN:
 		{
+			v2i pos = GetMousePosition(lParam, s->zoomFactor, s->renderSize);
+			Assert(pos == s->simulationState->mousePos);
+
 			if (s->simulationState->guiInteraction != GUIInteraction::Null) break;
 
 			if (s->mouseCaptureCount++ == 0)
 				SetCapture(s->hwnd);
 
-			v2i pos = GetMousePosition(lParam, s->zoomFactor, s->renderSize);
-			Assert(pos == s->simulationState->mousePos);
 			FromGUI::BeginMouseLook beginMouseLook = {};
 			FromGUI_BeginMouseLook(*s->simulationState, beginMouseLook);
 			break;
@@ -361,10 +376,11 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 
 		case WM_MBUTTONDOWN:
 		{
-			if (s->simulationState->guiInteraction != GUIInteraction::Null) break;
-
 			v2i pos = GetMousePosition(lParam, s->zoomFactor, s->renderSize);
 			Assert(pos == s->simulationState->mousePos);
+
+			if (s->simulationState->guiInteraction != GUIInteraction::Null) break;
+
 			ResetCamera(*s->simulationState);
 			break;
 		}
