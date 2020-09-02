@@ -16,78 +16,6 @@ float4 main(PixelFragment pIn) : SV_TARGET
 	int radius = 1;
 	float2 texelStep = 1.0 / textureSize * direction;
 
-/*
-	// depth stretch
-	float3 selectionColor = float3(1, 1, 1);
-	float avgDepth = 1;
-	for (int i = -radius; i <= radius; i++)
-	{
-		float2 sampleUV = pIn.UV + (i * texelStep);
-		float srcDepth = sourceDepth.Sample(samplerState, sampleUV).r;
-		avgDepth = min(avgDepth, srcDepth);
-	}
-	float4 selectionColorFinal = float4(selectionColor, 1 - avgDepth);
-	return lerp(selectionColorFinal, origColor, origDepth == 1 ? 0 : 1);
-//*/
-
-/*
-	// depth average
-	float3 selectionColor = float3(1, 1, 1);
-	float avgDepth = 0;
-	for (int i = -radius; i <= radius; i++)
-	{
-		float2 sampleUV = pIn.UV + (i * texelStep);
-		float srcDepth = sourceDepth.Sample(samplerState, sampleUV).r;
-		avgDepth += srcDepth;
-	}
-	avgDepth /= 2 * radius + 1;
-	float4 selectionColorFinal = float4(selectionColor, 1 - avgDepth);
-	return lerp(selectionColorFinal, origColor, origDepth == 1 ? 0 : 1);
-//*/
-
-
-/*
-	// color average
-	float4 avgColor = float4(0, 0, 0, 0);
-	for (int i = -radius; i <= radius; i++)
-	{
-		float2 sampleUV = pIn.UV + (i * texelStep);
-		float4 srcColor = source.Sample(samplerState, sampleUV);
-		avgColor += srcColor;
-	}
-	avgColor /= 2 * radius + 1;
-
-	float4 origColor = source.Sample(samplerState, pIn.UV);
-	float origDepth = sourceDepth.Sample(samplerState, pIn.UV).r;
-	return lerp(avgColor, origColor, origDepth == 1 ? 0 : 1);
-//*/
-
-
-/*
-	// color stretch
-	// This one is really good. Don't set alpha and it's a hard border. Set alpha and it add a
-	// gradient and darkens the rest of the image.
-	float4 maxColor = float4(0, 0, 0, 0);
-	float maxLength = 0;
-	for (int i = -radius; i <= radius; i++)
-	{
-		float2 sampleUV = pIn.UV + (i * texelStep);
-		float4 srcColor = source.Sample(samplerState, sampleUV);
-		srcColor.a = 0.6;
-
-		float srcLength = length(srcColor);
-		maxColor = lerp(maxColor, srcColor, srcLength > maxLength);
-		maxLength = max(maxLength, srcLength);
-	}
-
-	float4 origColor = source.Sample(samplerState, pIn.UV);
-	float origDepth = sourceDepth.Sample(samplerState, pIn.UV).r;
-	return lerp(maxColor, origColor, origDepth == 1 ? 0 : 1);
-//*/
-
-
-//*
-	// color stretch & fade
 	float4 maxColor = float4(0, 0, 0, 0);
 	float maxLength = 0;
 	for (int i = -radius; i <= radius; i++)
@@ -107,12 +35,4 @@ float4 main(PixelFragment pIn) : SV_TARGET
 	float origDepth = sourceDepth.Sample(samplerState, pIn.UV).r;
 	bool isOriginalPixel = origDepth != 1;
 	return lerp(maxColor, origColor, isOriginalPixel);
-//*/
 }
-
-// Method 1: draw color + depth, shade solid color, blur
-// 	Con: extra step
-// Method 2: draw depth, blur depth w/ solid color
-// 	Con: how do you write depth explicitly?
-// Method 3: draw depth, copy to solid color, blur
-// Method 4: draw depth, blur into solid color w/ additive blend

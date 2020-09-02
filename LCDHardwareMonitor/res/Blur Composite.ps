@@ -19,5 +19,16 @@ float4 main(PixelFragment pIn) : SV_TARGET
 	clip(((srcDepth == 1) == useSourceColor) ? 1 : -1);
 
 	float4 srcColor = source.Sample(samplerState, pIn.UV);
-	return lerp(compositeColor, srcColor, useSourceColor);
+	//return lerp(compositeColor, srcColor, useSourceColor);
+	if (useSourceColor)
+	{
+		float4 src = srcColor;
+		float4 dst = float4(0, 0, 0, 0.5f);
+		float4 result = float4(lerp(dst.rgb, src.rgb, src.a), max(dst.a, src.a));
+		return result;
+	}
+	else
+	{
+		return compositeColor;
+	}
 }
