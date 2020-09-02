@@ -53,6 +53,8 @@ struct SimulationState
 	PixelShader         outlineCompositeShader;
 	PixelShader         depthToAlphaShader;
 	Outline::PSPerPass  outlinePSPerPass[2];
+	Outline::PSPerPass  outlinePSPerPassSelected;
+	Outline::PSPerPass  outlinePSPerPassHovered;
 };
 
 struct PluginContext
@@ -1023,6 +1025,137 @@ DragSelection(SimulationState& s)
 	}
 }
 
+// TODO: This rendering detail is leaking awfully high up...
+static void
+HighlightWidgets(SimulationState& s, Slice<FullWidgetRef> refs, Outline::PSPerPass& compositeCBuf)
+{
+	Assert(refs.length != 0);
+
+	// Re-render widgets
+	// -> Depth 0
+	{
+		PluginContext context = {};
+		context.s = &s;
+
+		// TODO: Duplicating this is error prone
+		WidgetAPI::Update widgetAPI = {};
+		widgetAPI.t                       = s.currentTime;
+		widgetAPI.sensors                 = s.sensorPlugins[0].sensors;
+		widgetAPI.GetViewMatrix           = GetViewMatrix;
+		widgetAPI.GetProjectionMatrix     = GetProjectionMatrix;
+		widgetAPI.GetViewProjectionMatrix = GetViewProjectionMatrix;
+		widgetAPI.UpdateVSConstantBuffer  = UpdateVSConstantBuffer;
+		widgetAPI.UpdatePSConstantBuffer  = UpdatePSConstantBuffer;
+		widgetAPI.DrawMesh                = DrawMesh;
+		widgetAPI.PushVertexShader        = PushVertexShader;
+		widgetAPI.PushPixelShader         = PushPixelShader;
+		widgetAPI.PopVertexShader         = PopVertexShader;
+		widgetAPI.PopPixelShader          = PopPixelShader;
+
+		Renderer_PushRenderTarget(*s.renderer, StandardRenderTarget::Null);
+		Renderer_PushDepthBuffer(*s.renderer, s.tempDepthBuffers[0]);
+		Renderer_ClearDepthBuffer(*s.renderer);
+		for (u32 i = 0; i < refs.length ; i++)
+		{
+			FullWidgetRef widgetRef = refs[i];
+
+			WidgetPlugin& widgetPlugin = s.widgetPlugins[widgetRef.pluginRef];
+			WidgetData&   widgetData   = widgetPlugin.widgetDatas[widgetRef.dataRef];
+			Widget&       widget       = widgetData.widgets[widgetRef.widgetRef];
+
+			context.widgetPlugin = &widgetPlugin;
+			context.success      = true;
+
+			widgetAPI.widgets                = widget;
+			// TODO: Can this be made simpler?
+			widgetAPI.widgetsUserData        = widgetData.widgetsUserData[widgetData.desc.userDataSize * ToIndex(widget.ref)];
+			widgetAPI.widgetsUserData.stride = widgetData.desc.userDataSize;
+
+			// TODO: try/catch?
+			widgetData.desc.Update(context, widgetAPI);
+		}
+		Renderer_PopDepthBuffer(*s.renderer);
+		Renderer_PopRenderTarget(*s.renderer);
+	}
+
+	Renderer_PushDepthBuffer(*s.renderer, StandardDepthBuffer::Null);
+	Renderer_PushVertexShader(*s.renderer, StandardVertexShader::ClipSpace);
+
+	// Copy depth as solid color
+	// Depth 0 -> Temp 0
+	{
+		Renderer_SetBlendMode(*s.renderer, false);
+		Renderer_PushRenderTarget(*s.renderer, s.tempRenderTargets[0]);
+		Renderer_PushPixelShaderResource(*s.renderer, s.tempDepthBuffers[0], 0);
+		Renderer_PushPixelShader(*s.renderer, s.depthToAlphaShader);
+		Renderer_DrawMesh(*s.renderer, StandardMesh::Fullscreen);
+		Renderer_PopPixelShader(*s.renderer);
+		Renderer_PopPixelShaderResource(*s.renderer, 0);
+		Renderer_PopRenderTarget(*s.renderer);
+	}
+
+	// Blur to create outline
+	// Temp 0 -> Temp 1 -> Temp 0
+	{
+		Renderer_SetBlendMode(*s.renderer, false);
+		Renderer_PushPixelShader(*s.renderer, s.outlineShader);
+
+		// Horizontal blur
+		PSConstantBufferUpdate hCBufUpdate = {};
+		hCBufUpdate.ps    = s.outlineShader;
+		hCBufUpdate.index = 0;
+		hCBufUpdate.data  = &s.outlinePSPerPass[0];
+
+		Renderer_PushRenderTarget(*s.renderer, s.tempRenderTargets[1]);
+		Renderer_PushPixelShaderResource(*s.renderer, s.tempRenderTargets[0], 0);
+		Renderer_UpdatePSConstantBuffer(*s.renderer, hCBufUpdate);
+		Renderer_DrawMesh(*s.renderer, StandardMesh::Fullscreen);
+		Renderer_PopPixelShaderResource(*s.renderer, 0);
+		Renderer_PopRenderTarget(*s.renderer);
+
+		// Vertical blur
+		PSConstantBufferUpdate vCBufUpdate = {};
+		vCBufUpdate.ps    = s.outlineShader;
+		vCBufUpdate.index = 0;
+		vCBufUpdate.data  = &s.outlinePSPerPass[1];
+
+		Renderer_PushRenderTarget(*s.renderer, s.tempRenderTargets[0]);
+		Renderer_PushPixelShaderResource(*s.renderer, s.tempRenderTargets[1], 0);
+		Renderer_UpdatePSConstantBuffer(*s.renderer, vCBufUpdate);
+		Renderer_DrawMesh(*s.renderer, StandardMesh::Fullscreen);
+		Renderer_PopPixelShaderResource(*s.renderer, 0);
+		Renderer_PopRenderTarget(*s.renderer);
+
+		Renderer_PopPixelShader(*s.renderer);
+	}
+
+	// Composite outline back into main render target
+	// Temp 0 -> Main
+	{
+		PSConstantBufferUpdate cBufUpdate = {};
+		cBufUpdate.ps    = s.outlineCompositeShader;
+		cBufUpdate.index = 0;
+		cBufUpdate.data  = &compositeCBuf;
+
+		Renderer_SetBlendMode(*s.renderer, true);
+		Renderer_PushRenderTarget(*s.renderer, StandardRenderTarget::Main);
+		Renderer_PushPixelShaderResource(*s.renderer, s.tempRenderTargets[0], 0);
+		Renderer_PushPixelShaderResource(*s.renderer, s.tempDepthBuffers[0], 1);
+		//Renderer_PushPixelShaderResource(*s.renderer, StandardDepthBuffer::Main, 2);
+		Renderer_PushPixelShader(*s.renderer, s.outlineCompositeShader);
+		Renderer_UpdatePSConstantBuffer(*s.renderer, cBufUpdate);
+		Renderer_DrawMesh(*s.renderer, StandardMesh::Fullscreen);
+		Renderer_PopPixelShader(*s.renderer);
+		//Renderer_PopPixelShaderResource(*s.renderer, 2);
+		Renderer_PopPixelShaderResource(*s.renderer, 1);
+		Renderer_PopPixelShaderResource(*s.renderer, 0);
+		Renderer_PopRenderTarget(*s.renderer);
+	}
+
+	Renderer_PopVertexShader(*s.renderer);
+	Renderer_PopDepthBuffer(*s.renderer);
+}
+
 // -------------------------------------------------------------------------------------------------
 // Messages From GUI
 
@@ -1279,10 +1412,13 @@ Simulation_Initialize(
 
 	s.outlinePSPerPass[0].textureSize   = s.renderSize;
 	s.outlinePSPerPass[0].blurDirection = v2{ 1.0f, 0.0f };
-	s.outlinePSPerPass[0].outlineColor  = Color128(21, 133, 181, 255);
-
-	s.outlinePSPerPass[1] = s.outlinePSPerPass[0];
+	s.outlinePSPerPass[1].textureSize   = s.renderSize;
 	s.outlinePSPerPass[1].blurDirection = v2{ 0.0f, 1.0f };
+
+	s.outlinePSPerPassSelected.outlineColor = Color128(0, 122, 204, 255);
+	s.outlinePSPerPassSelected.darkenColor  = Color128(0, 0, 0, 128);
+	s.outlinePSPerPassHovered.outlineColor  = Color128(28, 151, 234, 255);
+	s.outlinePSPerPassHovered.darkenColor   = Color128(0, 0, 0, 0);
 
 	b8 success = PluginLoader_Initialize(*s.pluginLoader);
 	if (!success) return false;
@@ -1757,137 +1893,7 @@ Simulation_Update(SimulationState& s)
 		PopPixelShader(context);
 	}
 
-	// TODO: Shouldn't this be after mouse selection?
-	// TODO: Fill amount is wrong because of the hacky fake sensor value
-	// Draw Selection
-	if (s.selected.length != 0)
-	{
-		// Re-render selected widgets
-		// -> Depth 0
-		{
-			PluginContext context = {};
-			context.s = &s;
-
-			// TODO: Duplicating this is error prone
-			WidgetAPI::Update widgetAPI = {};
-			widgetAPI.t                       = s.currentTime;
-			widgetAPI.sensors                 = s.sensorPlugins[0].sensors;
-			widgetAPI.GetViewMatrix           = GetViewMatrix;
-			widgetAPI.GetProjectionMatrix     = GetProjectionMatrix;
-			widgetAPI.GetViewProjectionMatrix = GetViewProjectionMatrix;
-			widgetAPI.UpdateVSConstantBuffer  = UpdateVSConstantBuffer;
-			widgetAPI.UpdatePSConstantBuffer  = UpdatePSConstantBuffer;
-			widgetAPI.DrawMesh                = DrawMesh;
-			widgetAPI.PushVertexShader        = PushVertexShader;
-			widgetAPI.PushPixelShader         = PushPixelShader;
-			widgetAPI.PopVertexShader         = PopVertexShader;
-			widgetAPI.PopPixelShader          = PopPixelShader;
-
-			Renderer_PushRenderTarget(*s.renderer, StandardRenderTarget::Null);
-			Renderer_PushDepthBuffer(*s.renderer, s.tempDepthBuffers[0]);
-			Renderer_ClearDepthBuffer(*s.renderer);
-			for (u32 i = 0; i < s.selected.length ; i++)
-			{
-				FullWidgetRef selected = s.selected[i];
-
-				WidgetPlugin& widgetPlugin = s.widgetPlugins[selected.pluginRef];
-				WidgetData&   widgetData   = widgetPlugin.widgetDatas[selected.dataRef];
-				Widget&       widget       = widgetData.widgets[selected.widgetRef];
-
-				context.widgetPlugin = &widgetPlugin;
-				context.success      = true;
-
-				widgetAPI.widgets                = widget;
-				// TODO: Can this be made simpler?
-				widgetAPI.widgetsUserData        = widgetData.widgetsUserData[widgetData.desc.userDataSize * ToIndex(widget.ref)];
-				widgetAPI.widgetsUserData.stride = widgetData.desc.userDataSize;
-
-				// TODO: try/catch?
-				widgetData.desc.Update(context, widgetAPI);
-			}
-			Renderer_PopDepthBuffer(*s.renderer);
-			Renderer_PopRenderTarget(*s.renderer);
-		}
-
-		Renderer_PushDepthBuffer(*s.renderer, StandardDepthBuffer::Null);
-		Renderer_PushVertexShader(*s.renderer, StandardVertexShader::ClipSpace);
-
-		// Copy depth as solid color
-		// Depth 0 -> Temp 0
-		{
-			Renderer_SetBlendMode(*s.renderer, false);
-			Renderer_PushRenderTarget(*s.renderer, s.tempRenderTargets[0]);
-			Renderer_PushPixelShaderResource(*s.renderer, s.tempDepthBuffers[0], 0);
-			Renderer_PushPixelShader(*s.renderer, s.depthToAlphaShader);
-			Renderer_DrawMesh(*s.renderer, StandardMesh::Fullscreen);
-			Renderer_PopPixelShader(*s.renderer);
-			Renderer_PopPixelShaderResource(*s.renderer, 0);
-			Renderer_PopRenderTarget(*s.renderer);
-		}
-
-		// Blur to create outline
-		// Temp 0 -> Temp 1 -> Temp 0
-		{
-			Renderer_SetBlendMode(*s.renderer, false);
-			Renderer_PushPixelShader(*s.renderer, s.outlineShader);
-
-			// Horizontal blur
-			PSConstantBufferUpdate hCBufUpdate = {};
-			hCBufUpdate.ps    = s.outlineShader;
-			hCBufUpdate.index = 0;
-			hCBufUpdate.data  = &s.outlinePSPerPass[0];
-
-			Renderer_PushRenderTarget(*s.renderer, s.tempRenderTargets[1]);
-			Renderer_PushPixelShaderResource(*s.renderer, s.tempRenderTargets[0], 0);
-			Renderer_UpdatePSConstantBuffer(*s.renderer, hCBufUpdate);
-			Renderer_DrawMesh(*s.renderer, StandardMesh::Fullscreen);
-			Renderer_PopPixelShaderResource(*s.renderer, 0);
-			Renderer_PopRenderTarget(*s.renderer);
-
-			// Vertical blur
-			PSConstantBufferUpdate vCBufUpdate = {};
-			vCBufUpdate.ps    = s.outlineShader;
-			vCBufUpdate.index = 0;
-			vCBufUpdate.data  = &s.outlinePSPerPass[1];
-
-			Renderer_PushRenderTarget(*s.renderer, s.tempRenderTargets[0]);
-			Renderer_PushPixelShaderResource(*s.renderer, s.tempRenderTargets[1], 0);
-			Renderer_UpdatePSConstantBuffer(*s.renderer, vCBufUpdate);
-			Renderer_DrawMesh(*s.renderer, StandardMesh::Fullscreen);
-			Renderer_PopPixelShaderResource(*s.renderer, 0);
-			Renderer_PopRenderTarget(*s.renderer);
-
-			Renderer_PopPixelShader(*s.renderer);
-		}
-
-		// Composite outline back into main render target
-		// Temp 0 -> Main
-		{
-			PSConstantBufferUpdate cBufUpdate = {};
-			cBufUpdate.ps    = s.outlineCompositeShader;
-			cBufUpdate.index = 0;
-			cBufUpdate.data  = &s.outlinePSPerPass[0];
-
-			Renderer_SetBlendMode(*s.renderer, true);
-			Renderer_PushRenderTarget(*s.renderer, StandardRenderTarget::Main);
-			Renderer_PushPixelShaderResource(*s.renderer, s.tempRenderTargets[0], 0);
-			Renderer_PushPixelShaderResource(*s.renderer, s.tempDepthBuffers[0], 1);
-			//Renderer_PushPixelShaderResource(*s.renderer, StandardDepthBuffer::Main, 2);
-			Renderer_PushPixelShader(*s.renderer, s.outlineCompositeShader);
-			Renderer_UpdatePSConstantBuffer(*s.renderer, cBufUpdate);
-			Renderer_DrawMesh(*s.renderer, StandardMesh::Fullscreen);
-			Renderer_PopPixelShader(*s.renderer);
-			//Renderer_PopPixelShaderResource(*s.renderer, 2);
-			Renderer_PopPixelShaderResource(*s.renderer, 1);
-			Renderer_PopPixelShaderResource(*s.renderer, 0);
-			Renderer_PopRenderTarget(*s.renderer);
-		}
-
-		Renderer_PopVertexShader(*s.renderer);
-		Renderer_PopDepthBuffer(*s.renderer);
-	}
-
-	// Select mouse over widget
+	// Update hovered widget
 	if (guiCon.pipe.state == PipeState::Connected || s.previewWindow)
 	{
 		s.hovered = {};
@@ -1932,33 +1938,11 @@ Simulation_Update(SimulationState& s)
 		}
 	}
 
-	// Draw Hover
+	// TODO: Fill amount is wrong because of the hacky fake sensor value
+	if (s.selected.length != 0)
+		HighlightWidgets(s, s.selected, s.outlinePSPerPassSelected);
 	if (s.hovered.widgetRef && s.guiInteraction == GUIInteraction::Null)
-	{
-		Widget& widget = GetWidget(s, s.hovered);
-
-		v2 position = WidgetPosition(widget);
-		v2 size = widget.size + v2{ 8, 8 };
-
-		Matrix world = Identity();
-		SetPosition(world, position, -(widget.depth + 5.0f));
-		SetScale   (world, size, 1.0f);
-		static Matrix wvp;
-		wvp = world * s.vp;
-		static v4 color = Color128(28, 151, 234, 255);
-
-		PluginContext context = {};
-		context.success = true;
-		context.s = &s;
-
-		UpdateVSConstantBuffer(context, StandardVertexShader::WVP, 0, &wvp);
-		UpdatePSConstantBuffer(context, StandardPixelShader::SolidColored, 0, &color);
-		PushVertexShader(context, StandardVertexShader::WVP);
-		PushPixelShader(context, StandardPixelShader::SolidColored);
-		DrawMesh(context, StandardMesh::Quad);
-		PopVertexShader(context);
-		PopPixelShader(context);
-	}
+		HighlightWidgets(s, s.hovered, s.outlinePSPerPassHovered);
 
 	// Update CPU texture
 	{

@@ -1,15 +1,13 @@
 Current
 -------
 Outline
-[ ] Use for hover
-[ ] Choose better selection colors
+[ ] Tighten up the blur or go back to the iterative method
+[ ] Uncombine outline constant buffers
 [ ] Darken highlight when failing depth test
 	Need to use the depth of the widget for the outline
 
-// TODO: Shouldn't this be after mouse selection?
 // TODO: Add GPU events / labels
 // TODO: Remove types from resource names
-// TODO: Try different selection colors (what were we using before?)
 Add push and pop for blend modes
 
 Bring ILI9341 code over

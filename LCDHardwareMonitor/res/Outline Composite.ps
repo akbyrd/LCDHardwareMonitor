@@ -24,7 +24,7 @@ float4 main(PixelFragment pIn) : SV_TARGET
 	//	srcColor.rgb *= 0.5;
 
 	float4 src    = srcColor * outlineColor;
-	float4 dst    = float4(0, 0, 0, 0.5f);
+	float4 dst    = darkenColor;
 	float4 result = float4(lerp(dst.rgb, src.rgb, src.a), max(dst.a, src.a));
 	return result;
 
