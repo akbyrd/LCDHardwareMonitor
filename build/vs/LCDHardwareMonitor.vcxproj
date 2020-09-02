@@ -157,7 +157,7 @@
     <ClCompile Include="..\..\LCDHardwareMonitor\src\main_win32.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\LCDHardwareMonitor\src\Blur.ps.h" />
+    <ClInclude Include="..\..\LCDHardwareMonitor\src\Outline.ps.h" />
     <ClInclude Include="..\..\LCDHardwareMonitor\src\ft232h.h" />
     <ClInclude Include="..\..\LCDHardwareMonitor\src\ft232h_win32.hpp" />
     <ClInclude Include="..\..\LCDHardwareMonitor\src\gui_protocol.hpp" />
@@ -220,7 +220,7 @@
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="..\..\LCDHardwareMonitor\res\Blur.ps">
+    <FxCompile Include="..\..\LCDHardwareMonitor\res\Outline.ps">
       <FileType>Document</FileType>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(OutDir)Shaders\%(Filename).ps.cso</ObjectFileOutput>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(OutDir)Shaders\%(Filename).ps.cso</ObjectFileOutput>
@@ -272,7 +272,7 @@
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="..\..\LCDHardwareMonitor\res\Blur Composite.ps">
+    <FxCompile Include="..\..\LCDHardwareMonitor\res\Outline Composite.ps">
       <FileType>Document</FileType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>

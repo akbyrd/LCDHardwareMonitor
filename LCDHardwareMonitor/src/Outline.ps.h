@@ -3,7 +3,7 @@
 	#define float2 v2
 	#define float4 v4
 	#define uint2  v2u
-	namespace Blur {
+	namespace Outline {
 #endif
 
 cbuffer PSPerPass
