@@ -1,7 +1,6 @@
 Current
 -------
 Outline
-[ ] Tighten up the blur or go back to the iterative method
 [ ] Uncombine outline constant buffers
 [ ] Darken highlight when failing depth test
 	Need to use the depth of the widget for the outline
