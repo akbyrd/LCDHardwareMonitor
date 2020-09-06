@@ -1,13 +1,8 @@
 Current
 -------
 Outline
-[ ] Uncombine outline constant buffers
 [ ] Darken highlight when failing depth test
 	Need to use the depth of the widget for the outline
-
-// TODO: Add GPU events / labels
-// TODO: Remove types from resource names
-Add push and pop for blend modes
 
 Bring ILI9341 code over
 	Add a tracing option
@@ -143,6 +138,9 @@ Implement hardware reset
 
 Features - Rendering
 --------------------
+Add GPU events / labels
+Remove types from resource names
+Add push and pop for blend modes
 Change rasterizer state to be runtime configurable
 Render with alpha, then convert to 16 bit
 I'm no longer convince the Push/Pop model is all that useful. Why not just Set everything?

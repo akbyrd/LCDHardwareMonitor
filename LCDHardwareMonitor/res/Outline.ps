@@ -12,7 +12,6 @@ struct PixelFragment
 
 float4 main(PixelFragment pIn) : SV_TARGET
 {
-	// TODO: Move to constant buffer (screws with loop unrolling)
 	int blurRadius = 6;
 	float slope = -1.0 / (blurRadius + 1);    // Alpha falloff rate
 	float scale = 1.0 / ((slope * 2.25) + 1); // Saturate the first few pixels
@@ -26,17 +25,9 @@ float4 main(PixelFragment pIn) : SV_TARGET
 		float src = max(src1, src2);
 
 		float dist = i;
-		//float alpha = sqrt((slope * (dist - 1)) + 1) * src;
-		//float alpha = (-exp(1.0*(dist - blurRadius)) + 1) * src;
 		float alpha = saturate(scale * ((slope * dist) + 1)) * src;
 		maxAlpha = max(maxAlpha, alpha);
 	}
-
-	// TODO: Might not need this now
-	// If this pixel is in the shape we're outlining don't modify it
-	float4 origColor = srcTex.Sample(samplerState, pIn.UV);
-	if (origColor.a == 1)
-		return origColor;
 
 	return float4(1, 1, 1, maxAlpha);
 }

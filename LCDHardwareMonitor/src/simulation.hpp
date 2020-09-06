@@ -1873,26 +1873,6 @@ Simulation_Update(SimulationState& s)
 		}
 	}
 
-	// DEBUG: Draw Coordinate System
-	{
-		Matrix world = Identity();
-		SetScale(world, v3 { 2000, 2000, 2000 });
-		SetTranslation(world, s.cameraPos);
-		static Matrix wvp;
-		wvp = world * s.vp;
-
-		PluginContext context = {};
-		context.success = true;
-		context.s = &s;
-
-		UpdateVSConstantBuffer(context, StandardVertexShader::WVP, 0, &wvp);
-		PushVertexShader(context, StandardVertexShader::WVP);
-		PushPixelShader(context, StandardPixelShader::DebugCoordinates);
-		DrawMesh(context, StandardMesh::Cube);
-		PopVertexShader(context);
-		PopPixelShader(context);
-	}
-
 	// Update hovered widget
 	if (guiCon.pipe.state == PipeState::Connected || s.previewWindow)
 	{
@@ -1938,11 +1918,34 @@ Simulation_Update(SimulationState& s)
 		}
 	}
 
+	// DEBUG: Draw Coordinate System
+	{
+		Matrix world = Identity();
+		SetScale(world, v3 { 2000, 2000, 2000 });
+		SetTranslation(world, s.cameraPos);
+		static Matrix wvp;
+		wvp = world * s.vp;
+
+		PluginContext context = {};
+		context.success = true;
+		context.s = &s;
+
+		UpdateVSConstantBuffer(context, StandardVertexShader::WVP, 0, &wvp);
+		PushVertexShader(context, StandardVertexShader::WVP);
+		PushPixelShader(context, StandardPixelShader::DebugCoordinates);
+		DrawMesh(context, StandardMesh::Cube);
+		PopVertexShader(context);
+		PopPixelShader(context);
+	}
+
 	// TODO: Fill amount is wrong because of the hacky fake sensor value
-	if (s.selected.length != 0)
-		HighlightWidgets(s, s.selected, s.outlinePSPerPassSelected);
-	if (s.hovered.widgetRef && s.guiInteraction == GUIInteraction::Null)
-		HighlightWidgets(s, s.hovered, s.outlinePSPerPassHovered);
+	// Draw selection and hover
+	{
+		if (s.selected.length != 0)
+			HighlightWidgets(s, s.selected, s.outlinePSPerPassSelected);
+		if (s.hovered.widgetRef && s.guiInteraction == GUIInteraction::Null)
+			HighlightWidgets(s, s.hovered, s.outlinePSPerPassHovered);
+	}
 
 	// Update CPU texture
 	{
