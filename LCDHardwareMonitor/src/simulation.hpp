@@ -45,7 +45,7 @@ struct SimulationState
 	v2                  cameraRot;
 	v2                  cameraRotStart;
 
-	FullWidgetRef       hovered;
+	List<FullWidgetRef> hovered;
 	List<FullWidgetRef> selected;
 	RenderTarget        tempRenderTargets[2];
 	DepthBuffer         tempDepthBuffers[3];
@@ -435,7 +435,7 @@ OnConnect(SimulationState& s)
 static void
 OnDisconnect(SimulationState& s)
 {
-	s.hovered = {};
+	List_Free(s.hovered);
 	List_Free(s.selected);
 
 	s.guiConnection.sendIndex = 0;
@@ -846,9 +846,16 @@ RemoveWidgetRefs(SimulationState& s, Slice<FullWidgetRef> refs)
 	{
 		FullWidgetRef ref = refs[i];
 
-		if (s.hovered == ref) s.hovered = {};
+		// NOTE: Do slow removes to maintain selection order
+		for (u32 j = 0; j < s.hovered.length; j++)
+		{
+			if (s.hovered[j] == ref)
+			{
+				List_Remove(s.hovered, j);
+				break;
+			}
+		}
 
-		// NOTE: Do a slow remove to maintain selection order
 		for (u32 j = 0; j < s.selected.length; j++)
 		{
 			if (s.selected[j] == ref)
@@ -1204,14 +1211,7 @@ FromGUI_MouseMove(SimulationState& s, FromGUI::MouseMove& mouseMove)
 static void
 FromGUI_SelectHovered(SimulationState& s, FromGUI::SelectHovered&)
 {
-	if (s.hovered.widgetRef)
-	{
-		SelectWidgets(s, s.hovered);
-	}
-	else
-	{
-		SelectWidgets(s, {});
-	}
+	SelectWidgets(s, s.hovered);
 }
 
 static void
@@ -1892,7 +1892,7 @@ Simulation_Update(SimulationState& s)
 	// Update hovered widget
 	if (guiCon.pipe.state == PipeState::Connected || s.previewWindow)
 	{
-		s.hovered = {};
+		List_Clear(s.hovered);
 
 		// TODO: Mouse selection is off by just a bit. Floating point issues?
 		// TODO: Don't fully understand why the half renderSize offset is necessary
@@ -1923,9 +1923,10 @@ Simulation_Update(SimulationState& s)
 							v4 rect = WidgetRect(widget);
 							if (RectContains(rect, (v2) selectionPos))
 							{
-								s.hovered.pluginRef = widgetPlugin.ref;
-								s.hovered.dataRef   = { j + 1 };
-								s.hovered.widgetRef = { k + 1 };
+								FullWidgetRef& hovered = List_Append(s.hovered);
+								hovered.pluginRef = widgetPlugin.ref;
+								hovered.dataRef   = { j + 1 };
+								hovered.widgetRef = { k + 1 };
 							}
 						}
 					}
@@ -1959,7 +1960,7 @@ Simulation_Update(SimulationState& s)
 	{
 		if (s.selected.length != 0)
 			HighlightWidgets(s, s.selected, s.outlinePSPerPassSelected);
-		if (s.hovered.widgetRef && s.guiInteraction == GUIInteraction::Null)
+		if (s.hovered.length != 0 && s.guiInteraction == GUIInteraction::Null)
 			HighlightWidgets(s, s.hovered, s.outlinePSPerPassHovered);
 	}
 

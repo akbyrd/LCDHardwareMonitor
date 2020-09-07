@@ -1,5 +1,8 @@
 Current
 -------
+Fix clamping with multiple selection
+Fix dragging with multiple selection (pick whole group)
+
 Outline
 	Use stencil instead of an extra depth texture
 	Think through clears carefully
