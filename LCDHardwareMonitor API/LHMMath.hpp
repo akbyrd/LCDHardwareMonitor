@@ -1665,11 +1665,13 @@ template<typename T>
 inline v4t<T>
 RectCombine(v4t<T> lhs, v4t<T> rhs)
 {
+	v2t<T> lMax = lhs.pos + lhs.size;
+	v2t<T> rMax = rhs.pos + rhs.size;
+	v2t<T> max = Max(lMax, rMax);
+
 	v4t<T> result = {};
-	result.pos.x  = Min(lhs.pos.x,  rhs.pos.x);
-	result.pos.y  = Min(lhs.pos.y,  rhs.pos.y);
-	result.size.x = Max(lhs.size.x, rhs.size.x);
-	result.size.y = Max(lhs.size.y, rhs.size.y);
+	result.pos  = Min(lhs.pos, rhs.pos);
+	result.size = max - result.pos;
 	return result;
 }
 
