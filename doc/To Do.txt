@@ -1,6 +1,5 @@
 Current
 -------
-Fix clamping with multiple selection
 Fix dragging with multiple selection (pick whole group)
 
 Outline
@@ -142,7 +141,6 @@ Implement hardware reset
 
 Features - Rendering
 --------------------
-Add GPU events / labels
 Expand Copy operation to take any src and dst
 Remove types from resource names
 Add push and pop for blend modes
@@ -268,3 +266,4 @@ Implement a way to get errors from users. Event tracing? Windows error reporting
 Reset state structs if Initialize fails
 Ensure program doesn't cause all CPU cores to boost constantly (preferably at all)
 Collect crash reports / metrics
+Test with different character code pages.

@@ -15,6 +15,7 @@
 #endif
 
 #include <d3d11.h>
+#include <d3d11_1.h>
 //#include <d3dcompiler.h>
 //#include <DirectXMath.h>
 //#include <DirectXColors.h>
@@ -130,6 +131,9 @@ enum struct RenderCommandType
 	VSConstantBufferUpdate,
 	PSConstantBufferUpdate,
 	DrawMesh,
+	SetMarker,
+	PushEvent,
+	PopEvent,
 	PushRenderTarget,
 	PopRenderTarget,
 	ClearRenderTarget,
@@ -162,45 +166,48 @@ struct RenderCommand
 		v4                     clearColor;
 		b8                     blendModeAlpha;
 		CopyResource           copy;
+		Bytes                  wideName;
 	};
 };
 
 struct RendererState
 {
-	ComPtr<ID3D11Device>          d3dDevice;
-	ComPtr<ID3D11DeviceContext>   d3dContext;
-	ComPtr<ID3D11RasterizerState> d3dRasterizerStateSolid;
-	ComPtr<ID3D11RasterizerState> d3dRasterizerStateWireframe;
-	ComPtr<ID3D11BlendState>      d3dBlendStateAlpha;
-	ComPtr<ID3D11BlendState>      d3dBlendStateSolid;
-	ComPtr<ID3D11Buffer>          d3dVertexBuffer;
-	ComPtr<ID3D11Buffer>          d3dIndexBuffer;
+	ComPtr<ID3D11Device>              d3dDevice;
+	ComPtr<ID3D11DeviceContext>       d3dContext;
+	ComPtr<ID3DUserDefinedAnnotation> d3dAnnotation;
+	ComPtr<ID3D11RasterizerState>     d3dRasterizerStateSolid;
+	ComPtr<ID3D11RasterizerState>     d3dRasterizerStateWireframe;
+	ComPtr<ID3D11BlendState>          d3dBlendStateAlpha;
+	ComPtr<ID3D11BlendState>          d3dBlendStateSolid;
+	ComPtr<ID3D11Buffer>              d3dVertexBuffer;
+	ComPtr<ID3D11Buffer>              d3dIndexBuffer;
 
-	v2u                           renderSize;
-	DXGI_FORMAT                   renderFormat;
-	DXGI_FORMAT                   sharedFormat;
-	u32                           multisampleCount;
-	u32                           qualityCountRender;
-	u32                           qualityCountShared;
-	b8                            isWireframeEnabled;
-	b8                            isAlphaBlendEnabled;
-	b8                            resourceCreationFinalized;
+	v2u                               renderSize;
+	DXGI_FORMAT                       renderFormat;
+	DXGI_FORMAT                       sharedFormat;
+	u32                               multisampleCount;
+	u32                               qualityCountRender;
+	u32                               qualityCountShared;
+	b8                                isWireframeEnabled;
+	b8                                isAlphaBlendEnabled;
+	b8                                resourceCreationFinalized;
+	b8                                graphicsDebuggerPresent;
 
-	List<VertexShaderData>        vertexShaders;
-	List<PixelShaderData>         pixelShaders;
-	List<MeshData>                meshes;
-	List<Vertex>                  vertexBuffer;
-	List<u32>                     indexBuffer;
-	List<RenderCommand>           commandList;
-	List<RenderTargetData>        renderTargets;
-	List<CPUTextureData>          cpuTextures;
-	List<DepthBufferData>         depthBuffers;
+	List<VertexShaderData>            vertexShaders;
+	List<PixelShaderData>             pixelShaders;
+	List<MeshData>                    meshes;
+	List<Vertex>                      vertexBuffer;
+	List<u32>                         indexBuffer;
+	List<RenderCommand>               commandList;
+	List<RenderTargetData>            renderTargets;
+	List<CPUTextureData>              cpuTextures;
+	List<DepthBufferData>             depthBuffers;
 
-	List<RenderTargetData*>       renderTargetStack;
-	List<DepthBufferData*>        depthBufferStack;
-	List<VertexShaderData*>       vertexShaderStack;
-	List<PixelShaderData*>        pixelShaderStack;
-	List<BoundResource>           pixelShaderResourceStacks[4];
+	List<RenderTargetData*>           renderTargetStack;
+	List<DepthBufferData*>            depthBufferStack;
+	List<VertexShaderData*>           vertexShaderStack;
+	List<PixelShaderData*>            pixelShaderStack;
+	List<BoundResource>               pixelShaderResourceStacks[4];
 };
 
 // -------------------------------------------------------------------------------------------------
@@ -229,6 +236,46 @@ SetDebugObjectNameImpl(ComPtr<T>& resource, StringView format, Args... args)
 	#else
 		UNUSED(resource); UNUSED(format); UNUSED_ARGS(args...);
 	#endif
+}
+
+static Bytes
+ConvertStringToWide(StringView string)
+{
+	Assert(string.length != 0);
+	Assert(string.length + 1 < i32Max);
+
+	Bytes result = {};
+	auto resultGuard = guard { List_Free(result); };
+
+	i32 charCount = MultiByteToWideChar(
+		CP_UTF8,
+		0,
+		string.data,
+		(i32) (string.length + 1),
+		nullptr,
+		0
+	);
+	LOG_LAST_ERROR_IF(charCount == 0, return {},
+		Severity::Error, "Failed to convert to wide string");
+
+	List_Reserve(result, (u32) (2 * charCount));
+
+	charCount = MultiByteToWideChar(
+		CP_UTF8,
+		0,
+		string.data,
+		(i32) (string.length + 1),
+		(c16*) result.data,
+		charCount
+	);
+	LOG_LAST_ERROR_IF(charCount == 0, return {},
+		Severity::Error, "Failed to convert to wide string");
+
+	result.length = (u32) (2 * charCount);
+	Assert(result.length == result.capacity);
+
+	resultGuard.dismiss = true;
+	return result;
 }
 
 static void
@@ -860,6 +907,44 @@ Renderer_FinalizeResourceCreation(RendererState& s)
 // -------------------------------------------------------------------------------------------------
 // Public API Implementation - Rendering Operations
 
+// TODO: Maybe register event/marker names?
+void
+Renderer_SetMarker(RendererState& s, StringView name)
+{
+	Assert(name.data && name.length != 0);
+	if (!s.graphicsDebuggerPresent) return;
+
+	Bytes wideName = ConvertStringToWide(name);
+	Assert(wideName.data);
+
+	RenderCommand& renderCommand = List_Append(s.commandList);
+	renderCommand.type = RenderCommandType::SetMarker;
+	renderCommand.wideName = wideName;
+}
+
+void
+Renderer_PushEvent(RendererState& s, StringView name)
+{
+	Assert(name.data && name.length != 0);
+	if (!s.graphicsDebuggerPresent) return;
+
+	Bytes wideName = ConvertStringToWide(name);
+	Assert(wideName.data);
+
+	RenderCommand& renderCommand = List_Append(s.commandList);
+	renderCommand.type = RenderCommandType::PushEvent;
+	renderCommand.wideName = wideName;
+}
+
+void
+Renderer_PopEvent(RendererState& s)
+{
+	if (!s.graphicsDebuggerPresent) return;
+
+	RenderCommand& renderCommand = List_Append(s.commandList);
+	renderCommand.type = RenderCommandType::PopEvent;
+}
+
 b8
 Renderer_ValidateVSConstantBufferUpdate(RendererState& s, VSConstantBufferUpdate& cbu)
 {
@@ -1191,6 +1276,14 @@ Renderer_Initialize(RendererState& s)
 			hr = d3dInfoQueue->AddStorageFilterEntries(&filter);
 			LOG_HRESULT_IF_FAILED(hr, IGNORE,
 				Severity::Warning, "Failed to set D3D warning filter");
+
+			// Get annotation interface
+			hr = s.d3dContext.As(&s.d3dAnnotation);
+			LOG_HRESULT_IF_FAILED(hr, IGNORE,
+				Severity::Warning, "Failed to get annotation interface");
+
+			if (s.d3dAnnotation)
+				s.graphicsDebuggerPresent = s.d3dAnnotation->GetStatus();
 		}
 
 		// DXGI Stuff
@@ -1437,6 +1530,7 @@ Renderer_Teardown(RendererState& s)
 	s.d3dBlendStateAlpha         .Reset();
 	s.d3dRasterizerStateWireframe.Reset();
 	s.d3dRasterizerStateSolid    .Reset();
+	s.d3dAnnotation              .Reset();
 	s.d3dContext                 .Reset();
 	s.d3dDevice                  .Reset();
 
@@ -1516,6 +1610,28 @@ Renderer_Render(RendererState& s)
 
 				Assert(mesh.vOffset < i32Max);
 				s.d3dContext->DrawIndexed(mesh.iCount, mesh.iOffset, (i32) mesh.vOffset);
+				break;
+			}
+
+			case RenderCommandType::SetMarker:
+			{
+				Bytes& wideName = renderCommand.wideName;
+				s.d3dAnnotation->SetMarker((c16*) wideName.data);
+				List_Free(wideName);
+				break;
+			}
+
+			case RenderCommandType::PushEvent:
+			{
+				Bytes& wideName = renderCommand.wideName;
+				s.d3dAnnotation->BeginEvent((c16*) wideName.data);
+				List_Free(wideName);
+				break;
+			}
+
+			case RenderCommandType::PopEvent:
+			{
+				s.d3dAnnotation->EndEvent();
 				break;
 			}
 

@@ -1059,6 +1059,7 @@ HighlightWidgets(SimulationState& s, Slice<FullWidgetRef> refs, Outline::PSPerPa
 		widgetAPI.PopVertexShader         = PopVertexShader;
 		widgetAPI.PopPixelShader          = PopPixelShader;
 
+		Renderer_PushEvent(*s.renderer, "Render Widgets Depth");
 		Renderer_PushRenderTarget(*s.renderer, StandardRenderTarget::Null);
 		Renderer_PushDepthBuffer(*s.renderer, s.tempDepthBuffers[2]);
 		Renderer_ClearDepthBuffer(*s.renderer);
@@ -1083,6 +1084,7 @@ HighlightWidgets(SimulationState& s, Slice<FullWidgetRef> refs, Outline::PSPerPa
 		}
 		Renderer_PopDepthBuffer(*s.renderer);
 		Renderer_PopRenderTarget(*s.renderer);
+		Renderer_PopEvent(*s.renderer);
 	}
 
 	Renderer_PushDepthBuffer(*s.renderer, StandardDepthBuffer::Null);
@@ -1091,6 +1093,7 @@ HighlightWidgets(SimulationState& s, Slice<FullWidgetRef> refs, Outline::PSPerPa
 	// Copy depth as solid color
 	// Depth 2 -> Temp/Depth 0
 	{
+		Renderer_PushEvent(*s.renderer, "Copy Widgets Depth to Alpha");
 		Renderer_SetBlendMode(*s.renderer, false);
 		Renderer_PushRenderTarget(*s.renderer, s.tempRenderTargets[0]);
 		Renderer_ClearRenderTarget(*s.renderer, Colors128::Clear);
@@ -1103,11 +1106,13 @@ HighlightWidgets(SimulationState& s, Slice<FullWidgetRef> refs, Outline::PSPerPa
 		Renderer_PopPixelShaderResource(*s.renderer, 0);
 		Renderer_PopDepthBuffer(*s.renderer);
 		Renderer_PopRenderTarget(*s.renderer);
+		Renderer_PopEvent(*s.renderer);
 	}
 
-	// Blur to create outline
+	// Expand to create outline
 	// Temp/Depth 0 -> Temp/Depth 1 -> Temp/Depth 0
 	{
+		Renderer_PushEvent(*s.renderer, "Expand Widget Alpha");
 		Renderer_SetBlendMode(*s.renderer, false);
 		Renderer_PushPixelShader(*s.renderer, s.outlineShader);
 
@@ -1148,6 +1153,7 @@ HighlightWidgets(SimulationState& s, Slice<FullWidgetRef> refs, Outline::PSPerPa
 		Renderer_PopRenderTarget(*s.renderer);
 
 		Renderer_PopPixelShader(*s.renderer);
+		Renderer_PopEvent(*s.renderer);
 	}
 
 	// Composite outline back into main render target
@@ -1158,6 +1164,7 @@ HighlightWidgets(SimulationState& s, Slice<FullWidgetRef> refs, Outline::PSPerPa
 		cBufUpdate.index = 0;
 		cBufUpdate.data  = &compositeCBuf;
 
+		Renderer_PushEvent(*s.renderer, "Composite Outline");
 		Renderer_SetBlendMode(*s.renderer, true);
 		Renderer_PushRenderTarget(*s.renderer, StandardRenderTarget::Main);
 		Renderer_PushPixelShaderResource(*s.renderer, s.tempRenderTargets[0], 0);
@@ -1173,6 +1180,7 @@ HighlightWidgets(SimulationState& s, Slice<FullWidgetRef> refs, Outline::PSPerPa
 		Renderer_PopPixelShaderResource(*s.renderer, 1);
 		Renderer_PopPixelShaderResource(*s.renderer, 0);
 		Renderer_PopRenderTarget(*s.renderer);
+		Renderer_PopEvent(*s.renderer);
 	}
 
 	Renderer_PopVertexShader(*s.renderer);
@@ -1830,6 +1838,8 @@ Simulation_Update(SimulationState& s)
 	Renderer_ClearDepthBuffer(*s.renderer);
 	Renderer_SetBlendMode(*s.renderer, true);
 
+	Renderer_SetMarker(*s.renderer, "Foozle");
+
 	// Update Widgets
 	{
 		// TODO: How sensor values propagate to widgets is an open question. Does
@@ -1865,6 +1875,10 @@ Simulation_Update(SimulationState& s)
 		{
 			WidgetPlugin& widgetPlugin = s.widgetPlugins[i];
 
+			String eventName = String_Format("Update Widgets (%)", widgetPlugin.name);
+			defer { String_Free(eventName); };
+			Renderer_PushEvent(*s.renderer, eventName);
+
 			context.widgetPlugin = &widgetPlugin;
 			context.success      = true;
 
@@ -1886,6 +1900,8 @@ Simulation_Update(SimulationState& s)
 				// TODO: try/catch?
 				widgetData.desc.Update(context, widgetAPI);
 			}
+
+			Renderer_PopEvent(*s.renderer);
 		}
 	}
 
@@ -1947,32 +1963,45 @@ Simulation_Update(SimulationState& s)
 		context.success = true;
 		context.s = &s;
 
+		Renderer_PushEvent(*s.renderer, "Draw Debug Coordinates");
 		UpdateVSConstantBuffer(context, StandardVertexShader::WVP, 0, &wvp);
 		PushVertexShader(context, StandardVertexShader::WVP);
 		PushPixelShader(context, StandardPixelShader::DebugCoordinates);
 		DrawMesh(context, StandardMesh::Cube);
 		PopVertexShader(context);
 		PopPixelShader(context);
+		Renderer_PopEvent(*s.renderer);
 	}
 
 	// TODO: Fill amount is wrong because of the hacky fake sensor value
 	// Draw selection and hover
 	{
 		if (s.selected.length != 0)
+		{
+			Renderer_PushEvent(*s.renderer, "Outline Selected Widgets");
 			HighlightWidgets(s, s.selected, s.outlinePSPerPassSelected);
+			Renderer_PopEvent(*s.renderer);
+		}
 		if (s.hovered.length != 0 && s.guiInteraction == GUIInteraction::Null)
+		{
+			Renderer_PushEvent(*s.renderer, "Outline Hovered Widgets");
 			HighlightWidgets(s, s.hovered, s.outlinePSPerPassHovered);
+			Renderer_PopEvent(*s.renderer);
+		}
 	}
 
 	// Update CPU texture
 	{
+		Renderer_PushEvent(*s.renderer, "Update CPU Texture");
 		Renderer_PushRenderTarget(*s.renderer, StandardRenderTarget::Null);
 		Renderer_Copy(*s.renderer, StandardRenderTarget::Main, s.renderTargetCPUCopy);
 		Renderer_PopRenderTarget(*s.renderer);
+		Renderer_PopEvent(*s.renderer);
 	}
 
 	// Update GUI preview texture
 	{
+		Renderer_PushEvent(*s.renderer, "Update GUI Preview");
 		Renderer_PushRenderTarget(*s.renderer, s.renderTargetGUICopy);
 		Renderer_PushDepthBuffer(*s.renderer, StandardDepthBuffer::Null);
 		Renderer_PushPixelShaderResource(*s.renderer, StandardRenderTarget::Main, 0);
@@ -1984,6 +2013,7 @@ Simulation_Update(SimulationState& s)
 		Renderer_PopPixelShaderResource(*s.renderer, 0);
 		Renderer_PopDepthBuffer(*s.renderer);
 		Renderer_PopRenderTarget(*s.renderer);
+		Renderer_PopEvent(*s.renderer);
 	}
 
 	Renderer_PopDepthBuffer(*s.renderer);

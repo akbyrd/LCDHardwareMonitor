@@ -64,6 +64,9 @@ RenderTarget    Renderer_CreateSharedRenderTarget       (RendererState&, StringV
 CPUTexture      Renderer_CreateCPUTexture               (RendererState&, StringView name);
 DepthBuffer     Renderer_CreateDepthBuffer              (RendererState&, StringView name, b8 resource);
 
+void            Renderer_SetMarker                      (RendererState&, StringView name);
+void            Renderer_PushEvent                      (RendererState&, StringView name);
+void            Renderer_PopEvent                       (RendererState&);
 void            Renderer_PushRenderTarget               (RendererState&, RenderTarget);
 void            Renderer_PopRenderTarget                (RendererState&);
 void            Renderer_ClearRenderTarget              (RendererState&, v4 color);
