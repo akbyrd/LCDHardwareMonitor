@@ -1,8 +1,11 @@
 Current
 -------
 Outline
-[ ] Darken highlight when failing depth test
-	Need to use the depth of the widget for the outline
+	Use stencil instead of an extra depth texture
+	Think through clears carefully
+	Consider removing the depth to alpha pass
+	Outline only needs to produce alpha
+	Think about the three depth resources for outline composite
 
 Bring ILI9341 code over
 	Add a tracing option
@@ -17,7 +20,6 @@ Compare writes to python code (ft232h and ili9341)
 Compare reads to python code (ft232h and ili9341)
 Delete HardwareCommunication
 Read from display
-
 
 
 
@@ -114,7 +116,6 @@ Runtime shader compilation
 Shader hot-reloading
 Need to handle mouse position when preview isn't visible
 Need to actually avoid processing broken plugins
-Outline shader
 Users probably need to be able to create custom UI for plugin settings
 Watch plugin directory contents for registering, unregistering, and reloading plugins.
 
@@ -139,6 +140,7 @@ Implement hardware reset
 Features - Rendering
 --------------------
 Add GPU events / labels
+Expand Copy operation to take any src and dst
 Remove types from resource names
 Add push and pop for blend modes
 Change rasterizer state to be runtime configurable
@@ -244,10 +246,8 @@ MSI Afterburner uses SMART.dll, PerfCounter.dll, HwInfo.dll, AIDA64.dll.
 
 Features - Outline shader
 -------------------------
-Consider removing the depth to alpha pass
-Outline only needs to produce alpha
+Consider bringing hovered/selected widgets to the front to avoid outline depth issues
 Clamp outline to screen edges
-See how outline works at edges of screen
 Consider using a UAV for simultaneous read and write
 
 

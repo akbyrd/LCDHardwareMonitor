@@ -8,9 +8,19 @@ struct PixelFragment
 	float2 UV    : TEXCOORD;
 };
 
-float4 main(PixelFragment pIn) : SV_TARGET
+struct Pixel
+{
+	float4 Color : SV_TARGET;
+	float  Depth : SV_DEPTH;
+};
+
+Pixel main(PixelFragment pIn)
 {
 	float srcDepth = srcDepthTex.Sample(samplerState, pIn.UV).r;
 	float a = srcDepth != 1;
-	return float4(a, a, a, a);
+
+	Pixel pOut;
+	pOut.Color = float4(a, a, a, a);
+	pOut.Depth = srcDepth;
+	return pOut;
 }

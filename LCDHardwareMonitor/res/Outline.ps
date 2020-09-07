@@ -1,6 +1,7 @@
 #include "../src/Outline.ps.h"
 
 Texture2D srcTex;
+Texture2D srcDepthTex;
 SamplerState samplerState;
 
 struct PixelFragment
@@ -10,24 +11,71 @@ struct PixelFragment
 	float2 UV    : TEXCOORD;
 };
 
-float4 main(PixelFragment pIn) : SV_TARGET
+struct Pixel
 {
+	float4 Color : SV_TARGET;
+	float  Depth : SV_DEPTH;
+};
+
+// TODO: Is the +1 in scale correct?
+// TODO: Looks like scale and slope can be simplified together
+float CalcOutline(int blurRadius, int distance)
+{
+	float solidPixels = 2.25;
+	float slope = -1.0 / (blurRadius + 1);           // Alpha falloff rate
+	float scale = 1.0 / ((slope * solidPixels) + 1); // Saturate the first few pixels
+	float alpha = saturate(scale * ((slope * distance) + 1));
+	return alpha;
+}
+
+// TODO: Get rid of branches
+// TODO: Figure out how to move blur radius to a constant buffer without messing up the loop
+Pixel main(PixelFragment pIn)
+{
+	Pixel pOut;
+
 	int blurRadius = 6;
-	float slope = -1.0 / (blurRadius + 1);    // Alpha falloff rate
-	float scale = 1.0 / ((slope * 2.25) + 1); // Saturate the first few pixels
 	float2 texelStep = 1.0 / textureSize * blurDirection;
 
-	float maxAlpha = 0;
+	float alpha = 0;
+	float depth = 1;
 	for (int i = 1; i <= blurRadius; i++)
 	{
-		float src1 = srcTex.Sample(samplerState, pIn.UV + (i * texelStep)).a;
-		float src2 = srcTex.Sample(samplerState, pIn.UV - (i * texelStep)).a;
-		float src = max(src1, src2);
+		float srcAlpha = srcTex.Sample(samplerState, pIn.UV + (i * texelStep)).a;
+		float srcDepth = srcDepthTex.Sample(samplerState, pIn.UV + (i * texelStep)).r;
 
-		float dist = i;
-		float alpha = saturate(scale * ((slope * dist) + 1)) * src;
-		maxAlpha = max(maxAlpha, alpha);
+		srcAlpha = CalcOutline(blurRadius, i) * srcAlpha;
+		if (srcAlpha > alpha)
+		{
+			alpha = srcAlpha;
+			depth = srcDepth;
+		}
+	}
+	for (i = 1; i <= blurRadius; i++)
+	{
+		float srcAlpha = srcTex.Sample(samplerState, pIn.UV - (i * texelStep)).a;
+		float srcDepth = srcDepthTex.Sample(samplerState, pIn.UV - (i * texelStep)).r;
+
+		srcAlpha = CalcOutline(blurRadius, i) * srcAlpha;
+		if (srcAlpha > alpha)
+		{
+			alpha = srcAlpha;
+			depth = srcDepth;
+		}
 	}
 
-	return float4(1, 1, 1, maxAlpha);
+	bool anything = depth != 1;
+	if (anything)
+	{
+		pOut.Color = float4(1, 1, 1, alpha);
+		pOut.Depth = depth;
+	}
+	else
+	{
+		clip(-1);
+		pOut.Color = float4(0, 0, 0, 0);
+		pOut.Depth = 1;
+	}
+
+	return pOut;
 }
