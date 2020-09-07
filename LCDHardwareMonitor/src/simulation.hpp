@@ -1838,8 +1838,6 @@ Simulation_Update(SimulationState& s)
 	Renderer_ClearDepthBuffer(*s.renderer);
 	Renderer_SetBlendMode(*s.renderer, true);
 
-	Renderer_SetMarker(*s.renderer, "Foozle");
-
 	// Update Widgets
 	{
 		// TODO: How sensor values propagate to widgets is an open question. Does
@@ -1943,6 +1941,12 @@ Simulation_Update(SimulationState& s)
 								hovered.pluginRef = widgetPlugin.ref;
 								hovered.dataRef   = { j + 1 };
 								hovered.widgetRef = { k + 1 };
+
+								if (IsWidgetSelected(s, hovered))
+								{
+									List_Duplicate(s.hovered, Slice(s.selected));
+									break;
+								}
 							}
 						}
 					}

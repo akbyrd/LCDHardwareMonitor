@@ -187,8 +187,16 @@ List_Contains(List<T>& list, T item)
 }
 
 template<typename T>
+inline void
+List_Duplicate(List<T>& list, Slice<T> slice)
+{
+	List_Clear(list);
+	List_AppendRange(list, slice);
+}
+
+template<typename T>
 inline List<T>
-List_Duplicate(Slice<T>& slice)
+List_Duplicate(Slice<T> slice)
 {
 	List<T> duplicate = {};
 	List_AppendRange(duplicate, slice);

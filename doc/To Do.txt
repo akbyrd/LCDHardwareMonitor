@@ -1,6 +1,6 @@
 Current
 -------
-Fix dragging with multiple selection (pick whole group)
+Validate Push/PopEvent counts
 
 Outline
 	Use stencil instead of an extra depth texture
