@@ -97,7 +97,7 @@ enum struct ResourceType
 	DepthBuffer,
 };
 
-struct PixelShaderResource
+struct PSResource
 {
 	ResourceType type;
 	u32          slot;
@@ -128,9 +128,6 @@ struct CopyResource
 enum struct RenderCommandType
 {
 	Null,
-	VSConstantBufferUpdate,
-	PSConstantBufferUpdate,
-	DrawMesh,
 	SetMarker,
 	PushEvent,
 	PopEvent,
@@ -140,13 +137,16 @@ enum struct RenderCommandType
 	PushDepthBuffer,
 	PopDepthBuffer,
 	ClearDepthBuffer,
+	VSConstantBufferUpdate,
+	PSConstantBufferUpdate,
 	PushVertexShader,
 	PopVertexShader,
 	PushPixelShader,
 	PopPixelShader,
-	PushPixelShaderResource,
-	PopPixelShaderResource,
+	PushPSResource,
+	PopPSResource,
 	SetBlendMode,
+	DrawMesh,
 	Copy,
 };
 
@@ -155,18 +155,18 @@ struct RenderCommand
 	RenderCommandType type;
 	union
 	{
+		Bytes                  wideName;
+		RenderTarget           renderTarget;
+		v4                     clearColor;
+		DepthBuffer            depthBuffer;
 		VSConstantBufferUpdate vsCBufUpdate;
 		PSConstantBufferUpdate psCBufUpdate;
-		Mesh                   mesh;
-		RenderTarget           renderTarget;
-		DepthBuffer            depthBuffer;
 		VertexShader           vertexShader;
 		PixelShader            pixelShader;
-		PixelShaderResource    psResource;
-		v4                     clearColor;
+		PSResource             psResource;
 		b8                     blendModeAlpha;
+		Mesh                   mesh;
 		CopyResource           copy;
-		Bytes                  wideName;
 	};
 };
 
@@ -192,6 +192,7 @@ struct RendererState
 	b8                                isAlphaBlendEnabled;
 	b8                                resourceCreationFinalized;
 	b8                                graphicsDebuggerPresent;
+	b8                                immediateMode;
 
 	List<VertexShaderData>            vertexShaders;
 	List<PixelShaderData>             pixelShaders;
@@ -207,7 +208,7 @@ struct RendererState
 	List<DepthBufferData*>            depthBufferStack;
 	List<VertexShaderData*>           vertexShaderStack;
 	List<PixelShaderData*>            pixelShaderStack;
-	List<BoundResource>               pixelShaderResourceStacks[4];
+	List<BoundResource>               psResourceStacks[4];
 };
 
 // -------------------------------------------------------------------------------------------------
@@ -416,7 +417,10 @@ UpdateRasterizerState(RendererState& s)
 	}
 }
 
-static b8
+// -------------------------------------------------------------------------------------------------
+// Internal functions - Render loop operations
+
+static inline b8
 UpdateConstantBuffer(RendererState& s, ConstantBuffer& cBuf, void* data)
 {
 	D3D11_MAPPED_SUBRESOURCE map = {};
@@ -428,6 +432,307 @@ UpdateConstantBuffer(RendererState& s, ConstantBuffer& cBuf, void* data)
 	s.d3dContext->Unmap(cBuf.d3dConstantBuffer.Get(), 0);
 
 	return true;
+}
+
+static inline b8
+UpdateVSConstantBuffer(RendererState& s, VSConstantBufferUpdate& cbu)
+{
+	VertexShaderData& vs   = s.vertexShaders[cbu.vs];
+	ConstantBuffer&   cBuf = vs.constantBuffers[cbu.index];
+	return UpdateConstantBuffer(s, cBuf, cbu.data);
+}
+
+static inline b8
+UpdatePSConstantBuffer(RendererState& s, PSConstantBufferUpdate& cbu)
+{
+	PixelShaderData& ps   = s.pixelShaders[cbu.ps];
+	ConstantBuffer&  cBuf = ps.constantBuffers[cbu.index];
+	return UpdateConstantBuffer(s, cBuf, cbu.data);
+}
+
+static inline void
+DrawMesh(RendererState& s, Mesh mesh)
+{
+	MeshData& meshData = s.meshes[mesh];
+	Assert(meshData.vOffset < i32Max);
+	s.d3dContext->DrawIndexed(meshData.iCount, meshData.iOffset, (i32) meshData.vOffset);
+}
+
+static inline void
+SetMarker(RendererState& s, Bytes& wideName)
+{
+	s.d3dAnnotation->SetMarker((c16*) wideName.data);
+	List_Free(wideName);
+}
+
+static inline void
+PushEvent(RendererState& s, Bytes& wideName)
+{
+	s.d3dAnnotation->BeginEvent((c16*) wideName.data);
+	List_Free(wideName);
+}
+
+static inline void
+PopEvent(RendererState& s)
+{
+	s.d3dAnnotation->EndEvent();
+}
+
+static inline void
+PushRenderTarget(RendererState& s, RenderTarget renderTarget)
+{
+	Assert(s.renderTargetStack.length != 0);
+	RenderTargetData& boundRT = *List_GetLast(s.renderTargetStack);
+	RenderTargetData& rt      = *List_Push(s.renderTargetStack, &s.renderTargets[renderTarget]);
+	DepthBufferData&  db      = *List_GetLast(s.depthBufferStack);
+
+	if (&boundRT != &rt)
+		s.d3dContext->OMSetRenderTargets(1, rt.d3dRenderTargetView.GetAddressOf(), db.d3dDepthBufferView.Get());
+}
+
+static inline void
+PopRenderTarget(RendererState& s)
+{
+	// TODO: Change asserts for user mistakes to validation
+	Assert(s.renderTargetStack.length != 1);
+	RenderTargetData& boundRT = *List_Pop(s.renderTargetStack);
+	RenderTargetData& rt      = *List_GetLast(s.renderTargetStack);
+	DepthBufferData&  db      = *List_GetLast(s.depthBufferStack);
+
+	if (&boundRT != &rt)
+		s.d3dContext->OMSetRenderTargets(1, rt.d3dRenderTargetView.GetAddressOf(), db.d3dDepthBufferView.Get());
+}
+
+static inline void
+ClearRenderTarget(RendererState& s, v4 color)
+{
+	Assert(s.renderTargetStack.length != 1);
+	RenderTargetData& rt = *List_GetLast(s.renderTargetStack);
+	s.d3dContext->ClearRenderTargetView(rt.d3dRenderTargetView.Get(), color.arr);
+}
+
+static inline void
+PushDepthBuffer(RendererState& s, DepthBuffer depthBuffer)
+{
+	Assert(s.depthBufferStack.length != 0);
+	DepthBufferData&  boundDB = *List_GetLast(s.depthBufferStack);
+	DepthBufferData&  db      = *List_Push(s.depthBufferStack, &s.depthBuffers[depthBuffer]);
+	RenderTargetData& rt      = *List_GetLast(s.renderTargetStack);
+
+	if (&boundDB != &db)
+		s.d3dContext->OMSetRenderTargets(1, rt.d3dRenderTargetView.GetAddressOf(), db.d3dDepthBufferView.Get());
+}
+
+static inline void
+PopDepthBuffer(RendererState& s)
+{
+	Assert(s.depthBufferStack.length != 1);
+	DepthBufferData&  boundDB = *List_Pop(s.depthBufferStack);
+	DepthBufferData&  db      = *List_GetLast(s.depthBufferStack);
+	RenderTargetData& rt      = *List_GetLast(s.renderTargetStack);
+
+	if (&boundDB != &db)
+		s.d3dContext->OMSetRenderTargets(1, rt.d3dRenderTargetView.GetAddressOf(), db.d3dDepthBufferView.Get());
+}
+
+static inline void
+ClearDepthBuffer(RendererState& s)
+{
+	Assert(s.depthBufferStack.length != 1);
+	DepthBufferData& db = *List_GetLast(s.depthBufferStack);;
+	s.d3dContext->ClearDepthStencilView(db.d3dDepthBufferView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
+}
+
+static inline void
+PushVertexShader(RendererState& s, VertexShader vertexShader)
+{
+	Assert(s.vertexShaderStack.length != 0);
+	VertexShaderData& boundVS = *List_GetLast(s.vertexShaderStack);
+	VertexShaderData& vs      = *List_Push(s.vertexShaderStack, &s.vertexShaders[vertexShader]);
+
+	if (&boundVS != &vs)
+	{
+		u32 vStride = (u32) sizeof(Vertex);
+		u32 vOffset = 0;
+
+		s.d3dContext->VSSetShader(vs.d3dVertexShader.Get(), nullptr, 0);
+		s.d3dContext->IASetInputLayout(vs.d3dInputLayout.Get());
+		s.d3dContext->IASetVertexBuffers(0, 1, s.d3dVertexBuffer.GetAddressOf(), &vStride, &vOffset);
+		s.d3dContext->IASetIndexBuffer(s.d3dIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+		s.d3dContext->IASetPrimitiveTopology(vs.d3dPrimitveTopology);
+
+		for (u32 j = 0; j < vs.constantBuffers.length; j++)
+		{
+			ConstantBuffer& cBuf = vs.constantBuffers[j];
+			s.d3dContext->VSSetConstantBuffers(j, 1, cBuf.d3dConstantBuffer.GetAddressOf());
+		}
+	}
+}
+
+static inline void
+PopVertexShader(RendererState& s)
+{
+	Assert(s.vertexShaderStack.length != 1);
+	VertexShaderData& boundVS = *List_Pop(s.vertexShaderStack);
+	VertexShaderData& vs      = *List_GetLast(s.vertexShaderStack);
+
+	if (&boundVS != &vs)
+	{
+		u32 vStride = (u32) sizeof(Vertex);
+		u32 vOffset = 0;
+
+		s.d3dContext->VSSetShader(vs.d3dVertexShader.Get(), nullptr, 0);
+		s.d3dContext->IASetInputLayout(vs.d3dInputLayout.Get());
+		s.d3dContext->IASetVertexBuffers(0, 1, s.d3dVertexBuffer.GetAddressOf(), &vStride, &vOffset);
+		s.d3dContext->IASetIndexBuffer(s.d3dIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+		s.d3dContext->IASetPrimitiveTopology(vs.d3dPrimitveTopology);
+
+		for (u32 j = 0; j < vs.constantBuffers.length; j++)
+		{
+			ConstantBuffer& cBuf = vs.constantBuffers[j];
+			s.d3dContext->VSSetConstantBuffers(j, 1, cBuf.d3dConstantBuffer.GetAddressOf());
+		}
+	}
+}
+
+static inline void
+PushPixelShader(RendererState& s, PixelShader pixelShader)
+{
+	Assert(s.pixelShaderStack.length != 0);
+	PixelShaderData& boundPS = *List_GetLast(s.pixelShaderStack);
+	PixelShaderData& ps      = *List_Push(s.pixelShaderStack, &s.pixelShaders[pixelShader]);
+
+	if (&boundPS != &ps)
+	{
+		s.d3dContext->PSSetShader(ps.d3dPixelShader.Get(), nullptr, 0);
+
+		for (u32 j = 0; j < ps.constantBuffers.length; j++)
+		{
+			ConstantBuffer& cBuf = ps.constantBuffers[j];
+			s.d3dContext->PSSetConstantBuffers(j, 1, cBuf.d3dConstantBuffer.GetAddressOf());
+		}
+	}
+}
+
+static inline void
+PopPixelShader(RendererState& s)
+{
+	Assert(s.pixelShaderStack.length != 1);
+	PixelShaderData& boundPS = *List_Pop(s.pixelShaderStack);
+	PixelShaderData& ps      = *List_GetLast(s.pixelShaderStack);
+
+	if (&boundPS != &ps)
+	{
+		s.d3dContext->PSSetShader(ps.d3dPixelShader.Get(), nullptr, 0);
+
+		for (u32 j = 0; j < ps.constantBuffers.length; j++)
+		{
+			ConstantBuffer& cBuf = ps.constantBuffers[j];
+			s.d3dContext->PSSetConstantBuffers(j, 1, cBuf.d3dConstantBuffer.GetAddressOf());
+		}
+	}
+}
+
+static inline void
+PushPSResource(RendererState& s, RenderTarget renderTarget, u32 slot)
+{
+	Assert(s.psResourceStacks[slot].length != 0);
+	BoundResource& boundPSR = List_GetLast(s.psResourceStacks[slot]);
+	BoundResource& psr      = List_Push(s.psResourceStacks[slot]);
+
+	psr.type         = ResourceType::RenderTarget;
+	psr.slot         = slot;
+	psr.renderTarget = &s.renderTargets[renderTarget];
+
+	if (boundPSR.type != psr.type || boundPSR.renderTarget != psr.renderTarget)
+		s.d3dContext->PSSetShaderResources(psr.slot, 1, psr.renderTarget->d3dRenderTargetResourceView.GetAddressOf());
+}
+
+static inline void
+PushPSResource(RendererState& s, DepthBuffer depthBuffer, u32 slot)
+{
+	Assert(s.psResourceStacks[slot].length != 0);
+	BoundResource& boundPSR = List_GetLast(s.psResourceStacks[slot]);
+	BoundResource& psr      = List_Push(s.psResourceStacks[slot]);
+
+	psr.type        = ResourceType::DepthBuffer;
+	psr.slot        = slot;
+	psr.depthBuffer = &s.depthBuffers[depthBuffer];
+
+	if (boundPSR.type != psr.type || boundPSR.depthBuffer != psr.depthBuffer)
+		s.d3dContext->PSSetShaderResources(psr.slot, 1, psr.depthBuffer->d3dDepthBufferResourceView.GetAddressOf());
+}
+
+static inline void
+PushPSResource(RendererState& s, PSResource psr)
+{
+	switch (psr.type)
+	{
+		case ResourceType::Null: Assert(false); break;
+		case ResourceType::RenderTarget: PushPSResource(s, psr.renderTarget, psr.slot); break;
+		case ResourceType::DepthBuffer:  PushPSResource(s, psr.depthBuffer, psr.slot); break;
+	}
+}
+
+static inline void
+PopPSResource(RendererState& s, u32 slot)
+{
+	Assert(s.psResourceStacks[slot].length != 1);
+	BoundResource  boundPSR = List_Pop(s.psResourceStacks[slot]);
+	BoundResource& psr      = List_GetLast(s.psResourceStacks[slot]);
+
+	b8 sameType = boundPSR.type == psr.type;
+	switch (psr.type)
+	{
+		case ResourceType::Null: Assert(false); break;
+
+		case ResourceType::RenderTarget:
+		{
+			RenderTargetData& rt = *psr.renderTarget;
+
+			if (!sameType || boundPSR.renderTarget != &rt)
+				s.d3dContext->PSSetShaderResources(psr.slot, 1, rt.d3dRenderTargetResourceView.GetAddressOf());
+			break;
+		}
+
+		case ResourceType::DepthBuffer:
+		{
+			DepthBufferData& db = *psr.depthBuffer;
+
+			if (!sameType || boundPSR.depthBuffer != &db)
+				s.d3dContext->PSSetShaderResources(psr.slot, 1, db.d3dDepthBufferResourceView.GetAddressOf());
+			break;
+		}
+	}
+}
+
+static inline void
+SetBlendMode(RendererState& s, b8 alpha)
+{
+	if (s.isAlphaBlendEnabled != alpha)
+	{
+		s.isAlphaBlendEnabled = alpha;
+		ID3D11BlendState* blendState = s.isAlphaBlendEnabled
+			? s.d3dBlendStateAlpha.Get()
+			: s.d3dBlendStateSolid.Get();
+		s.d3dContext->OMSetBlendState(blendState, nullptr, 0xFFFFFFFF);
+	}
+}
+
+// TODO: Is there a cost to immediately remapping? It would be simpler
+static inline void
+Copy(RendererState& s, RenderTarget rtSource, CPUTexture ctDest)
+{
+	RenderTargetData& source = s.renderTargets[rtSource];
+	CPUTextureData&   dest   = s.cpuTextures[ctDest];
+
+	if (dest.mappedResource.pData)
+	{
+		s.d3dContext->Unmap(dest.d3dCPUTexture.Get(), 0);
+		dest.mappedResource = {};
+	}
+
+	s.d3dContext->CopyResource(dest.d3dCPUTexture.Get(), source.d3dRenderTarget.Get());
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -891,13 +1196,13 @@ Renderer_FinalizeResourceCreation(RendererState& s)
 		List_Push(s.depthBufferStack,  &s.depthBuffers[0]);
 		List_Push(s.vertexShaderStack, &s.vertexShaders[0]);
 		List_Push(s.pixelShaderStack,  &s.pixelShaders[0]);
-		for (u32 i = 0; i < ArrayLength(s.pixelShaderResourceStacks); i++)
+		for (u32 i = 0; i < ArrayLength(s.psResourceStacks); i++)
 		{
 			BoundResource psr = {};
 			psr.slot         = i;
 			psr.type         = ResourceType::RenderTarget;
 			psr.renderTarget = &s.renderTargets[0];
-			List_Push(s.pixelShaderResourceStacks[i], psr);
+			List_Push(s.psResourceStacks[i], psr);
 		}
 	}
 
@@ -917,9 +1222,16 @@ Renderer_SetMarker(RendererState& s, StringView name)
 	Bytes wideName = ConvertStringToWide(name);
 	Assert(wideName.data);
 
-	RenderCommand& renderCommand = List_Append(s.commandList);
-	renderCommand.type = RenderCommandType::SetMarker;
-	renderCommand.wideName = wideName;
+	if (!s.immediateMode)
+	{
+		RenderCommand& renderCommand = List_Append(s.commandList);
+		renderCommand.type = RenderCommandType::SetMarker;
+		renderCommand.wideName = wideName;
+	}
+	else
+	{
+		SetMarker(s, wideName);
+	}
 }
 
 void
@@ -931,9 +1243,16 @@ Renderer_PushEvent(RendererState& s, StringView name)
 	Bytes wideName = ConvertStringToWide(name);
 	Assert(wideName.data);
 
-	RenderCommand& renderCommand = List_Append(s.commandList);
-	renderCommand.type = RenderCommandType::PushEvent;
-	renderCommand.wideName = wideName;
+	if (!s.immediateMode)
+	{
+		RenderCommand& renderCommand = List_Append(s.commandList);
+		renderCommand.type = RenderCommandType::PushEvent;
+		renderCommand.wideName = wideName;
+	}
+	else
+	{
+		PushEvent(s, wideName);
+	}
 }
 
 void
@@ -941,8 +1260,114 @@ Renderer_PopEvent(RendererState& s)
 {
 	if (!s.graphicsDebuggerPresent) return;
 
-	RenderCommand& renderCommand = List_Append(s.commandList);
-	renderCommand.type = RenderCommandType::PopEvent;
+	if (!s.immediateMode)
+	{
+		RenderCommand& renderCommand = List_Append(s.commandList);
+		renderCommand.type = RenderCommandType::PopEvent;
+	}
+	else
+	{
+		PopEvent(s);
+	}
+}
+
+b8
+Renderer_ValidateRenderTarget(RendererState& s, RenderTarget rt)
+{
+	return List_IsRefValid(s.renderTargets, rt);
+}
+
+void
+Renderer_PushRenderTarget(RendererState& s, RenderTarget rt)
+{
+	if (!s.immediateMode)
+	{
+		RenderCommand& renderCommand = List_Append(s.commandList);
+		renderCommand.type = RenderCommandType::PushRenderTarget;
+		renderCommand.renderTarget = rt;
+	}
+	else
+	{
+		PushRenderTarget(s, rt);
+	}
+}
+
+void
+Renderer_PopRenderTarget(RendererState& s)
+{
+	if (!s.immediateMode)
+	{
+		RenderCommand& renderCommand = List_Append(s.commandList);
+		renderCommand.type = RenderCommandType::PopRenderTarget;
+	}
+	else
+	{
+		PopRenderTarget(s);
+	}
+}
+
+void
+Renderer_ClearRenderTarget(RendererState& s, v4 color)
+{
+	if (!s.immediateMode)
+	{
+		RenderCommand& renderCommand = List_Append(s.commandList);
+		renderCommand.type = RenderCommandType::ClearRenderTarget;
+		renderCommand.clearColor = color;
+	}
+	else
+	{
+		ClearRenderTarget(s, color);
+	}
+}
+
+b8
+Renderer_ValidateDepthBuffer(RendererState& s, DepthBuffer db)
+{
+	return List_IsRefValid(s.depthBuffers, db);
+}
+
+void
+Renderer_PushDepthBuffer(RendererState& s, DepthBuffer db)
+{
+	if (!s.immediateMode)
+	{
+		RenderCommand& renderCommand = List_Append(s.commandList);
+		renderCommand.type = RenderCommandType::PushDepthBuffer;
+		renderCommand.depthBuffer = db;
+	}
+	else
+	{
+		PushDepthBuffer(s, db);
+	}
+}
+
+void
+Renderer_PopDepthBuffer(RendererState& s)
+{
+	if (!s.immediateMode)
+	{
+		RenderCommand& renderCommand = List_Append(s.commandList);
+		renderCommand.type = RenderCommandType::PopDepthBuffer;
+	}
+	else
+	{
+		PopDepthBuffer(s);
+	}
+}
+
+void
+Renderer_ClearDepthBuffer(RendererState& s)
+{
+	if (!s.immediateMode)
+	{
+		RenderCommand& renderCommand = List_Append(s.commandList);
+		renderCommand.type = RenderCommandType::ClearDepthBuffer;
+	}
+	else
+	{
+		ClearDepthBuffer(s);
+	}
 }
 
 b8
@@ -956,9 +1381,16 @@ Renderer_ValidateVSConstantBufferUpdate(RendererState& s, VSConstantBufferUpdate
 void
 Renderer_UpdateVSConstantBuffer(RendererState& s, VSConstantBufferUpdate& cbu)
 {
-	RenderCommand& renderCommand = List_Append(s.commandList);
-	renderCommand.type = RenderCommandType::VSConstantBufferUpdate;
-	renderCommand.vsCBufUpdate = cbu;
+	if (!s.immediateMode)
+	{
+		RenderCommand& renderCommand = List_Append(s.commandList);
+		renderCommand.type = RenderCommandType::VSConstantBufferUpdate;
+		renderCommand.vsCBufUpdate = cbu;
+	}
+	else
+	{
+		UpdateVSConstantBuffer(s, cbu);
+	}
 }
 
 b8
@@ -972,80 +1404,16 @@ Renderer_ValidatePSConstantBufferUpdate(RendererState& s, PSConstantBufferUpdate
 void
 Renderer_UpdatePSConstantBuffer(RendererState& s, PSConstantBufferUpdate& cbu)
 {
-	RenderCommand& renderCommand = List_Append(s.commandList);
-	renderCommand.type = RenderCommandType::PSConstantBufferUpdate;
-	renderCommand.psCBufUpdate = cbu;
-}
-
-b8
-Renderer_ValidateMesh(RendererState& s, Mesh mesh)
-{
-	return List_IsRefValid(s.meshes, mesh);
-}
-
-void
-Renderer_DrawMesh(RendererState& s, Mesh mesh)
-{
-	RenderCommand& renderCommand = List_Append(s.commandList);
-	renderCommand.type = RenderCommandType::DrawMesh;
-	renderCommand.mesh = mesh;
-}
-
-b8
-Renderer_ValidateRenderTarget(RendererState& s, RenderTarget rt)
-{
-	return List_IsRefValid(s.renderTargets, rt);
-}
-
-void
-Renderer_PushRenderTarget(RendererState& s, RenderTarget rt)
-{
-	RenderCommand& renderCommand = List_Append(s.commandList);
-	renderCommand.type = RenderCommandType::PushRenderTarget;
-	renderCommand.renderTarget = rt;
-}
-
-void
-Renderer_PopRenderTarget(RendererState& s)
-{
-	RenderCommand& renderCommand = List_Append(s.commandList);
-	renderCommand.type = RenderCommandType::PopRenderTarget;
-}
-
-void
-Renderer_ClearRenderTarget(RendererState& s, v4 color)
-{
-	RenderCommand& renderCommand = List_Append(s.commandList);
-	renderCommand.type = RenderCommandType::ClearRenderTarget;
-	renderCommand.clearColor = color;
-}
-
-b8
-Renderer_ValidateDepthBuffer(RendererState& s, DepthBuffer db)
-{
-	return List_IsRefValid(s.depthBuffers, db);
-}
-
-void
-Renderer_PushDepthBuffer(RendererState& s, DepthBuffer db)
-{
-	RenderCommand& renderCommand = List_Append(s.commandList);
-	renderCommand.type = RenderCommandType::PushDepthBuffer;
-	renderCommand.depthBuffer = db;
-}
-
-void
-Renderer_PopDepthBuffer(RendererState& s)
-{
-	RenderCommand& renderCommand = List_Append(s.commandList);
-	renderCommand.type = RenderCommandType::PopDepthBuffer;
-}
-
-void
-Renderer_ClearDepthBuffer(RendererState& s)
-{
-	RenderCommand& renderCommand = List_Append(s.commandList);
-	renderCommand.type = RenderCommandType::ClearDepthBuffer;
+	if (!s.immediateMode)
+	{
+		RenderCommand& renderCommand = List_Append(s.commandList);
+		renderCommand.type = RenderCommandType::PSConstantBufferUpdate;
+		renderCommand.psCBufUpdate = cbu;
+	}
+	else
+	{
+		UpdatePSConstantBuffer(s, cbu);
+	}
 }
 
 b8
@@ -1057,16 +1425,30 @@ Renderer_ValidateVertexShader(RendererState& s, VertexShader vs)
 void
 Renderer_PushVertexShader(RendererState& s, VertexShader vs)
 {
-	RenderCommand& renderCommand = List_Append(s.commandList);
-	renderCommand.type = RenderCommandType::PushVertexShader;
-	renderCommand.vertexShader = vs;
+	if (!s.immediateMode)
+	{
+		RenderCommand& renderCommand = List_Append(s.commandList);
+		renderCommand.type = RenderCommandType::PushVertexShader;
+		renderCommand.vertexShader = vs;
+	}
+	else
+	{
+		PushVertexShader(s, vs);
+	}
 }
 
 void
 Renderer_PopVertexShader(RendererState& s)
 {
-	RenderCommand& renderCommand = List_Append(s.commandList);
-	renderCommand.type = RenderCommandType::PopVertexShader;
+	if (!s.immediateMode)
+	{
+		RenderCommand& renderCommand = List_Append(s.commandList);
+		renderCommand.type = RenderCommandType::PopVertexShader;
+	}
+	else
+	{
+		PopVertexShader(s);
+	}
 }
 
 b8
@@ -1078,59 +1460,130 @@ Renderer_ValidatePixelShader(RendererState& s, PixelShader ps)
 void
 Renderer_PushPixelShader(RendererState& s, PixelShader ps)
 {
-	RenderCommand& renderCommand = List_Append(s.commandList);
-	renderCommand.type = RenderCommandType::PushPixelShader;
-	renderCommand.pixelShader = ps;
+	if (!s.immediateMode)
+	{
+		RenderCommand& renderCommand = List_Append(s.commandList);
+		renderCommand.type = RenderCommandType::PushPixelShader;
+		renderCommand.pixelShader = ps;
+	}
+	else
+	{
+		PushPixelShader(s, ps);
+	}
 }
 
 void
 Renderer_PopPixelShader(RendererState& s)
 {
-	RenderCommand& renderCommand = List_Append(s.commandList);
-	renderCommand.type = RenderCommandType::PopPixelShader;
+	if (!s.immediateMode)
+	{
+		RenderCommand& renderCommand = List_Append(s.commandList);
+		renderCommand.type = RenderCommandType::PopPixelShader;
+	}
+	else
+	{
+		PopPixelShader(s);
+	}
 }
 
 b8
-Renderer_ValidatePixelShaderResource(RendererState& s, RenderTarget rt, u32 slot)
+Renderer_ValidatePSResource(RendererState& s, RenderTarget rt, u32 slot)
 {
 	if (!Renderer_ValidateRenderTarget(s, rt)) return false;
-	return slot < ArrayLength(s.pixelShaderResourceStacks);
+	return slot < ArrayLength(s.psResourceStacks);
 }
 
 void
-Renderer_PushPixelShaderResource(RendererState& s, RenderTarget rt, u32 slot)
+Renderer_PushPSResource(RendererState& s, RenderTarget rt, u32 slot)
 {
-	RenderCommand& renderCommand = List_Append(s.commandList);
-	renderCommand.type = RenderCommandType::PushPixelShaderResource;
-	renderCommand.psResource.type = ResourceType::RenderTarget;
-	renderCommand.psResource.slot = slot;
-	renderCommand.psResource.renderTarget = rt;
+	if (!s.immediateMode)
+	{
+		RenderCommand& renderCommand = List_Append(s.commandList);
+		renderCommand.type = RenderCommandType::PushPSResource;
+		renderCommand.psResource.type = ResourceType::RenderTarget;
+		renderCommand.psResource.slot = slot;
+		renderCommand.psResource.renderTarget = rt;
+	}
+	else
+	{
+		PushPSResource(s, rt, slot);
+	}
 }
 
 b8
-Renderer_ValidatePixelShaderResource(RendererState& s, DepthBuffer db, u32 slot)
+Renderer_ValidatePSResource(RendererState& s, DepthBuffer db, u32 slot)
 {
 	if (!Renderer_ValidateDepthBuffer(s, db)) return false;
-	return slot < ArrayLength(s.pixelShaderResourceStacks);
+	return slot < ArrayLength(s.psResourceStacks);
 }
 
 void
-Renderer_PushPixelShaderResource(RendererState& s, DepthBuffer db, u32 slot)
+Renderer_PushPSResource(RendererState& s, DepthBuffer db, u32 slot)
 {
-	Assert(slot < ArrayLength(s.pixelShaderResourceStacks));
-	RenderCommand& renderCommand = List_Append(s.commandList);
-	renderCommand.type = RenderCommandType::PushPixelShaderResource;
-	renderCommand.psResource.type = ResourceType::DepthBuffer;
-	renderCommand.psResource.slot = slot;
-	renderCommand.psResource.depthBuffer = db;
+	if (!s.immediateMode)
+	{
+		Assert(slot < ArrayLength(s.psResourceStacks));
+		RenderCommand& renderCommand = List_Append(s.commandList);
+		renderCommand.type = RenderCommandType::PushPSResource;
+		renderCommand.psResource.type = ResourceType::DepthBuffer;
+		renderCommand.psResource.slot = slot;
+		renderCommand.psResource.depthBuffer = db;
+	}
+	else
+	{
+		PushPSResource(s, db, slot);
+	}
 }
 
 void
-Renderer_PopPixelShaderResource(RendererState& s, u32 slot)
+Renderer_PopPSResource(RendererState& s, u32 slot)
 {
-	RenderCommand& renderCommand = List_Append(s.commandList);
-	renderCommand.type = RenderCommandType::PopPixelShaderResource;
-	renderCommand.psResource.slot = slot;
+	if (!s.immediateMode)
+	{
+		RenderCommand& renderCommand = List_Append(s.commandList);
+		renderCommand.type = RenderCommandType::PopPSResource;
+		renderCommand.psResource.slot = slot;
+	}
+	else
+	{
+		PopPSResource(s, slot);
+	}
+}
+
+void
+Renderer_SetBlendMode(RendererState& s, b8 alpha)
+{
+	if (!s.immediateMode)
+	{
+		RenderCommand& renderCommand = List_Append(s.commandList);
+		renderCommand.type = RenderCommandType::SetBlendMode;
+		renderCommand.blendModeAlpha = alpha;
+	}
+	else
+	{
+		SetBlendMode(s, alpha);
+	}
+}
+
+b8
+Renderer_ValidateMesh(RendererState& s, Mesh mesh)
+{
+	return List_IsRefValid(s.meshes, mesh);
+}
+
+void
+Renderer_DrawMesh(RendererState& s, Mesh mesh)
+{
+	if (!s.immediateMode)
+	{
+		RenderCommand& renderCommand = List_Append(s.commandList);
+		renderCommand.type = RenderCommandType::DrawMesh;
+		renderCommand.mesh = mesh;
+	}
+	else
+	{
+		DrawMesh(s, mesh);
+	}
 }
 
 b8
@@ -1141,20 +1594,19 @@ Renderer_ValidateCopy(RendererState& s, RenderTarget rt, CPUTexture ct)
 }
 
 void
-Renderer_SetBlendMode(RendererState& s, b8 alpha)
-{
-	RenderCommand& renderCommand = List_Append(s.commandList);
-	renderCommand.type = RenderCommandType::SetBlendMode;
-	renderCommand.blendModeAlpha = alpha;
-}
-
-void
 Renderer_Copy(RendererState& s, RenderTarget rt, CPUTexture ct)
 {
-	RenderCommand& renderCommand = List_Append(s.commandList);
-	renderCommand.type = RenderCommandType::Copy;
-	renderCommand.copy.source = rt;
-	renderCommand.copy.dest = ct;
+	if (!s.immediateMode)
+	{
+		RenderCommand& renderCommand = List_Append(s.commandList);
+		renderCommand.type = RenderCommandType::Copy;
+		renderCommand.copy.source = rt;
+		renderCommand.copy.dest = ct;
+	}
+	else
+	{
+		Copy(s, rt, ct);
+	}
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -1471,8 +1923,8 @@ Renderer_Initialize(RendererState& s)
 void
 Renderer_Teardown(RendererState& s)
 {
-	for (u32 i = 0; i < ArrayLength(s.pixelShaderResourceStacks); i++)
-		List_Free(s.pixelShaderResourceStacks[i]);
+	for (u32 i = 0; i < ArrayLength(s.psResourceStacks); i++)
+		List_Free(s.psResourceStacks[i]);
 
 	List_Free(s.pixelShaderStack);
 	List_Free(s.vertexShaderStack);
@@ -1563,16 +2015,6 @@ Renderer_Render(RendererState& s)
 {
 	Assert(s.resourceCreationFinalized);
 
-	for (u32 i = 0; i < s.cpuTextures.length; i++)
-	{
-		CPUTextureData& ct = s.cpuTextures[i];
-		if (ct.mappedResource.pData)
-		{
-			s.d3dContext->Unmap(ct.d3dCPUTexture.Get(), 0);
-			ct.mappedResource = {};
-		}
-	}
-
 	for (u32 i = 0; i < s.commandList.length; i++)
 	{
 		RenderCommand& renderCommand = s.commandList[i];
@@ -1580,311 +2022,40 @@ Renderer_Render(RendererState& s)
 		{
 			case RenderCommandType::Null: Assert(false); break;
 
+			// TODO: If we fail to update a constant buffer do we skip drawing?
 			case RenderCommandType::VSConstantBufferUpdate:
 			{
-				VSConstantBufferUpdate& cbu  = renderCommand.vsCBufUpdate;
-				VertexShaderData&       vs   = s.vertexShaders[cbu.vs];
-				ConstantBuffer&         cBuf = vs.constantBuffers[cbu.index];
-
-				// TODO: If we fail to update a constant buffer do we skip drawing?
-				b8 success = UpdateConstantBuffer(s, cBuf, cbu.data);
+				b8 success = UpdateVSConstantBuffer(s, renderCommand.vsCBufUpdate);
 				if (!success) break;
 				break;
 			}
 
+			// TODO: If we fail to update a constant buffer do we skip drawing?
 			case RenderCommandType::PSConstantBufferUpdate:
 			{
-				PSConstantBufferUpdate& cbu  = renderCommand.psCBufUpdate;
-				PixelShaderData&        ps   = s.pixelShaders[cbu.ps];
-				ConstantBuffer&         cBuf = ps.constantBuffers[cbu.index];
-
-				// TODO: If we fail to update a constant buffer do we skip drawing?
-				b8 success = UpdateConstantBuffer(s, cBuf, cbu.data);
+				b8 success = UpdatePSConstantBuffer(s, renderCommand.psCBufUpdate);
 				if (!success) break;
 				break;
 			}
 
-			case RenderCommandType::DrawMesh:
-			{
-				MeshData& mesh = s.meshes[renderCommand.mesh];
-
-				Assert(mesh.vOffset < i32Max);
-				s.d3dContext->DrawIndexed(mesh.iCount, mesh.iOffset, (i32) mesh.vOffset);
-				break;
-			}
-
-			case RenderCommandType::SetMarker:
-			{
-				Bytes& wideName = renderCommand.wideName;
-				s.d3dAnnotation->SetMarker((c16*) wideName.data);
-				List_Free(wideName);
-				break;
-			}
-
-			case RenderCommandType::PushEvent:
-			{
-				Bytes& wideName = renderCommand.wideName;
-				s.d3dAnnotation->BeginEvent((c16*) wideName.data);
-				List_Free(wideName);
-				break;
-			}
-
-			case RenderCommandType::PopEvent:
-			{
-				s.d3dAnnotation->EndEvent();
-				break;
-			}
-
-			case RenderCommandType::PushRenderTarget:
-			{
-				Assert(s.renderTargetStack.length != 0);
-				RenderTargetData& boundRT = *List_GetLast(s.renderTargetStack);
-				RenderTargetData& rt      = *List_Push(s.renderTargetStack, &s.renderTargets[renderCommand.renderTarget]);
-				DepthBufferData&  db      = *List_GetLast(s.depthBufferStack);
-
-				if (&boundRT != &rt)
-					s.d3dContext->OMSetRenderTargets(1, rt.d3dRenderTargetView.GetAddressOf(), db.d3dDepthBufferView.Get());
-				break;
-			}
-
-			case RenderCommandType::PopRenderTarget:
-			{
-				// TODO: Change asserts for user mistakes to validation
-				Assert(s.renderTargetStack.length != 1);
-				RenderTargetData& boundRT = *List_Pop(s.renderTargetStack);
-				RenderTargetData& rt      = *List_GetLast(s.renderTargetStack);
-				DepthBufferData&  db      = *List_GetLast(s.depthBufferStack);
-
-				if (&boundRT != &rt)
-					s.d3dContext->OMSetRenderTargets(1, rt.d3dRenderTargetView.GetAddressOf(), db.d3dDepthBufferView.Get());
-				break;
-			}
-
-			case RenderCommandType::ClearRenderTarget:
-			{
-				Assert(s.renderTargetStack.length != 1);
-				RenderTargetData& rt = *List_GetLast(s.renderTargetStack);
-				s.d3dContext->ClearRenderTargetView(rt.d3dRenderTargetView.Get(), renderCommand.clearColor.arr);
-				break;
-			}
-
-			case RenderCommandType::PushDepthBuffer:
-			{
-				Assert(s.depthBufferStack.length != 0);
-				DepthBufferData&  boundDB = *List_GetLast(s.depthBufferStack);
-				DepthBufferData&  db      = *List_Push(s.depthBufferStack, &s.depthBuffers[renderCommand.depthBuffer]);
-				RenderTargetData& rt      = *List_GetLast(s.renderTargetStack);
-
-				if (&boundDB != &db)
-					s.d3dContext->OMSetRenderTargets(1, rt.d3dRenderTargetView.GetAddressOf(), db.d3dDepthBufferView.Get());
-				break;
-			}
-
-			case RenderCommandType::PopDepthBuffer:
-			{
-				Assert(s.depthBufferStack.length != 1);
-				DepthBufferData&  boundDB = *List_Pop(s.depthBufferStack);
-				DepthBufferData&  db      = *List_GetLast(s.depthBufferStack);
-				RenderTargetData& rt      = *List_GetLast(s.renderTargetStack);
-
-				if (&boundDB != &db)
-					s.d3dContext->OMSetRenderTargets(1, rt.d3dRenderTargetView.GetAddressOf(), db.d3dDepthBufferView.Get());
-				break;
-			}
-
-			case RenderCommandType::ClearDepthBuffer:
-			{
-				Assert(s.depthBufferStack.length != 1);
-				DepthBufferData& db = *List_GetLast(s.depthBufferStack);;
-				s.d3dContext->ClearDepthStencilView(db.d3dDepthBufferView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
-				break;
-			}
-
-			case RenderCommandType::PushVertexShader:
-			{
-				Assert(s.vertexShaderStack.length != 0);
-				VertexShaderData& boundVS = *List_GetLast(s.vertexShaderStack);
-				VertexShaderData& vs      = *List_Push(s.vertexShaderStack, &s.vertexShaders[renderCommand.vertexShader]);
-
-				if (&boundVS != &vs)
-				{
-					u32 vStride = (u32) sizeof(Vertex);
-					u32 vOffset = 0;
-
-					s.d3dContext->VSSetShader(vs.d3dVertexShader.Get(), nullptr, 0);
-					s.d3dContext->IASetInputLayout(vs.d3dInputLayout.Get());
-					s.d3dContext->IASetVertexBuffers(0, 1, s.d3dVertexBuffer.GetAddressOf(), &vStride, &vOffset);
-					s.d3dContext->IASetIndexBuffer(s.d3dIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
-					s.d3dContext->IASetPrimitiveTopology(vs.d3dPrimitveTopology);
-
-					for (u32 j = 0; j < vs.constantBuffers.length; j++)
-					{
-						ConstantBuffer& cBuf = vs.constantBuffers[j];
-						s.d3dContext->VSSetConstantBuffers(j, 1, cBuf.d3dConstantBuffer.GetAddressOf());
-					}
-				}
-				break;
-			}
-
-			case RenderCommandType::PopVertexShader:
-			{
-				Assert(s.vertexShaderStack.length != 1);
-				VertexShaderData& boundVS = *List_Pop(s.vertexShaderStack);
-				VertexShaderData& vs      = *List_GetLast(s.vertexShaderStack);
-
-				if (&boundVS != &vs)
-				{
-					u32 vStride = (u32) sizeof(Vertex);
-					u32 vOffset = 0;
-
-					s.d3dContext->VSSetShader(vs.d3dVertexShader.Get(), nullptr, 0);
-					s.d3dContext->IASetInputLayout(vs.d3dInputLayout.Get());
-					s.d3dContext->IASetVertexBuffers(0, 1, s.d3dVertexBuffer.GetAddressOf(), &vStride, &vOffset);
-					s.d3dContext->IASetIndexBuffer(s.d3dIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
-					s.d3dContext->IASetPrimitiveTopology(vs.d3dPrimitveTopology);
-
-					for (u32 j = 0; j < vs.constantBuffers.length; j++)
-					{
-						ConstantBuffer& cBuf = vs.constantBuffers[j];
-						s.d3dContext->VSSetConstantBuffers(j, 1, cBuf.d3dConstantBuffer.GetAddressOf());
-					}
-				}
-				break;
-			}
-
-			case RenderCommandType::PushPixelShader:
-			{
-				Assert(s.pixelShaderStack.length != 0);
-				PixelShaderData& boundPS = *List_GetLast(s.pixelShaderStack);
-				PixelShaderData& ps      = *List_Push(s.pixelShaderStack, &s.pixelShaders[renderCommand.pixelShader]);
-
-				if (&boundPS != &ps)
-				{
-					s.d3dContext->PSSetShader(ps.d3dPixelShader.Get(), nullptr, 0);
-
-					for (u32 j = 0; j < ps.constantBuffers.length; j++)
-					{
-						ConstantBuffer& cBuf = ps.constantBuffers[j];
-						s.d3dContext->PSSetConstantBuffers(j, 1, cBuf.d3dConstantBuffer.GetAddressOf());
-					}
-				}
-				break;
-			}
-
-			case RenderCommandType::PopPixelShader:
-			{
-				Assert(s.pixelShaderStack.length != 1);
-				PixelShaderData& boundPS = *List_Pop(s.pixelShaderStack);
-				PixelShaderData& ps      = *List_GetLast(s.pixelShaderStack);
-
-				if (&boundPS != &ps)
-				{
-					s.d3dContext->PSSetShader(ps.d3dPixelShader.Get(), nullptr, 0);
-
-					for (u32 j = 0; j < ps.constantBuffers.length; j++)
-					{
-						ConstantBuffer& cBuf = ps.constantBuffers[j];
-						s.d3dContext->PSSetConstantBuffers(j, 1, cBuf.d3dConstantBuffer.GetAddressOf());
-					}
-				}
-				break;
-			}
-
-			case RenderCommandType::PushPixelShaderResource:
-			{
-				u32 slot = renderCommand.psResource.slot;
-
-				Assert(s.pixelShaderResourceStacks[slot].length != 0);
-				BoundResource& boundPSR = List_GetLast(s.pixelShaderResourceStacks[slot]);
-				BoundResource& psr      = List_Push(s.pixelShaderResourceStacks[slot]);
-
-				psr.slot = slot;
-				psr.type = renderCommand.psResource.type;
-
-				b8 sameType = boundPSR.type == psr.type;
-				switch (psr.type)
-				{
-					case ResourceType::Null: Assert(false); break;
-
-					case ResourceType::RenderTarget:
-					{
-						RenderTargetData& rt = s.renderTargets[renderCommand.psResource.renderTarget];
-
-						psr.renderTarget = &rt;
-						if (!sameType || boundPSR.renderTarget != &rt)
-							s.d3dContext->PSSetShaderResources(psr.slot, 1, rt.d3dRenderTargetResourceView.GetAddressOf());
-						break;
-					}
-
-					case ResourceType::DepthBuffer:
-					{
-						DepthBufferData& db = s.depthBuffers[renderCommand.psResource.depthBuffer];
-
-						psr.depthBuffer = &db;
-						if (!sameType || boundPSR.depthBuffer != &db)
-							s.d3dContext->PSSetShaderResources(psr.slot, 1, db.d3dDepthBufferResourceView.GetAddressOf());
-						break;
-					}
-				}
-				break;
-			}
-
-			case RenderCommandType::PopPixelShaderResource:
-			{
-				u32 slot = renderCommand.psResource.slot;
-				Assert(s.pixelShaderResourceStacks[slot].length != 1);
-
-				BoundResource  boundPSR = List_Pop(s.pixelShaderResourceStacks[slot]);
-				BoundResource& psr      = List_GetLast(s.pixelShaderResourceStacks[slot]);
-
-				b8 sameType = boundPSR.type == psr.type;
-				switch (psr.type)
-				{
-					case ResourceType::Null: Assert(false); break;
-
-					case ResourceType::RenderTarget:
-					{
-						RenderTargetData& rt = *psr.renderTarget;
-
-						if (!sameType || boundPSR.renderTarget != &rt)
-							s.d3dContext->PSSetShaderResources(psr.slot, 1, rt.d3dRenderTargetResourceView.GetAddressOf());
-						break;
-					}
-
-					case ResourceType::DepthBuffer:
-					{
-						DepthBufferData& db = *psr.depthBuffer;
-
-						if (!sameType || boundPSR.depthBuffer != &db)
-							s.d3dContext->PSSetShaderResources(psr.slot, 1, db.d3dDepthBufferResourceView.GetAddressOf());
-						break;
-					}
-				}
-				break;
-			}
-
-			case RenderCommandType::SetBlendMode:
-			{
-				b8 useAlphaBlend = renderCommand.blendModeAlpha;
-				if (s.isAlphaBlendEnabled != useAlphaBlend)
-				{
-					s.isAlphaBlendEnabled = useAlphaBlend;
-					ID3D11BlendState* blendState = s.isAlphaBlendEnabled
-						? s.d3dBlendStateAlpha.Get()
-						: s.d3dBlendStateSolid.Get();
-					s.d3dContext->OMSetBlendState(blendState, nullptr, 0xFFFFFFFF);
-				}
-				break;
-			}
-
-			case RenderCommandType::Copy:
-			{
-				CopyResource&     copy   = renderCommand.copy;
-				RenderTargetData& source = s.renderTargets[copy.source];
-				CPUTextureData&   dest   = s.cpuTextures[copy.dest];
-				s.d3dContext->CopyResource(dest.d3dCPUTexture.Get(), source.d3dRenderTarget.Get());
-				break;
-			}
+			case RenderCommandType::SetMarker:         SetMarker(s, renderCommand.wideName); break;
+			case RenderCommandType::PushEvent:         PushEvent(s, renderCommand.wideName); break;
+			case RenderCommandType::PopEvent:          PopEvent(s); break;
+			case RenderCommandType::PushRenderTarget:  PushRenderTarget(s, renderCommand.renderTarget); break;
+			case RenderCommandType::PopRenderTarget:   PopRenderTarget(s); break;
+			case RenderCommandType::ClearRenderTarget: ClearRenderTarget(s, renderCommand.clearColor); break;
+			case RenderCommandType::PushDepthBuffer:   PushDepthBuffer(s, renderCommand.depthBuffer); break;
+			case RenderCommandType::PopDepthBuffer:    PopDepthBuffer(s); break;
+			case RenderCommandType::ClearDepthBuffer:  ClearDepthBuffer(s); break;
+			case RenderCommandType::PushVertexShader:  PushVertexShader(s, renderCommand.vertexShader); break;
+			case RenderCommandType::PopVertexShader:   PopVertexShader(s); break;
+			case RenderCommandType::PushPixelShader:   PushPixelShader(s, renderCommand.pixelShader); break;
+			case RenderCommandType::PopPixelShader:    PopPixelShader(s); break;
+			case RenderCommandType::PushPSResource:    PushPSResource(s, renderCommand.psResource); break;
+			case RenderCommandType::PopPSResource:     PopPSResource(s, renderCommand.psResource.slot); break;
+			case RenderCommandType::SetBlendMode:      SetBlendMode(s, renderCommand.blendModeAlpha); break;
+			case RenderCommandType::DrawMesh:          DrawMesh(s, renderCommand.mesh); break;
+			case RenderCommandType::Copy:              Copy(s, renderCommand.copy.source, renderCommand.copy.dest); break;
 		}
 	}
 	List_Clear(s.commandList);
@@ -1893,8 +2064,8 @@ Renderer_Render(RendererState& s)
 	Assert(s.depthBufferStack.length == 1);
 	Assert(s.vertexShaderStack.length == 1);
 	Assert(s.pixelShaderStack.length == 1);
-	for (u32 i = 0; i < ArrayLength(s.pixelShaderResourceStacks); i++)
-		Assert(s.pixelShaderResourceStacks[i].length == 1);
+	for (u32 i = 0; i < ArrayLength(s.psResourceStacks); i++)
+		Assert(s.psResourceStacks[i].length == 1);
 
 	// NOTE: Technically unnecessary, since the Map call will sync
 	// NOTE: This doesn't actually guarantee rendering has occurred
@@ -1905,9 +2076,12 @@ Renderer_Render(RendererState& s)
 	{
 		CPUTextureData& ct = s.cpuTextures[i];
 
-		HRESULT hr = s.d3dContext->Map(ct.d3dCPUTexture.Get(), 0, D3D11_MAP_READ, 0, &ct.mappedResource);
-		LOG_HRESULT_IF_FAILED(hr, return false,
-			Severity::Warning, "Failed to map CPU texture");
+		if (!ct.mappedResource.pData)
+		{
+			HRESULT hr = s.d3dContext->Map(ct.d3dCPUTexture.Get(), 0, D3D11_MAP_READ, 0, &ct.mappedResource);
+			LOG_HRESULT_IF_FAILED(hr, return false,
+				Severity::Warning, "Failed to map CPU texture");
+		}
 	}
 
 	return true;

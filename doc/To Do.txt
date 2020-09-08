@@ -1,5 +1,6 @@
 Current
 -------
+Implement layering for the renderer API to remove runtime branching
 Validate Push/PopEvent counts
 
 Outline
@@ -53,7 +54,6 @@ Double check anywhere we index bytes.data in case we're forgetting stride
 
 Refactoring
 -----------
-Add a mode where rendering is immediate mode to catch errors at their source
 Starting to feel like state checking should be in the sim
 Try removing WidgetData
 Shaders should go through deploy?

@@ -1099,11 +1099,11 @@ HighlightWidgets(SimulationState& s, Slice<FullWidgetRef> refs, Outline::PSPerPa
 		Renderer_ClearRenderTarget(*s.renderer, Colors128::Clear);
 		Renderer_PushDepthBuffer(*s.renderer, s.tempDepthBuffers[0]);
 		Renderer_ClearDepthBuffer(*s.renderer);
-		Renderer_PushPixelShaderResource(*s.renderer, s.tempDepthBuffers[2], 0);
+		Renderer_PushPSResource(*s.renderer, s.tempDepthBuffers[2], 0);
 		Renderer_PushPixelShader(*s.renderer, s.depthToAlphaShader);
 		Renderer_DrawMesh(*s.renderer, StandardMesh::Fullscreen);
 		Renderer_PopPixelShader(*s.renderer);
-		Renderer_PopPixelShaderResource(*s.renderer, 0);
+		Renderer_PopPSResource(*s.renderer, 0);
 		Renderer_PopDepthBuffer(*s.renderer);
 		Renderer_PopRenderTarget(*s.renderer);
 		Renderer_PopEvent(*s.renderer);
@@ -1126,12 +1126,12 @@ HighlightWidgets(SimulationState& s, Slice<FullWidgetRef> refs, Outline::PSPerPa
 		Renderer_ClearRenderTarget(*s.renderer, Colors128::Clear);
 		Renderer_PushDepthBuffer(*s.renderer, s.tempDepthBuffers[1]);
 		Renderer_ClearDepthBuffer(*s.renderer);
-		Renderer_PushPixelShaderResource(*s.renderer, s.tempRenderTargets[0], 0);
-		Renderer_PushPixelShaderResource(*s.renderer, s.tempDepthBuffers[0], 1);
+		Renderer_PushPSResource(*s.renderer, s.tempRenderTargets[0], 0);
+		Renderer_PushPSResource(*s.renderer, s.tempDepthBuffers[0], 1);
 		Renderer_UpdatePSConstantBuffer(*s.renderer, hCBufUpdate);
 		Renderer_DrawMesh(*s.renderer, StandardMesh::Fullscreen);
-		Renderer_PopPixelShaderResource(*s.renderer, 1);
-		Renderer_PopPixelShaderResource(*s.renderer, 0);
+		Renderer_PopPSResource(*s.renderer, 1);
+		Renderer_PopPSResource(*s.renderer, 0);
 		Renderer_PopDepthBuffer(*s.renderer);
 		Renderer_PopRenderTarget(*s.renderer);
 
@@ -1143,12 +1143,12 @@ HighlightWidgets(SimulationState& s, Slice<FullWidgetRef> refs, Outline::PSPerPa
 
 		Renderer_PushRenderTarget(*s.renderer, s.tempRenderTargets[0]);
 		Renderer_PushDepthBuffer(*s.renderer, s.tempDepthBuffers[0]);
-		Renderer_PushPixelShaderResource(*s.renderer, s.tempRenderTargets[1], 0);
-		Renderer_PushPixelShaderResource(*s.renderer, s.tempDepthBuffers[1], 1);
+		Renderer_PushPSResource(*s.renderer, s.tempRenderTargets[1], 0);
+		Renderer_PushPSResource(*s.renderer, s.tempDepthBuffers[1], 1);
 		Renderer_UpdatePSConstantBuffer(*s.renderer, vCBufUpdate);
 		Renderer_DrawMesh(*s.renderer, StandardMesh::Fullscreen);
-		Renderer_PopPixelShaderResource(*s.renderer, 1);
-		Renderer_PopPixelShaderResource(*s.renderer, 0);
+		Renderer_PopPSResource(*s.renderer, 1);
+		Renderer_PopPSResource(*s.renderer, 0);
 		Renderer_PopDepthBuffer(*s.renderer);
 		Renderer_PopRenderTarget(*s.renderer);
 
@@ -1167,18 +1167,18 @@ HighlightWidgets(SimulationState& s, Slice<FullWidgetRef> refs, Outline::PSPerPa
 		Renderer_PushEvent(*s.renderer, "Composite Outline");
 		Renderer_SetBlendMode(*s.renderer, true);
 		Renderer_PushRenderTarget(*s.renderer, StandardRenderTarget::Main);
-		Renderer_PushPixelShaderResource(*s.renderer, s.tempRenderTargets[0], 0);
-		Renderer_PushPixelShaderResource(*s.renderer, s.tempDepthBuffers[0], 1);
-		Renderer_PushPixelShaderResource(*s.renderer, s.tempDepthBuffers[2], 2);
-		Renderer_PushPixelShaderResource(*s.renderer, StandardDepthBuffer::Main, 3);
+		Renderer_PushPSResource(*s.renderer, s.tempRenderTargets[0], 0);
+		Renderer_PushPSResource(*s.renderer, s.tempDepthBuffers[0], 1);
+		Renderer_PushPSResource(*s.renderer, s.tempDepthBuffers[2], 2);
+		Renderer_PushPSResource(*s.renderer, StandardDepthBuffer::Main, 3);
 		Renderer_PushPixelShader(*s.renderer, s.outlineCompositeShader);
 		Renderer_UpdatePSConstantBuffer(*s.renderer, cBufUpdate);
 		Renderer_DrawMesh(*s.renderer, StandardMesh::Fullscreen);
 		Renderer_PopPixelShader(*s.renderer);
-		Renderer_PopPixelShaderResource(*s.renderer, 3);
-		Renderer_PopPixelShaderResource(*s.renderer, 2);
-		Renderer_PopPixelShaderResource(*s.renderer, 1);
-		Renderer_PopPixelShaderResource(*s.renderer, 0);
+		Renderer_PopPSResource(*s.renderer, 3);
+		Renderer_PopPSResource(*s.renderer, 2);
+		Renderer_PopPSResource(*s.renderer, 1);
+		Renderer_PopPSResource(*s.renderer, 0);
 		Renderer_PopRenderTarget(*s.renderer);
 		Renderer_PopEvent(*s.renderer);
 	}
@@ -2008,13 +2008,13 @@ Simulation_Update(SimulationState& s)
 		Renderer_PushEvent(*s.renderer, "Update GUI Preview");
 		Renderer_PushRenderTarget(*s.renderer, s.renderTargetGUICopy);
 		Renderer_PushDepthBuffer(*s.renderer, StandardDepthBuffer::Null);
-		Renderer_PushPixelShaderResource(*s.renderer, StandardRenderTarget::Main, 0);
+		Renderer_PushPSResource(*s.renderer, StandardRenderTarget::Main, 0);
 		Renderer_PushVertexShader(*s.renderer, StandardVertexShader::ClipSpace);
 		Renderer_PushPixelShader(*s.renderer, StandardPixelShader::Composite);
 		Renderer_DrawMesh(*s.renderer, StandardMesh::Fullscreen);
 		Renderer_PopVertexShader(*s.renderer);
 		Renderer_PopPixelShader(*s.renderer);
-		Renderer_PopPixelShaderResource(*s.renderer, 0);
+		Renderer_PopPSResource(*s.renderer, 0);
 		Renderer_PopDepthBuffer(*s.renderer);
 		Renderer_PopRenderTarget(*s.renderer);
 		Renderer_PopEvent(*s.renderer);

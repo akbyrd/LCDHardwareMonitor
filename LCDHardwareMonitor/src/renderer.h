@@ -77,10 +77,10 @@ void            Renderer_PushVertexShader               (RendererState&, VertexS
 void            Renderer_PopVertexShader                (RendererState&);
 void            Renderer_PushPixelShader                (RendererState&, PixelShader);
 void            Renderer_PopPixelShader                 (RendererState&);
-void            Renderer_PushPixelShaderResource        (RendererState&, RenderTarget, u32 slot);
-void            Renderer_PushPixelShaderResource        (RendererState&, DepthBuffer, u32 slot);
+void            Renderer_PushPSResource                 (RendererState&, RenderTarget, u32 slot);
+void            Renderer_PushPSResource                 (RendererState&, DepthBuffer, u32 slot);
 // TODO: I don't like having to specify the slot here...
-void            Renderer_PopPixelShaderResource         (RendererState&, u32 slot);
+void            Renderer_PopPSResource                  (RendererState&, u32 slot);
 void            Renderer_UpdateVSConstantBuffer         (RendererState&, VSConstantBufferUpdate&);
 void            Renderer_UpdatePSConstantBuffer         (RendererState&, PSConstantBufferUpdate&);
 void            Renderer_DrawMesh                       (RendererState&, Mesh);
