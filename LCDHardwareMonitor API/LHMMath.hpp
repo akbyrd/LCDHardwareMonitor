@@ -72,9 +72,22 @@ template<typename T>
 constexpr inline T
 Clamp(T value, T min, T max)
 {
-	T result = value < min ? min
-	         : value > max ? max
-	         : value;
+	T sMin = Min(min, max);
+	T sMax = Max(min, max);
+
+	T result = value;
+	result = Max(result, sMin);
+	result = Min(result, sMax);
+	return result;
+}
+
+template<typename T>
+constexpr inline T
+Clamp01(T value)
+{
+	T result = value;
+	result = Max(result, (T) 0);
+	result = Min(result, (T) 1);
 	return result;
 }
 
@@ -393,6 +406,14 @@ Clamp(v2t<T> v, v2t<T> min, v2t<T> max)
 
 template<typename T>
 constexpr inline v2t<T>
+Clamp01(v2t<T> v)
+{
+	v2t<T> result = { Clamp01(v.x), Clamp01(v.y) };
+	return result;
+}
+
+template<typename T>
+constexpr inline v2t<T>
 Lerp(v2t<T> lhs, v2t<T> rhs, r32 t)
 {
 	v2t<T> result = { Lerp(lhs.x, rhs.x, t), Lerp(lhs.y, rhs.y, t) };
@@ -680,6 +701,14 @@ constexpr inline v3t<T>
 Clamp(v3t<T> v, v3t<T> min, v3t<T> max)
 {
 	v3t<T> result = { Clamp(v.x, min.x, max.x), Clamp(v.y, min.y, max.y), Clamp(v.z, min.z, max.z) };
+	return result;
+}
+
+template<typename T>
+constexpr inline v3t<T>
+Clamp01(v3t<T> v)
+{
+	v3t<T> result = { Clamp01(v.x), Clamp01(v.y), Clamp01(v.z) };
 	return result;
 }
 
@@ -1024,6 +1053,19 @@ Clamp(v4t<T> v, v4t<T> min, v4t<T> max)
 		Clamp(v.y, min.y, max.y),
 		Clamp(v.z, min.z, max.z),
 		Clamp(v.w, min.w, max.w)
+	};
+	return result;
+}
+
+template<typename T>
+constexpr inline v4t<T>
+Clamp01(v4t<T> v)
+{
+	v4t<T> result = {
+		Clamp01(v.x),
+		Clamp01(v.y),
+		Clamp01(v.z),
+		Clamp01(v.w)
 	};
 	return result;
 }

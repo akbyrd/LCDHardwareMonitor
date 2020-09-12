@@ -7,7 +7,6 @@ Math
 	Add LerpClamped, InverseLerpClamped
 	Fix min/max/value parameter orders
 	Add a Lerped<T>
-	Add Clamp01
 
 Outline
 	Use stencil instead of an extra depth texture
