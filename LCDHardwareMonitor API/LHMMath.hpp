@@ -68,9 +68,9 @@ Cos(r64 theta)
 	return cos(theta);
 }
 
-template<typename T, typename U, typename V>
+template<typename T>
 constexpr inline T
-Clamp(T value, U min, V max)
+Clamp(T value, T min, T max)
 {
 	T result = value < min ? min
 	         : value > max ? max
@@ -78,42 +78,42 @@ Clamp(T value, U min, V max)
 	return result;
 }
 
-template<typename T, typename U>
+template<typename T>
 constexpr inline b8
-IsMultipleOf(T size, U multiple)
+IsMultipleOf(T size, T multiple)
 {
-	T mod = size % multiple;
+	T mod = (T) (size % multiple);
 	return mod == 0;
 }
 
-template<typename T, typename U>
+template<typename T>
 constexpr inline T
-Lerp(T lhs, U rhs, r32 t)
+Lerp(T lhs, T rhs, r32 t)
 {
 	T result = (T) ((1.0f - t)*(r32) lhs + t*(r32) rhs);
 	return result;
 }
 
-template<typename T, typename U, typename V>
+template<typename T>
 constexpr inline r32
-InverseLerp(T lhs, U rhs, V value)
+InverseLerp(T lhs, T rhs, T value)
 {
 	Assert((rhs - lhs) != 0);
 	r32 result = (r32) (value - lhs) / (r32) (rhs - lhs);
 	return result;
 }
 
-template<typename T, typename U>
+template<typename T>
 constexpr inline T
-Max(T lhs, U rhs)
+Max(T lhs, T rhs)
 {
 	T result = lhs > rhs ? lhs : rhs;
 	return result;
 }
 
-template<typename T, typename U>
+template<typename T>
 constexpr inline T
-Min(T lhs, U rhs)
+Min(T lhs, T rhs)
 {
 	T result = lhs < rhs ? lhs : rhs;
 	return result;

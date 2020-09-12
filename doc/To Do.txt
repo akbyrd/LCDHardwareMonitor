@@ -4,7 +4,6 @@ Implement layering for the renderer API to remove runtime branching
 Validate Push/PopEvent counts
 
 Math
-	Remove second type from more math functions
 	Add LerpClamped, InverseLerpClamped
 	Fix min/max/value parameter orders
 	Add a Lerped<T>

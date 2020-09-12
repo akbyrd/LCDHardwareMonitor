@@ -360,7 +360,7 @@ DestroyMesh(RendererState& s, MeshData& mesh)
 static b8
 CreateConstantBuffer(RendererState& s, StringView shaderName, u32 index, ConstantBuffer& cBuf)
 {
-	LOG_IF(!IsMultipleOf(cBuf.size, 16), return false,
+	LOG_IF(!IsMultipleOf(cBuf.size, (u32) 16), return false,
 		Severity::Error, "Constant buffer size '%' is not a multiple of 16", cBuf.size);
 
 	D3D11_BUFFER_DESC d3dDesc = {};
