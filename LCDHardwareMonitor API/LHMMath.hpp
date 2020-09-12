@@ -14,6 +14,7 @@
 //   Transformations are applied S then R then T
 
 // TODO: Try to collapse the various r32/r64 duplication
+// TODO: Make Sqrt constexpr
 // TODO: Use vectors for color functions?
 // TODO: Can't use operators from the VS Watch window if they are
 // pass-by-value, but passing by reference requires const everywhere. Ugh.
@@ -531,6 +532,44 @@ InverseLerpClamped(v2t<T> from, v2t<T> to, v2t<T> value)
 	return result;
 }
 
+inline r32
+Magnitude(v2t<r32> v)
+{
+	r32 result = Sqrt(
+		v.x * v.x +
+		v.y * v.y
+	);
+	return result;
+}
+
+inline r64
+Magnitude(v2t<r64> v)
+{
+	r64 result = Sqrt(
+		v.x * v.x +
+		v.y * v.y
+	);
+	return result;
+}
+
+inline r32
+MagnitudeSq(v2t<r32> v)
+{
+	r32 result =
+		v.x * v.x +
+		v.y * v.y;
+	return result;
+}
+
+inline r64
+MagnitudeSq(v2t<r64> v)
+{
+	r64 result =
+		v.x * v.x +
+		v.y * v.y;
+	return result;
+}
+
 template<typename T>
 constexpr inline v2t<T>
 Max(v2t<T> lhs, v2t<T> rhs)
@@ -556,7 +595,7 @@ Min(v2t<T> lhs, v2t<T> rhs)
 inline v2
 Normalize(v2 v)
 {
-	r32 magnitude = Sqrt(v.x*v.x + v.y*v.y);
+	r32 magnitude = Magnitude(v);
 	v2 result = {
 		v.x / magnitude,
 		v.y / magnitude
@@ -567,7 +606,7 @@ Normalize(v2 v)
 inline v2t<r64>
 Normalize(v2t<r64> v)
 {
-	r64 magnitude = Sqrt(v.x*v.x + v.y*v.y);
+	r64 magnitude = Magnitude(v);
 	v2t<r64> result = {
 		v.x / magnitude,
 		v.y / magnitude
@@ -999,6 +1038,48 @@ InverseLerpClamped(v3t<T> from, v3t<T> to, v3t<T> value)
 	return result;
 }
 
+inline r32
+Magnitude(v3t<r32> v)
+{
+	r32 result = Sqrt(
+		v.x * v.x +
+		v.y * v.y +
+		v.z * v.z
+	);
+	return result;
+}
+
+inline r64
+Magnitude(v3t<r64> v)
+{
+	r64 result = Sqrt(
+		v.x * v.x +
+		v.y * v.y +
+		v.z * v.z
+	);
+	return result;
+}
+
+inline r32
+MagnitudeSq(v3t<r32> v)
+{
+	r32 result =
+		v.x * v.x +
+		v.y * v.y +
+		v.z * v.z;
+	return result;
+}
+
+inline r64
+MagnitudeSq(v3t<r64> v)
+{
+	r64 result =
+		v.x * v.x +
+		v.y * v.y +
+		v.z * v.z;
+	return result;
+}
+
 template<typename T>
 constexpr inline v3t<T>
 Max(v3t<T> lhs, v3t<T> rhs)
@@ -1026,7 +1107,7 @@ Min(v3t<T> lhs, v3t<T> rhs)
 inline v3
 Normalize(v3 v)
 {
-	r32 magnitude = Sqrt(v.x*v.x + v.y*v.y + v.z*v.z);
+	r32 magnitude = Magnitude(v);
 	v3 result = {
 		v.x / magnitude,
 		v.y / magnitude,
@@ -1038,7 +1119,7 @@ Normalize(v3 v)
 inline v3t<r64>
 Normalize(v3t<r64> v)
 {
-	r64 magnitude = Sqrt(v.x*v.x + v.y*v.y + v.z*v.z);
+	r64 magnitude = Magnitude(v);
 	v3t<r64> result = {
 		v.x / magnitude,
 		v.y / magnitude,
@@ -1440,6 +1521,52 @@ InverseLerpClamped(v4t<T> from, v4t<T> to, v4t<T> value)
 	return result;
 }
 
+inline r32
+Magnitude(v4t<r32> v)
+{
+	r32 result = Sqrt(
+		v.x * v.x +
+		v.y * v.y +
+		v.z * v.z +
+		v.w * v.w
+	);
+	return result;
+}
+
+inline r64
+Magnitude(v4t<r64> v)
+{
+	r64 result = Sqrt(
+		v.x * v.x +
+		v.y * v.y +
+		v.z * v.z +
+		v.w * v.w
+	);
+	return result;
+}
+
+inline r32
+MagnitudeSq(v4t<r32> v)
+{
+	r32 result =
+		v.x * v.x +
+		v.y * v.y +
+		v.z * v.z +
+		v.w * v.w;
+	return result;
+}
+
+inline r64
+MagnitudeSq(v4t<r64> v)
+{
+	r64 result =
+		v.x * v.x +
+		v.y * v.y +
+		v.z * v.z +
+		v.w * v.w;
+	return result;
+}
+
 template<typename T>
 constexpr inline v4t<T>
 Max(v4t<T> lhs, v4t<T> rhs)
@@ -1469,7 +1596,7 @@ Min(v4t<T> lhs, v4t<T> rhs)
 inline v4
 Normalize(v4 v)
 {
-	r32 magnitude = Sqrt(v.x*v.x + v.y*v.y + v.z*v.z + v.w*v.w);
+	r32 magnitude = Magnitude(v);
 	v4 result = {
 		v.x / magnitude,
 		v.y / magnitude,
@@ -1482,7 +1609,7 @@ Normalize(v4 v)
 inline v4t<r64>
 Normalize(v4t<r64> v)
 {
-	r64 magnitude = Sqrt(v.x*v.x + v.y*v.y + v.z*v.z + v.w*v.w);
+	r64 magnitude = Magnitude(v);
 	v4t<r64> result = {
 		v.x / magnitude,
 		v.y / magnitude,
