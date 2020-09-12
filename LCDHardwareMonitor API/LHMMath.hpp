@@ -101,36 +101,36 @@ IsMultipleOf(T size, T multiple)
 
 template<typename T>
 constexpr inline T
-Lerp(T lhs, T rhs, r32 t)
+Lerp(T from, T to, r32 t)
 {
-	T result = (T) ((1.0f - t)*(r32) lhs + t*(r32) rhs);
+	T result = (T) ((1.0f - t)*(r32) from + t*(r32) to);
 	return result;
 }
 
 template<typename T>
 constexpr inline T
-LerpClamped(T lhs, T rhs, r32 t)
+LerpClamped(T from, T to, r32 t)
 {
-	T result = (T) ((1.0f - t)*(r32) lhs + t*(r32) rhs);
-	result = Clamp(result, lhs, rhs);
+	T result = (T) ((1.0f - t)*(r32) from + t*(r32) to);
+	result = Clamp(result, from, to);
 	return result;
 }
 
 template<typename T>
 constexpr inline r32
-InverseLerp(T lhs, T rhs, T value)
+InverseLerp(T from, T to, T value)
 {
-	Assert((rhs - lhs) != 0);
-	r32 result = (r32) (value - lhs) / (r32) (rhs - lhs);
+	Assert((to - from) != 0);
+	r32 result = (r32) (value - from) / (r32) (to - from);
 	return result;
 }
 
 template<typename T>
 constexpr inline r32
-InverseLerpClamped(T lhs, T rhs, T value)
+InverseLerpClamped(T from, T to, T value)
 {
-	Assert((rhs - lhs) != 0);
-	r32 result = (r32) (value - lhs) / (r32) (rhs - lhs);
+	Assert((to - from) != 0);
+	r32 result = (r32) (value - from) / (r32) (to - from);
 	result = Clamp01(result);
 	return result;
 }
@@ -228,7 +228,9 @@ template<typename T>
 constexpr inline b8
 operator== (v2t<T> lhs, v2t<T> rhs)
 {
-	b8 result = lhs.x == rhs.x && lhs.y == rhs.y;
+	b8 result =
+		lhs.x == rhs.x &&
+		lhs.y == rhs.y;
 	return result;
 }
 
@@ -236,7 +238,10 @@ template<typename T>
 constexpr inline b8
 operator!= (v2t<T> lhs, v2t<T> rhs)
 {
-	b8 result = !(lhs.x == rhs.x && lhs.y == rhs.y);
+	b8 result = !(
+		lhs.x == rhs.x &&
+		lhs.y == rhs.y
+	);
 	return result;
 }
 
@@ -244,7 +249,10 @@ template<typename T>
 constexpr inline v2t<T>
 operator+ (v2t<T> v)
 {
-	v2t<T> result = { +v.x, +v.y };
+	v2t<T> result = {
+		+v.x,
+		+v.y
+	};
 	return result;
 }
 
@@ -252,7 +260,10 @@ template<typename T>
 constexpr inline v2t<T>
 operator+ (v2t<T> lhs, v2t<T> rhs)
 {
-	v2t<T> result = { (T) (lhs.x + rhs.x), (T) (lhs.y + rhs.y) };
+	v2t<T> result = {
+		(T) (lhs.x + rhs.x),
+		(T) (lhs.y + rhs.y)
+	};
 	return result;
 }
 
@@ -267,7 +278,10 @@ template<typename T>
 constexpr inline v2t<T>
 operator- (v2t<T> v)
 {
-	v2t<T> result = { -v.x, -v.y };
+	v2t<T> result = {
+		-v.x,
+		-v.y
+	};
 	return result;
 }
 
@@ -275,7 +289,10 @@ template<typename T>
 constexpr inline v2t<T>
 operator- (v2t<T> lhs, v2t<T> rhs)
 {
-	v2t<T> result = { (T) (lhs.x - rhs.x), (T) (lhs.y - rhs.y) };
+	v2t<T> result = {
+		(T) (lhs.x - rhs.x),
+		(T) (lhs.y - rhs.y)
+	};
 	return result;
 }
 
@@ -290,7 +307,10 @@ template<typename T>
 constexpr inline v2t<T>
 operator* (T lhs, v2t<T> rhs)
 {
-	v2t<T> result = { (T) (lhs * rhs.x), (T) (lhs * rhs.y) };
+	v2t<T> result = {
+		(T) (lhs * rhs.x),
+		(T) (lhs * rhs.y)
+	};
 	return result;
 }
 
@@ -298,7 +318,10 @@ template<typename T>
 constexpr inline v2t<T>
 operator* (v2t<T> lhs, T rhs)
 {
-	v2t<T> result = { (T) (lhs.x * rhs), (T) (lhs.y * rhs) };
+	v2t<T> result = {
+		(T) (lhs.x * rhs),
+		(T) (lhs.y * rhs)
+	};
 	return result;
 }
 
@@ -306,7 +329,10 @@ template<typename T>
 constexpr inline v2t<T>
 operator* (v2t<T> lhs, v2t<T> rhs)
 {
-	v2t<T> result = { (T) (lhs.x * rhs.x), (T) (lhs.y * rhs.y) };
+	v2t<T> result = {
+		(T) (lhs.x * rhs.x),
+		(T) (lhs.y * rhs.y)
+	};
 	return result;
 }
 
@@ -328,7 +354,10 @@ template<typename T>
 constexpr inline v2t<T>
 operator/ (v2t<T> lhs, T rhs)
 {
-	v2t<T> result = { (T) (lhs.x / rhs), (T) (lhs.y / rhs) };
+	v2t<T> result = {
+		(T) (lhs.x / rhs),
+		(T) (lhs.y / rhs)
+	};
 	return result;
 }
 
@@ -336,7 +365,10 @@ template<typename T>
 constexpr inline v2t<T>
 operator/ (T lhs, v2t<T> rhs)
 {
-	v2t<T> result = { (T) (lhs / rhs.x), (T) (lhs / rhs.y) };
+	v2t<T> result = {
+		(T) (lhs / rhs.x),
+		(T) (lhs / rhs.y)
+	};
 	return result;
 }
 
@@ -344,7 +376,10 @@ template<typename T>
 constexpr inline v2t<T>
 operator/ (v2t<T> lhs, v2t<T> rhs)
 {
-	v2t<T> result = { (T) (lhs.x / rhs.x), (T) (lhs.y / rhs.y) };
+	v2t<T> result = {
+		(T) (lhs.x / rhs.x),
+		(T) (lhs.y / rhs.y)
+	};
 	return result;
 }
 
@@ -385,7 +420,10 @@ template<typename U>
 constexpr inline
 v2t<T>::operator v2t<U>()
 {
-	v2t<U> result = { (U) x, (U) y };
+	v2t<U> result = {
+		(U) x,
+		(U) y
+	};
 	return result;
 }
 
@@ -394,7 +432,11 @@ template<typename U>
 constexpr inline
 v2t<T>::operator v3t<U>()
 {
-	v3t<U> result = { (U) x, (U) y, 0 };
+	v3t<U> result = {
+		(U) x,
+		(U) y,
+		0
+	};
 	return result;
 }
 
@@ -403,7 +445,12 @@ template<typename U>
 constexpr inline
 v2t<T>::operator v4t<U>()
 {
-	v4t<U> result = { (U) x, (U) y, 0, 0 };
+	v4t<U> result = {
+		(U) x,
+		(U) y,
+		0,
+		0
+	};
 	return result;
 }
 
@@ -411,7 +458,10 @@ template<typename T>
 constexpr inline T
 Dot(v2t<T> lhs, v2t<T> rhs)
 {
-	T result = (T) (lhs.x*rhs.x + lhs.y*rhs.y);
+	T result = (T) (
+		lhs.x*rhs.x +
+		lhs.y*rhs.y
+	);
 	return result;
 }
 
@@ -419,7 +469,10 @@ template<typename T>
 constexpr inline v2t<T>
 Clamp(v2t<T> v, v2t<T> min, v2t<T> max)
 {
-	v2t<T> result = { Clamp(v.x, min.x, max.x), Clamp(v.y, min.y, max.y) };
+	v2t<T> result = {
+		Clamp(v.x, min.x, max.x),
+		Clamp(v.y, min.y, max.y)
+	};
 	return result;
 }
 
@@ -427,39 +480,54 @@ template<typename T>
 constexpr inline v2t<T>
 Clamp01(v2t<T> v)
 {
-	v2t<T> result = { Clamp01(v.x), Clamp01(v.y) };
+	v2t<T> result = {
+		Clamp01(v.x),
+		Clamp01(v.y)
+	};
 	return result;
 }
 
 template<typename T>
 constexpr inline v2t<T>
-Lerp(v2t<T> lhs, v2t<T> rhs, r32 t)
+Lerp(v2t<T> from, v2t<T> to, r32 t)
 {
-	v2t<T> result = { Lerp(lhs.x, rhs.x, t), Lerp(lhs.y, rhs.y, t) };
+	v2t<T> result = {
+		Lerp(from.x, to.x, t),
+		Lerp(from.y, to.y, t)
+	};
 	return result;
 }
 
 template<typename T>
 constexpr inline v2t<T>
-LerpClamped(v2t<T> lhs, v2t<T> rhs, r32 t)
+LerpClamped(v2t<T> from, v2t<T> to, r32 t)
 {
-	v2t<T> result = { LerpClamped(lhs.x, rhs.x, t), LerpClamped(lhs.y, rhs.y, t) };
+	v2t<T> result = {
+		LerpClamped(from.x, to.x, t),
+		LerpClamped(from.y, to.y, t)
+	};
 	return result;
 }
 
 template<typename T>
 constexpr inline v2t<r32>
-InverseLerp(v2t<T> lhs, v2t<T> rhs, v2t<T> value)
+InverseLerp(v2t<T> from, v2t<T> to, v2t<T> value)
 {
-	v2t<r32> result = { InverseLerp(lhs.x, rhs.x, value.x), InverseLerp(lhs.y, rhs.y, value.y) };
+	v2t<r32> result = {
+		InverseLerp(from.x, to.x, value.x),
+		InverseLerp(from.y, to.y, value.y)
+	};
 	return result;
 }
 
 template<typename T>
 constexpr inline v2t<r32>
-InverseLerpClamped(v2t<T> lhs, v2t<T> rhs, v2t<T> value)
+InverseLerpClamped(v2t<T> from, v2t<T> to, v2t<T> value)
 {
-	v2t<r32> result = { InverseLerpClamped(lhs.x, rhs.x, value.x), InverseLerpClamped(lhs.y, rhs.y, value.y) };
+	v2t<r32> result = {
+		InverseLerpClamped(from.x, to.x, value.x),
+		InverseLerpClamped(from.y, to.y, value.y)
+	};
 	return result;
 }
 
@@ -467,7 +535,10 @@ template<typename T>
 constexpr inline v2t<T>
 Max(v2t<T> lhs, v2t<T> rhs)
 {
-	v2t<T> result = { Max(lhs.x, rhs.x), Max(lhs.y, rhs.y) };
+	v2t<T> result = {
+		Max(lhs.x, rhs.x),
+		Max(lhs.y, rhs.y)
+	};
 	return result;
 }
 
@@ -475,7 +546,10 @@ template<typename T>
 constexpr inline v2t<T>
 Min(v2t<T> lhs, v2t<T> rhs)
 {
-	v2t<T> result = { Min(lhs.x, rhs.x), Min(lhs.y, rhs.y) };
+	v2t<T> result = {
+		Min(lhs.x, rhs.x),
+		Min(lhs.y, rhs.y)
+	};
 	return result;
 }
 
@@ -483,7 +557,10 @@ inline v2
 Normalize(v2 v)
 {
 	r32 magnitude = Sqrt(v.x*v.x + v.y*v.y);
-	v2 result = { v.x / magnitude, v.y / magnitude };
+	v2 result = {
+		v.x / magnitude,
+		v.y / magnitude
+	};
 	return result;
 }
 
@@ -491,7 +568,10 @@ inline v2t<r64>
 Normalize(v2t<r64> v)
 {
 	r64 magnitude = Sqrt(v.x*v.x + v.y*v.y);
-	v2t<r64> result = { v.x / magnitude, v.y / magnitude };
+	v2t<r64> result = {
+		v.x / magnitude,
+		v.y / magnitude
+	};
 	return result;
 }
 
@@ -552,7 +632,10 @@ template<typename T>
 constexpr inline b8
 operator== (v3t<T> lhs, v3t<T> rhs)
 {
-	b8 result = lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z;
+	b8 result =
+		lhs.x == rhs.x &&
+		lhs.y == rhs.y &&
+		lhs.z == rhs.z;
 	return result;
 }
 
@@ -560,7 +643,11 @@ template<typename T>
 constexpr inline b8
 operator!= (v3t<T> lhs, v3t<T> rhs)
 {
-	b8 result = !(lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z);
+	b8 result = !(
+		lhs.x == rhs.x &&
+		lhs.y == rhs.y &&
+		lhs.z == rhs.z
+	);
 	return result;
 }
 
@@ -568,7 +655,11 @@ template<typename T>
 constexpr inline v3t<T>
 operator+ (v3t<T> v)
 {
-	v3t<T> result = { +v.x, +v.y, +v.z };
+	v3t<T> result = {
+		+v.x,
+		+v.y,
+		+v.z
+	};
 	return result;
 }
 
@@ -576,7 +667,11 @@ template<typename T>
 constexpr inline v3t<T>
 operator+ (v3t<T> lhs, v3t<T> rhs)
 {
-	v3t<T> result = { (T) (lhs.x + rhs.x), (T) (lhs.y + rhs.y), (T) (lhs.z + rhs.z) };
+	v3t<T> result = {
+		(T) (lhs.x + rhs.x),
+		(T) (lhs.y + rhs.y),
+		(T) (lhs.z + rhs.z)
+	};
 	return result;
 }
 
@@ -591,7 +686,11 @@ template<typename T>
 constexpr inline v3t<T>
 operator- (v3t<T> v)
 {
-	v3t<T> result = { -v.x, -v.y, -v.z };
+	v3t<T> result = {
+		-v.x,
+		-v.y,
+		-v.z
+	};
 	return result;
 }
 
@@ -599,7 +698,11 @@ template<typename T>
 constexpr inline v3t<T>
 operator- (v3t<T> lhs, v3t<T> rhs)
 {
-	v3t<T> result = { (T) (lhs.x - rhs.x), (T) (lhs.y - rhs.y), (T) (lhs.z - rhs.z) };
+	v3t<T> result = {
+		(T) (lhs.x - rhs.x),
+		(T) (lhs.y - rhs.y),
+		(T) (lhs.z - rhs.z)
+	};
 	return result;
 }
 
@@ -614,7 +717,11 @@ template<typename T>
 constexpr inline v3t<T>
 operator* (T lhs, v3t<T> rhs)
 {
-	v3t<T> result = { (T) (lhs * rhs.x), (T) (lhs * rhs.y), (T) (lhs * rhs.z) };
+	v3t<T> result = {
+		(T) (lhs * rhs.x),
+		(T) (lhs * rhs.y),
+		(T) (lhs * rhs.z)
+	};
 	return result;
 }
 
@@ -622,7 +729,11 @@ template<typename T>
 constexpr inline v3t<T>
 operator* (v3t<T> lhs, T rhs)
 {
-	v3t<T> result = { (T) (lhs.x * rhs), (T) (lhs.y * rhs), (T) (lhs.z * rhs) };
+	v3t<T> result = {
+		(T) (lhs.x * rhs),
+		(T) (lhs.y * rhs),
+		(T) (lhs.z * rhs)
+	};
 	return result;
 }
 
@@ -630,7 +741,11 @@ template<typename T>
 constexpr inline v3t<T>
 operator* (v3t<T> lhs, v3t<T> rhs)
 {
-	v3t<T> result = { (T) (lhs.x * rhs.x), (T) (lhs.y * rhs.y), (T) (lhs.z * rhs.z) };
+	v3t<T> result = {
+		(T) (lhs.x * rhs.x),
+		(T) (lhs.y * rhs.y),
+		(T) (lhs.z * rhs.z)
+	};
 	return result;
 }
 
@@ -652,7 +767,11 @@ template<typename T>
 constexpr inline v3t<T>
 operator/ (v3t<T> lhs, T rhs)
 {
-	v3t<T> result = { (T) (lhs.x / rhs), (T) (lhs.y / rhs), (T) (lhs.z / rhs) };
+	v3t<T> result = {
+		(T) (lhs.x / rhs),
+		(T) (lhs.y / rhs),
+		(T) (lhs.z / rhs)
+	};
 	return result;
 }
 
@@ -660,7 +779,11 @@ template<typename T>
 constexpr inline v3t<T>
 operator/ (T lhs, v3t<T> rhs)
 {
-	v3t<T> result = { (T) (lhs / rhs.x), (T) (lhs / rhs.y), (T) (lhs / rhs.z) };
+	v3t<T> result = {
+		(T) (lhs / rhs.x),
+		(T) (lhs / rhs.y),
+		(T) (lhs / rhs.z)
+	};
 	return result;
 }
 
@@ -668,7 +791,11 @@ template<typename T>
 constexpr inline v3t<T>
 operator/ (v3t<T> lhs, v3t<T> rhs)
 {
-	v3t<T> result = { (T) (lhs.x / rhs.x), (T) (lhs.y / rhs.y), (T) (lhs.z / rhs.z) };
+	v3t<T> result = {
+		(T) (lhs.x / rhs.x),
+		(T) (lhs.y / rhs.y),
+		(T) (lhs.z / rhs.z)
+	};
 	return result;
 }
 
@@ -709,7 +836,10 @@ template<typename U>
 constexpr inline
 v3t<T>::operator v2t<U>()
 {
-	v2t<U> result = { (U) x, (U) y };
+	v2t<U> result = {
+		(U) x,
+		(U) y
+	};
 	return result;
 }
 
@@ -718,7 +848,11 @@ template<typename U>
 constexpr inline
 v3t<T>::operator v3t<U>()
 {
-	v3t<U> result = { (U) x, (U) y, (U) z };
+	v3t<U> result = {
+		(U) x,
+		(U) y,
+		(U) z
+	};
 	return result;
 }
 
@@ -727,7 +861,12 @@ template<typename U>
 constexpr inline
 v3t<T>::operator v4t<U>()
 {
-	v4t<U> result = { (U) x, (U) y, (U) z, 0 };
+	v4t<U> result = {
+		(U) x,
+		(U) y,
+		(U) z,
+		0
+	};
 	return result;
 }
 
@@ -735,7 +874,11 @@ template<typename T>
 constexpr inline v3t<T>
 Clamp(v3t<T> v, v3t<T> min, v3t<T> max)
 {
-	v3t<T> result = { Clamp(v.x, min.x, max.x), Clamp(v.y, min.y, max.y), Clamp(v.z, min.z, max.z) };
+	v3t<T> result = {
+		Clamp(v.x, min.x, max.x),
+		Clamp(v.y, min.y, max.y),
+		Clamp(v.z, min.z, max.z)
+	};
 	return result;
 }
 
@@ -743,7 +886,11 @@ template<typename T>
 constexpr inline v3t<T>
 Clamp01(v3t<T> v)
 {
-	v3t<T> result = { Clamp01(v.x), Clamp01(v.y), Clamp01(v.z) };
+	v3t<T> result = {
+		Clamp01(v.x),
+		Clamp01(v.y),
+		Clamp01(v.z)
+	};
 	return result;
 }
 
@@ -764,7 +911,11 @@ template<typename T>
 constexpr inline T
 Dot(v3t<T> lhs, v3t<T> rhs)
 {
-	T result = (T) (lhs.x*rhs.x + lhs.y*rhs.y + lhs.z*rhs.z);
+	T result = (T) (
+		lhs.x*rhs.x +
+		lhs.y*rhs.y +
+		lhs.z*rhs.z
+	);
 	return result;
 }
 
@@ -802,33 +953,49 @@ GetOrbitPos(v3t<r64> target, v2t<r64> yp, r64 radius)
 
 template<typename T>
 constexpr inline v3t<T>
-Lerp(v3t<T> lhs, v3t<T> rhs, r32 t)
+Lerp(v3t<T> from, v3t<T> to, r32 t)
 {
-	v3t<T> result = { Lerp(lhs.x, rhs.x, t), Lerp(lhs.y, rhs.y, t), Lerp(lhs.z, rhs.z, t) };
+	v3t<T> result = {
+		Lerp(from.x, to.x, t),
+		Lerp(from.y, to.y, t),
+		Lerp(from.z, to.z, t)
+	};
 	return result;
 }
 
 template<typename T>
 constexpr inline v3t<T>
-LerpClamped(v3t<T> lhs, v3t<T> rhs, r32 t)
+LerpClamped(v3t<T> from, v3t<T> to, r32 t)
 {
-	v3t<T> result = { LerpClamped(lhs.x, rhs.x, t), LerpClamped(lhs.y, rhs.y, t), LerpClamped(lhs.z, rhs.z, t) };
+	v3t<T> result = {
+		LerpClamped(from.x, to.x, t),
+		LerpClamped(from.y, to.y, t),
+		LerpClamped(from.z, to.z, t)
+	};
 	return result;
 }
 
 template<typename T>
 constexpr inline v3t<r32>
-InverseLerp(v3t<T> lhs, v3t<T> rhs, v3t<T> value)
+InverseLerp(v3t<T> from, v3t<T> to, v3t<T> value)
 {
-	v3t<r32> result = { InverseLerp(lhs.x, rhs.x, value.x), InverseLerp(lhs.y, rhs.y, value.y), InverseLerp(lhs.z, rhs.z, value.z) };
+	v3t<r32> result = {
+		InverseLerp(from.x, to.x, value.x),
+		InverseLerp(from.y, to.y, value.y),
+		InverseLerp(from.z, to.z, value.z)
+	};
 	return result;
 }
 
 template<typename T>
 constexpr inline v3t<r32>
-InverseLerpClamped(v3t<T> lhs, v3t<T> rhs, v3t<T> value)
+InverseLerpClamped(v3t<T> from, v3t<T> to, v3t<T> value)
 {
-	v3t<r32> result = { InverseLerpClamped(lhs.x, rhs.x, value.x), InverseLerpClamped(lhs.y, rhs.y, value.y), InverseLerpClamped(lhs.z, rhs.z, value.z) };
+	v3t<r32> result = {
+		InverseLerpClamped(from.x, to.x, value.x),
+		InverseLerpClamped(from.y, to.y, value.y),
+		InverseLerpClamped(from.z, to.z, value.z)
+	};
 	return result;
 }
 
@@ -836,7 +1003,11 @@ template<typename T>
 constexpr inline v3t<T>
 Max(v3t<T> lhs, v3t<T> rhs)
 {
-	v3t<T> result = { Max(lhs.x, rhs.x), Max(lhs.y, rhs.y), Max(lhs.z, rhs.z) };
+	v3t<T> result = {
+		Max(lhs.x, rhs.x),
+		Max(lhs.y, rhs.y),
+		Max(lhs.z, rhs.z)
+	};
 	return result;
 }
 
@@ -844,7 +1015,11 @@ template<typename T>
 constexpr inline v3t<T>
 Min(v3t<T> lhs, v3t<T> rhs)
 {
-	v3t<T> result = { Min(lhs.x, rhs.x), Min(lhs.y, rhs.y), Min(lhs.z, rhs.z) };
+	v3t<T> result = {
+		Min(lhs.x, rhs.x),
+		Min(lhs.y, rhs.y),
+		Min(lhs.z, rhs.z)
+	};
 	return result;
 }
 
@@ -852,7 +1027,11 @@ inline v3
 Normalize(v3 v)
 {
 	r32 magnitude = Sqrt(v.x*v.x + v.y*v.y + v.z*v.z);
-	v3 result = { v.x / magnitude, v.y / magnitude, v.z / magnitude };
+	v3 result = {
+		v.x / magnitude,
+		v.y / magnitude,
+		v.z / magnitude
+	};
 	return result;
 }
 
@@ -860,7 +1039,11 @@ inline v3t<r64>
 Normalize(v3t<r64> v)
 {
 	r64 magnitude = Sqrt(v.x*v.x + v.y*v.y + v.z*v.z);
-	v3t<r64> result = { v.x / magnitude, v.y / magnitude, v.z / magnitude };
+	v3t<r64> result = {
+		v.x / magnitude,
+		v.y / magnitude,
+		v.z / magnitude
+	};
 	return result;
 }
 
@@ -916,7 +1099,11 @@ template<typename T>
 constexpr inline b8
 operator== (v4t<T> lhs, v4t<T> rhs)
 {
-	b8 result = lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z && lhs.w == rhs.w;
+	b8 result =
+		lhs.x == rhs.x &&
+		lhs.y == rhs.y &&
+		lhs.z == rhs.z &&
+		lhs.w == rhs.w;
 	return result;
 }
 
@@ -924,7 +1111,12 @@ template<typename T>
 constexpr inline b8
 operator!= (v4t<T> lhs, v4t<T> rhs)
 {
-	b8 result = !(lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z && lhs.w == rhs.w);
+	b8 result = !(
+		lhs.x == rhs.x &&
+		lhs.y == rhs.y &&
+		lhs.z == rhs.z &&
+		lhs.w == rhs.w
+	);
 	return result;
 }
 
@@ -932,7 +1124,12 @@ template<typename T>
 constexpr inline v4t<T>
 operator+ (v4t<T> v)
 {
-	v4t<T> result = { +v.x, +v.y, +v.z, +v.w };
+	v4t<T> result = {
+		+v.x,
+		+v.y,
+		+v.z,
+		+v.w
+	};
 	return result;
 }
 
@@ -940,7 +1137,12 @@ template<typename T>
 constexpr inline v4t<T>
 operator+ (v4t<T> lhs, v4t<T> rhs)
 {
-	v4t<T> result = { (T) (lhs.x + rhs.x), (T) (lhs.y + rhs.y), (T) (lhs.z + rhs.z), (T) (lhs.w + rhs.w) };
+	v4t<T> result = {
+		(T) (lhs.x + rhs.x),
+		(T) (lhs.y + rhs.y),
+		(T) (lhs.z + rhs.z),
+		(T) (lhs.w + rhs.w)
+	};
 	return result;
 }
 
@@ -955,7 +1157,12 @@ template<typename T>
 constexpr inline v4t<T>
 operator- (v4t<T> v)
 {
-	v4t<T> result = { -v.x, -v.y, -v.z, -v.w };
+	v4t<T> result = {
+		-v.x,
+		-v.y,
+		-v.z,
+		-v.w
+	};
 	return result;
 }
 
@@ -963,7 +1170,12 @@ template<typename T>
 constexpr inline v4t<T>
 operator- (v4t<T> lhs, v4t<T> rhs)
 {
-	v4t<T> result = { (T) (lhs.x - rhs.x), (T) (lhs.y - rhs.y), (T) (lhs.z - rhs.z), (T) (lhs.w - rhs.w) };
+	v4t<T> result = {
+		(T) (lhs.x - rhs.x),
+		(T) (lhs.y - rhs.y),
+		(T) (lhs.z - rhs.z),
+		(T) (lhs.w - rhs.w)
+	};
 	return result;
 }
 
@@ -978,7 +1190,12 @@ template<typename T>
 constexpr inline v4t<T>
 operator* (T lhs, v4t<T> rhs)
 {
-	v4t<T> result = { (T) (lhs * rhs.x), (T) (lhs * rhs.y), (T) (lhs * rhs.z), (T) (lhs * rhs.w) };
+	v4t<T> result = {
+		(T) (lhs * rhs.x),
+		(T) (lhs * rhs.y),
+		(T) (lhs * rhs.z),
+		(T) (lhs * rhs.w)
+	};
 	return result;
 }
 
@@ -986,7 +1203,12 @@ template<typename T>
 constexpr inline v4t<T>
 operator* (v4t<T> lhs, T rhs)
 {
-	v4t<T> result = { (T) (lhs.x * rhs), (T) (lhs.y * rhs), (T) (lhs.z * rhs), (T) (lhs.w * rhs) };
+	v4t<T> result = {
+		(T) (lhs.x * rhs),
+		(T) (lhs.y * rhs),
+		(T) (lhs.z * rhs),
+		(T) (lhs.w * rhs)
+	};
 	return result;
 }
 
@@ -994,7 +1216,12 @@ template<typename T>
 constexpr inline v4t<T>
 operator* (v4t<T> lhs, v4t<T> rhs)
 {
-	v4t<T> result = { (T) (lhs.x * rhs.x), (T) (lhs.y * rhs.y), (T) (lhs.z * rhs.z), (T) (lhs.w * rhs.w) };
+	v4t<T> result = {
+		(T) (lhs.x * rhs.x),
+		(T) (lhs.y * rhs.y),
+		(T) (lhs.z * rhs.z),
+		(T) (lhs.w * rhs.w)
+	};
 	return result;
 }
 
@@ -1016,7 +1243,12 @@ template<typename T>
 constexpr inline v4t<T>
 operator/ (v4t<T> lhs, T rhs)
 {
-	v4t<T> result = { (T) (lhs.x / rhs), (T) (lhs.y / rhs), (T) (lhs.z / rhs), (T) (lhs.w / rhs) };
+	v4t<T> result = {
+		(T) (lhs.x / rhs),
+		(T) (lhs.y / rhs),
+		(T) (lhs.z / rhs),
+		(T) (lhs.w / rhs)
+	};
 	return result;
 }
 
@@ -1024,7 +1256,12 @@ template<typename T>
 constexpr inline v4t<T>
 operator/ (T lhs, v4t<T> rhs)
 {
-	v4t<T> result = { (T) (lhs / rhs.x), (T) (lhs / rhs.y), (T) (lhs / rhs.z), (T) (lhs / rhs.w) };
+	v4t<T> result = {
+		(T) (lhs / rhs.x),
+		(T) (lhs / rhs.y),
+		(T) (lhs / rhs.z),
+		(T) (lhs / rhs.w)
+	};
 	return result;
 }
 
@@ -1032,7 +1269,12 @@ template<typename T>
 constexpr inline v4t<T>
 operator/ (v4t<T> lhs, v4t<T> rhs)
 {
-	v4t<T> result = { (T) (lhs.x / rhs.x), (T) (lhs.y / rhs.y), (T) (lhs.z / rhs.z), (T) (lhs.w / rhs.w) };
+	v4t<T> result = {
+		(T) (lhs.x / rhs.x),
+		(T) (lhs.y / rhs.y),
+		(T) (lhs.z / rhs.z),
+		(T) (lhs.w / rhs.w)
+	};
 	return result;
 }
 
@@ -1073,7 +1315,10 @@ template<typename U>
 constexpr inline
 v4t<T>::operator v2t<U>()
 {
-	v2t<U> result = { (U) x, (U) y };
+	v2t<U> result = {
+		(U) x,
+		(U) y
+	};
 	return result;
 }
 
@@ -1082,7 +1327,11 @@ template<typename U>
 constexpr inline
 v4t<T>::operator v3t<U>()
 {
-	v3t<U> result = { (U) x, (U) y, (U) z };
+	v3t<U> result = {
+		(U) x,
+		(U) y,
+		(U) z
+	};
 	return result;
 }
 
@@ -1091,7 +1340,12 @@ template<typename U>
 constexpr inline
 v4t<T>::operator v4t<U>()
 {
-	v4t<U> result = { (U) x, (U) y, (U) z, (U) w };
+	v4t<U> result = {
+		(U) x,
+		(U) y,
+		(U) z,
+		(U) w
+	};
 	return result;
 }
 
@@ -1125,58 +1379,63 @@ template<typename T>
 constexpr inline T
 Dot(v4t<T> lhs, v4t<T> rhs)
 {
-	T result = (T) (lhs.x*rhs.x + lhs.y*rhs.y + lhs.z*rhs.z + lhs.w*rhs.w);
+	T result = (T) (
+		lhs.x*rhs.x +
+		lhs.y*rhs.y +
+		lhs.z*rhs.z +
+		lhs.w*rhs.w
+	);
 	return result;
 }
 
 template<typename T>
 constexpr inline v4t<T>
-Lerp(v4t<T> lhs, v4t<T> rhs, r32 t)
+Lerp(v4t<T> from, v4t<T> to, r32 t)
 {
 	v4t<T> result = {
-		Lerp(lhs.x, rhs.x, t),
-		Lerp(lhs.y, rhs.y, t),
-		Lerp(lhs.z, rhs.z, t),
-		Lerp(lhs.w, rhs.w, t)
+		Lerp(from.x, to.x, t),
+		Lerp(from.y, to.y, t),
+		Lerp(from.z, to.z, t),
+		Lerp(from.w, to.w, t)
 	};
 	return result;
 }
 
 template<typename T>
 constexpr inline v4t<T>
-LerpClamped(v4t<T> lhs, v4t<T> rhs, r32 t)
+LerpClamped(v4t<T> from, v4t<T> to, r32 t)
 {
 	v4t<T> result = {
-		LerpClamped(lhs.x, rhs.x, t),
-		LerpClamped(lhs.y, rhs.y, t),
-		LerpClamped(lhs.z, rhs.z, t),
-		LerpClamped(lhs.w, rhs.w, t)
+		LerpClamped(from.x, to.x, t),
+		LerpClamped(from.y, to.y, t),
+		LerpClamped(from.z, to.z, t),
+		LerpClamped(from.w, to.w, t)
 	};
 	return result;
 }
 
 template<typename T>
 constexpr inline v4t<r32>
-InverseLerp(v4t<T> lhs, v4t<T> rhs, v4t<T> value)
+InverseLerp(v4t<T> from, v4t<T> to, v4t<T> value)
 {
 	v4t<r32> result = {
-		InverseLerp(lhs.x, rhs.x, value.x),
-		InverseLerp(lhs.y, rhs.y, value.y),
-		InverseLerp(lhs.z, rhs.z, value.z),
-		InverseLerp(lhs.w, rhs.w, value.w)
+		InverseLerp(from.x, to.x, value.x),
+		InverseLerp(from.y, to.y, value.y),
+		InverseLerp(from.z, to.z, value.z),
+		InverseLerp(from.w, to.w, value.w)
 	};
 	return result;
 }
 
 template<typename T>
 constexpr inline v4t<r32>
-InverseLerpClamped(v4t<T> lhs, v4t<T> rhs, v4t<T> value)
+InverseLerpClamped(v4t<T> from, v4t<T> to, v4t<T> value)
 {
 	v4t<r32> result = {
-		InverseLerpClamped(lhs.x, rhs.x, value.x),
-		InverseLerpClamped(lhs.y, rhs.y, value.y),
-		InverseLerpClamped(lhs.z, rhs.z, value.z),
-		InverseLerpClamped(lhs.w, rhs.w, value.w)
+		InverseLerpClamped(from.x, to.x, value.x),
+		InverseLerpClamped(from.y, to.y, value.y),
+		InverseLerpClamped(from.z, to.z, value.z),
+		InverseLerpClamped(from.w, to.w, value.w)
 	};
 	return result;
 }
@@ -1273,7 +1532,12 @@ union Matrix
 constexpr inline v4
 Row(const Matrix& m, u32 row)
 {
-	v4 result = { m[0][row], m[1][row], m[2][row], m[3][row] };
+	v4 result = {
+		m[0][row],
+		m[1][row],
+		m[2][row],
+		m[3][row]
+	};
 	return result;
 }
 
