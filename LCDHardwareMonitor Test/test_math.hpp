@@ -214,6 +214,30 @@ TestRect()
 	RectCombine(a, v4t<T> {});
 }
 
+template <typename T>
+void TestScalar()
+{
+	T a = {};
+	T b = {};
+	T c = {};
+	r32 t = {};
+
+	if constexpr (IsSigned<T>)
+	{
+		Abs(a);
+	}
+
+	if constexpr (!IsFloat<T>)
+	{
+		IsMultipleOf(a, b);
+	}
+
+	Clamp(a, b, c);
+	Lerp(a, b, t);
+	Max(a, b);
+	Min(a, b);
+}
+
 void
 TestMath()
 {
@@ -262,6 +286,17 @@ TestMath()
 	TestRect<u16>();
 	TestRect<u32>();
 	TestRect<u64>();
+
+	TestScalar<r32>();
+	TestScalar<r64>();
+	TestScalar<i8>();
+	TestScalar<i16>();
+	TestScalar<i32>();
+	TestScalar<i64>();
+	TestScalar<u8>();
+	TestScalar<u16>();
+	TestScalar<u32>();
+	TestScalar<u64>();
 }
 
 // TODO: Unary +

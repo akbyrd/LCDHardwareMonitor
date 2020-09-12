@@ -1824,4 +1824,16 @@ template<typename T>
 constexpr b8
 IsUnsigned = (T) 0 < (T) -1;
 
+template <typename T>
+constexpr b8
+IsFloat = false;
+
+template <>
+constexpr b8
+IsFloat<r32> = true;
+
+template <>
+constexpr b8
+IsFloat<r64> = true;
+
 #endif
