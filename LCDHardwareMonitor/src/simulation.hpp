@@ -1987,7 +1987,7 @@ Simulation_Update(SimulationState& s)
 
 		auto continueFromCurrentAlpha = [](OutlineAnimation& anim) {
 			r32 currentAlpha = anim.psPerPass.outlineColor.a;
-			r32 progress     = Clamp(InverseLerp(anim.startValue, anim.endValue, currentAlpha), 0.0f, 1.0f);
+			r32 progress     = InverseLerpClamped(anim.startValue, anim.endValue, currentAlpha);
 			i64 offset       = (i64) (progress * (r32) anim.duration);
 			anim.startTicks -= offset;
 		};
@@ -2005,8 +2005,8 @@ Simulation_Update(SimulationState& s)
 
 			// Update alpha
 			i64 hoveredTicks = currentTicks - anim.startTicks;
-			r32 hoveredFactor = Clamp((r32) hoveredTicks / (r32) anim.duration, 0.0f, 1.0f);
-			anim.psPerPass.outlineColor.a = Lerp(anim.startValue, anim.endValue, hoveredFactor);
+			r32 hoveredFactor = (r32) hoveredTicks / (r32) anim.duration;
+			anim.psPerPass.outlineColor.a = LerpClamped(anim.startValue, anim.endValue, hoveredFactor);
 
 			// Was fading, switch to showing
 			if (isHovered && isFading)
