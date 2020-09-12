@@ -108,11 +108,30 @@ Lerp(T lhs, T rhs, r32 t)
 }
 
 template<typename T>
+constexpr inline T
+LerpClamped(T lhs, T rhs, r32 t)
+{
+	T result = (T) ((1.0f - t)*(r32) lhs + t*(r32) rhs);
+	result = Clamp(result, lhs, rhs);
+	return result;
+}
+
+template<typename T>
 constexpr inline r32
 InverseLerp(T lhs, T rhs, T value)
 {
 	Assert((rhs - lhs) != 0);
 	r32 result = (r32) (value - lhs) / (r32) (rhs - lhs);
+	return result;
+}
+
+template<typename T>
+constexpr inline r32
+InverseLerpClamped(T lhs, T rhs, T value)
+{
+	Assert((rhs - lhs) != 0);
+	r32 result = (r32) (value - lhs) / (r32) (rhs - lhs);
+	result = Clamp01(result);
 	return result;
 }
 
@@ -421,10 +440,26 @@ Lerp(v2t<T> lhs, v2t<T> rhs, r32 t)
 }
 
 template<typename T>
+constexpr inline v2t<T>
+LerpClamped(v2t<T> lhs, v2t<T> rhs, r32 t)
+{
+	v2t<T> result = { LerpClamped(lhs.x, rhs.x, t), LerpClamped(lhs.y, rhs.y, t) };
+	return result;
+}
+
+template<typename T>
 constexpr inline v2t<r32>
 InverseLerp(v2t<T> lhs, v2t<T> rhs, v2t<T> value)
 {
 	v2t<r32> result = { InverseLerp(lhs.x, rhs.x, value.x), InverseLerp(lhs.y, rhs.y, value.y) };
+	return result;
+}
+
+template<typename T>
+constexpr inline v2t<r32>
+InverseLerpClamped(v2t<T> lhs, v2t<T> rhs, v2t<T> value)
+{
+	v2t<r32> result = { InverseLerpClamped(lhs.x, rhs.x, value.x), InverseLerpClamped(lhs.y, rhs.y, value.y) };
 	return result;
 }
 
@@ -774,10 +809,26 @@ Lerp(v3t<T> lhs, v3t<T> rhs, r32 t)
 }
 
 template<typename T>
+constexpr inline v3t<T>
+LerpClamped(v3t<T> lhs, v3t<T> rhs, r32 t)
+{
+	v3t<T> result = { LerpClamped(lhs.x, rhs.x, t), LerpClamped(lhs.y, rhs.y, t), LerpClamped(lhs.z, rhs.z, t) };
+	return result;
+}
+
+template<typename T>
 constexpr inline v3t<r32>
 InverseLerp(v3t<T> lhs, v3t<T> rhs, v3t<T> value)
 {
 	v3t<r32> result = { InverseLerp(lhs.x, rhs.x, value.x), InverseLerp(lhs.y, rhs.y, value.y), InverseLerp(lhs.z, rhs.z, value.z) };
+	return result;
+}
+
+template<typename T>
+constexpr inline v3t<r32>
+InverseLerpClamped(v3t<T> lhs, v3t<T> rhs, v3t<T> value)
+{
+	v3t<r32> result = { InverseLerpClamped(lhs.x, rhs.x, value.x), InverseLerpClamped(lhs.y, rhs.y, value.y), InverseLerpClamped(lhs.z, rhs.z, value.z) };
 	return result;
 }
 
@@ -1092,6 +1143,19 @@ Lerp(v4t<T> lhs, v4t<T> rhs, r32 t)
 }
 
 template<typename T>
+constexpr inline v4t<T>
+LerpClamped(v4t<T> lhs, v4t<T> rhs, r32 t)
+{
+	v4t<T> result = {
+		LerpClamped(lhs.x, rhs.x, t),
+		LerpClamped(lhs.y, rhs.y, t),
+		LerpClamped(lhs.z, rhs.z, t),
+		LerpClamped(lhs.w, rhs.w, t)
+	};
+	return result;
+}
+
+template<typename T>
 constexpr inline v4t<r32>
 InverseLerp(v4t<T> lhs, v4t<T> rhs, v4t<T> value)
 {
@@ -1100,6 +1164,19 @@ InverseLerp(v4t<T> lhs, v4t<T> rhs, v4t<T> value)
 		InverseLerp(lhs.y, rhs.y, value.y),
 		InverseLerp(lhs.z, rhs.z, value.z),
 		InverseLerp(lhs.w, rhs.w, value.w)
+	};
+	return result;
+}
+
+template<typename T>
+constexpr inline v4t<r32>
+InverseLerpClamped(v4t<T> lhs, v4t<T> rhs, v4t<T> value)
+{
+	v4t<r32> result = {
+		InverseLerpClamped(lhs.x, rhs.x, value.x),
+		InverseLerpClamped(lhs.y, rhs.y, value.y),
+		InverseLerpClamped(lhs.z, rhs.z, value.z),
+		InverseLerpClamped(lhs.w, rhs.w, value.w)
 	};
 	return result;
 }
