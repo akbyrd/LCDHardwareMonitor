@@ -24,17 +24,12 @@ struct SimulationState
 {
 	PluginLoaderState*     pluginLoader;
 	RendererState*         renderer;
-	FT232HState*           ft232h;
-	ILI9341State*          ili9341;
 
 	List<Plugin>           plugins;
 	List<SensorPlugin>     sensorPlugins;
 	List<WidgetPlugin>     widgetPlugins;
 
 	v2u                    renderSize;
-	CPUTexture             renderTargetCPUCopy;
-	RenderTarget           renderTargetGUICopy;
-
 	v3                     cameraPos;
 	Matrix                 view;
 	Matrix                 proj;
@@ -43,9 +38,15 @@ struct SimulationState
 	i64                    startTime;
 	r32                    currentTime;
 
+	// Hardware
+	CPUTexture             renderTargetCPUCopy;
+	FT232HState*           ft232h;
+	ILI9341State*          ili9341;
 	b8                     ft232hInitialized;
 	u32                    ft232hRetryCount;
 
+	// GUI
+	RenderTarget           renderTargetGUICopy;
 	b8                     previewWindow;
 	ConnectionState        guiConnection;
 	GUIInteraction         guiInteraction;
@@ -55,16 +56,17 @@ struct SimulationState
 	v2i                    mousePosStart;
 	v2                     cameraRot;
 	v2                     cameraRotStart;
-
 	List<FullWidgetRef>    selected;
 	List<FullWidgetRef>    hovered;
+
+	// Post Process
 	RenderTarget           tempRenderTargets[2];
 	DepthBuffer            tempDepthBuffers[3];
 	List<OutlineAnimation> hoverAnimations;
 	PixelShader            outlineShader;
 	PixelShader            outlineCompositeShader;
 	PixelShader            depthToAlphaShader;
-	Outline::PSPerPass     outlinePSPerPass[2];
+	Outline::PSPerPass     outlinePSPerPassBlur[2];
 	Outline::PSPerPass     outlinePSPerPassSelected;
 	Outline::PSPerPass     outlinePSPerPassHovered;
 };
@@ -1132,7 +1134,7 @@ HighlightWidgets(SimulationState& s, Slice<FullWidgetRef> refs, Outline::PSPerPa
 		PSConstantBufferUpdate hCBufUpdate = {};
 		hCBufUpdate.ps    = s.outlineShader;
 		hCBufUpdate.index = 0;
-		hCBufUpdate.data  = &s.outlinePSPerPass[0];
+		hCBufUpdate.data  = &s.outlinePSPerPassBlur[0];
 
 		Renderer_PushRenderTarget(*s.renderer, s.tempRenderTargets[1]);
 		Renderer_ClearRenderTarget(*s.renderer, Colors128::Clear);
@@ -1151,7 +1153,7 @@ HighlightWidgets(SimulationState& s, Slice<FullWidgetRef> refs, Outline::PSPerPa
 		PSConstantBufferUpdate vCBufUpdate = {};
 		vCBufUpdate.ps    = s.outlineShader;
 		vCBufUpdate.index = 0;
-		vCBufUpdate.data  = &s.outlinePSPerPass[1];
+		vCBufUpdate.data  = &s.outlinePSPerPassBlur[1];
 
 		Renderer_PushRenderTarget(*s.renderer, s.tempRenderTargets[0]);
 		Renderer_PushDepthBuffer(*s.renderer, s.tempDepthBuffers[0]);
@@ -1446,10 +1448,10 @@ Simulation_Initialize(
 	s.startTime    = Platform_GetTicks();
 	s.renderSize   = { 320, 240 };
 
-	s.outlinePSPerPass[0].textureSize   = s.renderSize;
-	s.outlinePSPerPass[0].blurDirection = v2{ 1.0f, 0.0f };
-	s.outlinePSPerPass[1].textureSize   = s.renderSize;
-	s.outlinePSPerPass[1].blurDirection = v2{ 0.0f, 1.0f };
+	s.outlinePSPerPassBlur[0].textureSize   = s.renderSize;
+	s.outlinePSPerPassBlur[0].blurDirection = v2{ 1.0f, 0.0f };
+	s.outlinePSPerPassBlur[1].textureSize   = s.renderSize;
+	s.outlinePSPerPassBlur[1].blurDirection = v2{ 0.0f, 1.0f };
 
 	s.outlinePSPerPassSelected.outlineColor = Color128(0, 122, 204, 255);
 	s.outlinePSPerPassSelected.darkenColor  = Color128(0, 0, 0, 128);
@@ -1944,10 +1946,10 @@ Simulation_Update(SimulationState& s)
 						if (!ApproximatelyZero(mouseDir.z))
 						{
 							r32 dist = (-widget.depth - mousePos.z) / mouseDir.z;
-							v4 selectionPos = mousePos + dist*mouseDir;
+							v2 selectionPos = (v2) (mousePos + dist*mouseDir);
 
 							v4 rect = WidgetRect(widget);
-							if (RectContains(rect, (v2) selectionPos))
+							if (RectContains(rect, selectionPos))
 							{
 								FullWidgetRef& hovered = List_Append(s.hovered);
 								hovered.pluginRef = widgetPlugin.ref;
