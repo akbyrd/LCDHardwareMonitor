@@ -59,8 +59,11 @@ Bytes      Platform_LoadFileBytes          (StringView path);
 String     Platform_LoadFileString         (StringView path);
 i64        Platform_GetTicks               ();
 r32        Platform_TicksToSeconds         (i64 ticks);
+i64        Platform_SecondsToTicks         (r32 seconds);
 r32        Platform_GetElapsedSeconds      (i64 startTicks);
+r32        Platform_GetElapsedSeconds      (i64 startTicks, i64 endTicks);
 r32        Platform_GetElapsedMilliseconds (i64 startTicks);
+r32        Platform_GetElapsedMilliseconds (i64 startTicks, i64 endTicks);
 void       Platform_Sleep                  (u32 ms);
 void       Platform_RequestQuit            ();
 

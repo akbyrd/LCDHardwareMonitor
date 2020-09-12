@@ -9,52 +9,64 @@ enum struct GUIInteraction
 	DragSelection,
 };
 
+struct OutlineAnimation
+{
+	b8                  isShowing;
+	i64                 startTicks;
+	i64                 duration;
+	r32                 startValue;
+	r32                 endValue;
+	List<FullWidgetRef> widgets;
+	Outline::PSPerPass  psPerPass;
+};
+
 struct SimulationState
 {
-	PluginLoaderState*  pluginLoader;
-	RendererState*      renderer;
-	FT232HState*        ft232h;
-	ILI9341State*       ili9341;
+	PluginLoaderState*     pluginLoader;
+	RendererState*         renderer;
+	FT232HState*           ft232h;
+	ILI9341State*          ili9341;
 
-	List<Plugin>        plugins;
-	List<SensorPlugin>  sensorPlugins;
-	List<WidgetPlugin>  widgetPlugins;
+	List<Plugin>           plugins;
+	List<SensorPlugin>     sensorPlugins;
+	List<WidgetPlugin>     widgetPlugins;
 
-	v2u                 renderSize;
-	CPUTexture          renderTargetCPUCopy;
-	RenderTarget        renderTargetGUICopy;
+	v2u                    renderSize;
+	CPUTexture             renderTargetCPUCopy;
+	RenderTarget           renderTargetGUICopy;
 
-	v3                  cameraPos;
-	Matrix              view;
-	Matrix              proj;
-	Matrix              vp; // TODO: Remove this when simulation talks to the renderer directly
-	Matrix              iview;
-	i64                 startTime;
-	r32                 currentTime;
+	v3                     cameraPos;
+	Matrix                 view;
+	Matrix                 proj;
+	Matrix                 vp; // TODO: Remove this when simulation talks to the renderer directly
+	Matrix                 iview;
+	i64                    startTime;
+	r32                    currentTime;
 
-	b8                  ft232hInitialized;
-	u32                 ft232hRetryCount;
+	b8                     ft232hInitialized;
+	u32                    ft232hRetryCount;
 
-	b8                  previewWindow;
-	ConnectionState     guiConnection;
-	GUIInteraction      guiInteraction;
-	v4i                 interactionRect;
-	v2i                 interactionRelPosStart;
-	v2i                 mousePos;
-	v2i                 mousePosStart;
-	v2                  cameraRot;
-	v2                  cameraRotStart;
+	b8                     previewWindow;
+	ConnectionState        guiConnection;
+	GUIInteraction         guiInteraction;
+	v4i                    interactionRect;
+	v2i                    interactionRelPosStart;
+	v2i                    mousePos;
+	v2i                    mousePosStart;
+	v2                     cameraRot;
+	v2                     cameraRotStart;
 
-	List<FullWidgetRef> hovered;
-	List<FullWidgetRef> selected;
-	RenderTarget        tempRenderTargets[2];
-	DepthBuffer         tempDepthBuffers[3];
-	PixelShader         outlineShader;
-	PixelShader         outlineCompositeShader;
-	PixelShader         depthToAlphaShader;
-	Outline::PSPerPass  outlinePSPerPass[2];
-	Outline::PSPerPass  outlinePSPerPassSelected;
-	Outline::PSPerPass  outlinePSPerPassHovered;
+	List<FullWidgetRef>    selected;
+	List<FullWidgetRef>    hovered;
+	RenderTarget           tempRenderTargets[2];
+	DepthBuffer            tempDepthBuffers[3];
+	List<OutlineAnimation> hoverAnimations;
+	PixelShader            outlineShader;
+	PixelShader            outlineCompositeShader;
+	PixelShader            depthToAlphaShader;
+	Outline::PSPerPass     outlinePSPerPass[2];
+	Outline::PSPerPass     outlinePSPerPassSelected;
+	Outline::PSPerPass     outlinePSPerPassHovered;
 };
 
 struct PluginContext
@@ -1953,6 +1965,76 @@ Simulation_Update(SimulationState& s)
 				}
 			}
 		}
+
+		// Update highlight animations
+		auto initializeHighlight = [](OutlineAnimation& anim, i64 currentTicks) {
+			anim.isShowing  = true;
+			anim.startTicks = currentTicks;
+			anim.duration   = Platform_SecondsToTicks(0.05f);
+			anim.startValue = 0.75f;
+			anim.endValue   = 1.0f;
+		};
+
+		auto initializeFade = [](OutlineAnimation& anim, i64 currentTicks) {
+			anim.isShowing  = false;
+			anim.startTicks = currentTicks;
+			anim.duration   = Platform_SecondsToTicks(0.4f);
+			anim.startValue = 1.0f;
+			anim.endValue   = 0.0f;
+		};
+
+		auto continueFromCurrentAlpha = [](OutlineAnimation& anim) {
+			r32 currentAlpha = anim.psPerPass.outlineColor.a;
+			r32 progress     = Clamp(InverseLerp(anim.startValue, anim.endValue, currentAlpha), 0.0f, 1.0f);
+			i64 offset       = (i64) (progress * (r32) anim.duration);
+			anim.startTicks -= offset;
+		};
+
+		b8 found = false;
+		i64 currentTicks = Platform_GetTicks();
+		for (u32 i = s.hoverAnimations.length - 1; (i32) i >= 0 ; i--)
+		{
+			OutlineAnimation& anim = s.hoverAnimations[i];
+
+			b8 isHovered  = List_Equal(s.hovered, anim.widgets);
+			b8 isFading   = !anim.isShowing;
+			b8 isComplete = currentTicks >= anim.startTicks + anim.duration;
+			found |= isHovered;
+
+			// Update alpha
+			i64 hoveredTicks = currentTicks - anim.startTicks;
+			r32 hoveredFactor = Clamp((r32) hoveredTicks / (r32) anim.duration, 0.0f, 1.0f);
+			anim.psPerPass.outlineColor.a = Lerp(anim.startValue, anim.endValue, hoveredFactor);
+
+			// Was fading, switch to showing
+			if (isHovered && isFading)
+			{
+				initializeHighlight(anim, currentTicks);
+				continueFromCurrentAlpha(anim);
+			}
+			// Was showing, switch to fading
+			else if (!isHovered && !isFading)
+			{
+				initializeFade(anim, currentTicks);
+				continueFromCurrentAlpha(anim);
+			}
+			// Clear completed fades
+			else if (isFading && isComplete)
+			{
+				List_Free(anim.widgets);
+				List_RemoveFast(s.hoverAnimations, i);
+			}
+		}
+
+		// No existing fade to use, start a new highlight
+		if (!found && s.hovered.length != 0)
+		{
+			// A bit wasteful here with allocations, but meh
+			OutlineAnimation& anim = List_Append(s.hoverAnimations);
+			initializeHighlight(anim, currentTicks);
+			anim.widgets   = List_Duplicate(Slice(s.hovered));
+			anim.psPerPass = s.outlinePSPerPassHovered;
+		}
 	}
 
 	// DEBUG: Draw Coordinate System
@@ -1986,10 +2068,16 @@ Simulation_Update(SimulationState& s)
 			HighlightWidgets(s, s.selected, s.outlinePSPerPassSelected);
 			Renderer_PopEvent(*s.renderer);
 		}
-		if (s.hovered.length != 0 && s.guiInteraction == GUIInteraction::Null)
+
+		for (u32 i = 0; i < s.hoverAnimations.length; i++)
 		{
+			OutlineAnimation& anim = s.hoverAnimations[i];
+
+			b8 skip = anim.isShowing && s.guiInteraction != GUIInteraction::Null;
+			if (skip) continue;
+
 			Renderer_PushEvent(*s.renderer, "Outline Hovered Widgets");
-			HighlightWidgets(s, s.hovered, s.outlinePSPerPassHovered);
+			HighlightWidgets(s, anim.widgets, anim.psPerPass);
 			Renderer_PopEvent(*s.renderer);
 		}
 	}

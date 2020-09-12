@@ -3,12 +3,20 @@ Current
 Implement layering for the renderer API to remove runtime branching
 Validate Push/PopEvent counts
 
+Math
+	Remove second type from more math functions
+	Add LerpClamped, InverseLerpClamped
+	Fix min/max/value parameter orders
+	Add a Lerped<T>
+	Add Clamp01
+
 Outline
 	Use stencil instead of an extra depth texture
 	Think through clears carefully
 	Consider removing the depth to alpha pass
 	Outline only needs to produce alpha
 	Think about the three depth resources for outline composite
+	Rendering the same outline many times kills the alpha with black instead of selection color
 
 Bring ILI9341 code over
 	Add a tracing option

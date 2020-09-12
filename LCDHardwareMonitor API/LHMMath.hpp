@@ -90,7 +90,16 @@ template<typename T, typename U>
 constexpr inline T
 Lerp(T lhs, U rhs, r32 t)
 {
-	T result = (T) ((1.0f - t)*lhs + t*rhs);
+	T result = (T) ((1.0f - t)*(r32) lhs + t*(r32) rhs);
+	return result;
+}
+
+template<typename T, typename U, typename V>
+constexpr inline r32
+InverseLerp(T lhs, U rhs, V value)
+{
+	Assert((rhs - lhs) != 0);
+	r32 result = (r32) (value - lhs) / (r32) (rhs - lhs);
 	return result;
 }
 
@@ -387,6 +396,14 @@ constexpr inline v2t<T>
 Lerp(v2t<T> lhs, v2t<T> rhs, r32 t)
 {
 	v2t<T> result = { Lerp(lhs.x, rhs.x, t), Lerp(lhs.y, rhs.y, t) };
+	return result;
+}
+
+template<typename T>
+constexpr inline v2t<r32>
+InverseLerp(v2t<T> lhs, v2t<T> rhs, v2t<T> value)
+{
+	v2t<r32> result = { InverseLerp(lhs.x, rhs.x, value.x), InverseLerp(lhs.y, rhs.y, value.y) };
 	return result;
 }
 
@@ -728,6 +745,14 @@ Lerp(v3t<T> lhs, v3t<T> rhs, r32 t)
 }
 
 template<typename T>
+constexpr inline v3t<r32>
+InverseLerp(v3t<T> lhs, v3t<T> rhs, v3t<T> value)
+{
+	v3t<r32> result = { InverseLerp(lhs.x, rhs.x, value.x), InverseLerp(lhs.y, rhs.y, value.y), InverseLerp(lhs.z, rhs.z, value.z) };
+	return result;
+}
+
+template<typename T>
 constexpr inline v3t<T>
 Max(v3t<T> lhs, v3t<T> rhs)
 {
@@ -1020,6 +1045,19 @@ Lerp(v4t<T> lhs, v4t<T> rhs, r32 t)
 		Lerp(lhs.y, rhs.y, t),
 		Lerp(lhs.z, rhs.z, t),
 		Lerp(lhs.w, rhs.w, t)
+	};
+	return result;
+}
+
+template<typename T>
+constexpr inline v4t<r32>
+InverseLerp(v4t<T> lhs, v4t<T> rhs, v4t<T> value)
+{
+	v4t<r32> result = {
+		InverseLerp(lhs.x, rhs.x, value.x),
+		InverseLerp(lhs.y, rhs.y, value.y),
+		InverseLerp(lhs.z, rhs.z, value.z),
+		InverseLerp(lhs.w, rhs.w, value.w)
 	};
 	return result;
 }

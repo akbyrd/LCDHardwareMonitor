@@ -293,6 +293,15 @@ Platform_TicksToSeconds(i64 ticks)
 	return (r32) ticks / (r32) frequency.QuadPart;
 }
 
+i64
+Platform_SecondsToTicks(r32 seconds)
+{
+	// NOTE: Never fails above XP
+	LARGE_INTEGER frequency;
+	QueryPerformanceFrequency(&frequency);
+	return (i64) (seconds * (r32) frequency.QuadPart);
+}
+
 r32
 Platform_GetElapsedSeconds(i64 startTicks)
 {
@@ -301,9 +310,23 @@ Platform_GetElapsedSeconds(i64 startTicks)
 }
 
 r32
+Platform_GetElapsedSeconds(i64 startTicks, i64 endTicks)
+{
+	i64 elapsedTicks = endTicks - startTicks;
+	return Platform_TicksToSeconds(elapsedTicks);
+}
+
+r32
 Platform_GetElapsedMilliseconds(i64 startTicks)
 {
 	i64 elapsedTicks = Platform_GetTicks() - startTicks;
+	return Platform_TicksToSeconds(elapsedTicks) * 1000.0f;
+}
+
+r32
+Platform_GetElapsedMilliseconds(i64 startTicks, i64 endTicks)
+{
+	i64 elapsedTicks = endTicks - startTicks;
 	return Platform_TicksToSeconds(elapsedTicks) * 1000.0f;
 }
 
