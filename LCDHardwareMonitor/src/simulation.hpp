@@ -1045,7 +1045,7 @@ DragSelection(SimulationState& s)
 
 // TODO: This rendering detail is leaking awfully high up...
 static void
-HighlightWidgets(SimulationState& s, Slice<FullWidgetRef> refs, Outline::PSPerPass& compositeCBuf)
+HighlightWidgets(SimulationState& s, Slice<FullWidgetRef> refs, Outline::PSPerPass& compositeCBuf, b8 darken)
 {
 	Assert(refs.length != 0);
 
@@ -1167,6 +1167,37 @@ HighlightWidgets(SimulationState& s, Slice<FullWidgetRef> refs, Outline::PSPerPa
 		Renderer_PopEvent(*s.renderer);
 	}
 
+	// Darken main render target
+	// -> Main
+	if (darken)
+	{
+		static Outline::PSPerPass cbuf = {};
+		cbuf.outlineColor = v4{ 0, 0, 0, 0.5f };
+
+		PSConstantBufferUpdate cBufUpdate = {};
+		cBufUpdate.ps    = s.outlineCompositeShader;
+		cBufUpdate.index = 0;
+		cBufUpdate.data  = &cbuf;
+
+		Renderer_PushDepthBuffer(*s.renderer, s.tempDepthBuffers[1]);
+		Renderer_ClearDepthBuffer(*s.renderer);
+		Renderer_PopDepthBuffer(*s.renderer);
+
+		Renderer_PushEvent(*s.renderer, "Composite Fade");
+		Renderer_SetBlendMode(*s.renderer, true);
+		Renderer_PushRenderTarget(*s.renderer, StandardRenderTarget::Main);
+		Renderer_PushPSResource(*s.renderer, s.tempDepthBuffers[1], 0);
+		Renderer_PushPSResource(*s.renderer, s.tempDepthBuffers[2], 1);
+		Renderer_PushPixelShader(*s.renderer, s.outlineCompositeShader);
+		Renderer_UpdatePSConstantBuffer(*s.renderer, cBufUpdate);
+		Renderer_DrawMesh(*s.renderer, StandardMesh::Fullscreen);
+		Renderer_PopPixelShader(*s.renderer);
+		Renderer_PopPSResource(*s.renderer, 0);
+		Renderer_PopPSResource(*s.renderer, 1);
+		Renderer_PopRenderTarget(*s.renderer);
+		Renderer_PopEvent(*s.renderer);
+	}
+
 	// Composite outline back into main render target
 	// Temp 0 -> Main
 	{
@@ -1179,8 +1210,8 @@ HighlightWidgets(SimulationState& s, Slice<FullWidgetRef> refs, Outline::PSPerPa
 		Renderer_SetBlendMode(*s.renderer, true);
 		Renderer_PushRenderTarget(*s.renderer, StandardRenderTarget::Main);
 		Renderer_PushPSResource(*s.renderer, s.tempRenderTargets[0], 0);
-		Renderer_PushPSResource(*s.renderer, s.tempDepthBuffers[0], 1);
-		Renderer_PushPSResource(*s.renderer, s.tempDepthBuffers[2], 2);
+		Renderer_PushPSResource(*s.renderer, s.tempDepthBuffers[2], 1);
+		Renderer_PushPSResource(*s.renderer, s.tempDepthBuffers[0], 2);
 		Renderer_PushPSResource(*s.renderer, StandardDepthBuffer::Main, 3);
 		Renderer_PushPixelShader(*s.renderer, s.outlineCompositeShader);
 		Renderer_UpdatePSConstantBuffer(*s.renderer, cBufUpdate);
@@ -1451,9 +1482,7 @@ Simulation_Initialize(
 	s.outlinePSPerPassBlur[1].blurDirection = v2{ 0.0f, 1.0f };
 
 	s.outlinePSPerPassSelected.outlineColor = Color128(0, 122, 204, 255);
-	s.outlinePSPerPassSelected.darkenColor  = Color128(0, 0, 0, 128);
 	s.outlinePSPerPassHovered.outlineColor  = Color128(28, 151, 234, 255);
-	s.outlinePSPerPassHovered.darkenColor   = Color128(0, 0, 0, 0);
 
 	b8 success = PluginLoader_Initialize(*s.pluginLoader);
 	if (!success) return false;
@@ -2043,7 +2072,7 @@ Simulation_Update(SimulationState& s)
 		if (s.selected.length != 0)
 		{
 			Renderer_PushEvent(*s.renderer, "Outline Selected Widgets");
-			HighlightWidgets(s, s.selected, s.outlinePSPerPassSelected);
+			HighlightWidgets(s, s.selected, s.outlinePSPerPassSelected, true);
 			Renderer_PopEvent(*s.renderer);
 		}
 
@@ -2055,7 +2084,7 @@ Simulation_Update(SimulationState& s)
 			if (skip) continue;
 
 			Renderer_PushEvent(*s.renderer, "Outline Hovered Widgets");
-			HighlightWidgets(s, anim.widgets, anim.psPerPass);
+			HighlightWidgets(s, anim.widgets, anim.psPerPass, false);
 			Renderer_PopEvent(*s.renderer);
 		}
 	}

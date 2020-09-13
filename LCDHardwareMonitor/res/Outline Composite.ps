@@ -1,8 +1,8 @@
 #include "../src/Outline.ps.h"
 
 Texture2D srcTex;
-Texture2D srcDepthTex;
 Texture2D clipDepthTex;
+Texture2D srcDepthTex;
 Texture2D dstDepthTex;
 SamplerState samplerState;
 
@@ -22,9 +22,7 @@ float4 main(PixelFragment pIn) : SV_TARGET
 	float srcDepth = srcDepthTex.Sample(samplerState, pIn.UV).r;
 	float dstDepth = dstDepthTex.Sample(samplerState, pIn.UV).r;
 
-	float  fade   = dstDepth <= srcDepth ? 0.5f : 1.0f;
-	float4 src    = float4(outlineColor.rgb * fade, outlineColor.a * srcAlpha);
-	float4 dst    = darkenColor;
-	float4 result = float4(lerp(dst.rgb, src.rgb, src.a), max(dst.a, src.a));
+	float  fade = dstDepth <= srcDepth ? 0.5f : 1.0f;
+	float4 result = outlineColor * float4(fade, fade, fade, srcAlpha);
 	return result;
 }

@@ -9,7 +9,6 @@ Outline
 	Consider removing the depth to alpha pass
 	Outline only needs to produce alpha
 	Think about the three depth resources for outline composite
-	Rendering the same outline many times kills the alpha with black instead of selection color
 
 Bring ILI9341 code over
 	Add a tracing option
@@ -248,6 +247,7 @@ MSI Afterburner uses SMART.dll, PerfCounter.dll, HwInfo.dll, AIDA64.dll.
 
 Features - Outline shader
 -------------------------
+Use premultiplied alpha to composite darken and highlight in a single pass
 Consider bringing hovered/selected widgets to the front to avoid outline depth issues
 Clamp outline to screen edges
 Consider using a UAV for simultaneous read and write

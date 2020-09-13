@@ -11,7 +11,6 @@ cbuffer PSPerPass
 	uint2  textureSize;
 	float2 blurDirection;
 	float4 outlineColor;
-	float4 darkenColor;
 };
 
 #if __cplusplus

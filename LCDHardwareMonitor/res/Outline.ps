@@ -21,7 +21,7 @@ struct Pixel
 // TODO: Looks like scale and slope can be simplified together
 float CalcOutline(int blurRadius, int distance)
 {
-	float solidPixels = 2.25;
+	float solidPixels = 1.5;
 	float slope = -1.0 / (blurRadius + 1);           // Alpha falloff rate
 	float scale = 1.0 / ((slope * solidPixels) + 1); // Saturate the first few pixels
 	float alpha = saturate(scale * ((slope * distance) + 1));
@@ -34,7 +34,7 @@ Pixel main(PixelFragment pIn)
 {
 	Pixel pOut;
 
-	int blurRadius = 6;
+	int blurRadius = 4;
 	float2 texelStep = 1.0 / textureSize * blurDirection;
 
 	float alpha = 0;
