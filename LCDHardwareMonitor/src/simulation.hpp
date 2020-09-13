@@ -12,10 +12,7 @@ enum struct GUIInteraction
 struct OutlineAnimation
 {
 	b8                  isShowing;
-	i64                 startTicks;
-	i64                 duration;
-	r32                 startValue;
-	r32                 endValue;
+	Lerped<r32>         alpha;
 	List<FullWidgetRef> widgets;
 	Outline::PSPerPass  psPerPass;
 };
@@ -1969,28 +1966,8 @@ Simulation_Update(SimulationState& s)
 		}
 
 		// Update highlight animations
-		auto initializeHighlight = [](OutlineAnimation& anim, i64 currentTicks) {
-			anim.isShowing  = true;
-			anim.startTicks = currentTicks;
-			anim.duration   = Platform_SecondsToTicks(0.05f);
-			anim.startValue = 0.75f;
-			anim.endValue   = 1.0f;
-		};
-
-		auto initializeFade = [](OutlineAnimation& anim, i64 currentTicks) {
-			anim.isShowing  = false;
-			anim.startTicks = currentTicks;
-			anim.duration   = Platform_SecondsToTicks(0.4f);
-			anim.startValue = 1.0f;
-			anim.endValue   = 0.0f;
-		};
-
-		auto continueFromCurrentAlpha = [](OutlineAnimation& anim) {
-			r32 currentAlpha = anim.psPerPass.outlineColor.a;
-			r32 progress     = InverseLerpClamped(anim.startValue, anim.endValue, currentAlpha);
-			i64 offset       = (i64) (progress * (r32) anim.duration);
-			anim.startTicks -= offset;
-		};
+		LerpConfig<r32> highlightConfig = { Platform_SecondsToTicks(0.05f), 0.75f, 1.0f };
+		LerpConfig<r32> fadeConfig      = { Platform_SecondsToTicks(0.40f), 1.00f, 0.0f };
 
 		b8 found = false;
 		i64 currentTicks = Platform_GetTicks();
@@ -2000,25 +1977,23 @@ Simulation_Update(SimulationState& s)
 
 			b8 isHovered  = List_Equal(s.hovered, anim.widgets);
 			b8 isFading   = !anim.isShowing;
-			b8 isComplete = currentTicks >= anim.startTicks + anim.duration;
+			b8 isComplete = Lerped_IsComplete(anim.alpha);
 			found |= isHovered;
 
 			// Update alpha
-			i64 hoveredTicks = currentTicks - anim.startTicks;
-			r32 hoveredFactor = (r32) hoveredTicks / (r32) anim.duration;
-			anim.psPerPass.outlineColor.a = LerpClamped(anim.startValue, anim.endValue, hoveredFactor);
+			anim.psPerPass.outlineColor.a = Lerped_Update(anim.alpha, currentTicks);
 
 			// Was fading, switch to showing
 			if (isHovered && isFading)
 			{
-				initializeHighlight(anim, currentTicks);
-				continueFromCurrentAlpha(anim);
+				anim.isShowing = true;
+				Lerped_Reinitialize(anim.alpha, highlightConfig, currentTicks, anim.alpha.value);
 			}
 			// Was showing, switch to fading
 			else if (!isHovered && !isFading)
 			{
-				initializeFade(anim, currentTicks);
-				continueFromCurrentAlpha(anim);
+				anim.isShowing = false;
+				Lerped_Reinitialize(anim.alpha, fadeConfig, currentTicks, anim.alpha.value);
 			}
 			// Clear completed fades
 			else if (isFading && isComplete)
@@ -2033,7 +2008,8 @@ Simulation_Update(SimulationState& s)
 		{
 			// A bit wasteful here with allocations, but meh
 			OutlineAnimation& anim = List_Append(s.hoverAnimations);
-			initializeHighlight(anim, currentTicks);
+			anim.isShowing = true;
+			Lerped_Initialize(anim.alpha, highlightConfig, currentTicks);
 			anim.widgets   = List_Duplicate(Slice(s.hovered));
 			anim.psPerPass = s.outlinePSPerPassHovered;
 		}

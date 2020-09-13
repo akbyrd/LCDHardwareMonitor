@@ -3,9 +3,6 @@ Current
 Implement layering for the renderer API to remove runtime branching
 Validate Push/PopEvent counts
 
-Math
-	Add a Lerped<T>
-
 Outline
 	Use stencil instead of an extra depth texture
 	Think through clears carefully

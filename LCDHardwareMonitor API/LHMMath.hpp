@@ -2290,6 +2290,86 @@ namespace Colors128
 };
 
 // -------------------------------------------------------------------------------------------------
+// Lerped
+
+template<typename T>
+struct Lerped
+{
+	i64 startTime;
+	i64 duration;
+	T   startValue;
+	T   endValue;
+	T   value;
+};
+
+template<typename T>
+struct LerpConfig
+{
+	i64 duration;
+	T   startValue;
+	T   endValue;
+};
+
+template<typename T>
+constexpr inline void
+Lerped_ContinueFromValue(Lerped<T>& lerped, T value)
+{
+	r32 progress = InverseLerpClamped(lerped.startValue, lerped.endValue, value);
+	i64 offset   = (i64) (progress * (r32) lerped.duration);
+	lerped.startTime -= offset;
+	lerped.value      = value;
+}
+
+template<typename T>
+constexpr inline void
+Lerped_Initialize(Lerped<T>& lerped, LerpConfig<T> config, i64 startTime)
+{
+	lerped.startTime  = startTime;
+	lerped.duration   = config.duration;
+	lerped.startValue = config.startValue;
+	lerped.endValue   = config.endValue;
+	lerped.value      = config.startValue;
+}
+
+template<typename T>
+constexpr inline void
+Lerped_Reinitialize(Lerped<T>& lerped, LerpConfig<T> config, i64 startTime, T value)
+{
+	lerped.startTime  = startTime;
+	lerped.duration   = config.duration;
+	lerped.startValue = config.startValue;
+	lerped.endValue   = config.endValue;
+	Lerped_ContinueFromValue(lerped, value);
+}
+
+template<typename T>
+constexpr inline Lerped<T>
+Lerped_Create(LerpConfig<T> config, i64 startTime)
+{
+	Lerped<T> lerped = {};
+	Lerped_Initialize(lerped, startTime, config);
+	return lerped;
+}
+
+template<typename T>
+constexpr inline T
+Lerped_Update(Lerped<T>& lerped, i64 currentTime)
+{
+	i64 elapsedTime = currentTime - lerped.startTime;
+	r32 progress = (r32) elapsedTime / (r32) lerped.duration;
+	lerped.value = LerpClamped(lerped.startValue, lerped.endValue, progress);
+	return lerped.value;
+}
+
+template<typename T>
+constexpr inline b8
+Lerped_IsComplete(Lerped<T>& lerped)
+{
+	b8 result = lerped.value == lerped.endValue;
+	return result;
+}
+
+// -------------------------------------------------------------------------------------------------
 // Bit Manipulation
 
 constexpr inline u8
