@@ -1,7 +1,8 @@
 Current
 -------
-Implement layering for the renderer API to remove runtime branching
-Validate Push/PopEvent counts
+Combine batch scripts into one uber script
+Move more post build nonsense to batch script
+Try to apply build script to all projects automatically (less manual config)
 
 Outline
 	Use stencil instead of an extra depth texture
@@ -19,6 +20,8 @@ Bring FT232H code over
 	Coalesce writes
 	Switch to parallel interface
 
+Implement layering for the renderer API to remove runtime branching
+Validate Push/PopEvent counts
 Compare writes to python code (ft232h and ili9341)
 Compare reads to python code (ft232h and ili9341)
 Delete HardwareCommunication
@@ -29,7 +32,6 @@ Read from display
 Bugs
 ----
 Lag when selecting preview while GUI is open
-VS 2019 16.7 bug: won't create Shaders dir when compiling
 D3D leak when closing with selection
 D3D warning:
 	D3D11 WARNING: ID3D11DeviceContext::PSSetShaderResources:
@@ -114,8 +116,6 @@ Implement settings to remember e.g. which plugins should be loaded
 Settings - Enable/disable sensors
 Settings - Enable/disable widgets
 Asset loading might be slow. Do we need to do it on a background thread?
-Runtime shader compilation
-Shader hot-reloading
 Need to handle mouse position when preview isn't visible
 Need to actually avoid processing broken plugins
 Users probably need to be able to create custom UI for plugin settings
@@ -142,6 +142,7 @@ Implement hardware reset
 Features - Rendering
 --------------------
 Expand Copy operation to take any src and dst
+Runtime shader compilation & hot reloading (shader cache)
 Remove types from resource names
 Add push and pop for blend modes
 Change rasterizer state to be runtime configurable

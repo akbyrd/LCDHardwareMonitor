@@ -1171,6 +1171,7 @@ HighlightWidgets(SimulationState& s, Slice<FullWidgetRef> refs, Outline::PSPerPa
 	// -> Main
 	if (darken)
 	{
+		// TODO: Maybe make other buffers static too?
 		static Outline::PSPerPass cbuf = {};
 		cbuf.outlineColor = v4{ 0, 0, 0, 0.5f };
 

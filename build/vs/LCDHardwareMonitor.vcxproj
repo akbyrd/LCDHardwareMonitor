@@ -99,6 +99,9 @@
     <Link>
       <AdditionalLibraryDirectories>..\..\ext\d2xx\lib_$(PlatformTarget)\</AdditionalLibraryDirectories>
     </Link>
+    <PreBuildEvent>
+      <Command>IF NOT EXIST "$(OutDir)Shaders" MKDIR "$(OutDir)Shaders"</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -114,6 +117,9 @@
     <Link>
       <AdditionalLibraryDirectories>..\..\ext\d2xx\lib_$(PlatformTarget)\</AdditionalLibraryDirectories>
     </Link>
+    <PreBuildEvent>
+      <Command>IF NOT EXIST "$(OutDir)Shaders" MKDIR "$(OutDir)Shaders"</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -133,6 +139,9 @@
     <PostBuildEvent>
       <Command>"Deploy.bat" "$(OutDir)" &amp;&amp; CopyD3DC.bat "$(WindowsSdkDir)" $(PlatformTarget)</Command>
     </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>IF NOT EXIST "$(OutDir)Shaders" MKDIR "$(OutDir)Shaders"</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -152,6 +161,9 @@
     <PostBuildEvent>
       <Command>"Deploy.bat" "$(OutDir)" &amp;&amp; CopyD3DC.bat "$(WindowsSdkDir)" $(PlatformTarget)</Command>
     </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>IF NOT EXIST "$(OutDir)Shaders" MKDIR "$(OutDir)Shaders"</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\LCDHardwareMonitor\src\main_win32.cpp" />
