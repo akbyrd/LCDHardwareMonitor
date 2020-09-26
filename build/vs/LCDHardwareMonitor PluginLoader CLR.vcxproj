@@ -114,8 +114,8 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <PostBuildEvent>
-      <Command>"GenTLB.bat" "$(OutDir)" "$(TargetName)" &amp;&amp; ^
-"Deploy.bat" "$(OutDir)"</Command>
+      <Command>Deploy.bat GenerateTLB "$(OutDir)" "$(TargetName)" "$(PlatformTarget)" &amp;&amp; ^
+Deploy.bat ProjectPostBuild "$(OutDir)"</Command>
     </PostBuildEvent>
     <Link />
     <Manifest />
@@ -130,8 +130,8 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <PostBuildEvent>
-      <Command>"GenTLB.bat" "$(OutDir)" "$(TargetName)" &amp;&amp; ^
-"Deploy.bat" "$(OutDir)"</Command>
+      <Command>Deploy.bat GenerateTLB "$(OutDir)" "$(TargetName)" "$(PlatformTarget)" &amp;&amp; ^
+Deploy.bat ProjectPostBuild "$(OutDir)"</Command>
     </PostBuildEvent>
     <Link />
     <Manifest />
@@ -152,8 +152,8 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PostBuildEvent>
-      <Command>"GenTLB.bat" "$(OutDir)" "$(TargetName)" &amp;&amp; ^
-"Deploy.bat" "$(OutDir)"</Command>
+      <Command>Deploy.bat GenerateTLB "$(OutDir)" "$(TargetName)" "$(PlatformTarget)" &amp;&amp; ^
+Deploy.bat ProjectPostBuild "$(OutDir)"</Command>
     </PostBuildEvent>
     <Manifest />
     <Manifest />
@@ -173,8 +173,8 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PostBuildEvent>
-      <Command>"GenTLB.bat" "$(OutDir)" "$(TargetName)" &amp;&amp; ^
-"Deploy.bat" "$(OutDir)"</Command>
+      <Command>Deploy.bat GenerateTLB "$(OutDir)" "$(TargetName)" "$(PlatformTarget)" &amp;&amp; ^
+Deploy.bat ProjectPostBuild "$(OutDir)"</Command>
     </PostBuildEvent>
     <Manifest />
     <Manifest />

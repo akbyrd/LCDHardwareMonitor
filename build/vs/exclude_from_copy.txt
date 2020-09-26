@@ -4,3 +4,4 @@
 .metagen
 .iobj
 .ipdb
+.cso

@@ -7,6 +7,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LCDHardwareMonitor", "LCDHa
 	ProjectSection(ProjectDependencies) = postProject
 		{4CF4BF35-2C27-4969-BFD7-34149A9CBF12} = {4CF4BF35-2C27-4969-BFD7-34149A9CBF12}
 		{7DA05A6B-45B5-4877-B211-14ED51B5388B} = {7DA05A6B-45B5-4877-B211-14ED51B5388B}
+		{C66C06EE-10BF-465E-90C9-8564F20626D2} = {C66C06EE-10BF-465E-90C9-8564F20626D2}
 		{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A} = {2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}
 	EndProjectSection
 EndProject
@@ -31,23 +32,33 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "LCDHardwareMonitor API", "L
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LCDHardwareMonitor API CLR", "LCDHardwareMonitor API CLR.vcxproj", "{246430DC-680A-432E-B7DE-BCC2C59CDDAE}"
+	ProjectSection(ProjectDependencies) = postProject
+		{C66C06EE-10BF-465E-90C9-8564F20626D2} = {C66C06EE-10BF-465E-90C9-8564F20626D2}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LCDHardwareMonitor PluginLoader CLR", "LCDHardwareMonitor PluginLoader CLR.vcxproj", "{4CF4BF35-2C27-4969-BFD7-34149A9CBF12}"
+	ProjectSection(ProjectDependencies) = postProject
+		{C66C06EE-10BF-465E-90C9-8564F20626D2} = {C66C06EE-10BF-465E-90C9-8564F20626D2}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Sensor Plugin - OpenHardwareMonitor", "Sensor Plugin - OpenHardwareMonitor.vcxproj", "{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}"
+	ProjectSection(ProjectDependencies) = postProject
+		{C66C06EE-10BF-465E-90C9-8564F20626D2} = {C66C06EE-10BF-465E-90C9-8564F20626D2}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Widget Plugin - Filled Bar", "Widget Plugin - Filled Bar.vcxproj", "{7DA05A6B-45B5-4877-B211-14ED51B5388B}"
+	ProjectSection(ProjectDependencies) = postProject
+		{C66C06EE-10BF-465E-90C9-8564F20626D2} = {C66C06EE-10BF-465E-90C9-8564F20626D2}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LCDHardwareMonitor GUI", "LCDHardwareMonitor GUI.csproj", "{5ECF7D2F-1DD5-4E32-A973-018FCBD33380}"
+	ProjectSection(ProjectDependencies) = postProject
+		{C66C06EE-10BF-465E-90C9-8564F20626D2} = {C66C06EE-10BF-465E-90C9-8564F20626D2}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LCDHardwareMonitor GUI Interop", "LCDHardwareMonitor GUI Interop.vcxproj", "{E16AAA6C-043D-416E-8CE7-D7FDB83B8722}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build Scripts", "Build Scripts", "{88E61B82-2958-4CE2-82FF-6F5952702AB3}"
-	ProjectSection(SolutionItems) = preProject
-		CopyD3DC.bat = CopyD3DC.bat
-		Deploy.bat = Deploy.bat
-		GenTLB.bat = GenTLB.bat
-		ignored.txt = ignored.txt
+	ProjectSection(ProjectDependencies) = postProject
+		{C66C06EE-10BF-465E-90C9-8564F20626D2} = {C66C06EE-10BF-465E-90C9-8564F20626D2}
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{93AE6C14-C253-4259-B426-1784014EBBB1}"
@@ -55,10 +66,14 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		..\..\.editorconfig = ..\..\.editorconfig
 		..\..\.gitignore = ..\..\.gitignore
 		..\..\.gitmodules = ..\..\.gitmodules
+		Deploy.bat = Deploy.bat
+		exclude_from_copy.txt = exclude_from_copy.txt
 		..\..\README.md = ..\..\README.md
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Hardware Communication", "Hardware Communication.vcxproj", "{BC5635D4-690C-484D-931A-E5E5A259D338}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PreBuild", "PreBuild.vcxproj", "{C66C06EE-10BF-465E-90C9-8564F20626D2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -132,6 +147,14 @@ Global
 		{BC5635D4-690C-484D-931A-E5E5A259D338}.Release|x64.Build.0 = Release|x64
 		{BC5635D4-690C-484D-931A-E5E5A259D338}.Release|x86.ActiveCfg = Release|Win32
 		{BC5635D4-690C-484D-931A-E5E5A259D338}.Release|x86.Build.0 = Release|Win32
+		{C66C06EE-10BF-465E-90C9-8564F20626D2}.Debug|x64.ActiveCfg = Debug|x64
+		{C66C06EE-10BF-465E-90C9-8564F20626D2}.Debug|x64.Build.0 = Debug|x64
+		{C66C06EE-10BF-465E-90C9-8564F20626D2}.Debug|x86.ActiveCfg = Debug|Win32
+		{C66C06EE-10BF-465E-90C9-8564F20626D2}.Debug|x86.Build.0 = Debug|Win32
+		{C66C06EE-10BF-465E-90C9-8564F20626D2}.Release|x64.ActiveCfg = Release|x64
+		{C66C06EE-10BF-465E-90C9-8564F20626D2}.Release|x64.Build.0 = Release|x64
+		{C66C06EE-10BF-465E-90C9-8564F20626D2}.Release|x86.ActiveCfg = Release|Win32
+		{C66C06EE-10BF-465E-90C9-8564F20626D2}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

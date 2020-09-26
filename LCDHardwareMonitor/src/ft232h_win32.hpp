@@ -274,7 +274,7 @@ FT232H_Read(FT232HState& ft232h, Bytes& buffer, u16 numBytesToRead)
 	u8 ftcmd[] = { FT232H::Command::RecvBytesRisingMSB, UnpackLSB2(numBytesEnc) };
 
 	u32 numBytesWritten;
-	status = FT_Write(ft232h.device, ftcmd, ArrayLength(ftcmd), (DWORD*) &numBytesWritten);
+	status = FT_Write(ft232h.device, ftcmd, (DWORD) ArrayLength(ftcmd), (DWORD*) &numBytesWritten);
 	LOG_IF(status != FT_OK, EnterErrorMode(ft232h); return,
 		Severity::Error, "Failed to write to device: %", status);
 	Assert(ArrayLength(ftcmd) == numBytesWritten);

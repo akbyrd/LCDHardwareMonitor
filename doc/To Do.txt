@@ -1,8 +1,6 @@
 Current
 -------
-Combine batch scripts into one uber script
-Move more post build nonsense to batch script
-Try to apply build script to all projects automatically (less manual config)
+Shaders were being built to a sub-folder for debugging without run directory. Pretty sure I broke that.
 
 Outline
 	Use stencil instead of an extra depth texture
@@ -58,7 +56,6 @@ Refactoring
 -----------
 Starting to feel like state checking should be in the sim
 Try removing WidgetData
-Shaders should go through deploy?
 Start using Scoped
 Namespaces
 Native namespace for interop?
@@ -71,6 +68,7 @@ Ensure Platform function naming is uniform
 Decide on 'plugin loader' naming on both sides of the managed boundary
 Consider building with a batch script
 Consider using premake
+Try to use a property sheet for bin/obj dirs, clean, and post build
 
 
 

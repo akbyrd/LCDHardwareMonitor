@@ -97,7 +97,7 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <PostBuildEvent>
-      <Command>"Deploy.bat" "$(OutDir)" "Widget Plugins\Filled Bar"</Command>
+      <Command>Deploy.bat ProjectPostBuild "$(OutDir)" "Widget Plugins\Filled Bar"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -109,7 +109,7 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <PostBuildEvent>
-      <Command>"Deploy.bat" "$(OutDir)" "Widget Plugins\Filled Bar"</Command>
+      <Command>Deploy.bat ProjectPostBuild "$(OutDir)" "Widget Plugins\Filled Bar"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -127,7 +127,7 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PostBuildEvent>
-      <Command>"Deploy.bat" "$(OutDir)" "Widget Plugins\Filled Bar"</Command>
+      <Command>Deploy.bat ProjectPostBuild "$(OutDir)" "Widget Plugins\Filled Bar"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -145,7 +145,7 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PostBuildEvent>
-      <Command>"Deploy.bat" "$(OutDir)" "Widget Plugins\Filled Bar"</Command>
+      <Command>Deploy.bat ProjectPostBuild "$(OutDir)" "Widget Plugins\Filled Bar"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
