@@ -169,7 +169,7 @@ void FT232H_SetDC(FT232H::State* ft232h, Signal signal)
 
 	switch (signal)
 	{
-		default: Assert(false);
+		default: Assert(false); break;
 
 		case Signal::Low:
 		{
