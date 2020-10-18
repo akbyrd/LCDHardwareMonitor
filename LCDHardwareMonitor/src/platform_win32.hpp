@@ -50,6 +50,7 @@ Platform_LogImpl(Severity severity, Location location, StringView message)
 	Assert(severity != Severity::Null);
 
 	String fullMessage = String_FormatImpl("% - %\n\t%(%)\n", location.function, message, location.file, location.line);
+	defer { String_Free(fullMessage); };
 
 	Platform_PrintImpl(fullMessage);
 	if (severity > Severity::Info)
