@@ -164,7 +164,7 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>PUSHD "$(ProjectDir)"
-Deploy.bat ProjectPostBuild "$(OutDir)" "GUI"
+Deploy.bat ProjectPostBuild "$(SolutionDir)..\..\LCDHardwareMonitor GUI" "$(OutDir)" "GUI"
 POPD</PostBuildEvent>
   </PropertyGroup>
 </Project>

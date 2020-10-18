@@ -115,7 +115,7 @@
     </ClCompile>
     <PostBuildEvent>
       <Command>Deploy.bat GenerateTLB "$(OutDir)" "$(TargetName)" "$(PlatformTarget)" &amp;&amp; ^
-Deploy.bat ProjectPostBuild "$(OutDir)"</Command>
+Deploy.bat ProjectPostBuild "$(SolutionDir)..\..\LCDHardwareMonitor PluginLoader CLR" "$(OutDir)"</Command>
     </PostBuildEvent>
     <Link />
     <Manifest />
@@ -131,7 +131,7 @@ Deploy.bat ProjectPostBuild "$(OutDir)"</Command>
     </ClCompile>
     <PostBuildEvent>
       <Command>Deploy.bat GenerateTLB "$(OutDir)" "$(TargetName)" "$(PlatformTarget)" &amp;&amp; ^
-Deploy.bat ProjectPostBuild "$(OutDir)"</Command>
+Deploy.bat ProjectPostBuild "$(SolutionDir)..\..\LCDHardwareMonitor PluginLoader CLR" "$(OutDir)"</Command>
     </PostBuildEvent>
     <Link />
     <Manifest />
@@ -153,7 +153,7 @@ Deploy.bat ProjectPostBuild "$(OutDir)"</Command>
     </Link>
     <PostBuildEvent>
       <Command>Deploy.bat GenerateTLB "$(OutDir)" "$(TargetName)" "$(PlatformTarget)" &amp;&amp; ^
-Deploy.bat ProjectPostBuild "$(OutDir)"</Command>
+Deploy.bat ProjectPostBuild "$(SolutionDir)..\..\LCDHardwareMonitor PluginLoader CLR" "$(OutDir)"</Command>
     </PostBuildEvent>
     <Manifest />
     <Manifest />
@@ -174,7 +174,7 @@ Deploy.bat ProjectPostBuild "$(OutDir)"</Command>
     </Link>
     <PostBuildEvent>
       <Command>Deploy.bat GenerateTLB "$(OutDir)" "$(TargetName)" "$(PlatformTarget)" &amp;&amp; ^
-Deploy.bat ProjectPostBuild "$(OutDir)"</Command>
+Deploy.bat ProjectPostBuild "$(SolutionDir)..\..\LCDHardwareMonitor PluginLoader CLR" "$(OutDir)"</Command>
     </PostBuildEvent>
     <Manifest />
     <Manifest />

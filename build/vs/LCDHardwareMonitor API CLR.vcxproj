@@ -104,7 +104,7 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <PostBuildEvent>
-      <Command>Deploy.bat ProjectPostBuild "$(OutDir)"</Command>
+      <Command>Deploy.bat ProjectPostBuild "$(SolutionDir)..\..\LCDHardwareMonitor API CLR" "$(OutDir)"</Command>
     </PostBuildEvent>
     <Link />
   </ItemDefinitionGroup>
@@ -117,7 +117,7 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <PostBuildEvent>
-      <Command>Deploy.bat ProjectPostBuild "$(OutDir)"</Command>
+      <Command>Deploy.bat ProjectPostBuild "$(SolutionDir)..\..\LCDHardwareMonitor API CLR" "$(OutDir)"</Command>
     </PostBuildEvent>
     <Link />
   </ItemDefinitionGroup>
@@ -136,7 +136,7 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PostBuildEvent>
-      <Command>Deploy.bat ProjectPostBuild "$(OutDir)"</Command>
+      <Command>Deploy.bat ProjectPostBuild "$(SolutionDir)..\..\LCDHardwareMonitor API CLR" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -154,7 +154,7 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PostBuildEvent>
-      <Command>Deploy.bat ProjectPostBuild "$(OutDir)"</Command>
+      <Command>Deploy.bat ProjectPostBuild "$(SolutionDir)..\..\LCDHardwareMonitor API CLR" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

@@ -94,7 +94,7 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <PostBuildEvent>
-      <Command>Deploy.bat ProjectPostBuild "$(OutDir)" "" "Shaders"</Command>
+      <Command>Deploy.bat ProjectPostBuild "$(SolutionDir)..\..\LCDHardwareMonitor" "$(OutDir)" "" "Shaders"</Command>
     </PostBuildEvent>
     <Link>
       <AdditionalLibraryDirectories>..\..\ext\d2xx\lib_$(PlatformTarget)\</AdditionalLibraryDirectories>
@@ -113,7 +113,7 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <PostBuildEvent>
-      <Command>Deploy.bat ProjectPostBuild "$(OutDir)" "" "Shaders"</Command>
+      <Command>Deploy.bat ProjectPostBuild "$(SolutionDir)..\..\LCDHardwareMonitor" "$(OutDir)" "" "Shaders"</Command>
     </PostBuildEvent>
     <Link>
       <AdditionalLibraryDirectories>..\..\ext\d2xx\lib_$(PlatformTarget)\</AdditionalLibraryDirectories>
@@ -139,7 +139,7 @@
       <AdditionalLibraryDirectories>..\..\ext\d2xx\lib_$(PlatformTarget)\</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>Deploy.bat ProjectPostBuild "$(OutDir)" "" "Shaders"</Command>
+      <Command>Deploy.bat ProjectPostBuild "$(SolutionDir)..\..\LCDHardwareMonitor" "$(OutDir)" "" "Shaders"</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>
@@ -162,7 +162,7 @@
       <AdditionalLibraryDirectories>..\..\ext\d2xx\lib_$(PlatformTarget)\</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>Deploy.bat ProjectPostBuild "$(OutDir)" "" "Shaders"</Command>
+      <Command>Deploy.bat ProjectPostBuild "$(SolutionDir)..\..\LCDHardwareMonitor" "$(OutDir)" "" "Shaders"</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>
