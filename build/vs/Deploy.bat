@@ -48,15 +48,14 @@ GOTO :%FUNCTION%
 	REM $(OutDir) ends with a \ which breaks tlbexp. It will complain about an
 	REM invalid character in the path. Appending a . is a hack to avoid the error.
 
-	REM It sucks that we have to hardcode the path to other project assemblies.
-	REM This means we have to be careful about renames and that $(OutDir) matches
-	REM for all involved projects.
+	REM Warning TX00131175 is disabled because it appears to be spurious can I can't find a way to
+	REM prevent it. It's complaining that all library references should be specified when cross-
+	REM compiling but 1) I'm not cross-compiling and 2) I shouldn't have any dependencies.
 
 	SET OUT_DIR=%~2
 	SET TARGET_NAME=%~3
 	SET WIN_SDK_ARCH=%~4
 	SET TARGET_FILE_NO_EXT=%OUT_DIR%%TARGET_NAME%
-	SET DEPENDENCY_DIR=..\LCDHardwareMonitor API CLR\%OUT_DIR%
 	IF      "%WIN_SDK_ARCH%" == "x86" ( SET TLB_ARCH=win32 ) ^
 	ELSE IF "%WIN_SDK_ARCH%" == "x64" ( SET TLB_ARCH=win64 )
 
@@ -64,8 +63,8 @@ GOTO :%FUNCTION%
 	tlbexp ^
 		"%TARGET_FILE_NO_EXT%.dll" ^
 		/out:"%TARGET_FILE_NO_EXT%.tlb" ^
-		/asmpath:"%DEPENDENCY_DIR%." ^
 		/%TLB_ARCH% ^
+		/silence:00131175 ^
 		/nologo > NUL
 	IF ERRORLEVEL 1 GOTO Abort
 	GOTO Exit

@@ -11,13 +11,11 @@ Fix tlbexp issues
 [x] Might use ClassInterfaceAttribute, ComDefaultInterfaceAttribute, InterfaceTypeAttribute if sticking with auto-COM
 [x] #import without copy?
 [x] Look at tlbexp and references vs pointers
-
-[ ] Fix 64 bit warnings from tlbexp
-[ ] Support x86 and x64
+[x] Support x86 and x64
+[x] Fix 64 bit warnings from tlbexp
+[-] Is there another way to generate a type library?
+[-] Would using .NET Core be simpler?
 [ ] Do delegates automatically match native counterparts?
-
-[ ] Would using .NET Core be simpler?
-[ ] Is there another way to generate a type library?
 
 
 
@@ -232,6 +230,12 @@ Probably need a replacement SDK since it's unmaintained
 
 Features - Plugins
 ------------------
+Consider using .NET Core instead of .NET Framework.
+	Does it make hosting the CLR easier?
+	Does it make dealing with the tlb easier?
+	Does it affect which plugins can be loaded?
+Try to write a manual IDL file instead of using a C++/CLI project.
+	How do you forward declare a native type without defining it in IDL?
 Handle multiple plugins in the same file (probably just a detailed error)
 Allow logging from plugins
 Can plugins share shaders? (maybe not)
