@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+	<!-- NOTE: Use na instead of sb in case there are embedded null characters -->
 	<Type Name="String">
-		<DisplayString>{{ {data,sb} }}</DisplayString>
+		<DisplayString>{{ {data,[length]na} }}</DisplayString>
 	</Type>
 
 	<Type Name="StringSlice">
-		<DisplayString>{{ {data,[length]sb} }}</DisplayString>
+		<DisplayString>{{ {data,[length]na} }}</DisplayString>
 	</Type>
 
 	<Type Name="List&lt;*&gt;">
