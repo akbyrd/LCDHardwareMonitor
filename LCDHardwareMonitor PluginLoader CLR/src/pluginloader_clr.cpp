@@ -5,10 +5,6 @@
 #include "plugin_shared.h"
 
 #pragma managed
-#pragma make_public(Plugin)
-#pragma make_public(SensorPlugin)
-#pragma make_public(WidgetPlugin)
-
 using namespace System;
 using namespace System::IO;
 using namespace System::Reflection;
@@ -17,28 +13,10 @@ using namespace System::Runtime::InteropServices;
 // NOTE: Cross domain function calls average 200ns with the delegate pattern.
 // Try playing with security settings if optimizing this
 
-// NOTE: Can't pass references through COM interfaces. tlbgen replaces them with pointers.
-
-// NOTE: Have to set default visibility to true for the whole assembly to be able to use native
-// types in COM functions. Without this, Plugin and friends won't be export and in turn neither
-// will LoadSensorPlugin, etc.
-[assembly:ComVisible(true)];
-
-[ComVisible(true)]
-public interface class
-ILHMPluginLoader
-{
-	b8 LoadSensorPlugin   (Plugin& plugin, SensorPlugin& sensorPlugin);
-	b8 UnloadSensorPlugin (Plugin& plugin, SensorPlugin& sensorPlugin);
-	b8 LoadWidgetPlugin   (Plugin& plugin, WidgetPlugin& widgetPlugin);
-	b8 UnloadWidgetPlugin (Plugin& plugin, WidgetPlugin& widgetPlugin);
-};
-
-[ComVisible(false)]
 public value struct
 SensorPlugin_CLR
 {
-	#define Attributes UnmanagedFunctionPointer(CallingConvention::Cdecl), ComVisible(false)
+	#define Attributes UnmanagedFunctionPointer(CallingConvention::Cdecl)
 	[Attributes] delegate b8   InitializeDelegate (PluginContext& context, SensorPluginAPI::Initialize api);
 	[Attributes] delegate void UpdateDelegate     (PluginContext& context, SensorPluginAPI::Update     api);
 	[Attributes] delegate void TeardownDelegate   (PluginContext& context, SensorPluginAPI::Teardown   api);
@@ -50,11 +28,10 @@ SensorPlugin_CLR
 	TeardownDelegate^   teardownDelegate;
 };
 
-[ComVisible(false)]
 public value struct
 WidgetPlugin_CLR
 {
-	#define Attributes UnmanagedFunctionPointer(CallingConvention::Cdecl), ComVisible(false)
+	#define Attributes UnmanagedFunctionPointer(CallingConvention::Cdecl)
 	[Attributes] delegate b8   InitializeDelegate (PluginContext& context, WidgetPluginAPI::Initialize api);
 	[Attributes] delegate void UpdateDelegate     (PluginContext& context, WidgetPluginAPI::Update     api);
 	[Attributes] delegate void TeardownDelegate   (PluginContext& context, WidgetPluginAPI::Teardown   api);
@@ -66,7 +43,6 @@ WidgetPlugin_CLR
 	TeardownDelegate^   teardownDelegate;
 };
 
-[ComVisible(false)]
 public ref struct
 LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 {

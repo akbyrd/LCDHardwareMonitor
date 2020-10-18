@@ -19,22 +19,14 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\LCDHardwareMonitor PluginLoader CLR\src\pluginloader_clr.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="LCDHardwareMonitor API CLR.vcxproj">
-      <Project>{246430dc-680a-432e-b7de-bcc2c59cddae}</Project>
-    </ProjectReference>
-    <ProjectReference Include="LCDHardwareMonitor PluginLoader CLR Interface.vcxproj">
-      <Project>{7e6a520b-1a13-444a-b224-78c8f6be9a93}</Project>
-    </ProjectReference>
+    <ClCompile Include="..\..\LCDHardwareMonitor PluginLoader CLR Interface\src\pluginloader_clr_interface.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
-    <ProjectGuid>{4CF4BF35-2C27-4969-BFD7-34149A9CBF12}</ProjectGuid>
+    <ProjectGuid>{7E6A520B-1A13-444A-B224-78C8F6BE9A93}</ProjectGuid>
     <AssemblyName>LCDHardwareMonitor.PluginLoader.CLR</AssemblyName>
     <RootNamespace>LCDHardwareMonitor</RootNamespace>
-    <ProjectName>LCDHardwareMonitor PluginLoader CLR</ProjectName>
+    <ProjectName>LCDHardwareMonitor PluginLoader CLR Interface</ProjectName>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -90,35 +82,35 @@
     <OutDir>bin\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</OutDir>
     <IntDir>obj\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</IntDir>
     <LinkIncremental>false</LinkIncremental>
-    <TargetName>LCDHardwareMonitor.PluginLoader.CLR</TargetName>
+    <TargetName>LCDHardwareMonitor.PluginLoader.CLR.Interface</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>bin\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</OutDir>
     <IntDir>obj\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</IntDir>
     <LinkIncremental>false</LinkIncremental>
-    <TargetName>LCDHardwareMonitor.PluginLoader.CLR</TargetName>
+    <TargetName>LCDHardwareMonitor.PluginLoader.CLR.Interface</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>bin\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</OutDir>
     <IntDir>obj\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</IntDir>
-    <TargetName>LCDHardwareMonitor.PluginLoader.CLR</TargetName>
+    <TargetName>LCDHardwareMonitor.PluginLoader.CLR.Interface</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>bin\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</OutDir>
     <IntDir>obj\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</IntDir>
-    <TargetName>LCDHardwareMonitor.PluginLoader.CLR</TargetName>
+    <TargetName>LCDHardwareMonitor.PluginLoader.CLR.Interface</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>EnableAllWarnings</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\..\LCDHardwareMonitor\src;$(SolutionDir)..\..\LCDHardwareMonitor\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\LCDHardwareMonitor\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <PostBuildEvent>
-      <Command>
-Deploy.bat ProjectPostBuild "$(SolutionDir)..\..\LCDHardwareMonitor PluginLoader CLR" "$(OutDir)"</Command>
+      <Command>Deploy.bat GenerateTLB "$(OutDir)" "$(TargetName)" "$(PlatformTarget)" &amp;&amp; ^
+Deploy.bat ProjectPostBuild "$(SolutionDir)..\..\LCDHardwareMonitor PluginLoader CLR Interface" "$(OutDir)"</Command>
     </PostBuildEvent>
     <Link />
     <Manifest />
@@ -129,12 +121,12 @@ Deploy.bat ProjectPostBuild "$(SolutionDir)..\..\LCDHardwareMonitor PluginLoader
       <WarningLevel>EnableAllWarnings</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\..\LCDHardwareMonitor\src;$(SolutionDir)..\..\LCDHardwareMonitor\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\LCDHardwareMonitor\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <PostBuildEvent>
-      <Command>
-Deploy.bat ProjectPostBuild "$(SolutionDir)..\..\LCDHardwareMonitor PluginLoader CLR" "$(OutDir)"</Command>
+      <Command>Deploy.bat GenerateTLB "$(OutDir)" "$(TargetName)" "$(PlatformTarget)" &amp;&amp; ^
+Deploy.bat ProjectPostBuild "$(SolutionDir)..\..\LCDHardwareMonitor PluginLoader CLR Interface" "$(OutDir)"</Command>
     </PostBuildEvent>
     <Link />
     <Manifest />
@@ -147,7 +139,7 @@ Deploy.bat ProjectPostBuild "$(SolutionDir)..\..\LCDHardwareMonitor PluginLoader
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\..\LCDHardwareMonitor\src;$(SolutionDir)..\..\LCDHardwareMonitor\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\LCDHardwareMonitor\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -155,8 +147,8 @@ Deploy.bat ProjectPostBuild "$(SolutionDir)..\..\LCDHardwareMonitor PluginLoader
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PostBuildEvent>
-      <Command>
-Deploy.bat ProjectPostBuild "$(SolutionDir)..\..\LCDHardwareMonitor PluginLoader CLR" "$(OutDir)"</Command>
+      <Command>Deploy.bat GenerateTLB "$(OutDir)" "$(TargetName)" "$(PlatformTarget)" &amp;&amp; ^
+Deploy.bat ProjectPostBuild "$(SolutionDir)..\..\LCDHardwareMonitor PluginLoader CLR Interface" "$(OutDir)"</Command>
     </PostBuildEvent>
     <Manifest />
     <Manifest />
@@ -168,7 +160,7 @@ Deploy.bat ProjectPostBuild "$(SolutionDir)..\..\LCDHardwareMonitor PluginLoader
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\..\LCDHardwareMonitor\src;$(SolutionDir)..\..\LCDHardwareMonitor\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\LCDHardwareMonitor\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -176,8 +168,8 @@ Deploy.bat ProjectPostBuild "$(SolutionDir)..\..\LCDHardwareMonitor PluginLoader
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PostBuildEvent>
-      <Command>
-Deploy.bat ProjectPostBuild "$(SolutionDir)..\..\LCDHardwareMonitor PluginLoader CLR" "$(OutDir)"</Command>
+      <Command>Deploy.bat GenerateTLB "$(OutDir)" "$(TargetName)" "$(PlatformTarget)" &amp;&amp; ^
+Deploy.bat ProjectPostBuild "$(SolutionDir)..\..\LCDHardwareMonitor PluginLoader CLR Interface" "$(OutDir)"</Command>
     </PostBuildEvent>
     <Manifest />
     <Manifest />

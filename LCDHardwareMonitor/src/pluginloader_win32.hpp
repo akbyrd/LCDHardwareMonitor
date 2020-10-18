@@ -12,11 +12,12 @@ using Microsoft::WRL::ComPtr;
 
 // TODO: Don't really need this in run/. Want to reach into the project output
 // folder directly, but we need to know the correct config subfolder.
-// NOTE: Can use oleview to inspect tlb files. Other tools are available online.
 #pragma warning(push)
-// TODO: Why does tlbexp generate bad code?
+// NOTE: The automatically included comdef.h in the tlh generates warnings
 #pragma warning(disable: 5204) // non-virtual destructor
-#import "..\\..\\build\\vs\\run\\LCDHardwareMonitor.PluginLoader.CLR.tlb" no_namespace
+#import "..\\..\\build\\vs\\run\\LCDHardwareMonitor.PluginLoader.CLR.Interface.tlb" \
+	no_namespace \
+	no_smart_pointers
 #pragma warning(pop)
 
 struct LHMHostControl final : public IHostControl
