@@ -269,7 +269,7 @@ PluginLoader_LoadSensorPlugin(PluginLoaderState& s, Plugin& plugin, SensorPlugin
 		{
 			// NOTE: fuslogvw is great for debugging managed assembly loading.
 			// TODO: Do we need to try/catch the managed code?
-			success = s.lhmPluginLoader->LoadSensorPlugin(&plugin, &sensorPlugin);
+			success = (b8) s.lhmPluginLoader->LoadSensorPlugin(&plugin, &sensorPlugin);
 			LOG_IF(!success, IGNORE,
 				Severity::Error, "Failed to load managed Sensor plugin '%'", plugin.fileName);
 			break;
@@ -307,7 +307,7 @@ PluginLoader_UnloadSensorPlugin(PluginLoaderState& s, Plugin& plugin, SensorPlug
 			break;
 
 		case PluginLanguage::Managed:
-			success = s.lhmPluginLoader->UnloadSensorPlugin(&plugin, &sensorPlugin);
+			success = (b8) s.lhmPluginLoader->UnloadSensorPlugin(&plugin, &sensorPlugin);
 			LOG_IF(!success, IGNORE,
 				Severity::Error, "Failed to unload managed Sensor plugin '%'", plugin.info.name);
 			break;
@@ -365,7 +365,7 @@ PluginLoader_LoadWidgetPlugin(PluginLoaderState& s, Plugin& plugin, WidgetPlugin
 		{
 			// NOTE: fuslogvw is great for debugging managed assembly loading.
 			// TODO: Do we need to try/catch the managed code?
-			success = s.lhmPluginLoader->LoadWidgetPlugin(&plugin, &widgetPlugin);
+			success = (b8) s.lhmPluginLoader->LoadWidgetPlugin(&plugin, &widgetPlugin);
 			LOG_IF(!success, IGNORE,
 				Severity::Error, "Failed to load managed Widget plugin '%'", plugin.fileName);
 			break;
@@ -403,7 +403,7 @@ PluginLoader_UnloadWidgetPlugin(PluginLoaderState& s, Plugin& plugin, WidgetPlug
 			break;
 
 		case PluginLanguage::Managed:
-			success = s.lhmPluginLoader->UnloadWidgetPlugin(&plugin, &widgetPlugin);
+			success = (b8) s.lhmPluginLoader->UnloadWidgetPlugin(&plugin, &widgetPlugin);
 			LOG_IF(!success, IGNORE,
 				Severity::Error, "Failed to unload managed Widget plugin '%'", plugin.info.name);
 			break;
