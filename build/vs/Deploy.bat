@@ -40,7 +40,7 @@ GOTO :%FUNCTION%
 
 	IF EXIST "%PROJECT_DIR%/include" (
 		ECHO  **** Copying public headers to run
-		XCOPY /Y /I /S /B "%PROJECT_DIR%/include" "%RUN_DIR%/Include"
+		XCOPY /Y /I /S /B "%PROJECT_DIR%/include" "%RUN_DIR%/Include" > NUL
 	)
 	GOTO Exit
 
