@@ -169,7 +169,7 @@ GetWorkingDirectory()
 	LOG_IF((written + 1) != length, return result,
 		Severity::Warning, "Working directory length does not match expected");
 
-	result.length = length;
+	result.length = written;
 	return result;
 }
 
