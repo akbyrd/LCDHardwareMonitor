@@ -90,7 +90,7 @@
       <WarningLevel>EnableAllWarnings</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\..\LCDHardwareMonitor API;..\..\ext\d2xx\include\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\LCDHardwareMonitor\include;..\..\ext\d2xx\include\</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <PostBuildEvent>
@@ -109,7 +109,7 @@
       <WarningLevel>EnableAllWarnings</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\..\LCDHardwareMonitor API;..\..\ext\d2xx\include\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\LCDHardwareMonitor\include;..\..\ext\d2xx\include\</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <PostBuildEvent>
@@ -130,7 +130,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\..\LCDHardwareMonitor API;..\..\ext\d2xx\include\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\LCDHardwareMonitor\include;..\..\ext\d2xx\include\</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -153,7 +153,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\..\LCDHardwareMonitor API;..\..\ext\d2xx\include\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\LCDHardwareMonitor\include;..\..\ext\d2xx\include\</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -173,6 +173,22 @@
     <ClCompile Include="..\..\LCDHardwareMonitor\src\main_win32.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\LCDHardwareMonitor\include\LHMAPI.h" />
+    <ClInclude Include="..\..\LCDHardwareMonitor\include\LHMAPICLR.h" />
+    <ClInclude Include="..\..\LCDHardwareMonitor\include\LHMBytes.hpp" />
+    <ClInclude Include="..\..\LCDHardwareMonitor\include\LHMCommon.h" />
+    <ClInclude Include="..\..\LCDHardwareMonitor\include\LHMCompiler.h" />
+    <ClInclude Include="..\..\LCDHardwareMonitor\include\LHMDefer.hpp" />
+    <ClInclude Include="..\..\LCDHardwareMonitor\include\LHMHash.hpp" />
+    <ClInclude Include="..\..\LCDHardwareMonitor\include\LHMList.hpp" />
+    <ClInclude Include="..\..\LCDHardwareMonitor\include\LHMMath.hpp" />
+    <ClInclude Include="..\..\LCDHardwareMonitor\include\LHMMemory.hpp" />
+    <ClInclude Include="..\..\LCDHardwareMonitor\include\LHMPlugin.h" />
+    <ClInclude Include="..\..\LCDHardwareMonitor\include\LHMRenderer.h" />
+    <ClInclude Include="..\..\LCDHardwareMonitor\include\LHMSensorPlugin.h" />
+    <ClInclude Include="..\..\LCDHardwareMonitor\include\LHMString.hpp" />
+    <ClInclude Include="..\..\LCDHardwareMonitor\include\LHMWidgetPlugin.h" />
+    <ClInclude Include="..\..\LCDHardwareMonitor\include\WVP.vs.h" />
     <ClInclude Include="..\..\LCDHardwareMonitor\src\Outline.ps.h" />
     <ClInclude Include="..\..\LCDHardwareMonitor\src\ft232h.h" />
     <ClInclude Include="..\..\LCDHardwareMonitor\src\ft232h_win32.hpp" />
@@ -299,6 +315,9 @@
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)%(Filename).ps.cso</ObjectFileOutput>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)%(Filename).ps.cso</ObjectFileOutput>
     </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="..\..\LCDHardwareMonitor\include\LHM.natvis" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

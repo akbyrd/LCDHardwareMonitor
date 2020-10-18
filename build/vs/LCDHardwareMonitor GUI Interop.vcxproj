@@ -101,7 +101,7 @@
     <ClCompile>
       <WarningLevel>EnableAllWarnings</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\..\LCDHardwareMonitor\src;$(SolutionDir)..\..\LCDHardwareMonitor API</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\LCDHardwareMonitor\src;$(SolutionDir)..\..\LCDHardwareMonitor\include</AdditionalIncludeDirectories>
       <SDLCheck>true</SDLCheck>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -115,7 +115,7 @@
     <ClCompile>
       <WarningLevel>EnableAllWarnings</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\..\LCDHardwareMonitor\src;$(SolutionDir)..\..\LCDHardwareMonitor API</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\LCDHardwareMonitor\src;$(SolutionDir)..\..\LCDHardwareMonitor\include</AdditionalIncludeDirectories>
       <SDLCheck>true</SDLCheck>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -129,7 +129,7 @@
     <ClCompile>
       <WarningLevel>EnableAllWarnings</WarningLevel>
       <Optimization>MaxSpeed</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\..\LCDHardwareMonitor\src;$(SolutionDir)..\..\LCDHardwareMonitor API</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\LCDHardwareMonitor\src;$(SolutionDir)..\..\LCDHardwareMonitor\include</AdditionalIncludeDirectories>
       <SDLCheck>true</SDLCheck>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -147,7 +147,7 @@
     <ClCompile>
       <WarningLevel>EnableAllWarnings</WarningLevel>
       <Optimization>MaxSpeed</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\..\LCDHardwareMonitor\src;$(SolutionDir)..\..\LCDHardwareMonitor API</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\LCDHardwareMonitor\src;$(SolutionDir)..\..\LCDHardwareMonitor\include</AdditionalIncludeDirectories>
       <SDLCheck>true</SDLCheck>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FunctionLevelLinking>true</FunctionLevelLinking>

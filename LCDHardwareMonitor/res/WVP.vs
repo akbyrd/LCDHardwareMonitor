@@ -1,4 +1,4 @@
-#include "../../LCDHardwareMonitor API/WVP.vs.h"
+#include "../include/WVP.vs.h"
 
 struct Vertex
 {

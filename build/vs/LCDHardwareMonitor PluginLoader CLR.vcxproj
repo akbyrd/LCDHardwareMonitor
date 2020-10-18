@@ -110,7 +110,7 @@
       <WarningLevel>EnableAllWarnings</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\..\LCDHardwareMonitor\src;$(SolutionDir)..\..\LCDHardwareMonitor API</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\LCDHardwareMonitor\src;$(SolutionDir)..\..\LCDHardwareMonitor\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <PostBuildEvent>
@@ -126,7 +126,7 @@ Deploy.bat ProjectPostBuild "$(OutDir)"</Command>
       <WarningLevel>EnableAllWarnings</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\..\LCDHardwareMonitor\src;$(SolutionDir)..\..\LCDHardwareMonitor API</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\LCDHardwareMonitor\src;$(SolutionDir)..\..\LCDHardwareMonitor\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <PostBuildEvent>
@@ -144,7 +144,7 @@ Deploy.bat ProjectPostBuild "$(OutDir)"</Command>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\..\LCDHardwareMonitor\src;$(SolutionDir)..\..\LCDHardwareMonitor API</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\LCDHardwareMonitor\src;$(SolutionDir)..\..\LCDHardwareMonitor\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -165,7 +165,7 @@ Deploy.bat ProjectPostBuild "$(OutDir)"</Command>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\..\LCDHardwareMonitor\src;$(SolutionDir)..\..\LCDHardwareMonitor API</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\LCDHardwareMonitor\src;$(SolutionDir)..\..\LCDHardwareMonitor\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
