@@ -6,7 +6,7 @@ REM TODO: Don't copy tlb
 
 REM Usage
 REM Deploy.bat SolutionPreBuild "$(WindowsSdkDir)" "$(PlatformTarget)"
-REM Deploy.bat ProjectPostBuild "$(OutDir)" "Sub-directory"
+REM Deploy.bat ProjectPostBuild "$(OutDir)" "Sub-directory" "Shader directory"
 REM Deploy.bat GenerateTLB      "$(OutDir)" "$(TargetName)" "$(PlatformTarget)"
 
 REM NOTE: Must use CRLF. LF results in "the system cannot find the batch label specified"
@@ -30,11 +30,12 @@ GOTO :%FUNCTION%
 :ProjectPostBuild
 	SET OUT_DIR=%~2
 	SET SUB_DIR=%~3
+	SET SHADER_DIR=%~4
 
 	ECHO  **** Copying output to run
 	XCOPY /Y /I /S /B /EXCLUDE:exclude_from_copy.txt "%OUT_DIR%*" "%RUN_DIR%\%SUB_DIR%" > NUL
 	IF ERRORLEVEL 1 GOTO Abort
-	XCOPY /Y /I /S /B "%OUT_DIR%*.cso" "%RUN_DIR%\%SUB_DIR%\Shaders" > NUL 2>&1
+	XCOPY /Y /I /S /B "%OUT_DIR%*.cso" "%RUN_DIR%\%SUB_DIR%\%SHADER_DIR%" > NUL 2>&1
 	IF ERRORLEVEL 1 GOTO Abort
 	GOTO Exit
 

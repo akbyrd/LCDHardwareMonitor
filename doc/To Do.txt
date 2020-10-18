@@ -1,7 +1,5 @@
 Current
 -------
-Shaders were being built to a sub-folder for debugging without run directory. Pretty sure I broke that.
-
 Outline
 	Use stencil instead of an extra depth texture
 	Think through clears carefully
