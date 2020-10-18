@@ -323,6 +323,9 @@
     <ProjectReference Include="LCDHardwareMonitor PluginLoader CLR Interface.vcxproj">
       <Project>{7e6a520b-1a13-444a-b224-78c8f6be9a93}</Project>
     </ProjectReference>
+    <ProjectReference Include="LCDHardwareMonitor PluginLoader CLR.vcxproj">
+      <Project>{4cf4bf35-2c27-4969-bfd7-34149a9cbf12}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

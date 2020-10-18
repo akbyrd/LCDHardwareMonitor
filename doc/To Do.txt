@@ -1,24 +1,5 @@
 Current
 -------
-Fix tlbexp issues
-[x] Figure out how to view tlb files. oleview doesn't work. COMView works.
-[x] Make delegates not COM visible
-[-] 64 bit warnings for alignment members (can't prevent with auto-COM. fix error with #import rename)
-[-] Switch types back to private by default (Just not possible with auto-COM)
-[x] Warning when returning boolean (compiles to char)
-[x] class has virtual functions, but its trivial destructor is not virtual (I bet local circumvents this)
-[-] Try to manually name COM symbols for nested types (to remove _2) (ComAliasNameAttribute)
-[x] Might use ClassInterfaceAttribute, ComDefaultInterfaceAttribute, InterfaceTypeAttribute if sticking with auto-COM
-[x] #import without copy?
-[x] Look at tlbexp and references vs pointers
-[x] Support x86 and x64
-[x] Fix 64 bit warnings from tlbexp
-[-] Is there another way to generate a type library?
-[-] Would using .NET Core be simpler?
-[ ] Do delegates automatically match native counterparts?
-
-
-
 Outline
 	Use stencil instead of an extra depth texture
 	Think through clears carefully
@@ -46,6 +27,7 @@ Read from display
 
 Bugs
 ----
+Using the OpenHardwareMonitor tanks frame rate. Why? Has it always?
 Lag when selecting preview while GUI is open
 D3D leak when closing with selection
 D3D warning:
