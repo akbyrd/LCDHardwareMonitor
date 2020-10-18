@@ -2,7 +2,6 @@ SETLOCAL
 REM @ECHO OFF
 
 REM TODO: Add clean function
-REM TODO: Don't copy tlb
 
 REM Usage
 REM Deploy.bat SolutionPreBuild "$(WindowsSdkDir)" "$(PlatformTarget)"

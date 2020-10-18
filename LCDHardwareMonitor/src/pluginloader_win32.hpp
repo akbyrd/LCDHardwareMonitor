@@ -10,12 +10,11 @@ using Microsoft::WRL::ComPtr;
 // NOTE: Required for CLRCreateInstance
 #pragma comment(lib, "MSCorEE.lib")
 
-// TODO: Don't really need this in run/. Want to reach into the project output
-// folder directly, but we need to know the correct config subfolder.
 #pragma warning(push)
 // NOTE: The automatically included comdef.h in the tlh generates warnings
 #pragma warning(disable: 5204) // non-virtual destructor
-#import "..\\..\\build\\vs\\run\\LCDHardwareMonitor.PluginLoader.CLR.Interface.tlb" \
+// NOTE: Added a hack "additional include directory" for this to work
+#import "LCDHardwareMonitor.PluginLoader.CLR.Interface.tlb" \
 	no_namespace \
 	no_smart_pointers
 #pragma warning(pop)

@@ -9,13 +9,15 @@ Fix tlbexp issues
 [x] class has virtual functions, but its trivial destructor is not virtual (I bet local circumvents this)
 [-] Try to manually name COM symbols for nested types (to remove _2) (ComAliasNameAttribute)
 [x] Might use ClassInterfaceAttribute, ComDefaultInterfaceAttribute, InterfaceTypeAttribute if sticking with auto-COM
-[ ] #import without copy?
-[ ] Do delegates automatically match native counterparts?
-[ ] Would using .NET Core be simpler?
-[ ] Is there another way to generate a type library?
-[ ] Look at tlbexp and references vs pointers
+[x] #import without copy?
+[x] Look at tlbexp and references vs pointers
+
 [ ] Fix 64 bit warnings from tlbexp
 [ ] Support x86 and x64
+[ ] Do delegates automatically match native counterparts?
+
+[ ] Would using .NET Core be simpler?
+[ ] Is there another way to generate a type library?
 
 
 
