@@ -44,7 +44,7 @@ struct PluginLoaderState
 {
 	ComPtr<ICLRRuntimeHost>  clrHost;
 	LHMHostControl           lhmHostControl;
-	ComPtr<ILHMPluginLoader> lhmPluginLoader;
+	ILHMPluginLoader*        lhmPluginLoader;
 };
 
 b8
@@ -61,8 +61,7 @@ PluginLoader_Initialize(PluginLoaderState& s)
 
 		// TODO: Ensure this fails gracefully if the CLR isn't installed.
 		// TODO: Enumerate installed versions and give a helpful error message.
-		// NOTE: Relying on this version should be safe. Use clrver to check
-		// installed versions.
+		// NOTE: Relying on this version should be safe. Use clrver to check installed versions.
 		ComPtr<ICLRRuntimeInfo> clrInfo;
 		hr = clrMetaHost->GetRuntime(L"v4.0.30319", IID_PPV_ARGS(&clrInfo));
 		LOG_HRESULT_IF_FAILED(hr, return false,

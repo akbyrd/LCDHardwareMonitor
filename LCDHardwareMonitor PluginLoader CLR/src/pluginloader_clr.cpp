@@ -19,11 +19,10 @@ using namespace System::Runtime::InteropServices;
 
 // NOTE: Can't pass references through COM interfaces. tlbgen replaces them with pointers.
 
-// TODO: *Really* want to default to non-visible so TLBs aren't bloated to
-// hell, but I can't find a way to allow native types as parameters to
-// ILHMPluginLoader functions without setting the entire assembly to visible.
-// And currently I prefer the bloat to passing void* parameters and casting.
-//[assembly:ComVisible(false)];
+// NOTE: Have to set default visibility to true for the whole assembly to be able to use native
+// types in COM functions. Without this, Plugin and friends won't be export and in turn neither
+// will LoadSensorPlugin, etc.
+[assembly:ComVisible(true)];
 
 [ComVisible(true)]
 public interface class
@@ -39,7 +38,7 @@ ILHMPluginLoader
 public value struct
 SensorPlugin_CLR
 {
-	#define Attributes UnmanagedFunctionPointer(CallingConvention::Cdecl)
+	#define Attributes UnmanagedFunctionPointer(CallingConvention::Cdecl), ComVisible(false)
 	[Attributes] delegate b8   InitializeDelegate (PluginContext& context, SensorPluginAPI::Initialize api);
 	[Attributes] delegate void UpdateDelegate     (PluginContext& context, SensorPluginAPI::Update     api);
 	[Attributes] delegate void TeardownDelegate   (PluginContext& context, SensorPluginAPI::Teardown   api);
@@ -55,7 +54,7 @@ SensorPlugin_CLR
 public value struct
 WidgetPlugin_CLR
 {
-	#define Attributes UnmanagedFunctionPointer(CallingConvention::Cdecl)
+	#define Attributes UnmanagedFunctionPointer(CallingConvention::Cdecl), ComVisible(false)
 	[Attributes] delegate b8   InitializeDelegate (PluginContext& context, WidgetPluginAPI::Initialize api);
 	[Attributes] delegate void UpdateDelegate     (PluginContext& context, WidgetPluginAPI::Update     api);
 	[Attributes] delegate void TeardownDelegate   (PluginContext& context, WidgetPluginAPI::Teardown   api);

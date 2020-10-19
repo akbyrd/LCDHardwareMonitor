@@ -1,5 +1,25 @@
 Current
 -------
+Fix tlbexp issues
+[x] Figure out how to view tlb files. oleview doesn't work. COMView works.
+[x] Make delegates not COM visible
+[-] 64 bit warnings for alignment members (can't prevent with auto-COM. fix error with #import rename)
+[-] Switch types back to private by default (Just not possible with auto-COM)
+[x] Warning when returning boolean (compiles to char)
+[x] class has virtual functions, but its trivial destructor is not virtual (I bet local circumvents this)
+[ ] #import without copy?
+[ ] Try to manually name COM symbols for nested types (to remove _2) (ComAliasNameAttribute)
+[ ] Would using .NET Core be simpler?
+[ ] Is there another way to generate a type library?
+	MIDL
+	MkTypeLib
+	Manual IDL file?
+	https://docs.microsoft.com/en-us/windows/win32/com/type-library-viewers-and-conversion-tools
+[ ] Do delegates automatically match native counterparts?
+[ ] Might use ClassInterfaceAttribute, ComDefaultInterfaceAttribute, InterfaceTypeAttribute if sticking with auto-COM
+
+
+
 Outline
 	Use stencil instead of an extra depth texture
 	Think through clears carefully
@@ -38,8 +58,8 @@ Fix VS crash
 	devenv crashes with Exception code: 0xc0000374 (heap corruption?)
 	only seems to happen with multiple startup projects
 	LHM appears to hang in D3D creation sometimes? Unrelated?
-Look at tlbgen and references vs pointers
-Fix 64 bit warnings from tlbgen
+Look at tlbexp and references vs pointers
+Fix 64 bit warnings from tlbexp
 Support x86 and x64
 GUI shouldn't close the simulation if it didn't start it
 There's a frame of flicker where the old image size is drawn when zooming. Is this fixable?

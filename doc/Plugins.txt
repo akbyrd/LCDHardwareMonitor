@@ -71,6 +71,32 @@ Not Reasons for AppDomains
 
 
 
+Exporting .NET Types
+--------------------
+tlbexp is included with Visual Studio
+Last tested with version 4.8.3928.0
+Should be able to open with OleView, but doesn't seem to work. It shows registered types, but I
+	can't find anything about a specific file when opening it.
+Also tried oleviewdotnet with now luck. It just errors when opening either the dll or tlb
+	https://github.com/tyranid/oleviewdotnet
+This one seems to work! But I don't think it shows recursive stuff? I think OleView showed a shit
+	ton of cruft from making the assembly public by default but I can't see that when using this
+	tool. I don't fully trust it because the tlb is 8k, yet it only shows 12  types
+	https://www.japheth.de/COMView.html
+OleWoo works, but have to compile from scratch because the release zip is empty.
+	Won't load the dll, but will load the tlb
+	Also only shows 12 symbols
+	http://www.benf.org/other/olewoo/index.html
+Haven't tried
+	http://theircorp.byethost11.com/index.php?vw=TypeLib&i=1
+
+MIDL converts bool to unsigned char, MkTypeLib and tlbexp convert to short
+	https://docs.microsoft.com/en-us/windows/win32/midl/differences-between-midl-and-mktyplib
+Basics?
+	https://docs.microsoft.com/en-us/windows/win32/midl/com-dcom-and-type-libraries
+	https://docs.microsoft.com/en-us/windows/win32/com/type-library-viewers-and-conversion-tools
+
+
 
 Notes
 -----
