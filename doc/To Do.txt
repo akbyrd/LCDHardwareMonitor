@@ -123,6 +123,7 @@ Watch plugin directory contents for registering, unregistering, and reloading pl
 Features - FT232H Communication
 -------------------------------
 Think about reconnection strategy. Exponential backoff? Simple timer? Respond to OS USB events?
+Crash due to no finding d2xx if the device has never been plugged in. Handle this gracefully.
 
 
 

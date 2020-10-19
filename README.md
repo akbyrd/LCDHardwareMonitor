@@ -28,15 +28,13 @@ This project started with the desire for a far more capable alternative to LCDSy
 ## Development Requirements
 * Visual Studio 2019
 * Windows 10 SDK
-* DirectX 11 SDK
-* Windows Runtime C++ Template Library (WRL)
 * C++/CLI
 * .NET 4.7.2 targeting pack
 * .NET 4.7.2 SDK
 
 ## Third Party Dependencies
 (all included or automatic)
-* FTDI d2xx driver (included with Windows)
+* FTDI d2xx driver (included with Windows, installed when plugging in device)
 * FTDI d2xx headers and import library (included)
 * OpenHardwareMonitor.dll (included)
 * MahApps.Metro (automatic through NuGet)
