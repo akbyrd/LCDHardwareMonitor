@@ -41,21 +41,13 @@ Double check anywhere we index bytes.data in case we're forgetting stride
 
 Refactoring
 -----------
-Starting to feel like state checking should be in the sim
-Try removing WidgetData
-Start using Scoped
 Namespaces
 Native namespace for interop?
-String_FromView vs Create vs Copy
-Using "constexpr static bool" instead of #defines
-Rewrite List<T>
+Try removing WidgetData
+Start using Scoped
 Try out range based for loops
-Is it cleaner to use the auto-COM-interface of LHMPluginLoader?
-Ensure Platform function naming is uniform
-Decide on 'plugin loader' naming on both sides of the managed boundary
-Consider building with a batch script
-Consider using premake
-Try to use a property sheet for bin/obj dirs, clean, and post build
+Starting to feel like state checking should be in the sim
+Rewrite List<T>
 
 
 
@@ -91,11 +83,17 @@ I'm sure there are places where we're going to end up in a partially initialized
 	errors occur. We need to double down on transactional changes. Check all existing code.
 
 
+Refactoring - Build Process
+---------------------------
+Consider building with a batch script
+Consider using premake
+Try to use a property sheet for bin/obj dirs, clean, and post build
+
+
 
 Features
 --------
 Stop sending mouse move when mouse isn't over window?
-Is it worth trying to make things portable?
 Only create and copy into GUI texture when GUI is connected
 Implement settings to remember e.g. which plugins should be loaded
 Settings - Enable/disable sensors
@@ -105,6 +103,7 @@ Need to handle mouse position when preview isn't visible
 Need to actually avoid processing broken plugins
 Users probably need to be able to create custom UI for plugin settings
 Watch plugin directory contents for registering, unregistering, and reloading plugins.
+Consider supporting linux
 
 
 

@@ -798,7 +798,7 @@ GetNameFromPath(StringView path)
 
 	if (first == last) return {};
 
-	StringSlice nameSlice = StringSlice_Create(path, first, last);
+	StringSlice nameSlice = String_Slice(path, first, last);
 	return String_FromSlice(nameSlice);
 }
 

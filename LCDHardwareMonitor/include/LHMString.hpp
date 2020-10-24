@@ -165,14 +165,11 @@ String_FindLast(StringView string, c8 item)
 	return StrPos::Null;
 }
 
-// -------------------------------------------------------------------------------------------------
-// StringSlice API
-
 StringSlice
-StringSlice_Create(StringView string, StrPos first, StrPos last)
+String_Slice(StringView string, StrPos first, StrPos last)
 {
 	StringSlice slice = {};
-	slice.data    = &string[first];
+	slice.data   = &string[first];
 	slice.length = last.value - first.value + 1;
 	return slice;
 }
