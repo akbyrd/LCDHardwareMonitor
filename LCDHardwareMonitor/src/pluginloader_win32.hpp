@@ -24,7 +24,7 @@ struct LHMHostControl final : public IHostControl
 	// TODO: Double check that this doesn't get called for each new AppDomain
 	HRESULT __stdcall SetAppDomainManager(DWORD dwAppDomainID, IUnknown* pUnkAppDomainManager)
 	{
-		UNUSED(dwAppDomainID);
+		Unused(dwAppDomainID);
 		HRESULT hr;
 		hr = pUnkAppDomainManager->QueryInterface(IID_PPV_ARGS(&lhmPluginLoader));
 		return hr;
@@ -232,6 +232,7 @@ PluginLoader_LoadSensorPlugin(PluginLoaderState& s, Plugin& plugin, SensorPlugin
 
 	switch (plugin.language)
 	{
+		default:
 		case PluginLanguage::Null:
 			success = false;
 			break;
@@ -294,6 +295,7 @@ PluginLoader_UnloadSensorPlugin(PluginLoaderState& s, Plugin& plugin, SensorPlug
 
 	switch (plugin.language)
 	{
+		default:
 		case PluginLanguage::Null:
 			success = false;
 			break;
@@ -328,6 +330,7 @@ PluginLoader_LoadWidgetPlugin(PluginLoaderState& s, Plugin& plugin, WidgetPlugin
 
 	switch (plugin.language)
 	{
+		default:
 		case PluginLanguage::Null:
 			success = false;
 			break;
@@ -390,6 +393,7 @@ PluginLoader_UnloadWidgetPlugin(PluginLoaderState& s, Plugin& plugin, WidgetPlug
 
 	switch (plugin.language)
 	{
+		default:
 		case PluginLanguage::Null:
 			success = false;
 			break;

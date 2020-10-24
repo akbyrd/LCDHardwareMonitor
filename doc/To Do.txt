@@ -1,12 +1,5 @@
 Current
 -------
-Outline
-	Use stencil instead of an extra depth texture
-	Think through clears carefully
-	Consider removing the depth to alpha pass
-	Outline only needs to produce alpha
-	Think about the three depth resources for outline composite
-
 Bring ILI9341 code over
 	Add a tracing option
 	Use SetBit to simplify config
@@ -16,8 +9,6 @@ Bring FT232H code over
 	Coalesce writes
 	Switch to parallel interface
 
-Implement layering for the renderer API to remove runtime branching
-Validate Push/PopEvent counts
 Compare writes to python code (ft232h and ili9341)
 Compare reads to python code (ft232h and ili9341)
 Delete HardwareCommunication
@@ -27,7 +18,7 @@ Read from display
 
 Bugs
 ----
-Using the OpenHardwareMonitor tanks frame rate. Why? Has it always?
+Using OpenHardwareMonitor tanks frame rate. Why? Has it always?
 Lag when selecting preview while GUI is open
 D3D leak when closing with selection
 D3D warning:
@@ -136,6 +127,8 @@ Implement hardware reset
 
 Features - Rendering
 --------------------
+Implement layering for the renderer API to remove runtime branching
+Validate Push/PopEvent counts
 Expand Copy operation to take any src and dst
 Runtime shader compilation & hot reloading (shader cache)
 Remove types from resource names
@@ -249,6 +242,11 @@ MSI Afterburner uses SMART.dll, PerfCounter.dll, HwInfo.dll, AIDA64.dll.
 
 Features - Outline shader
 -------------------------
+Use stencil instead of an extra depth texture
+Think through clears carefully
+Consider removing the depth to alpha pass
+Outline only needs to produce alpha
+Think about the three depth resources for outline composite
 Use premultiplied alpha to composite darken and highlight in a single pass
 Consider bringing hovered/selected widgets to the front to avoid outline depth issues
 Clamp outline to screen edges

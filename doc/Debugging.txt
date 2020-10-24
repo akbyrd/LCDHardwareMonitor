@@ -47,7 +47,7 @@ Code Snippets
 	v4 pWorld = pos    * world; // 0, 0, 0
 	v4 pView  = pWorld * view;  // -160, -120, 1
 	v4 pProj  = pView  * proj;  // -1, -1, .001
-	int foo = 0; UNUSED(foo);
+	int foo = 0; Unused(foo);
 }
 
 // Background Quad

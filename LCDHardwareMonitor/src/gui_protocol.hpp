@@ -242,7 +242,8 @@ void Serialize(ByteStream&, Sensor&);
 inline b8
 MessageTimeLeft(i64 startTicks)
 {
-	return Platform_GetElapsedMilliseconds(startTicks) < 8;
+	// TODO: Why does this cause C4738?
+	return Platform_GetElapsedMilliseconds(startTicks) < 8.f;
 }
 
 template<typename T>
@@ -307,6 +308,7 @@ HandleMessageResult(ConnectionState& con, PipeResult result)
 		case PipeResult::Success: break;
 		case PipeResult::TransientFailure: break;
 
+		default:
 		case PipeResult::UnexpectedFailure:
 			HandleMessageResult(con, false);
 			break;
@@ -398,7 +400,10 @@ Serialize(ByteStream& stream, T*& pointer)
 {
 	switch (stream.mode)
 	{
-		case ByteStreamMode::Null: Assert(false); break;
+		default:
+		case ByteStreamMode::Null:
+			Assert(false);
+			break;
 
 		case ByteStreamMode::Size:
 			break;
@@ -430,8 +435,7 @@ void
 Serialize(ByteStream& stream, T& value)
 {
 	// No-op
-	UNUSED(value);
-	UNUSED(stream);
+	Unused(value, stream);
 }
 
 template<typename T>
@@ -443,7 +447,10 @@ Serialize(ByteStream& stream, List<T>& list)
 
 	switch (stream.mode)
 	{
-		case ByteStreamMode::Null: Assert(false); break;
+		default:
+		case ByteStreamMode::Null:
+			Assert(false);
+			break;
 
 		case ByteStreamMode::Size:
 			for (u32 i = 0; i < list.length; i++)
@@ -478,7 +485,10 @@ Serialize(ByteStream& stream, Slice<T>& slice)
 
 	switch (stream.mode)
 	{
-		case ByteStreamMode::Null: Assert(false); break;
+		default:
+		case ByteStreamMode::Null:
+			Assert(false);
+			break;
 
 		case ByteStreamMode::Size:
 			for (u32 i = 0; i < slice.length; i++)
@@ -517,7 +527,10 @@ Serialize(ByteStream& stream, String& string)
 
 	switch (stream.mode)
 	{
-		case ByteStreamMode::Null: Assert(false); break;
+		default:
+		case ByteStreamMode::Null:
+			Assert(false);
+			break;
 
 		case ByteStreamMode::Size:
 			break;
@@ -541,7 +554,10 @@ Serialize(ByteStream& stream, StringView& string)
 
 	switch (stream.mode)
 	{
-		case ByteStreamMode::Null: Assert(false); break;
+		default:
+		case ByteStreamMode::Null:
+			Assert(false);
+			break;
 
 		case ByteStreamMode::Size:
 			break;

@@ -28,6 +28,8 @@ struct State
 static State state = {};
 
 #pragma managed
+#include "LHMAPICLR.h"
+
 namespace LCDHardwareMonitor::GUI
 {
 	using namespace System;
@@ -314,6 +316,7 @@ namespace LCDHardwareMonitor::GUI
 		static void
 		DragDrop(SimulationState^ simState, PluginKind pluginKind, bool inProgress)
 		{
+			Unused(simState);
 			Assert(simState->Interaction == Interaction::Null);
 
 			FromGUI::DragDrop dragDrop = {};
@@ -325,6 +328,7 @@ namespace LCDHardwareMonitor::GUI
 		static void
 		AddWidget(SimulationState^ simState, UInt32 pluginRef, UInt32 descRef, Point pos)
 		{
+			Unused(simState);
 			Assert(simState->Interaction == Interaction::Null);
 
 			FullWidgetDataRef ref = {};
@@ -594,7 +598,10 @@ namespace LCDHardwareMonitor::GUI
 					Message::Header& header = (Message::Header&) bytes[0];
 					switch (header.id)
 					{
-						case IdOf<Message::Null>: Assert(false); break;
+						default:
+						case IdOf<Message::Null>:
+							Assert(false);
+							break;
 
 						HANDLE_MESSAGE(Connect);
 						HANDLE_MESSAGE(Disconnect);
@@ -644,7 +651,7 @@ namespace LCDHardwareMonitor::GUI
 			POINT point = {};
 			bool result = ::GetCursorPos(&point);
 			// TODO: Logging
-			Assert(result);
+			AssertOrUnused(result);
 			return Point(point.x, point.y);
 		}
 	};

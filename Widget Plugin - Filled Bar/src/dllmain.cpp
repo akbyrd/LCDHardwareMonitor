@@ -16,7 +16,7 @@ static PixelShader filledBarPS = {};
 static b8
 InitializeBarWidgets(PluginContext& context, WidgetAPI::Initialize api)
 {
-	UNUSED(context);
+	Unused(context);
 
 	for (u32 i = 0; i < api.widgets.length; i++)
 	{

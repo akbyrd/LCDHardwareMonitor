@@ -1240,7 +1240,7 @@ HighlightWidgets(SimulationState& s, Slice<FullWidgetRef> refs, Outline::PSPerPa
 static void
 FromGUI_TerminateSimulation(SimulationState& s, FromGUI::TerminateSimulation& terminateSim)
 {
-	UNUSED_ARGS(s, terminateSim);
+	Unused(s, terminateSim);
 	Platform_RequestQuit();
 }
 
@@ -1250,6 +1250,10 @@ FromGUI_MouseMove(SimulationState& s, FromGUI::MouseMove& mouseMove)
 	s.mousePos = mouseMove.pos;
 	switch (s.guiInteraction)
 	{
+		default:
+			Assert(false);
+			break;
+
 		// Nothing to do
 		case GUIInteraction::Null: break;
 		case GUIInteraction::DragAndDrop: break;
@@ -1313,6 +1317,7 @@ FromGUI_SetPluginLoadStates(SimulationState& s, FromGUI::SetPluginLoadStates& se
 		Plugin& plugin = s.plugins[pluginRef];
 		switch (loadState)
 		{
+			default:
 			case PluginLoadState::Null:
 			case PluginLoadState::Loading:
 			case PluginLoadState::Unloading:
@@ -1817,7 +1822,10 @@ Simulation_Update(SimulationState& s)
 			Message::Header& header = (Message::Header&) bytes[0];
 			switch (header.id)
 			{
-				case IdOf<Message::Null>: Assert(false); break;
+				default:
+				case IdOf<Message::Null>:
+					Assert(false);
+					break;
 
 				HANDLE_MESSAGE(TerminateSimulation);
 				HANDLE_MESSAGE(MouseMove);

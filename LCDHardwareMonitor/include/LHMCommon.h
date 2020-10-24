@@ -43,18 +43,18 @@ template<typename T, size S>
 constexpr inline size ArraySize(const T(&)[S]) { return S * sizeof(T); }
 
 template<typename ...Args>
-constexpr inline void UnusedArgs(Args const& ...) {}
+constexpr inline void Unused(Args const& ...) {}
 
 #if DEBUG
 	#define Assert(condition) if (!(condition)) { *((u8 *) 0) = 0; }
+	#define AssertOrUnused(condition) Assert(condition)
 #else
 	#define Assert(condition)
+	#define AssertOrUnused(condition) Unused(condition)
 #endif
 
 #define nameof(x) #x
 #define IGNORE
-#define UNUSED(x) (x);
-#define UNUSED_ARGS(...) UnusedArgs(__VA_ARGS__);
 #define HAS_FLAG(x, f) ((x & f) == f)
 #define IF(expression, ...) if (expression) { __VA_ARGS__; }
 #define LHMVersion 0x00000001

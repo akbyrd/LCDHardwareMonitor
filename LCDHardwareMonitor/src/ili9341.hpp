@@ -177,7 +177,7 @@ void
 ILI9341_DisplayFunctionControl(ILI9341State& ili9341)
 {
 	// NOTE: Display Function Control defaults are fine.
-	UNUSED(ili9341);
+	Unused(ili9341);
 }
 
 void
@@ -204,7 +204,7 @@ ILI9341_VCOMControl(ILI9341State& ili9341)
 {
 	// NOTE: VCOM Control 1 defaults are fine.
 	// NOTE: VCOM Control 2 defaults are fine.
-	UNUSED(ili9341);
+	Unused(ili9341);
 }
 
 void

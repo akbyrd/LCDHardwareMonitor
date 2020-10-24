@@ -126,7 +126,7 @@ String_FromSlice(StringSlice slice)
 inline StrPos
 String_GetPos(StringView string, u32 index)
 {
-	UNUSED(string);
+	Unused(string);
 	Assert(index < string.length);
 	StrPos pos = {};
 	pos.value = ToStrPos(index);

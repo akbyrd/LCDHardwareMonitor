@@ -63,6 +63,10 @@ namespace LCDHardwareMonitor.GUI
 			long elapsed = SimulationState.ProcessStateTimer.ElapsedMilliseconds;
 			switch (SimulationState.ProcessState)
 			{
+				default:
+					Debug.Assert(false);
+					break;
+
 				case ProcessState.Null:
 					// NOTE: Slightly faster to use "Multiple startup projects" when developing
 					if (running)

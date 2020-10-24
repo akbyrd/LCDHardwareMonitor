@@ -72,6 +72,10 @@ public ref struct State : ISensorPlugin, ISensorPluginInitialize, ISensorPluginU
 				CLRString^ format;
 				switch (ohmSensor.SensorType)
 				{
+					default:
+						Assert(false);
+						break;
+
 					case SensorType::Clock:       format = "%i MHz";   break;
 					case SensorType::Control:     format = "%s%%";     break;
 					case SensorType::Data:        format = "%f";       break;
@@ -84,7 +88,6 @@ public ref struct State : ISensorPlugin, ISensorPluginInitialize, ISensorPluginU
 					case SensorType::SmallData:   format = "%s";       break;
 					case SensorType::Temperature: format = "%.0f C";   break;
 					case SensorType::Voltage:     format = "%.2f V";   break;
-					default:                      format = "Unknown SensorType: " + ohmSensor.SensorType.ToString(); break;
 				}
 				// TODO: Don't update unless changed
 				CLRString^ value  = CLRString::Format(format, ohmSensor.Value);
@@ -128,7 +131,7 @@ public ref struct State : ISensorPlugin, ISensorPluginInitialize, ISensorPluginU
 	virtual void
 	Update(PluginContext& context, SensorPluginAPI::Update api)
 	{
-		UNUSED(context);
+		Unused(context);
 
 		for (i32 i = 0; i < State::activeHardware->Count; i++)
 			State::activeHardware[i]->Update();

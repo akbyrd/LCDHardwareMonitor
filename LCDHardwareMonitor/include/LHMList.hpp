@@ -275,7 +275,7 @@ template<typename T>
 inline ListRef<T>
 List_GetRef(List<T>& list, u32 index)
 {
-	UNUSED(list);
+	Unused(list);
 	Assert(index < list.length);
 	return ToRef<T>(index);
 }

@@ -235,7 +235,7 @@ SetDebugObjectNameImpl(ComPtr<T>& resource, StringView format, Args... args)
 
 	resource->SetPrivateData(WKPDID_D3DDebugObjectName, name.length, name.data);
 	#else
-		UNUSED(resource); UNUSED(format); UNUSED_ARGS(args...);
+		Unused(resource, format, args...);
 	#endif
 }
 
@@ -282,7 +282,7 @@ ConvertStringToWide(StringView string)
 static void
 DestroyRenderTarget(RendererState& s, RenderTargetData& rt)
 {
-	UNUSED(s);
+	Unused(s);
 	rt.d3dRenderTargetResourceView.Reset();
 	rt.d3dRenderTargetView.Reset();
 	rt.d3dRenderTarget.Reset();
@@ -335,7 +335,7 @@ CreateRenderTargetImpl(RendererState& s, StringView name, b8 resource, D3D11_TEX
 static void
 DestroyCPUTexture(RendererState& s, CPUTextureData& ct)
 {
-	UNUSED(s);
+	Unused(s);
 	ct.d3dCPUTexture.Reset();
 	ct = {};
 }
@@ -343,7 +343,7 @@ DestroyCPUTexture(RendererState& s, CPUTextureData& ct)
 static void
 DestroyDepthBuffer(RendererState& s, DepthBufferData& db)
 {
-	UNUSED(s);
+	Unused(s);
 	db.d3dDepthBufferResourceView.Reset();
 	db.d3dDepthBufferView.Reset();
 	db = {};
@@ -352,7 +352,7 @@ DestroyDepthBuffer(RendererState& s, DepthBufferData& db)
 static void
 DestroyMesh(RendererState& s, MeshData& mesh)
 {
-	UNUSED(s);
+	Unused(s);
 	String_Free(mesh.name);
 	mesh = {};
 }
@@ -382,7 +382,7 @@ CreateConstantBuffer(RendererState& s, StringView shaderName, u32 index, Constan
 static void
 DestroyVertexShader(RendererState& s, VertexShaderData& vs)
 {
-	UNUSED(s);
+	Unused(s);
 	vs.d3dVertexShader.Reset();
 	vs.d3dInputLayout.Reset();
 	for (u32 j = 0; j < vs.constantBuffers.length; j++)
@@ -395,7 +395,7 @@ DestroyVertexShader(RendererState& s, VertexShaderData& vs)
 static void
 DestroyPixelShader(RendererState& s, PixelShaderData& ps)
 {
-	UNUSED(s);
+	Unused(s);
 	ps.d3dPixelShader.Reset();
 	for (u32 j = 0; j < ps.constantBuffers.length; j++)
 		ps.constantBuffers[j].d3dConstantBuffer.Reset();
@@ -668,7 +668,11 @@ PushPSResource(RendererState& s, PSResource psr)
 {
 	switch (psr.type)
 	{
-		case ResourceType::Null: Assert(false); break;
+		default:
+		case ResourceType::Null:
+			Assert(false);
+			break;
+
 		case ResourceType::RenderTarget: PushPSResource(s, psr.renderTarget, psr.slot); break;
 		case ResourceType::DepthBuffer:  PushPSResource(s, psr.depthBuffer, psr.slot); break;
 	}
@@ -684,7 +688,10 @@ PopPSResource(RendererState& s, u32 slot)
 	b8 sameType = boundPSR.type == psr.type;
 	switch (psr.type)
 	{
-		case ResourceType::Null: Assert(false); break;
+		default:
+		case ResourceType::Null:
+			Assert(false);
+			break;
 
 		case ResourceType::RenderTarget:
 		{
@@ -1051,6 +1058,8 @@ Renderer_LoadVertexShader(RendererState& s, StringView name, StringView path, Sl
 				case VertexAttributeSemantic::TexCoord: semantic = HLSLSemantic::TexCoord; break;
 
 				default:
+				case VertexAttributeSemantic::Null:
+				case VertexAttributeSemantic::Count:
 					LOG(Severity::Error, "Unrecognized VS attribute semantic % '%'", (i32) attributes[i].semantic, path);
 					return VertexShader::Null;
 			}
@@ -1063,6 +1072,8 @@ Renderer_LoadVertexShader(RendererState& s, StringView name, StringView path, Sl
 				case VertexAttributeFormat::v4: format = DXGI_FORMAT_R32G32B32A32_FLOAT; break;
 
 				default:
+				case VertexAttributeFormat::Null:
+				case VertexAttributeFormat::Count:
 					LOG(Severity::Error, "Unrecognized VS attribute format % '%'", (i32) attributes[i].format, path);
 					return VertexShader::Null;
 			}
@@ -2020,7 +2031,10 @@ Renderer_Render(RendererState& s)
 		RenderCommand& renderCommand = s.commandList[i];
 		switch (renderCommand.type)
 		{
-			case RenderCommandType::Null: Assert(false); break;
+			default:
+			case RenderCommandType::Null:
+				Assert(false);
+				break;
 
 			// TODO: If we fail to update a constant buffer do we skip drawing?
 			case RenderCommandType::VSConstantBufferUpdate:

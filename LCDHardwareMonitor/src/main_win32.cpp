@@ -50,7 +50,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmdShow
 i32
 WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmdShow)
 {
-	UNUSED(hPrevInstance); UNUSED(pCmdLine); UNUSED(nCmdShow);
+	Unused(hPrevInstance, pCmdLine, nCmdShow);
 
 	// NOTE: Normally, we can skip the majority of teardown code. Windows will
 	// reclaim resources so there's no real point in us wasting time on it and
@@ -110,7 +110,7 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 	MessagePumpContext msgPumpContext = {};
 	msgPumpContext.mainFiber = previewState.mainFiber;
 
-	void CALLBACK MessagePump(MessagePumpContext*);
+	void CALLBACK MessagePump(MessagePumpContext*) noexcept;
 	void* messageFiber = CreateFiber(
 		0,
 		(LPFIBER_START_ROUTINE) MessagePump,
@@ -173,7 +173,7 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 }
 
 void CALLBACK
-MessagePump(MessagePumpContext* context)
+MessagePump(MessagePumpContext* context) noexcept
 {
 	for (;;)
 	{

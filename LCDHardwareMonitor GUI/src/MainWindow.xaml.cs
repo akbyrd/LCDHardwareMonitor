@@ -81,7 +81,9 @@ namespace LCDHardwareMonitor.GUI
 		{
 			switch (simState.ProcessState)
 			{
-				default: Debug.Assert(false); break;
+				default:
+					Debug.Assert(false);
+					break;
 
 				case ProcessState.Terminated:
 					Interop.LaunchSim(simState);
@@ -105,7 +107,9 @@ namespace LCDHardwareMonitor.GUI
 
 			switch (item.LoadState)
 			{
-				default: Debug.Assert(false); return;
+				default:
+					Debug.Assert(false);
+					return;
 
 				case PluginLoadState.Loaded:
 					Interop.SetPluginLoadState(simState, item.Ref, PluginLoadState.Unloaded);
@@ -158,7 +162,6 @@ namespace LCDHardwareMonitor.GUI
 		{
 			switch (e.ChangedButton)
 			{
-				// TODO: Is this pattern necessary? We don't get warnings for unhandled cases.
 				default: return;
 
 				case MouseButton.Left:
@@ -301,7 +304,9 @@ namespace LCDHardwareMonitor.GUI
 			DragDropData data = (DragDropData) e.Data.GetData(typeof(DragDropData));
 			switch (data.pluginKind)
 			{
-				default: Debug.Assert(false); break;
+				default:
+					Debug.Assert(false);
+					break;
 
 				case PluginKind.Widget: Interop.AddWidget(simState, data.pluginRef, data.widgetRef, GetMousePosition()); break;
 				case PluginKind.Sensor: break;

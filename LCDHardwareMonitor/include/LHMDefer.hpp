@@ -31,6 +31,9 @@ struct deferred final
 	const TLambda lambda;
 	deferred(TLambda&& _lambda) : lambda(_lambda) {}
 	~deferred() { lambda(); }
+
+	// NOTE: Avoids warning
+	void operator=(const deferred&) = delete;
 };
 
 struct
@@ -55,6 +58,9 @@ struct guarded final
 	b8 dismiss;
 	guarded(TLambda&& lambda) : lambda(lambda), dismiss(false) {}
 	~guarded() { if (!dismiss) lambda(); }
+
+	// NOTE: Avoids warning
+	void operator=(const guarded&) = delete;
 };
 
 struct

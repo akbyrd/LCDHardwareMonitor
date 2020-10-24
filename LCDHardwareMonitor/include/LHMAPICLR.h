@@ -16,6 +16,9 @@ struct PluginContext {};
 using CLRString = System::String;
 using LHMString = ::String;
 
+template<typename ...Args>
+constexpr inline void Unused(Args^ ...) {}
+
 void
 String_FromCLR(LHMString lhmString, CLRString^ clrString)
 {

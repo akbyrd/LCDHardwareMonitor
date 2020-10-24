@@ -52,7 +52,7 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	void
 	InitializeNewDomain(AppDomainSetup^ appDomainInfo) override
 	{
-		UNUSED(appDomainInfo);
+		Unused(appDomainInfo);
 		InitializationFlags = AppDomainManagerInitializationOptions::RegisterWithHost;
 	}
 
@@ -206,7 +206,7 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 		// DEBUG: Remove me (just for fast loading)
 		#if true
 		#pragma message("warning: Sensor plugin init temporarily disabled for faster loading")
-		UNUSED(sensorPlugin);
+		Unused(sensorPlugin);
 		#else
 		auto iInitialize = dynamic_cast<ISensorPluginInitialize^>(sensorPluginCLR.pluginInstance);
 		if (iInitialize)
