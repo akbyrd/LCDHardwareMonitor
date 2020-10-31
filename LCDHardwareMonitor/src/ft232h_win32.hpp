@@ -51,9 +51,11 @@ namespace FT232H
 		static const u8 SetDataBitsLowByte   = 0x80;
 		static const u8 ReadDataBitsLowByte  = 0x81;
 		static const u8 SetDataBitsHighByte  = 0x82;
+		static const u8 ReadDataBitsHighByte = 0x83;
 		static const u8 EnableLoopback       = 0x84;
 		static const u8 DisableLoopback      = 0x85;
 		static const u8 SetClockDivisor      = 0x86;
+		static const u8 SendImmediate        = 0x87;
 		static const u8 DisableClockDivide   = 0x8A;
 		static const u8 EnableClockDivide    = 0x8B;
 		static const u8 Enable3PhaseClock    = 0x8C;
@@ -232,6 +234,25 @@ FT232H_SetDC(FT232HState& ft232h, Signal signal)
 }
 
 void
+FT232H_SetCS(FT232HState& ft232h, Signal signal)
+{
+	if (ft232h.errorMode) return;
+
+	if (ft232h.enableTracing)
+		TraceBytes("cs", ((u8*) &signal)[3]);
+
+	Assert(signal == Signal::Low || signal == Signal::High);
+	u8 newValues = SetBit(ft232h.highPinValues, FT232H::HighPins::CSBit, (u8) signal);
+
+	if (ft232h.highPinValues != newValues)
+	{
+		ft232h.highPinValues = newValues;
+		u8 pinInitCmd[] = { FT232H::Command::SetDataBitsHighByte, ft232h.highPinValues, ft232h.highPinDirections };
+		FT232H_Write(ft232h, pinInitCmd);
+	}
+}
+
+void
 FT232H_Write(FT232HState& ft232h, u8 command)
 {
 	if (ft232h.errorMode) return;
@@ -280,6 +301,9 @@ FT232H_Read(FT232HState& ft232h, Bytes& buffer, u16 numBytesToRead)
 	Assert(ArrayLength(ftcmd) == numBytesWritten);
 
 	FT232H_ReadQueued(ft232h, buffer, numBytesToRead);
+
+	FT232H_SetCS(ft232h, Signal::High);
+	FT232H_SetCS(ft232h, Signal::Low);
 }
 
 void
@@ -296,7 +320,19 @@ FT232H_ReadQueued(FT232HState& ft232h, Bytes& buffer, u16 numBytesToRead)
 		status = FT_GetQueueStatus(ft232h.device, (DWORD*) &bytesInReadBuffer);
 		LOG_IF(status != FT_OK, EnterErrorMode(ft232h); return,
 			Severity::Error, "Failed to get queue status: %", status);
-		Assert(bytesInReadBuffer >= numBytesToRead);
+
+		if (bytesInReadBuffer < numBytesToRead)
+		{
+			// TODO: Could be smarter about this if tracking "last read time"
+			// NOTE: The read below will block until the data arrives. Since getting the queue status
+			// doesn't we need to wait to ensure the data has a chance to arrive.
+			WaitForResponse(ft232h);
+
+			status = FT_GetQueueStatus(ft232h.device, (DWORD*) &bytesInReadBuffer);
+			LOG_IF(status != FT_OK, EnterErrorMode(ft232h); return,
+				Severity::Error, "Failed to get queue status: %", status);
+			Assert(bytesInReadBuffer >= numBytesToRead);
+		}
 	}
 
 	List_Reserve(buffer, buffer.length + numBytesToRead);
@@ -456,10 +492,12 @@ FT232H_Initialize(FT232HState& ft232h)
 		FT232H_Write(ft232h, FT232H::Command::DisableLoopback);
 	}
 
-	FT232H_Write(ft232h, FT232H::Command::DisableClockDivide);
+	// TODO: Disable clock divide
+	FT232H_Write(ft232h, FT232H::Command::EnableClockDivide);
 	FT232H_Write(ft232h, FT232H::Command::DisableAdaptiveClock);
 	FT232H_Write(ft232h, FT232H::Command::Disable3PhaseClock);
 
+	// TODO: Try different clock divisors
 	// NOTE: SCL Frequency = 60 Mhz / ((1 + divisor) * 2 * 5or1)
 	u16 clockDivisor = 0x0000;
 	u8 clockCmd[] = { FT232H::Command::SetClockDivisor, UnpackLSB2(clockDivisor) };

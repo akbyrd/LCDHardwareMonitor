@@ -191,6 +191,13 @@ CountPlaceholders(const c8* format)
 	return count;
 }
 
+// TODO: Make StringView constexpr friendly
+//constexpr u32
+//CountPlaceholders(StringView format)
+//{
+//	return CountPlaceholders(format.data);
+//}
+
 template<typename Arg0, typename... Args>
 inline u32
 FormatImplRecurse(String& string, StringView format, u32 iFmt, Arg0&& arg0, Args&&... args)

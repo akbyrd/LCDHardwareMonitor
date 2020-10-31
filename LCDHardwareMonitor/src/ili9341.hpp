@@ -17,6 +17,14 @@ namespace ILI9341
 	{
 		static const u8 Nop                          = 0x00;
 		static const u8 SoftwareReset                = 0x01;
+		static const u8 ReadIdentificationInfo       = 0x04;
+		static const u8 ReadStatus                   = 0x09;
+		static const u8 ReadPowerMode                = 0x0A;
+		static const u8 ReadMemoryAccessControl      = 0x0B;
+		static const u8 ReadPixelFormat              = 0x0C;
+		static const u8 ReadImageFormat              = 0x0D;
+		static const u8 ReadSignalMode               = 0x0E;
+		static const u8 ReadSelfDiagnostic           = 0x0F;
 		static const u8 SleepIn                      = 0x10;
 		static const u8 SleepOut                     = 0x11;
 		static const u8 GammaSet                     = 0x26;

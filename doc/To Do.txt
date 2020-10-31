@@ -1,23 +1,18 @@
 Current
 -------
-Bring ILI9341 code over
-	Add a tracing option
-	Use SetBit to simplify config
+Get clock divisor working
+[ ] Try divisor of 0x1
+	Q: Why does clock divisor break reads?
+	Q: What's the proper way to FT_GetQueueStatus to check the read buffer? My code doesn't work.
+	Q: There's a dummy cycle for reads > 1 byte. Is that normal? Something I should handle manually?
 
-Bring FT232H code over
-	Ensure we can always init, even if in a bad state
-	Coalesce writes
-	Switch to parallel interface
-
-Compare writes to python code (ft232h and ili9341)
-Compare reads to python code (ft232h and ili9341)
 Delete HardwareCommunication
-Read from display
 
 
 
 Bugs
 ----
+Allow StringView to be used as a parameter to a constexpr function
 Using OpenHardwareMonitor tanks frame rate. Why? Has it always?
 Lag when selecting preview while GUI is open
 D3D leak when closing with selection
@@ -113,15 +108,18 @@ Features - FT232H Communication
 Think about reconnection strategy. Exponential backoff? Simple timer? Respond to OS USB events?
 Crash due to no finding d2xx if the device has never been plugged in. Handle this gracefully.
 Add a way to profile time spent sleeping
+Write to a buffer and only flush when full or need to sleep (write batching)
+Switch to parallel interface
+Ensure we can always init, even if in a bad state
 
 
 
 Features - ILI9341 Communication
 --------------------------------
 Profile and compare 16bit and 18bit modes. 16bit uses a lookup table. 18bit uses 50% more bandwidth.
-Write to a buffer and only flush when full or need to sleep (write batching)
 Add proper error handling
 Implement hardware reset
+Add a tracing option
 
 
 
