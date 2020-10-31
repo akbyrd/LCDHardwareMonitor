@@ -301,9 +301,6 @@ FT232H_Read(FT232HState& ft232h, Bytes& buffer, u16 numBytesToRead)
 	Assert(ArrayLength(ftcmd) == numBytesWritten);
 
 	FT232H_ReadQueued(ft232h, buffer, numBytesToRead);
-
-	FT232H_SetCS(ft232h, Signal::High);
-	FT232H_SetCS(ft232h, Signal::Low);
 }
 
 void

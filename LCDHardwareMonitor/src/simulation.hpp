@@ -2164,43 +2164,59 @@ Simulation_Update(SimulationState& s)
 					Platform_Print("\n");
 				};
 
-				ILI9341_WriteCmd(*s.ili9341, ILI9341::Command::ReadIdentificationInfo);
+				ILI9341_BeginTransaction(*s.ili9341);
+				ILI9341_WriteCmdRaw(*s.ili9341, ILI9341::Command::ReadIdentificationInfo);
 				FT232H_Read(*s.ft232h, buffer, 3);
+				ILI9341_EndTransaction(*s.ili9341);
 				print("ReadIdentificationInfo ", buffer);
 				buffer.length = 0;
 
-				ILI9341_WriteCmd(*s.ili9341, ILI9341::Command::ReadStatus);
+				ILI9341_BeginTransaction(*s.ili9341);
+				ILI9341_WriteCmdRaw(*s.ili9341, ILI9341::Command::ReadStatus);
 				FT232H_Read(*s.ft232h, buffer, 4);
+				ILI9341_EndTransaction(*s.ili9341);
 				print("ReadStatus             ", buffer);
 				buffer.length = 0;
 
-				ILI9341_WriteCmd(*s.ili9341, ILI9341::Command::ReadPowerMode);
+				ILI9341_BeginTransaction(*s.ili9341);
+				ILI9341_WriteCmdRaw(*s.ili9341, ILI9341::Command::ReadPowerMode);
 				FT232H_Read(*s.ft232h, buffer, 1);
+				ILI9341_EndTransaction(*s.ili9341);
 				print("ReadPowerMode          ", buffer);
 				buffer.length = 0;
 
-				ILI9341_WriteCmd(*s.ili9341, ILI9341::Command::ReadMemoryAccessControl);
+				ILI9341_BeginTransaction(*s.ili9341);
+				ILI9341_WriteCmdRaw(*s.ili9341, ILI9341::Command::ReadMemoryAccessControl);
 				FT232H_Read(*s.ft232h, buffer, 1);
+				ILI9341_EndTransaction(*s.ili9341);
 				print("ReadMemoryAccessControl", buffer);
 				buffer.length = 0;
 
-				ILI9341_WriteCmd(*s.ili9341, ILI9341::Command::ReadPixelFormat);
+				ILI9341_BeginTransaction(*s.ili9341);
+				ILI9341_WriteCmdRaw(*s.ili9341, ILI9341::Command::ReadPixelFormat);
 				FT232H_Read(*s.ft232h, buffer, 1);
+				ILI9341_EndTransaction(*s.ili9341);
 				print("ReadPixelFormat        ", buffer);
 				buffer.length = 0;
 
-				ILI9341_WriteCmd(*s.ili9341, ILI9341::Command::ReadImageFormat);
+				ILI9341_BeginTransaction(*s.ili9341);
+				ILI9341_WriteCmdRaw(*s.ili9341, ILI9341::Command::ReadImageFormat);
 				FT232H_Read(*s.ft232h, buffer, 1);
+				ILI9341_EndTransaction(*s.ili9341);
 				print("ReadImageFormat        ", buffer);
 				buffer.length = 0;
 
-				ILI9341_WriteCmd(*s.ili9341, ILI9341::Command::ReadSignalMode);
+				ILI9341_BeginTransaction(*s.ili9341);
+				ILI9341_WriteCmdRaw(*s.ili9341, ILI9341::Command::ReadSignalMode);
 				FT232H_Read(*s.ft232h, buffer, 1);
+				ILI9341_EndTransaction(*s.ili9341);
 				print("ReadSignalMode         ", buffer);
 				buffer.length = 0;
 
-				ILI9341_WriteCmd(*s.ili9341, ILI9341::Command::ReadSelfDiagnostic);
+				ILI9341_BeginTransaction(*s.ili9341);
+				ILI9341_WriteCmdRaw(*s.ili9341, ILI9341::Command::ReadSelfDiagnostic);
 				FT232H_Read(*s.ft232h, buffer, 1);
+				ILI9341_EndTransaction(*s.ili9341);
 				print("ReadSelfDiagnostic     ", buffer);
 				buffer.length = 0;
 

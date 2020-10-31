@@ -1,10 +1,15 @@
 Current
 -------
 Get clock divisor working
-[ ] Try divisor of 0x1
 	Q: Why does clock divisor break reads?
 	Q: What's the proper way to FT_GetQueueStatus to check the read buffer? My code doesn't work.
 	Q: There's a dummy cycle for reads > 1 byte. Is that normal? Something I should handle manually?
+	Q: Is there a good forum for these kinds of questions / projects?
+	Q: Does it all need to be in a single command to the FT232H? (Probably not)
+[x] Try divisor of 0x1
+[x] Try setting CS for every transaction
+[ ] Try coalescing transactions into a single operation
+[ ] Consider buying a logic analyzer
 
 Delete HardwareCommunication
 

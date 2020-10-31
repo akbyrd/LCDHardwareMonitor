@@ -3,6 +3,7 @@ struct ILI9341State
 	// TODO: Consider removing this
 	FT232HState* ft232h;
 
+	b8    inTransaction;
 	b8    sleep;
 	i64   sleepTime;
 	i64   wakeTime;
@@ -57,22 +58,39 @@ namespace ILI9341
 // -------------------------------------------------------------------------------------------------
 // Public API - Fundamental Functions
 
+// TODO: Probably want this transaction focused API on FT232H as well
 void
-ILI9341_WriteCmd(ILI9341State& ili9341, u8 cmd)
+ILI9341_BeginTransaction(ILI9341State& ili9341)
+{
+	Assert(!ili9341.inTransaction);
+	ili9341.inTransaction = true;
+	FT232H_SetCS(*ili9341.ft232h, Signal::Low);
+}
+
+void
+ILI9341_EndTransaction(ILI9341State& ili9341)
+{
+	Assert(ili9341.inTransaction);
+	ili9341.inTransaction = false;
+	FT232H_SetCS(*ili9341.ft232h, Signal::High);
+}
+
+void
+ILI9341_WriteCmdRaw(ILI9341State& ili9341, u8 cmd)
 {
 	FT232H_SetDC(*ili9341.ft232h, Signal::Low);
 	FT232H_SendBytes(*ili9341.ft232h, cmd);
 }
 
 void
-ILI9341_WriteData(ILI9341State& ili9341, ByteSlice bytes)
+ILI9341_WriteDataRaw(ILI9341State& ili9341, ByteSlice bytes)
 {
 	FT232H_SetDC(*ili9341.ft232h, Signal::High);
 	FT232H_SendBytes(*ili9341.ft232h, bytes);
 }
 
 void
-ILI9341_Write(ILI9341State& ili9341, u8 cmd, ByteSlice bytes)
+ILI9341_WriteRaw(ILI9341State& ili9341, u8 cmd, ByteSlice bytes)
 {
 	FT232H_SetDC(*ili9341.ft232h, Signal::Low);
 	FT232H_SendBytes(*ili9341.ft232h, cmd);
@@ -83,11 +101,44 @@ ILI9341_Write(ILI9341State& ili9341, u8 cmd, ByteSlice bytes)
 // TODO: Can this be constrained to u8 only?
 template <typename ...Args>
 void
-ILI9341_Write(ILI9341State& ili9341, u8 cmd, Args... bytes)
+ILI9341_WriteRaw(ILI9341State& ili9341, u8 cmd, Args... bytes)
 {
 	u8 data[] = { u8(bytes)... };
-	ILI9341_WriteCmd(ili9341, cmd);
-	ILI9341_WriteData(ili9341, data);
+	ILI9341_WriteCmdRaw(ili9341, cmd);
+	ILI9341_WriteDataRaw(ili9341, data);
+
+}
+void
+ILI9341_WriteCmd(ILI9341State& ili9341, u8 cmd)
+{
+	ILI9341_BeginTransaction(ili9341);
+	ILI9341_WriteCmdRaw(ili9341, cmd);
+	ILI9341_EndTransaction(ili9341);
+}
+
+void
+ILI9341_WriteData(ILI9341State& ili9341, ByteSlice bytes)
+{
+	ILI9341_BeginTransaction(ili9341);
+	ILI9341_WriteDataRaw(ili9341, bytes);
+	ILI9341_EndTransaction(ili9341);
+}
+
+void
+ILI9341_Write(ILI9341State& ili9341, u8 cmd, ByteSlice bytes)
+{
+	ILI9341_BeginTransaction(ili9341);
+	ILI9341_WriteRaw(ili9341, cmd, bytes);
+	ILI9341_EndTransaction(ili9341);
+}
+
+template <typename ...Args>
+void
+ILI9341_Write(ILI9341State& ili9341, u8 cmd, Args... bytes)
+{
+	ILI9341_BeginTransaction(ili9341);
+	ILI9341_WriteRaw(ili9341, cmd, bytes...);
+	ILI9341_EndTransaction(ili9341);
 }
 
 // -------------------------------------------------------------------------------------------------
