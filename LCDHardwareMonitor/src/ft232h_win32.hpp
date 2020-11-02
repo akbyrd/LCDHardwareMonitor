@@ -195,7 +195,6 @@ ToString(String& string, FT_STATUS status)
 // -------------------------------------------------------------------------------------------------
 // Public API Implementation - Core Functions
 
-// TODO: Naming consistency. SendBytes/RecvBytes. Read/Write?
 void
 FT232H_SetTracing(FT232HState& ft232h, b8 enable)
 {
@@ -311,30 +310,6 @@ FT232H_Read(FT232HState& ft232h, Bytes& buffer, u16 numBytesToRead)
 
 	FT_STATUS status;
 
-	// NOTE: ILI9341 shifts on the falling edge, therefore read on the rising edge
-	u16 numBytesEnc = (u16) (numBytesToRead - 1);
-	//u8 ftcmd[] = { FT232H::Command::RecvBytesRisingMSB, UnpackLSB2(numBytesEnc) };
-	u8 ftcmd[] = { FT232H::Command::RecvBytesRisingMSB, UnpackLSB2(numBytesEnc), FT232H::Command::SendImmediate };
-	// TODO: Why does python use this command and why does it work?
-	//u8 ftcmd[] = { FT232H::Command::RecvBytesFallingMSB, UnpackLSB2(numBytesEnc), FT232H::Command::SendImmediate };
-
-	u32 numBytesWritten;
-	status = FT_Write(ft232h.device, ftcmd, (DWORD) ArrayLength(ftcmd), (DWORD*) &numBytesWritten);
-	LOG_IF(status != FT_OK, EnterErrorMode(ft232h); return,
-		Severity::Error, "Failed to write to device: %", status);
-	Assert(ArrayLength(ftcmd) == numBytesWritten);
-
-	FT232H_ReadQueued(ft232h, buffer, numBytesToRead);
-}
-
-void
-FT232H_ReadQueued(FT232HState& ft232h, Bytes& buffer, u16 numBytesToRead)
-{
-	Assert(numBytesToRead != 0);
-	if (ft232h.errorMode) return;
-
-	FT_STATUS status;
-
 	if (ft232h.enableDebugChecks)
 	{
 		u32 bytesInReadBuffer;
@@ -392,6 +367,30 @@ FT232H_SendBytes(FT232HState& ft232h, ByteSlice bytes)
 		FT232H_Write(ft232h, chunk);
 		remainingLen -= chunk.length;
 	}
+}
+
+void
+FT232H_RecvBytes(FT232HState& ft232h, Bytes& buffer, u16 numBytesToRead)
+{
+	Assert(numBytesToRead != 0);
+	if (ft232h.errorMode) return;
+
+	FT_STATUS status;
+
+	// NOTE: ILI9341 shifts on the falling edge, therefore read on the rising edge
+	u16 numBytesEnc = (u16) (numBytesToRead - 1);
+	//u8 ftcmd[] = { FT232H::Command::RecvBytesRisingMSB, UnpackLSB2(numBytesEnc) };
+	u8 ftcmd[] = { FT232H::Command::RecvBytesRisingMSB, UnpackLSB2(numBytesEnc), FT232H::Command::SendImmediate };
+	// TODO: Why does python use this command and why does it work?
+	//u8 ftcmd[] = { FT232H::Command::RecvBytesFallingMSB, UnpackLSB2(numBytesEnc), FT232H::Command::SendImmediate };
+
+	u32 numBytesWritten;
+	status = FT_Write(ft232h.device, ftcmd, (DWORD) ArrayLength(ftcmd), (DWORD*) &numBytesWritten);
+	LOG_IF(status != FT_OK, EnterErrorMode(ft232h); return,
+		Severity::Error, "Failed to write to device: %", status);
+	Assert(ArrayLength(ftcmd) == numBytesWritten);
+
+	FT232H_Read(ft232h, buffer, numBytesToRead);
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -506,7 +505,7 @@ FT232H_Initialize(FT232HState& ft232h)
 		Bytes buffer = {};
 		defer { List_Free(buffer); };
 
-		FT232H_ReadQueued(ft232h, buffer, 2);
+		FT232H_Read(ft232h, buffer, 2);
 		Assert(buffer[0] == FT232H::Response::BadCommand);
 		Assert(buffer[1] == FT232H::Command::BadCommand);
 

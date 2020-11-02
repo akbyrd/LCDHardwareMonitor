@@ -1,59 +1,69 @@
-// MCU 8080-II
-// CSX is active low, enables the ILI9341
-// RESX is active low, external reset signal
-// WRX is parallel data write strobe
-// RDX is parallel data read strobe
-// Latches input on rising edge of WRX
-// D[17:0] is parallel data
-// Write cycle: WRX high -> low -> high
-// Read cycle: RDX high -> low -> high
-// Origin in the top left. Display is portrait.
+Serial Interface
+----------------
+General
+Serial clock (SCL) is used for interface with MCU only, so it can be stopped when no communication is necessary.
+If the D/CX bit is "low", the transmission byte is interpreted as a command byte.
+If the D/CX bit is "high", the transmission byte is stored as the display data RAM (Memory write command), or command register as parameter.
+Any instruction can be sent in any order to ILI9341 and the MSB is transmitted first.
+The serial interface is initialized when CSX is high status.
+In this state, SCL clock pulse and SDA data are no effect.
+A falling edge on CSX enables the serial interface and indicates the start of data transmission.
 
-// SPI
-// D[17:0] must be connected to ground (unused)
-// 3 line mode embeds a D/CX bit in the packet
-// MSB first
-// "The serial interface is initialized when CSX is high"
-// Write Flow (to ILI):
-// 	1. Host set CSX low + set D/CX (D/CX first?)
-// 	2. Rising SCL: ILI read D/CX
-// 	3. Falling SCL: Host set D7
-// 	4. Rising SCL: ILI read D7
-// 	5. Falling SCL: Host set D6
-// 	6. Rising SCL: ILI read D6
-// Looks like SCL and SDA must be low while CSX is high
-// 	Wait, docs day "invalid". I think that just means they're ignored
-// "ILI latches the SDA (input data) at the rising edgoes of SCL"
-// "then shifts SDA (output data) at falling edges of SCL"
-// "After read status command sent SDA must be set tri-state before falling SCL of last bit"
-// Need 10 us break after RESX
-// CSX stop in the middle of command/data: partial byte is discarded
-// Break in multiple parameters: accept full bytes, discard partial
-// Pauses between parameters are fine
-// 2 data transfer modes: 16 and 18 bpp
+Write
+Host processor drives the CSX pin to low and starts by setting the D/CX bit on SDA.
+The bit is read by ILI9341 on the first rising edge of SCL signal.
+On the next falling edge of SCL, the MSB data bit (D7) is set on SDA by the host.
+On the next falling edge of SCL, the next bit (D6) is set on SDA.
+If the optional D/CX signal is used, a byte is eight read cycle width.
 
-// Configure 232 to match ILI requirements
-// 	[x] Select SPI mode (soldered)
-// 	[x] Write on rising or falling?
-// 	[x] Set clock frequency (what's the valid range?)
-// 	[ ] Start clock high or low?
-// Read something from the display
-// 	[ ] Identification information
-// 	[ ] Status
-// 	[ ] Power mode
-// 	[ ] MADCTL
-// 	[ ] Pixel format
-// 	[ ] Image format
-// 	[ ] Signal mode
-// 	[ ] Self diagnostic
+Read
+ILI9341 latches the SDA (input data) at the rising edges of SCL (serial clock).
+And then shifts SDA (output data) at falling edges of SCL (serial clock).
+After the read status command has been sent, the SDA line must be set to tri-state and no later than at the falling edge of SCL of the last bit.
+
+Notes
+D[17:0] must be connected to ground (unused)
+3 line mode embeds a D/CX bit in the packet
+MSB first
+"The serial interface is initialized when CSX is high"
+Write Flow (to ILI):
+	1. Host set CSX low + set D/CX
+	2. Rising SCL: ILI read D/CX
+	3. Falling SCL: Host set D7
+	4. Rising SCL: ILI read D7
+	5. Falling SCL: Host set D6
+	6. Rising SCL: ILI read D6
+"ILI latches the SDA (input data) at the rising edges of SCL"
+"then shifts SDA (output data) at falling edges of SCL"
+"After read status command sent SDA must be set tri-state before falling SCL of last bit"
+Need 10 us break after RESX
+CSX stop in the middle of command/data: partial byte is discarded
+Break in multiple parameters: accept full bytes, discard partial
+Pauses between parameters are fine
+2 data transfer modes: 16 and 18 bpp
 
 
 
-// Random Resources
-// https://retropie.org.uk/forum/topic/14519/fast-refresh-rates-up-to-60fps-with-an-spi-display-ili9341/2
-// https://github.com/juj/fbcp-ili9341
-// http://marekburiak.github.io/ILI9341_due/
-// https://github.com/XarkLabs/PDQ_GFX_Libs
-// https://github.com/PaulStoffregen/ILI9341_t3
-// https://github.com/projectitis/ILI9341_t3/tree/anti-alias-fonts
-// https://os.mbed.com/users/dreschpe/code/SPI_TFT_ILI9341/
+MCU 8080-II
+-----------
+CSX is active low, enables the ILI9341
+RESX is active low, external reset signal
+WRX is parallel data write strobe
+RDX is parallel data read strobe
+Latches input on rising edge of WRX
+D[17:0] is parallel data
+Write cycle: WRX high -> low -> high
+Read cycle: RDX high -> low -> high
+Origin in the top left. Display is portrait.
+
+
+
+Random Resources
+----------------
+https://retropie.org.uk/forum/topic/14519/fast-refresh-rates-up-to-60fps-with-an-spi-display-ili9341/2
+https://github.com/juj/fbcp-ili9341
+http://marekburiak.github.io/ILI9341_due/
+https://github.com/XarkLabs/PDQ_GFX_Libs
+https://github.com/PaulStoffregen/ILI9341_t3
+https://github.com/projectitis/ILI9341_t3/tree/anti-alias-fonts
+https://os.mbed.com/users/dreschpe/code/SPI_TFT_ILI9341/
