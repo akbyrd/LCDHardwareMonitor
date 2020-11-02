@@ -436,13 +436,17 @@ class Display:
         data = bytearray(count)
         print('dc 0')
         self.dc_pin.value = 0
+        print('begin')
         with self.spi_device as spi:
             if command is not None:
                 print('cmd', '0x{:02X} '.format(command))
                 spi.write(bytearray([command]))
             if count:
+                print('read')
                 spi.readinto(data)
                 print('read data', ''.join('0x{:02X} '.format(x) for x in data))
+            print('ending')
+        print('end')
         return data
 
 def color565(r, g, b):
@@ -470,21 +474,30 @@ display = Display(spi_device, dc_pin, cs_pin, 240, 320)
 #display.pixel(160, 120, color565(0x00, 0x00, 0xff))
 
 commands = [
-	( 0x04, 4, [], "ReadDisplayIdentificationInformation" ),
-	( 0x09, 5, [], "ReadDisplayStatus" ),
-	( 0x0A, 2, [], "ReadDisplayPowerMode" ),
-	( 0x0B, 2, [], "ReadDisplayMADCTL" ),
-	( 0x0C, 2, [], "ReadDisplayPixelFormat" ),
-	( 0x0D, 2, [], "ReadDisplayImageFormat" ),
-	( 0x0E, 2, [], "ReadDisplaySignalMode" ),
-	( 0x0F, 2, [], "ReadDisplaySelfDiagnosticResult" ),
+    ( 0x04, 4, [], "ReadDisplayIdentificationInformation" ),
+    ( 0x09, 5, [], "ReadDisplayStatus" ),
+    ( 0x0A, 2, [], "ReadDisplayPowerMode" ),
+    ( 0x0B, 2, [], "ReadDisplayMADCTL" ),
+    ( 0x0C, 2, [], "ReadDisplayPixelFormat" ),
+    ( 0x0D, 2, [], "ReadDisplayImageFormat" ),
+    ( 0x0E, 2, [], "ReadDisplaySignalMode" ),
+    ( 0x0F, 2, [], "ReadDisplaySelfDiagnosticResult" ),
 ]
 
-for cmdTuple in commands:
-	cmdTuple[2].extend(display.read(cmdTuple[0], cmdTuple[1]))
-	print('cmd', cmdTuple[3], '0x{:02X} '.format(cmdTuple[0]))
-	print('data', ''.join('0x{:02X} '.format(x) for x in cmdTuple[2]))
+print('here we go...')
+# for cmdTuple in commands:
+#     cmdTuple[2].extend(display.read(cmdTuple[0], cmdTuple[1]))
+#     print('cmd', cmdTuple[3], '0x{:02X} '.format(cmdTuple[0]))
+#     print('data', ''.join('0x{:02X} '.format(x) for x in cmdTuple[2]))
 
-for cmdTuple in commands:
-	print('cmd', cmdTuple[3], '0x{:02X} '.format(cmdTuple[0]))
-	print('data', ''.join('0x{:02X} '.format(x) for x in cmdTuple[2]))
+# for cmdTuple in commands:
+#     print('cmd', cmdTuple[3], '0x{:02X} '.format(cmdTuple[0]))
+#     print('data', ''.join('0x{:02X} '.format(x) for x in cmdTuple[2]))
+
+for cmdTuple in [ commands[3] ]:
+    print('doing it')
+    result = display.read(cmdTuple[0], cmdTuple[1])
+    cmdTuple[2].clear()
+    cmdTuple[2].extend(result)
+    print('cmd', cmdTuple[3], '0x{:02X} '.format(cmdTuple[0]))
+    print('data', ''.join('0x{:02X} '.format(x) for x in cmdTuple[2]))

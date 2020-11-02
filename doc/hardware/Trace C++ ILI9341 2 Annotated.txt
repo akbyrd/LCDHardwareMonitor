@@ -1,0 +1,73 @@
+dc 0
+// read current pin state
+// update local var to modify dc
+fwrite data GET_BITS_LOW           (0x81)
+            GET_BITS_HIGH          (0x83)
+            SEND_IMMEDIATE         (0x87)
+fread  data 0xFC 0xFD                               (LV 1100 HV 1101) // DC0 CS1
+
+// dc = C1 = Pin(9)
+// H D/C CS
+// setting dc low
+// mask input pins, setting them to zero?
+// read-modify-write
+fwrite data GET_BITS_LOW           (0x81)
+            GET_BITS_HIGH          (0x83)
+            SEND_IMMEDIATE         (0x87)
+fread  data 0xFC 0xFD                               (LV 1100 HV 1101) // DC0 CS1
+fwrite data SET_BITS_LOW           (0x80) 0x0C 0x0B (LV 1100 LD 1011) // L31 L21
+            SET_BITS_HIGH          (0x82) 0x01 0x03 (HV 0001 HD 0011) // DC0 CS1
+
+
+begin
+fwrite data GET_BITS_LOW           (0x81)
+            GET_BITS_HIGH          (0x83)
+            SEND_IMMEDIATE         (0x87)
+fread  data 0xFC 0xFD                               (LV 1100 HV 1101) // DC0 CS1
+fwrite data GET_BITS_LOW           (0x81)
+            GET_BITS_HIGH          (0x83)
+            SEND_IMMEDIATE         (0x87)
+fread  data 0xFC 0xFD                               (LV 1100 HV 1101) // DC0 CS1
+fwrite data SET_BITS_LOW           (0x80) 0x0C 0x0B (LV 1100 LD 1011) // L31 L21
+            SET_BITS_HIGH          (0x82) 0x00 0x03 (HV 0000 HD 0011) // DC0 CS0 - Set CS 0
+
+
+// TODO: Debug to understand what L2 and L3 are
+// L2 is input. L3 is output. I don't think L3 is being set.
+cmd 0x0B
+fwrite data SET_BITS_LOW           (0x80) 0x0C 0x0B (LV 1100 LD 1011) // L31 L21
+            SET_BITS_LOW           (0x80) 0x04 0x0B (LV 0100 LD 1011) // L30 L21 - Set L3 0
+            WRITE_BYTES_NVE_MSB    (0x11) 0x00 0x00 - Payload 0x0B
+            SET_BITS_LOW           (0x80) 0x04 0x0B (LV 0100 LD 1011) // L30 L21
+            SET_BITS_LOW           (0x80) 0x0C 0x0B (LV 1100 LD 1011) // L31 L21 - Set L3 1
+            SET_BITS_LOW           (0x80) 0x08 0x0B (LV 1000 LD 1011) // L31 L20 - Set L2 0
+
+
+read
+fwrite data SET_BITS_LOW           (0x80) 0x0C 0x0B (LV 1100 LD 1011) // L31 L21 - Set L2 1
+            SET_BITS_LOW           (0x80) 0x04 0x0B (LV 0100 LD 1011) // L30 L21 - Set L3 0
+            READ_BYTES_NVE_MSB     (0x24) 0x01 0x00
+            SEND_IMMEDIATE         (0x87)
+            SET_BITS_LOW           (0x80) 0x04 0x0B (LV 0100 LD 1011) // L30 L21
+            SET_BITS_LOW           (0x80) 0x0C 0x0B (LV 1100 LD 1011) // L31 L21 - Set L3 1
+            SET_BITS_LOW           (0x80) 0x08 0x0B (LV 1000 LD 1011) // L31 L20 - Set L2 0
+fread  data 0x48 0x00
+read data 0x48 0x00
+
+
+ending
+fwrite data GET_BITS_LOW           (0x81)
+            GET_BITS_HIGH          (0x83)
+            SEND_IMMEDIATE         (0x87)
+fread  data 0xFC 0xFC                               (LV 1100 HV 1100) // DC0 CS1 L31 L21
+fwrite data GET_BITS_LOW           (0x81)
+            GET_BITS_HIGH          (0x83)
+            SEND_IMMEDIATE         (0x87)
+fread  data 0xFC 0xFC                               (LV 1100 HV 1100) // DC1 CS1 L31 L21
+fwrite data SET_BITS_LOW           (0x80) 0x0C 0x0B (LV 1100 LD 1011) // L31 L21 - Set L2 1
+            SET_BITS_HIGH          (0x82) 0x01 0x03 (HV 0001 HD 0011) // DC0 CS1 - Set CS 1
+end
+
+
+cmd ReadDisplayMADCTL 0x0B
+data 0x48 0x00

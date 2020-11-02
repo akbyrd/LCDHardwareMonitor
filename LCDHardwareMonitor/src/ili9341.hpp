@@ -64,6 +64,7 @@ ILI9341_BeginTransaction(ILI9341State& ili9341)
 {
 	Assert(!ili9341.inTransaction);
 	ili9341.inTransaction = true;
+	FT232H_SetCLK(*ili9341.ft232h, Signal::Low);
 	FT232H_SetCS(*ili9341.ft232h, Signal::Low);
 }
 
@@ -549,6 +550,8 @@ ILI9341_Initialize(ILI9341State& ili9341, FT232HState& ft232h)
 	ILI9341_SetGamma(ili9341);
 	ILI9341_WriteCmd(ili9341, ILI9341::Command::SleepOut);
 	ILI9341_WriteCmd(ili9341, ILI9341::Command::DisplayOn);
+
+	FT232H_SetCS(*ili9341.ft232h, Signal::Low);
 
 	// TODO: The screen can do an endian swap, but only in the parallel interface. Once we're using
 	// the parallel interface remove the byte-swaps in SetRect and DrawFrame and set the endianness
