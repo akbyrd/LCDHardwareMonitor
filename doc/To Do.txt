@@ -1,7 +1,6 @@
 Current
 -------
 Assert when changing divider to be too low (is the FT_GetQueueStatus process correct?)
-Delete HardwareCommunication
 There's a dummy cycle for reads > 1 byte. Is that normal? Something I should handle manually?
 Try ardnew's code
 

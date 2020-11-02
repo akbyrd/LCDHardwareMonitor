@@ -51,8 +51,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		..\..\README.md = ..\..\README.md
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Hardware Communication", "Hardware Communication.vcxproj", "{BC5635D4-690C-484D-931A-E5E5A259D338}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PreBuild", "PreBuild.vcxproj", "{C66C06EE-10BF-465E-90C9-8564F20626D2}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LCDHardwareMonitor PluginLoader CLR Interface", "LCDHardwareMonitor PluginLoader CLR Interface.vcxproj", "{7E6A520B-1A13-444A-B224-78C8F6BE9A93}"
@@ -121,14 +119,6 @@ Global
 		{E16AAA6C-043D-416E-8CE7-D7FDB83B8722}.Release|x64.Build.0 = Release|x64
 		{E16AAA6C-043D-416E-8CE7-D7FDB83B8722}.Release|x86.ActiveCfg = Release|Win32
 		{E16AAA6C-043D-416E-8CE7-D7FDB83B8722}.Release|x86.Build.0 = Release|Win32
-		{BC5635D4-690C-484D-931A-E5E5A259D338}.Debug|x64.ActiveCfg = Debug|x64
-		{BC5635D4-690C-484D-931A-E5E5A259D338}.Debug|x64.Build.0 = Debug|x64
-		{BC5635D4-690C-484D-931A-E5E5A259D338}.Debug|x86.ActiveCfg = Debug|Win32
-		{BC5635D4-690C-484D-931A-E5E5A259D338}.Debug|x86.Build.0 = Debug|Win32
-		{BC5635D4-690C-484D-931A-E5E5A259D338}.Release|x64.ActiveCfg = Release|x64
-		{BC5635D4-690C-484D-931A-E5E5A259D338}.Release|x64.Build.0 = Release|x64
-		{BC5635D4-690C-484D-931A-E5E5A259D338}.Release|x86.ActiveCfg = Release|Win32
-		{BC5635D4-690C-484D-931A-E5E5A259D338}.Release|x86.Build.0 = Release|Win32
 		{C66C06EE-10BF-465E-90C9-8564F20626D2}.Debug|x64.ActiveCfg = Debug|x64
 		{C66C06EE-10BF-465E-90C9-8564F20626D2}.Debug|x64.Build.0 = Debug|x64
 		{C66C06EE-10BF-465E-90C9-8564F20626D2}.Debug|x86.ActiveCfg = Debug|Win32
