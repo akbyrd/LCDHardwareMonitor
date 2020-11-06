@@ -4,8 +4,6 @@ Cleanup hardware communication
 	Coalesce commands
 	Why does python use SendImmediate?
 	Why does python receive on the falling edge?
-	DC and CS aren't defined by FT232H device, are they?
-	I think D/C is defined by the FT232H?
 	Assert when changing divider to be too low (is the FT_GetQueueStatus process correct?)
 	There's a dummy cycle for reads > 1 byte. Is that normal? Something I should handle manually?
 Try ardnew's code

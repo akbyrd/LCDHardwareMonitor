@@ -563,13 +563,13 @@ FT232H_Initialize(FT232HState& ft232h)
 	FT232H_Write(ft232h, FT232H::Command::Disable3PhaseClock);
 	FT232H_SetClockSpeed(ft232h, FT232H::ClockSpeedMax);
 
-	// Pin 2: DI, 1: DO, 0: CLK
-	ft232h.lowPinValues     = 0b0000'0001;
+	// Pin 2: DI, DO, CLK
+	ft232h.lowPinValues     = 0b0000'0000;
 	ft232h.lowPinDirections = 0b0000'0011;
 	u8 pinInitLCmd[] = { FT232H::Command::SetDataBitsLowByte, ft232h.lowPinValues, ft232h.lowPinDirections };
 	FT232H_Write(ft232h, pinInitLCmd);
 
-	// Pin 2: RST, 1: D/C, 0: CS
+	// Pin 2: RST, D/C, CS
 	ft232h.highPinValues     = 0b0000'0011;
 	ft232h.highPinDirections = 0b0000'0011;
 	u8 pinInitHCmd[] = { FT232H::Command::SetDataBitsHighByte, ft232h.highPinValues, ft232h.highPinDirections };
