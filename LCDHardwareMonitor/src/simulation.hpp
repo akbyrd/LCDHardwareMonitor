@@ -2150,7 +2150,7 @@ Simulation_Update(SimulationState& s)
 				ILI9341_Initialize(*s.ili9341, *s.ft232h);
 
 				// DEBUG: Remove this
-				Bytes buffer = {};
+				Bytes bytes = {};
 
 				auto print = [](StringView prefix, ByteSlice bytes)
 				{
@@ -2164,37 +2164,37 @@ Simulation_Update(SimulationState& s)
 					Platform_Print("\n");
 				};
 
-				ILI9341_Read(*s.ili9341, ILI9341::Command::ReadIdentificationInfo, buffer, 3);
-				print("ReadIdentificationInfo ", buffer);
-				buffer.length = 0;
+				ILI9341_Read(*s.ili9341, ILI9341::Command::ReadIdentificationInfo, bytes, 3);
+				print("ReadIdentificationInfo ", bytes);
+				bytes.length = 0;
 
-				ILI9341_Read(*s.ili9341, ILI9341::Command::ReadStatus, buffer, 4);
-				print("ReadStatus             ", buffer);
-				buffer.length = 0;
+				ILI9341_Read(*s.ili9341, ILI9341::Command::ReadStatus, bytes, 4);
+				print("ReadStatus             ", bytes);
+				bytes.length = 0;
 
-				ILI9341_Read(*s.ili9341, ILI9341::Command::ReadPowerMode, buffer, 1);
-				print("ReadPowerMode          ", buffer);
-				buffer.length = 0;
+				ILI9341_Read(*s.ili9341, ILI9341::Command::ReadPowerMode, bytes, 1);
+				print("ReadPowerMode          ", bytes);
+				bytes.length = 0;
 
-				ILI9341_Read(*s.ili9341, ILI9341::Command::ReadMemoryAccessControl, buffer, 1);
-				print("ReadMemoryAccessControl", buffer);
-				buffer.length = 0;
+				ILI9341_Read(*s.ili9341, ILI9341::Command::ReadMemoryAccessControl, bytes, 1);
+				print("ReadMemoryAccessControl", bytes);
+				bytes.length = 0;
 
-				ILI9341_Read(*s.ili9341, ILI9341::Command::ReadPixelFormat, buffer, 1);
-				print("ReadPixelFormat        ", buffer);
-				buffer.length = 0;
+				ILI9341_Read(*s.ili9341, ILI9341::Command::ReadPixelFormat, bytes, 1);
+				print("ReadPixelFormat        ", bytes);
+				bytes.length = 0;
 
-				ILI9341_Read(*s.ili9341, ILI9341::Command::ReadImageFormat, buffer, 1);
-				print("ReadImageFormat        ", buffer);
-				buffer.length = 0;
+				ILI9341_Read(*s.ili9341, ILI9341::Command::ReadImageFormat, bytes, 1);
+				print("ReadImageFormat        ", bytes);
+				bytes.length = 0;
 
-				ILI9341_Read(*s.ili9341, ILI9341::Command::ReadSignalMode, buffer, 1);
-				print("ReadSignalMode         ", buffer);
-				buffer.length = 0;
+				ILI9341_Read(*s.ili9341, ILI9341::Command::ReadSignalMode, bytes, 1);
+				print("ReadSignalMode         ", bytes);
+				bytes.length = 0;
 
-				ILI9341_Read(*s.ili9341, ILI9341::Command::ReadSelfDiagnostic, buffer, 1);
-				print("ReadSelfDiagnostic     ", buffer);
-				buffer.length = 0;
+				ILI9341_Read(*s.ili9341, ILI9341::Command::ReadSelfDiagnostic, bytes, 1);
+				print("ReadSelfDiagnostic     ", bytes);
+				bytes.length = 0;
 
 				FT232H_SetCS(*s.ft232h, Signal::Low);
 				ILI9341_BeginDrawFrames(*s.ili9341);

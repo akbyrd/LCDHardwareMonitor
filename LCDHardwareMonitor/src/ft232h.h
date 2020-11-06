@@ -20,9 +20,9 @@ b8   FT232H_HasError            (FT232HState&);
 
 void FT232H_Write               (FT232HState&, u8 command);
 void FT232H_Write               (FT232HState&, ByteSlice bytes);
-void FT232H_Read                (FT232HState&, Bytes& buffer, u16 numBytesToRead);
+void FT232H_Read                (FT232HState&, Bytes& bytes, u16 numBytesToRead);
 void FT232H_SendBytes           (FT232HState&, ByteSlice bytes);
-void FT232H_RecvBytes           (FT232HState&, Bytes& buffer, u16 numBytesToRead);
+void FT232H_RecvBytes           (FT232HState&, Bytes& bytes, u16 numBytesToRead);
 
 void FT232H_SetCLK              (FT232HState&, Signal signal);
 void FT232H_SetCS               (FT232HState&, Signal signal);

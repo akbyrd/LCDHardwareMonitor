@@ -132,17 +132,17 @@ DrainRead(FT232HState& ft232h, StringView prefix)
 
 	if (bytesInReadBuffer > 0)
 	{
-		Bytes buffer = {};
-		defer { List_Free(buffer); };
-		List_Reserve(buffer, bytesInReadBuffer);
+		Bytes bytes = {};
+		defer { List_Free(bytes); };
+		List_Reserve(bytes, bytesInReadBuffer);
 
-		status = FT_Read(ft232h.device, buffer.data, bytesInReadBuffer, (DWORD*) &buffer.length);
+		status = FT_Read(ft232h.device, bytes.data, bytesInReadBuffer, (DWORD*) &bytes.length);
 		LOG_IF(status != FT_OK, EnterErrorMode(ft232h); return,
 			Severity::Error, "Failed to flush read buffer: %", status);
-		Assert(buffer.length == bytesInReadBuffer);
+		Assert(bytes.length == bytesInReadBuffer);
 
 		if (ft232h.enableTracing)
-			TraceBytes(prefix, buffer);
+			TraceBytes(prefix, bytes);
 	}
 }
 
@@ -252,7 +252,7 @@ FT232H_Write(FT232HState& ft232h, ByteSlice bytes)
 };
 
 void
-FT232H_Read(FT232HState& ft232h, Bytes& buffer, u16 numBytesToRead)
+FT232H_Read(FT232HState& ft232h, Bytes& bytes, u16 numBytesToRead)
 {
 	Assert(numBytesToRead != 0);
 	if (ft232h.errorMode) return;
@@ -280,19 +280,19 @@ FT232H_Read(FT232HState& ft232h, Bytes& buffer, u16 numBytesToRead)
 		}
 	}
 
-	List_Reserve(buffer, buffer.length + numBytesToRead);
+	List_Reserve(bytes, bytes.length + numBytesToRead);
 
 	u32 numBytesRead;
-	status = FT_Read(ft232h.device, &buffer.data[buffer.length], numBytesToRead, (DWORD*) &numBytesRead);
+	status = FT_Read(ft232h.device, &bytes.data[bytes.length], numBytesToRead, (DWORD*) &numBytesRead);
 	LOG_IF(status != FT_OK, EnterErrorMode(ft232h); return,
 		Severity::Error, "Failed to read from device: %", status);
 	Assert(numBytesRead == numBytesToRead);
-	buffer.length += numBytesRead;
+	bytes.length += numBytesRead;
 
 	if (ft232h.enableTracing)
 	{
 		ByteSlice slice = {};
-		slice.data   = &buffer.data[buffer.length - numBytesToRead];
+		slice.data   = &bytes.data[bytes.length - numBytesToRead];
 		slice.length = numBytesToRead;
 		TraceBytes("read", slice);
 	}
@@ -321,7 +321,7 @@ FT232H_SendBytes(FT232HState& ft232h, ByteSlice bytes)
 }
 
 void
-FT232H_RecvBytes(FT232HState& ft232h, Bytes& buffer, u16 numBytesToRead)
+FT232H_RecvBytes(FT232HState& ft232h, Bytes& bytes, u16 numBytesToRead)
 {
 	Assert(numBytesToRead != 0);
 	if (ft232h.errorMode) return;
@@ -338,7 +338,7 @@ FT232H_RecvBytes(FT232HState& ft232h, Bytes& buffer, u16 numBytesToRead)
 		Severity::Error, "Failed to write to device: %", status);
 	Assert(ArrayLength(ftcmd) == numBytesWritten);
 
-	FT232H_Read(ft232h, buffer, numBytesToRead);
+	FT232H_Read(ft232h, bytes, numBytesToRead);
 }
 
 void
@@ -548,12 +548,12 @@ FT232H_Initialize(FT232HState& ft232h)
 		FT232H_Write(ft232h, FT232H::Command::BadCommand);
 		WaitForResponse(ft232h);
 
-		Bytes buffer = {};
-		defer { List_Free(buffer); };
+		Bytes bytes = {};
+		defer { List_Free(bytes); };
 
-		FT232H_Read(ft232h, buffer, 2);
-		Assert(buffer[0] == FT232H::Response::BadCommand);
-		Assert(buffer[1] == FT232H::Command::BadCommand);
+		FT232H_Read(ft232h, bytes, 2);
+		Assert(bytes[0] == FT232H::Response::BadCommand);
+		Assert(bytes[1] == FT232H::Command::BadCommand);
 
 		FT232H_Write(ft232h, FT232H::Command::DisableLoopback);
 	}
