@@ -1,31 +1,29 @@
 Serial Interface
 ----------------
-General
-Serial clock (SCL) is used for interface with MCU only, so it can be stopped when no communication is necessary.
-If the D/CX bit is "low", the transmission byte is interpreted as a command byte.
-If the D/CX bit is "high", the transmission byte is stored as the display data RAM (Memory write command), or command register as parameter.
-Any instruction can be sent in any order to ILI9341 and the MSB is transmitted first.
-The serial interface is initialized when CSX is high status.
-In this state, SCL clock pulse and SDA data are no effect.
+From Documentation
+The serial interface is initialized when CSX is high status. In this state, SCL clock pulse and SDA
+	data are no effect.
 A falling edge on CSX enables the serial interface and indicates the start of data transmission.
-
-Write
-Host processor drives the CSX pin to low and starts by setting the D/CX bit on SDA.
+Host processor drives the CSX pin to low and starts by setting the D/CX bit on SDA
 The bit is read by ILI9341 on the first rising edge of SCL signal.
 On the next falling edge of SCL, the MSB data bit (D7) is set on SDA by the host.
 On the next falling edge of SCL, the next bit (D6) is set on SDA.
-If the optional D/CX signal is used, a byte is eight read cycle width.
-
-Read
-ILI9341 latches the SDA (input data) at the rising edges of SCL (serial clock).
-And then shifts SDA (output data) at falling edges of SCL (serial clock).
-After the read status command has been sent, the SDA line must be set to tri-state and no later than at the falling edge of SCL of the last bit.
+Any instruction can be sent in any order to ILI9341 and the MSB is transmitted first.
+If the D/CX bit is "low", the transmission byte is interpreted as a command byte.
+If the D/CX bit is "high", the transmission byte is stored as the display data RAM (Memory write command), or command register as parameter.
+ILI9341 latches the SDA (input data) at the rising edges of SCL (serial clock)
+And then shifts SDA (output data) at falling edges of SCL (serial clock)
+After the read status command has been sent, the SDA line must be set to tri-state and no later than
+	at the falling edge of SCL of the last bit.
 
 Notes
-D[17:0] must be connected to ground (unused)
+// NOTE: MSB first.
+// NOTE: Screen reads on rising edge.
+// NOTE: Host writes on falling edge.
+// NOTE: Screen writes on falling edge.
+// NOTE: Host reads on rising edge.
+// NOTE: Clock starts low (polarity 0).
 3 line mode embeds a D/CX bit in the packet
-MSB first
-"The serial interface is initialized when CSX is high"
 Write Flow (to ILI):
 	1. Host set CSX low + set D/CX
 	2. Rising SCL: ILI read D/CX
@@ -33,9 +31,6 @@ Write Flow (to ILI):
 	4. Rising SCL: ILI read D7
 	5. Falling SCL: Host set D6
 	6. Rising SCL: ILI read D6
-"ILI latches the SDA (input data) at the rising edges of SCL"
-"then shifts SDA (output data) at falling edges of SCL"
-"After read status command sent SDA must be set tri-state before falling SCL of last bit"
 Need 10 us break after RESX
 CSX stop in the middle of command/data: partial byte is discarded
 Break in multiple parameters: accept full bytes, discard partial

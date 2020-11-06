@@ -11,16 +11,23 @@ struct FT232HState
 	u8        latency;
 	u32       writeTimeout;
 	u32       readTimeout;
+	u32       clockSpeedDesired;
+	u32       clockSpeedActual;
 	u8        lowPinValues      = 0b0000'0000; // Pin 2: DI, 1: DO, 0: CLK
 	u8        lowPinDirections  = 0b0000'0011;
 	u8        highPinValues     = 0b0000'0000; // Pin 2: RST, 1: D/C, 0: CS
 	u8        highPinDirections = 0b0000'0011;
+
+	b8        inSPITransaction;
+
 };
 
 namespace FT232H
 {
-	static const u32   SerialNumber = 0x04036014;
-	static const char* Description  = "FT232H";
+	static const u32   SerialNumber  = 0x04036014;
+	static const char* Description   = "FT232H";
+	static const u32   ClockSpeedMax = 30'000'000;
+	static const u32   ClockSpeedMin = u32(457.763);
 
 	struct LowPins
 	{
@@ -215,64 +222,6 @@ FT232H_HasError(FT232HState& ft232h)
 }
 
 void
-FT232H_SetCLK(FT232HState& ft232h, Signal signal)
-{
-	if (ft232h.errorMode) return;
-
-	// TODO: WTF is this [3]?
-	if (ft232h.enableTracing)
-		TraceBytes("clk", ((u8*) &signal)[3]);
-
-	Assert(signal == Signal::Low || signal == Signal::High);
-	u8 newValues = SetBit(ft232h.lowPinValues, FT232H::LowPins::CLKBit, (u8) signal);
-
-	if (ft232h.lowPinValues != newValues)
-	{
-		ft232h.lowPinValues = newValues;
-		u8 pinInitCmd[] = { FT232H::Command::SetDataBitsLowByte, ft232h.lowPinValues, ft232h.lowPinDirections };
-		FT232H_Write(ft232h, pinInitCmd);
-	}
-}
-
-void
-FT232H_SetCS(FT232HState& ft232h, Signal signal)
-{
-	if (ft232h.errorMode) return;
-
-	if (ft232h.enableTracing)
-		TraceBytes("cs", ((u8*) &signal)[3]);
-
-	Assert(signal == Signal::Low || signal == Signal::High);
-	u8 newValues = SetBit(ft232h.highPinValues, FT232H::HighPins::CSBit, (u8) signal);
-
-	if (ft232h.highPinValues != newValues)
-	{
-		ft232h.highPinValues = newValues;
-		u8 pinInitCmd[] = { FT232H::Command::SetDataBitsHighByte, ft232h.highPinValues, ft232h.highPinDirections };
-		FT232H_Write(ft232h, pinInitCmd);
-	}
-}
-
-void
-FT232H_SetDC(FT232HState& ft232h, Signal signal)
-{
-	if (ft232h.errorMode) return;
-
-	if (ft232h.enableTracing)
-		TraceBytes("dc", ((u8*) &signal)[3]);
-
-	Assert(signal == Signal::Low || signal == Signal::High);
-	u8 newValues = SetBit(ft232h.highPinValues, FT232H::HighPins::DCBit, (u8) signal);
-
-	if (ft232h.highPinValues != newValues)
-	{
-		ft232h.highPinValues = newValues;
-		u8 pinInitCmd[] = { FT232H::Command::SetDataBitsHighByte, ft232h.highPinValues, ft232h.highPinDirections };
-		FT232H_Write(ft232h, pinInitCmd);
-	}
-}
-
-void
 FT232H_Write(FT232HState& ft232h, u8 command)
 {
 	if (ft232h.errorMode) return;
@@ -333,10 +282,12 @@ FT232H_Read(FT232HState& ft232h, Bytes& buffer, u16 numBytesToRead)
 
 	List_Reserve(buffer, buffer.length + numBytesToRead);
 
-	status = FT_Read(ft232h.device, buffer.data, numBytesToRead, (DWORD*) &buffer.length);
+	u32 numBytesRead;
+	status = FT_Read(ft232h.device, &buffer.data[buffer.length], numBytesToRead, (DWORD*) &numBytesRead);
 	LOG_IF(status != FT_OK, EnterErrorMode(ft232h); return,
-			Severity::Error, "Failed to read from device: %", status);
-	Assert(buffer.length == numBytesToRead);
+		Severity::Error, "Failed to read from device: %", status);
+	Assert(numBytesRead == numBytesToRead);
+	buffer.length += numBytesRead;
 
 	if (ft232h.enableTracing)
 	{
@@ -379,10 +330,7 @@ FT232H_RecvBytes(FT232HState& ft232h, Bytes& buffer, u16 numBytesToRead)
 
 	// NOTE: ILI9341 shifts on the falling edge, therefore read on the rising edge
 	u16 numBytesEnc = (u16) (numBytesToRead - 1);
-	//u8 ftcmd[] = { FT232H::Command::RecvBytesRisingMSB, UnpackLSB2(numBytesEnc) };
-	u8 ftcmd[] = { FT232H::Command::RecvBytesRisingMSB, UnpackLSB2(numBytesEnc), FT232H::Command::SendImmediate };
-	// TODO: Why does python use this command and why does it work?
-	//u8 ftcmd[] = { FT232H::Command::RecvBytesFallingMSB, UnpackLSB2(numBytesEnc), FT232H::Command::SendImmediate };
+	u8 ftcmd[] = { FT232H::Command::RecvBytesRisingMSB, UnpackLSB2(numBytesEnc) };
 
 	u32 numBytesWritten;
 	status = FT_Write(ft232h.device, ftcmd, (DWORD) ArrayLength(ftcmd), (DWORD*) &numBytesWritten);
@@ -391,6 +339,104 @@ FT232H_RecvBytes(FT232HState& ft232h, Bytes& buffer, u16 numBytesToRead)
 	Assert(ArrayLength(ftcmd) == numBytesWritten);
 
 	FT232H_Read(ft232h, buffer, numBytesToRead);
+}
+
+void
+FT232H_SetCLK(FT232HState& ft232h, Signal signal)
+{
+	if (ft232h.errorMode) return;
+
+	// TODO: WTF is this [3]?
+	if (ft232h.enableTracing)
+		TraceBytes("clk", ((u8*) &signal)[3]);
+
+	Assert(signal == Signal::Low || signal == Signal::High);
+	u8 newValues = SetBit(ft232h.lowPinValues, FT232H::LowPins::CLKBit, (u8) signal);
+
+	if (ft232h.lowPinValues != newValues)
+	{
+		ft232h.lowPinValues = newValues;
+		u8 pinInitCmd[] = { FT232H::Command::SetDataBitsLowByte, ft232h.lowPinValues, ft232h.lowPinDirections };
+		FT232H_Write(ft232h, pinInitCmd);
+	}
+}
+
+void
+FT232H_SetCS(FT232HState& ft232h, Signal signal)
+{
+	if (ft232h.errorMode) return;
+
+	if (ft232h.enableTracing)
+		TraceBytes("cs", ((u8*) &signal)[3]);
+
+	Assert(signal == Signal::Low || signal == Signal::High);
+	u8 newValues = SetBit(ft232h.highPinValues, FT232H::HighPins::CSBit, (u8) signal);
+
+	if (ft232h.highPinValues != newValues)
+	{
+		ft232h.highPinValues = newValues;
+		u8 pinInitCmd[] = { FT232H::Command::SetDataBitsHighByte, ft232h.highPinValues, ft232h.highPinDirections };
+		FT232H_Write(ft232h, pinInitCmd);
+	}
+}
+
+void
+FT232H_SetDC(FT232HState& ft232h, Signal signal)
+{
+	if (ft232h.errorMode) return;
+
+	if (ft232h.enableTracing)
+		TraceBytes("dc", ((u8*) &signal)[3]);
+
+	Assert(signal == Signal::Low || signal == Signal::High);
+	u8 newValues = SetBit(ft232h.highPinValues, FT232H::HighPins::DCBit, (u8) signal);
+
+	if (ft232h.highPinValues != newValues)
+	{
+		ft232h.highPinValues = newValues;
+		u8 pinInitCmd[] = { FT232H::Command::SetDataBitsHighByte, ft232h.highPinValues, ft232h.highPinDirections };
+		FT232H_Write(ft232h, pinInitCmd);
+	}
+}
+
+void
+FT232H_BeginSPITransaction(FT232HState& ft232h)
+{
+	// NOTE: Currently assumes polarity 0
+	Assert(!ft232h.inSPITransaction);
+	ft232h.inSPITransaction = true;
+	FT232H_SetCLK(ft232h, Signal::Low);
+	FT232H_SetCS(ft232h, Signal::Low);
+}
+
+void
+FT232H_EndSPITransaction(FT232HState& ft232h)
+{
+	Assert(ft232h.inSPITransaction);
+	ft232h.inSPITransaction = false;
+	FT232H_SetCS(ft232h, Signal::High);
+}
+
+// TODO: Maybe speed should be a double?
+void
+FT232H_SetClockSpeed(FT232HState& ft232h, u32 hz)
+{
+	Assert(hz >= FT232H::ClockSpeedMin);
+	Assert(hz <= FT232H::ClockSpeedMax);
+
+	if (ft232h.clockSpeedDesired != hz)
+	{
+		ft232h.clockSpeedDesired = hz;
+
+		// NOTE: clock = 60 Mhz / ((1 + divisor) * 2 * 5or1)
+		// NOTE: => divisor = (60 MHz / (2 * clock * 5or1)) - 1
+		// NOTE: Assumes we aren't using the clock divide by five
+		u16 clockDivisor = (u16) Round(Min(60'000'000.0 / (2 * hz) - 1, (r64) u16Max));
+		ft232h.clockSpeedActual = (u32) Round(60'000'000.0 / ((1 + clockDivisor) * 2));
+
+		u8 clockCmd[] = { FT232H::Command::SetClockDivisor, UnpackLSB2(clockDivisor) };
+		FT232H_Write(ft232h, clockCmd);
+	}
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -515,12 +561,7 @@ FT232H_Initialize(FT232HState& ft232h)
 	FT232H_Write(ft232h, FT232H::Command::DisableClockDivide);
 	FT232H_Write(ft232h, FT232H::Command::DisableAdaptiveClock);
 	FT232H_Write(ft232h, FT232H::Command::Disable3PhaseClock);
-
-	// TODO: 0x0000 for write, 0x0001 for read
-	// NOTE: CLK Frequency = 60 Mhz / ((1 + divisor) * 2 * 5or1)
-	u16 clockDivisor = 0x0001;
-	u8 clockCmd[] = { FT232H::Command::SetClockDivisor, UnpackLSB2(clockDivisor) };
-	FT232H_Write(ft232h, clockCmd);
+	FT232H_SetClockSpeed(ft232h, FT232H::ClockSpeedMax);
 
 	// Pin 2: DI, 1: DO, 0: CLK
 	ft232h.lowPinValues     = 0b0000'0001;

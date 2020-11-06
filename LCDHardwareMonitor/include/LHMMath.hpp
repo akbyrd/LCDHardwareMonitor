@@ -153,6 +153,18 @@ Min(T lhs, T rhs)
 }
 
 inline r32
+Round(r32 value)
+{
+	return roundf(value);
+}
+
+inline r64
+Round(r64 value)
+{
+	return round(value);
+}
+
+inline r32
 Sin(r32 theta)
 {
 	return sinf(theta);
@@ -1779,7 +1791,7 @@ LookAt(v3 pos, v3 target)
 inline Matrix
 Orbit(v3 target, v2 yp, r32 radius)
 {
-	// NOTE:Pitch, then yaw
+	// NOTE: Pitch, then yaw
 
 	r32 cy = Cos(-yp.yaw);
 	r32 sy = Sin(-yp.yaw);
