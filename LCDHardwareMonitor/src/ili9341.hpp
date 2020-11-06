@@ -94,16 +94,6 @@ ILI9341_Write(ILI9341State& ili9341, u8 cmd, ByteSlice bytes)
 	FT232H_SendBytes(*ili9341.ft232h, bytes);
 }
 
-// TODO: Can this be constrained to u8 only?
-template <typename ...Args>
-void
-ILI9341_Write(ILI9341State& ili9341, u8 cmd, Args... bytes)
-{
-	u8 data[] = { u8(bytes)... };
-	ILI9341_WriteCmd(ili9341, cmd);
-	ILI9341_WriteData(ili9341, data);
-}
-
 void
 ILI9341_Read(ILI9341State& ili9341, u8 cmd, Bytes& bytes, u16 numBytesToRead)
 {
@@ -201,7 +191,8 @@ ILI9341_FrameRateControl_Normal(ILI9341State& ili9341)
 
 	u8 frc_divisionRatio = divisionRatio_1;
 	u8 frc_clocksPerLine = frameRate_119;
-	ILI9341_Write(ili9341, ILI9341::Command::FrameRateControlNormal, frc_divisionRatio, frc_clocksPerLine);
+	u8 params[] = { frc_divisionRatio, frc_clocksPerLine };
+	ILI9341_Write(ili9341, ILI9341::Command::FrameRateControlNormal, params);
 }
 
 void
@@ -225,7 +216,8 @@ ILI9341_PowerControl(ILI9341State& ili9341)
 	u8 pcb_p1 = pcb_p1_default;
 	u8 pcb_p2 = (u8) (pcb_p2_default | pcb_p2_pceq_enable);
 
-	ILI9341_Write(ili9341, ILI9341::Command::PowerControlB, pcb_p1, pcb_p2);
+	u8 params[] = { pcb_p1, pcb_p2 };
+	ILI9341_Write(ili9341, ILI9341::Command::PowerControlB, params);
 	// NOTE: Leave parameter 3 at default
 	ILI9341_WriteCmd(ili9341, ILI9341::Command::Nop);
 }
@@ -245,14 +237,16 @@ ILI9341_DriverTimingControl(ILI9341State& ili9341)
 	// NOTE: Driver Timing Control A (2) isn't used by any example code
 
 	// NOTE: Just doing what everyone else does...
-	ILI9341_Write(ili9341, ILI9341::Command::DriverTimingControlB, 0x00, 0x00);
+	u8 params[] = { 0x00, 0x00 };
+	ILI9341_Write(ili9341, ILI9341::Command::DriverTimingControlB, params);
 }
 
 void
 ILI9341_PowerOnSequenceControl(ILI9341State& ili9341)
 {
 	// NOTE: Just doing what everyone else does...
-	ILI9341_Write(ili9341, ILI9341::Command::PowerOnSequenceControl, 0x64, 0x03, 0x12, 0x81);
+	u8 params[] = { 0x64, 0x03, 0x12, 0x81 };
+	ILI9341_Write(ili9341, ILI9341::Command::PowerOnSequenceControl, params);
 }
 
 void
@@ -272,29 +266,33 @@ ILI9341_SetGamma(ILI9341State& ili9341)
 	// NOTE: Gamma Set default is fine
 
 	// NOTE: Just doing what everyone else does...
-	ILI9341_Write(ili9341, ILI9341::Command::PositiveGammaCorrection,
-		0x0F, 0x31, 0x2B, 0x0C, 0x0E, 0x08, 0x4E, 0xF1, 0x37, 0x07, 0x10, 0x03, 0x0E, 0x09, 0x00);
-	ILI9341_Write(ili9341, ILI9341::Command::NegativeGammaCorrection,
-		0x00, 0x0E, 0x14, 0x03, 0x11, 0x07, 0x31, 0xC1, 0x48, 0x08, 0x0F, 0x0C, 0x31, 0x36, 0x0F);
+	u8 params1[] = { 0x0F, 0x31, 0x2B, 0x0C, 0x0E, 0x08, 0x4E, 0xF1, 0x37, 0x07, 0x10, 0x03, 0x0E, 0x09, 0x00 };
+	u8 params2[] = { 0x00, 0x0E, 0x14, 0x03, 0x11, 0x07, 0x31, 0xC1, 0x48, 0x08, 0x0F, 0x0C, 0x31, 0x36, 0x0F };
+	ILI9341_Write(ili9341, ILI9341::Command::PositiveGammaCorrection, params1);
+	ILI9341_Write(ili9341, ILI9341::Command::NegativeGammaCorrection, params2);
 }
 
 void
 ILI9341_SetColumnAddress(ILI9341State& ili9341, v2u16 xRange)
 {
-	ILI9341_Write(ili9341, ILI9341::Command::ColumnAddressSet, UnpackMSB2(xRange.pos), UnpackMSB2((u32) (xRange.pos + xRange.size - 1)));
+	u8 params[] = { UnpackMSB2(xRange.pos), UnpackMSB2((u32) (xRange.pos + xRange.size - 1)) };
+	ILI9341_Write(ili9341, ILI9341::Command::ColumnAddressSet, params);
 }
 
 void
 ILI9341_SetRowAddress(ILI9341State& ili9341, v2u16 yRange)
 {
-	ILI9341_Write(ili9341, ILI9341::Command::PageAddressSet, UnpackMSB2(yRange.pos), UnpackMSB2((u32) (yRange.pos + yRange.size - 1)));
+	u8 params[] = { UnpackMSB2(yRange.pos), UnpackMSB2((u32) (yRange.pos + yRange.size - 1)) };
+	ILI9341_Write(ili9341, ILI9341::Command::PageAddressSet, params);
 }
 
 void
 ILI9341_SetWriteAddress(ILI9341State& ili9341, v4u16 rect)
 {
-	ILI9341_Write(ili9341, ILI9341::Command::ColumnAddressSet, UnpackMSB2(rect.pos.x), UnpackMSB2((u32) (rect.pos.x + rect.size.x - 1)));
-	ILI9341_Write(ili9341, ILI9341::Command::PageAddressSet, UnpackMSB2(rect.pos.y), UnpackMSB2((u32) (rect.pos.y + rect.size.y - 1)));
+	u8 params1[] = { UnpackMSB2(rect.pos.x), UnpackMSB2((u32) (rect.pos.x + rect.size.x - 1)) };
+	u8 params2[] = { UnpackMSB2(rect.pos.y), UnpackMSB2((u32) (rect.pos.y + rect.size.y - 1)) };
+	ILI9341_Write(ili9341, ILI9341::Command::ColumnAddressSet, params1);
+	ILI9341_Write(ili9341, ILI9341::Command::PageAddressSet, params2);
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -460,8 +458,10 @@ ILI9341_BeginDrawFrames(ILI9341State& ili9341)
 
 	u16 xMax = (u16) (ili9341.size.x - 1);
 	u16 yMax = (u16) (ili9341.size.y - 1);
-	ILI9341_Write(ili9341, ILI9341::Command::ColumnAddressSet, UnpackMSB2(0), UnpackMSB2(xMax));
-	ILI9341_Write(ili9341, ILI9341::Command::PageAddressSet,   UnpackMSB2(0), UnpackMSB2(yMax));
+	u8 params1[] = { UnpackMSB2(0), UnpackMSB2(xMax) };
+	u8 params2[] = { UnpackMSB2(0), UnpackMSB2(yMax) };
+	ILI9341_Write(ili9341, ILI9341::Command::ColumnAddressSet, params1);
+	ILI9341_Write(ili9341, ILI9341::Command::PageAddressSet, params2);
 	ILI9341_WriteCmd(ili9341, ILI9341::Command::MemoryWrite);
 }
 
