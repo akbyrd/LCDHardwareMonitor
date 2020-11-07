@@ -1,7 +1,11 @@
 Current
 -------
 Cleanup hardware communication
+	Implement "next command time"
 	Coalesce commands
+	Move CS, D/C, and RST to low pins
+		Do we need a read modify write sequence?
+		Does SendImmediate help?
 	Why does python use SendImmediate?
 	Why does python receive on the falling edge?
 	Assert when changing divider to be too low (is the FT_GetQueueStatus process correct?)
@@ -170,6 +174,7 @@ Configure global settings (update rate)
 Allow selection for objects under other objects (selection stack?)
 https://docs.microsoft.com/en-us/dotnet/framework/wpf/advanced/drag-and-drop-overview
 https://docs.microsoft.com/en-us/dotnet/framework/wpf/advanced/data-and-data-objects
+Sub-frame mouse hit detection
 
 
 

@@ -2142,12 +2142,14 @@ Simulation_Update(SimulationState& s)
 		{
 			FT232H_SetTracing(*s.ft232h, false);
 			FT232H_SetDebugChecks(*s.ft232h, true);
+			//FT232H_SetClockOverride(*s.ft232h, true, 4'250'000);
 
 			s.ft232hInitialized = FT232H_Initialize(*s.ft232h);
 			if (s.ft232hInitialized)
 			{
 				s.ft232hRetryCount = 0;
 				ILI9341_Initialize(*s.ili9341, *s.ft232h);
+				ILI9341_SetSPIStrict(*s.ili9341, true);
 
 				// DEBUG: Remove this
 				Bytes bytes = {};

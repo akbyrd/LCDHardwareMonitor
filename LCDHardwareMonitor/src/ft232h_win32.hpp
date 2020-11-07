@@ -7,19 +7,18 @@ struct FT232HState
 	b8        errorMode;
 	b8        enableTracing;
 	b8        enableDebugChecks;
+	b8        inSPITransaction;
 
 	u8        latency;
 	u32       writeTimeout;
 	u32       readTimeout;
 	u32       clockSpeedDesired;
 	u32       clockSpeedActual;
-	u8        lowPinValues      = 0b0000'0000; // Pin 2: DI, 1: DO, 0: CLK
-	u8        lowPinDirections  = 0b0000'0011;
-	u8        highPinValues     = 0b0000'0000; // Pin 2: RST, 1: D/C, 0: CS
-	u8        highPinDirections = 0b0000'0011;
-
-	b8        inSPITransaction;
-
+	u32       clockSpeedOverride;
+	u8        lowPinValues;
+	u8        lowPinDirections;
+	u8        highPinValues;
+	u8        highPinDirections;
 };
 
 namespace FT232H
@@ -32,11 +31,11 @@ namespace FT232H
 	struct LowPins
 	{
 		static const u8 CLKBit = 0;
-		static const u8 D0Bit  = 1;
+		static const u8 DOBit  = 1;
 		static const u8 DIBit  = 2;
 
 		static const u8 CLKMask = 1 << CLKBit;
-		static const u8 D0Mask  = 1 << D0Bit;
+		static const u8 DOMask  = 1 << DOBit;
 		static const u8 DIMask  = 1 << DIBit;
 	};
 
@@ -215,6 +214,14 @@ FT232H_SetDebugChecks(FT232HState& ft232h, b8 enable)
 	ft232h.enableDebugChecks = enable;
 }
 
+void
+FT232H_SetClockOverride(FT232HState& ft232h, b8 enable, u32 hz)
+{
+	Assert(hz >= FT232H::ClockSpeedMin);
+	Assert(hz <= FT232H::ClockSpeedMax);
+	ft232h.clockSpeedOverride = enable ? hz : 0;
+}
+
 b8
 FT232H_HasError(FT232HState& ft232h)
 {
@@ -346,12 +353,30 @@ FT232H_SetCLK(FT232HState& ft232h, Signal signal)
 {
 	if (ft232h.errorMode) return;
 
-	// TODO: WTF is this [3]?
 	if (ft232h.enableTracing)
-		TraceBytes("clk", ((u8*) &signal)[3]);
+		TraceBytes("clk", (u8) signal);
 
 	Assert(signal == Signal::Low || signal == Signal::High);
 	u8 newValues = SetBit(ft232h.lowPinValues, FT232H::LowPins::CLKBit, (u8) signal);
+
+	if (ft232h.lowPinValues != newValues)
+	{
+		ft232h.lowPinValues = newValues;
+		u8 pinInitCmd[] = { FT232H::Command::SetDataBitsLowByte, ft232h.lowPinValues, ft232h.lowPinDirections };
+		FT232H_Write(ft232h, pinInitCmd);
+	}
+}
+
+void
+FT232H_SetDO(FT232HState& ft232h, Signal signal)
+{
+	if (ft232h.errorMode) return;
+
+	if (ft232h.enableTracing)
+		TraceBytes("do", (u8) signal);
+
+	Assert(signal == Signal::Low || signal == Signal::High);
+	u8 newValues = SetBit(ft232h.lowPinValues, FT232H::LowPins::DOBit, (u8) signal);
 
 	if (ft232h.lowPinValues != newValues)
 	{
@@ -367,7 +392,7 @@ FT232H_SetCS(FT232HState& ft232h, Signal signal)
 	if (ft232h.errorMode) return;
 
 	if (ft232h.enableTracing)
-		TraceBytes("cs", ((u8*) &signal)[3]);
+		TraceBytes("cs", (u8) signal);
 
 	Assert(signal == Signal::Low || signal == Signal::High);
 	u8 newValues = SetBit(ft232h.highPinValues, FT232H::HighPins::CSBit, (u8) signal);
@@ -405,24 +430,28 @@ FT232H_BeginSPITransaction(FT232HState& ft232h)
 	// NOTE: Currently assumes polarity 0
 	Assert(!ft232h.inSPITransaction);
 	ft232h.inSPITransaction = true;
-	FT232H_SetCLK(ft232h, Signal::Low);
 	FT232H_SetCS(ft232h, Signal::Low);
 }
 
 void
 FT232H_EndSPITransaction(FT232HState& ft232h)
 {
+	// NOTE: Currently assumes polarity 0
 	Assert(ft232h.inSPITransaction);
 	ft232h.inSPITransaction = false;
 	FT232H_SetCS(ft232h, Signal::High);
+	FT232H_SetCLK(ft232h, Signal::Low);
 }
 
 // TODO: Maybe speed should be a double?
-void
+u32
 FT232H_SetClockSpeed(FT232HState& ft232h, u32 hz)
 {
 	Assert(hz >= FT232H::ClockSpeedMin);
 	Assert(hz <= FT232H::ClockSpeedMax);
+
+	if (ft232h.clockSpeedOverride)
+		hz = ft232h.clockSpeedOverride;
 
 	if (ft232h.clockSpeedDesired != hz)
 	{
@@ -437,6 +466,8 @@ FT232H_SetClockSpeed(FT232HState& ft232h, u32 hz)
 		u8 clockCmd[] = { FT232H::Command::SetClockDivisor, UnpackLSB2(clockDivisor) };
 		FT232H_Write(ft232h, clockCmd);
 	}
+
+	return ft232h.clockSpeedActual;
 }
 
 // -------------------------------------------------------------------------------------------------

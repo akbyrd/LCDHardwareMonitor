@@ -3,6 +3,9 @@ struct ILI9341State
 	// TODO: Consider removing this
 	FT232HState* ft232h;
 
+	b8    enableSPIStrict;
+	b8    inTransaction;
+
 	b8    sleep;
 	i64   sleepTime;
 	i64   wakeTime;
@@ -58,53 +61,135 @@ namespace ILI9341
 // Public API - Fundamental Functions
 
 void
-ILI9341_BeginTransaction(ILI9341State& ili9341)
+ILI9341_BeginWriteTransaction(ILI9341State& ili9341)
 {
-	FT232H_BeginSPITransaction(*ili9341.ft232h);
-	FT232H_SetClockSpeed(*ili9341.ft232h, 15'000'000);
+	Assert(!ili9341.inTransaction)
+	ili9341.inTransaction = true;
+
+	if (ili9341.enableSPIStrict)
+		FT232H_BeginSPITransaction(*ili9341.ft232h);
 }
 
 void
-ILI9341_EndTransaction(ILI9341State& ili9341)
+ILI9341_EndWriteTransaction(ILI9341State& ili9341)
 {
-	FT232H_EndSPITransaction(*ili9341.ft232h);
-	FT232H_SetClockSpeed(*ili9341.ft232h, 30'000'000);
+	Assert(ili9341.inTransaction);
+	ili9341.inTransaction = false;
+
+	if (ili9341.enableSPIStrict)
+		FT232H_EndSPITransaction(*ili9341.ft232h);
+}
+
+void
+ILI9341_WriteCmdRaw(ILI9341State& ili9341, u8 cmd)
+{
+	Assert(ili9341.inTransaction);
+	FT232H_SetDC(*ili9341.ft232h, Signal::Low);
+	FT232H_SendBytes(*ili9341.ft232h, cmd);
+}
+
+void
+ILI9341_WriteDataRaw(ILI9341State& ili9341, ByteSlice bytes)
+{
+	Assert(ili9341.inTransaction);
+	FT232H_SetDC(*ili9341.ft232h, Signal::High);
+	FT232H_SendBytes(*ili9341.ft232h, bytes);
 }
 
 void
 ILI9341_WriteCmd(ILI9341State& ili9341, u8 cmd)
 {
-	FT232H_SetDC(*ili9341.ft232h, Signal::Low);
-	FT232H_SendBytes(*ili9341.ft232h, cmd);
+	Assert(!ili9341.inTransaction);
+
+	if (ili9341.enableSPIStrict)
+	{
+		FT232H_BeginSPITransaction(*ili9341.ft232h);
+		FT232H_SetDC(*ili9341.ft232h, Signal::Low);
+		FT232H_SendBytes(*ili9341.ft232h, cmd);
+		FT232H_EndSPITransaction(*ili9341.ft232h);
+		FT232H_SetDO(*ili9341.ft232h, Signal::Low);
+		FT232H_SetDC(*ili9341.ft232h, Signal::High);
+	}
+	else
+	{
+		FT232H_SetDC(*ili9341.ft232h, Signal::Low);
+		FT232H_SendBytes(*ili9341.ft232h, cmd);
+	}
 }
 
 void
 ILI9341_WriteData(ILI9341State& ili9341, ByteSlice bytes)
 {
-	FT232H_SetDC(*ili9341.ft232h, Signal::High);
-	FT232H_SendBytes(*ili9341.ft232h, bytes);
+	Assert(!ili9341.inTransaction);
+
+	if (ili9341.enableSPIStrict)
+	{
+		FT232H_BeginSPITransaction(*ili9341.ft232h);
+		FT232H_SetDC(*ili9341.ft232h, Signal::High);
+		FT232H_SendBytes(*ili9341.ft232h, bytes);
+		FT232H_EndSPITransaction(*ili9341.ft232h);
+		FT232H_SetDO(*ili9341.ft232h, Signal::Low);
+	}
+	else
+	{
+		FT232H_SetDC(*ili9341.ft232h, Signal::High);
+		FT232H_SendBytes(*ili9341.ft232h, bytes);
+	}
 }
 
 void
 ILI9341_Write(ILI9341State& ili9341, u8 cmd, ByteSlice bytes)
 {
-	FT232H_SetDC(*ili9341.ft232h, Signal::Low);
-	FT232H_SendBytes(*ili9341.ft232h, cmd);
-	FT232H_SetDC(*ili9341.ft232h, Signal::High);
-	FT232H_SendBytes(*ili9341.ft232h, bytes);
+	Assert(!ili9341.inTransaction);
+
+	if (ili9341.enableSPIStrict)
+	{
+		FT232H_BeginSPITransaction(*ili9341.ft232h);
+		FT232H_SetDC(*ili9341.ft232h, Signal::Low);
+		FT232H_SendBytes(*ili9341.ft232h, cmd);
+		FT232H_SetDC(*ili9341.ft232h, Signal::High);
+		FT232H_SendBytes(*ili9341.ft232h, bytes);
+		FT232H_EndSPITransaction(*ili9341.ft232h);
+		FT232H_SetDO(*ili9341.ft232h, Signal::Low);
+	}
+	else
+	{
+		FT232H_SetDC(*ili9341.ft232h, Signal::Low);
+		FT232H_SendBytes(*ili9341.ft232h, cmd);
+		FT232H_SetDC(*ili9341.ft232h, Signal::High);
+		FT232H_SendBytes(*ili9341.ft232h, bytes);
+	}
 }
 
+// TODO: Don't want to change the read speed for individual reads.
 void
 ILI9341_Read(ILI9341State& ili9341, u8 cmd, Bytes& bytes, u16 numBytesToRead)
 {
-	ILI9341_BeginTransaction(ili9341);
-	ILI9341_WriteCmd(ili9341, cmd);
+	Assert(!ili9341.inTransaction);
+
+	FT232H_SetClockSpeed(*ili9341.ft232h, 15'000'000);
+	FT232H_BeginSPITransaction(*ili9341.ft232h);
+	FT232H_SetDC(*ili9341.ft232h, Signal::Low);
+	FT232H_SendBytes(*ili9341.ft232h, cmd);
 	FT232H_RecvBytes(*ili9341.ft232h, bytes, numBytesToRead);
-	ILI9341_EndTransaction(ili9341);
+	FT232H_EndSPITransaction(*ili9341.ft232h);
+	FT232H_SetClockSpeed(*ili9341.ft232h, 30'000'000);
+
+	if (ili9341.enableSPIStrict)
+	{
+		FT232H_SetDO(*ili9341.ft232h, Signal::Low);
+		FT232H_SetDC(*ili9341.ft232h, Signal::High);
+	}
 }
 
 // -------------------------------------------------------------------------------------------------
 // Internal Configuration Functions
+
+void
+ILI9341_SetSPIStrict(ILI9341State& ili9341, b8 enable)
+{
+	ili9341.enableSPIStrict = enable;
+}
 
 void
 ILI9341_MemoryAccessControl(ILI9341State& ili9341)
@@ -219,6 +304,7 @@ ILI9341_PowerControl(ILI9341State& ili9341)
 	u8 params[] = { pcb_p1, pcb_p2 };
 	ILI9341_Write(ili9341, ILI9341::Command::PowerControlB, params);
 	// NOTE: Leave parameter 3 at default
+	// TODO: Is this necessary if we use SPI transactions? I think raising CS will do the same thing
 	ILI9341_WriteCmd(ili9341, ILI9341::Command::Nop);
 }
 
@@ -354,7 +440,9 @@ ILI9341_SetRect(ILI9341State& ili9341, v4u16 rect, u16 color)
 	Assert(rect.size.y != 0);
 	Assert(rect.pos.y + rect.size.y <= ili9341.size.y);
 	ILI9341_SetWriteAddress(ili9341, rect);
-	ILI9341_WriteCmd(ili9341, ILI9341::Command::MemoryWrite);
+
+	ILI9341_BeginWriteTransaction(ili9341);
+	ILI9341_WriteCmdRaw(ili9341, ILI9341::Command::MemoryWrite);
 
 	u32 totalDataLen = (u32) (2 * rect.size.x * rect.size.y);
 
@@ -377,9 +465,10 @@ ILI9341_SetRect(ILI9341State& ili9341, v4u16 rect, u16 color)
 		bytes.data   = colorData;
 		bytes.length = Min(remainingLen, colorDataLen);
 
-		ILI9341_WriteData(ili9341, bytes);
+		ILI9341_WriteDataRaw(ili9341, bytes);
 		remainingLen -= bytes.length;
 	}
+	ILI9341_EndWriteTransaction(ili9341);
 }
 
 void
@@ -463,6 +552,7 @@ ILI9341_BeginDrawFrames(ILI9341State& ili9341)
 	ILI9341_Write(ili9341, ILI9341::Command::ColumnAddressSet, params1);
 	ILI9341_Write(ili9341, ILI9341::Command::PageAddressSet, params2);
 	ILI9341_WriteCmd(ili9341, ILI9341::Command::MemoryWrite);
+	ILI9341_BeginWriteTransaction(ili9341);
 }
 
 void
@@ -470,6 +560,7 @@ ILI9341_EndDrawFrames(ILI9341State& ili9341)
 {
 	Assert(ili9341.drawingFrames);
 	ili9341.drawingFrames = false;
+	ILI9341_EndWriteTransaction(ili9341);
 }
 
 void
@@ -487,7 +578,7 @@ ILI9341_DrawFrame(ILI9341State& ili9341, ByteSlice bytes)
 		bytes[i + 1] = temp;
 	}
 
-	ILI9341_WriteData(ili9341, bytes);
+	ILI9341_WriteDataRaw(ili9341, bytes);
 }
 
 void
@@ -506,6 +597,8 @@ ILI9341_Initialize(ILI9341State& ili9341, FT232HState& ft232h)
 {
 	ili9341.ft232h = &ft232h;
 
+	FT232H_SetCS(*ili9341.ft232h, Signal::Low);
+
 	// TODO: Want to do a software reset to set all config to default, but it causes a flicker.
 	ILI9341_Reset(ili9341);
 
@@ -521,8 +614,6 @@ ILI9341_Initialize(ILI9341State& ili9341, FT232HState& ft232h)
 	ILI9341_SetGamma(ili9341);
 	ILI9341_WriteCmd(ili9341, ILI9341::Command::SleepOut);
 	ILI9341_WriteCmd(ili9341, ILI9341::Command::DisplayOn);
-
-	FT232H_SetCS(*ili9341.ft232h, Signal::Low);
 
 	// TODO: The screen can do an endian swap, but only in the parallel interface. Once we're using
 	// the parallel interface remove the byte-swaps in SetRect and DrawFrame and set the endianness
