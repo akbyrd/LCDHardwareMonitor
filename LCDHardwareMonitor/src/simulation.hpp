@@ -2140,7 +2140,7 @@ Simulation_Update(SimulationState& s)
 
 		if (!s.ft232hInitialized && s.ft232hRetryCount < 3)
 		{
-			FT232H_SetTracing(*s.ft232h, false);
+			FT232H_SetTracing(*s.ft232h, true);
 			FT232H_SetDebugChecks(*s.ft232h, true);
 			//FT232H_SetClockOverride(*s.ft232h, true, 4'250'000);
 
@@ -2189,6 +2189,7 @@ Simulation_Update(SimulationState& s)
 
 				FT232H_SetCS(*s.ft232h, Signal::Low);
 				ILI9341_BeginDrawFrames(*s.ili9341);
+				FT232H_Flush(*s.ft232h);
 			}
 			else
 			{

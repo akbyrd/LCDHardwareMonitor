@@ -1,17 +1,19 @@
 Current
 -------
 Cleanup hardware communication
-	Implement "next command time"
-	Coalesce commands
+	Coalesce transactions instead
+	Coalesce pin changes
+	Add ILI9341 option to flush after each SPI transaction
 	Move CS, D/C, and RST to low pins
 		Do we need a read modify write sequence?
 		Does SendImmediate help?
+	Implement "next command time"
+	Handle device unplugged
 	Why does python use SendImmediate?
 	Why does python receive on the falling edge?
 	Assert when changing divider to be too low (is the FT_GetQueueStatus process correct?)
 	There's a dummy cycle for reads > 1 byte. Is that normal? Something I should handle manually?
 Try ardnew's code
-Try out the logic analyzer
 Maybe add a DenseSlice?
 
 

@@ -107,7 +107,6 @@ ILI9341_WriteCmd(ILI9341State& ili9341, u8 cmd)
 		FT232H_SetDC(*ili9341.ft232h, Signal::Low);
 		FT232H_SendBytes(*ili9341.ft232h, cmd);
 		FT232H_EndSPITransaction(*ili9341.ft232h);
-		FT232H_SetDO(*ili9341.ft232h, Signal::Low);
 		FT232H_SetDC(*ili9341.ft232h, Signal::High);
 	}
 	else
@@ -128,7 +127,6 @@ ILI9341_WriteData(ILI9341State& ili9341, ByteSlice bytes)
 		FT232H_SetDC(*ili9341.ft232h, Signal::High);
 		FT232H_SendBytes(*ili9341.ft232h, bytes);
 		FT232H_EndSPITransaction(*ili9341.ft232h);
-		FT232H_SetDO(*ili9341.ft232h, Signal::Low);
 	}
 	else
 	{
@@ -150,7 +148,6 @@ ILI9341_Write(ILI9341State& ili9341, u8 cmd, ByteSlice bytes)
 		FT232H_SetDC(*ili9341.ft232h, Signal::High);
 		FT232H_SendBytes(*ili9341.ft232h, bytes);
 		FT232H_EndSPITransaction(*ili9341.ft232h);
-		FT232H_SetDO(*ili9341.ft232h, Signal::Low);
 	}
 	else
 	{
@@ -176,10 +173,7 @@ ILI9341_Read(ILI9341State& ili9341, u8 cmd, Bytes& bytes, u16 numBytesToRead)
 	FT232H_SetClockSpeed(*ili9341.ft232h, 30'000'000);
 
 	if (ili9341.enableSPIStrict)
-	{
-		FT232H_SetDO(*ili9341.ft232h, Signal::Low);
 		FT232H_SetDC(*ili9341.ft232h, Signal::High);
-	}
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -514,6 +508,7 @@ ILI9341_SetRect(ILI9341State& ili9341, v4u16 rect, u16 color)
 		bytes.length = Min(remainingLen, colorDataLen);
 		bytes.stride = 1;
 
+		// TODO: Immediate
 		ILI9341_WriteDataRaw(ili9341, bytes);
 		remainingLen -= bytes.length;
 	}
@@ -627,6 +622,7 @@ ILI9341_DrawFrame(ILI9341State& ili9341, ByteSlice bytes)
 		bytes[i + 1] = temp;
 	}
 
+	// TODO: Immediate
 	ILI9341_WriteDataRaw(ili9341, bytes);
 }
 
