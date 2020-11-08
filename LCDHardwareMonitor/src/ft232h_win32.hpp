@@ -93,33 +93,6 @@ WaitForResponse(FT232HState& ft232h)
 }
 
 static void
-TraceBytes(StringView prefix, ByteSlice bytes)
-{
-	if (bytes.length == 0) return;
-
-	String string = {};
-	defer { String_Free(string); };
-
-	for (u32 i = 0; i < 2; i++)
-	{
-		u32 length = 0;
-		length += ToStringf(string, "%s ", prefix.data);
-		length += ToStringf(string, "0x%.2X", bytes[0]);
-		for (u32 j = 1; j < bytes.length; j++)
-			length += ToStringf(string, " 0x%.2X", bytes[j]);
-
-		if (i == 0)
-			String_Reserve(string, length + 2);
-	}
-	string.data[string.length++] = '\n';
-	string.data[string.length] = '\0';
-
-	// TODO: Doesn't work :(
-	//Platform_Print(string);
-	Platform_Print("%", string.data);
-}
-
-static void
 DrainRead(FT232HState& ft232h, StringView prefix)
 {
 	if (ft232h.errorMode) return;
@@ -141,7 +114,7 @@ DrainRead(FT232HState& ft232h, StringView prefix)
 		Assert(bytes.length == bytesInReadBuffer);
 
 		if (ft232h.enableTracing)
-			TraceBytes(prefix, bytes);
+			Bytes_Print(prefix, bytes);
 	}
 }
 
@@ -240,12 +213,14 @@ FT232H_Write(FT232HState& ft232h, u8 command)
 	Assert(bytesWritten == 1);
 
 	if (ft232h.enableTracing)
-		TraceBytes("command", command);
+		Bytes_Print("command", command);
 };
 
 void
 FT232H_Write(FT232HState& ft232h, ByteSlice bytes)
 {
+	Assert(!Slice_IsSparse(bytes));
+	Assert(bytes.length != 0);
 	if (ft232h.errorMode) return;
 
 	u32 bytesWritten;
@@ -255,8 +230,8 @@ FT232H_Write(FT232HState& ft232h, ByteSlice bytes)
 	Assert(bytesWritten == bytes.length);
 
 	if (ft232h.enableTracing)
-		TraceBytes("write", bytes);
-};
+		Bytes_Print("write", bytes);
+}
 
 void
 FT232H_Read(FT232HState& ft232h, Bytes& bytes, u16 numBytesToRead)
@@ -297,17 +272,13 @@ FT232H_Read(FT232HState& ft232h, Bytes& bytes, u16 numBytesToRead)
 	bytes.length += numBytesRead;
 
 	if (ft232h.enableTracing)
-	{
-		ByteSlice slice = {};
-		slice.data   = &bytes.data[bytes.length - numBytesToRead];
-		slice.length = numBytesToRead;
-		TraceBytes("read", slice);
-	}
+		Bytes_Print("read", List_Slice(bytes, bytes.length - numBytesToRead));
 }
 
 void
 FT232H_SendBytes(FT232HState& ft232h, ByteSlice bytes)
 {
+	Assert(!Slice_IsSparse(bytes));
 	Assert(bytes.length != 0);
 	if (ft232h.errorMode) return;
 
@@ -315,8 +286,9 @@ FT232H_SendBytes(FT232HState& ft232h, ByteSlice bytes)
 	while (remainingLen > 0)
 	{
 		ByteSlice chunk = {};
-		chunk.data   = bytes.data + bytes.length - remainingLen;
+		chunk.data   = &bytes.data[bytes.length - remainingLen];
 		chunk.length = Min(remainingLen, FT232H::MaxSendBytes);
+		chunk.stride = 1;
 
 		// NOTE: LCD reads on the rising edge so write on the falling edge
 		u16 numBytesEnc = (u16) (chunk.length - 1);
@@ -335,7 +307,7 @@ FT232H_RecvBytes(FT232HState& ft232h, Bytes& bytes, u16 numBytesToRead)
 
 	FT_STATUS status;
 
-	// NOTE: ILI9341 shifts on the falling edge, therefore read on the rising edge
+	// NOTE: LCD writes on the falling edge so read on the rising edge
 	u16 numBytesEnc = (u16) (numBytesToRead - 1);
 	u8 ftcmd[] = { FT232H::Command::RecvBytesRisingMSB, UnpackLSB2(numBytesEnc) };
 
@@ -354,7 +326,7 @@ FT232H_SetCLK(FT232HState& ft232h, Signal signal)
 	if (ft232h.errorMode) return;
 
 	if (ft232h.enableTracing)
-		TraceBytes("clk", (u8) signal);
+		Bytes_Print("clk", (u8) signal);
 
 	Assert(signal == Signal::Low || signal == Signal::High);
 	u8 newValues = SetBit(ft232h.lowPinValues, FT232H::LowPins::CLKBit, (u8) signal);
@@ -373,7 +345,7 @@ FT232H_SetDO(FT232HState& ft232h, Signal signal)
 	if (ft232h.errorMode) return;
 
 	if (ft232h.enableTracing)
-		TraceBytes("do", (u8) signal);
+		Bytes_Print("do", (u8) signal);
 
 	Assert(signal == Signal::Low || signal == Signal::High);
 	u8 newValues = SetBit(ft232h.lowPinValues, FT232H::LowPins::DOBit, (u8) signal);
@@ -392,7 +364,7 @@ FT232H_SetCS(FT232HState& ft232h, Signal signal)
 	if (ft232h.errorMode) return;
 
 	if (ft232h.enableTracing)
-		TraceBytes("cs", (u8) signal);
+		Bytes_Print("cs", (u8) signal);
 
 	Assert(signal == Signal::Low || signal == Signal::High);
 	u8 newValues = SetBit(ft232h.highPinValues, FT232H::HighPins::CSBit, (u8) signal);
@@ -411,7 +383,7 @@ FT232H_SetDC(FT232HState& ft232h, Signal signal)
 	if (ft232h.errorMode) return;
 
 	if (ft232h.enableTracing)
-		TraceBytes("dc", ((u8*) &signal)[3]);
+		Bytes_Print("dc", (u8) signal);
 
 	Assert(signal == Signal::Low || signal == Signal::High);
 	u8 newValues = SetBit(ft232h.highPinValues, FT232H::HighPins::DCBit, (u8) signal);

@@ -176,6 +176,8 @@ GetWorkingDirectory()
 b8
 Platform_WriteFileBytes(StringView path, ByteSlice bytes)
 {
+	Assert(!Slice_IsSparse(bytes));
+
 	String cwd = {};
 	defer { String_Free(cwd); };
 	auto getCWD = [&cwd]() {
@@ -766,9 +768,8 @@ Platform_DestroyPipe(Pipe& pipe)
 	pipe = {};
 }
 
-// TODO: This should be able to take a slice
 PipeResult
-Platform_WritePipe(Pipe& pipe, Bytes bytes)
+Platform_WritePipe(Pipe& pipe, ByteSlice bytes)
 {
 	// NOTE: Writes are synchronous. If this changes be aware of the following facts: 1) The
 	// 'written' parameter is not valid for async writes and 2) the data buffer MUST NOT CHANGE
@@ -776,6 +777,7 @@ Platform_WritePipe(Pipe& pipe, Bytes bytes)
 
 	// NOTE: Synchronous writes will begin blocking once the pipes internal buffer is full.
 
+	Assert(!Slice_IsSparse(bytes));
 	if (pipe.state != PipeState::Connected) return PipeResult::TransientFailure;
 
 	u32 written;

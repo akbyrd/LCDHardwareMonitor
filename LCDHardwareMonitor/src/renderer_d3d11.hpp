@@ -1030,7 +1030,7 @@ Renderer_LoadVertexShader(RendererState& s, StringView name, StringView path, Sl
 	}
 
 	// Constant Buffers
-	if (cBufSizes.length)
+	if (cBufSizes.length != 0)
 	{
 		List_Reserve(vs.constantBuffers, cBufSizes.length);
 		for (u32 i = 0; i < cBufSizes.length; i++)
@@ -1133,7 +1133,7 @@ Renderer_LoadPixelShader(RendererState& s, StringView name, StringView path, Sli
 	}
 
 	// Constant Buffers
-	if (cBufSizes.length)
+	if (cBufSizes.length != 0)
 	{
 		List_Reserve(ps.constantBuffers, cBufSizes.length);
 		for (u32 i = 0; i < cBufSizes.length; i++)

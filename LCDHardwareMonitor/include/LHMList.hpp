@@ -167,8 +167,8 @@ template<typename T>
 inline void
 List_Clear(List<T>& list)
 {
+	memset(list.data, 0, sizeof(T) * list.length);
 	list.length = 0;
-	memset(list.data, 0, sizeof(T) * list.capacity);
 }
 
 template<typename T>
@@ -473,7 +473,7 @@ List_MemberSlice(List<T>& list, U T::* memberPtr)
 	result.length = list.length;
 	result.stride = sizeof(T);
 
-	if (list.length > 0)
+	if (list.length != 0)
 		result.data = &(list[0].*memberPtr);
 
 	return result;
@@ -487,7 +487,7 @@ List_MemberSlice(List<T>& list, U T::* memberPtr1, V U::* memberPtr2)
 	result.length = list.length;
 	result.stride = sizeof(T);
 
-	if (list.length > 0)
+	if (list.length != 0)
 	{
 		T& data0 = list[0];
 		U& data1 = data0.*memberPtr1;
@@ -506,6 +506,13 @@ List_GetLast(Slice<T>& list)
 	return list[list.length - 1];
 }
 
+template<typename T>
+inline b8
+Slice_IsSparse(Slice<T>& slice)
+{
+	return slice.stride != sizeof(T);
+}
+
 template<typename T, typename U>
 inline Slice<U>
 Slice_MemberSlice(Slice<T>& slice, U T::* memberPtr)
@@ -514,7 +521,7 @@ Slice_MemberSlice(Slice<T>& slice, U T::* memberPtr)
 	result.length = slice.length;
 	result.stride = sizeof(T);
 
-	if (slice.length > 0)
+	if (slice.length != 0)
 	{
 		result.data   = &(slice[0].*memberPtr);
 		result.stride = slice.stride;

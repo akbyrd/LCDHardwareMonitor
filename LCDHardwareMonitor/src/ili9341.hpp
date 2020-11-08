@@ -381,6 +381,54 @@ ILI9341_SetWriteAddress(ILI9341State& ili9341, v4u16 rect)
 	ILI9341_Write(ili9341, ILI9341::Command::PageAddressSet, params2);
 }
 
+void
+ILI9341_ReadIdentificationInfo(ILI9341State& ili9341, Bytes& bytes)
+{
+	ILI9341_Read(ili9341, ILI9341::Command::ReadIdentificationInfo, bytes, 3);
+}
+
+void
+ILI9341_ReadStatus(ILI9341State& ili9341, Bytes& bytes)
+{
+	ILI9341_Read(ili9341, ILI9341::Command::ReadStatus, bytes, 4);
+}
+
+void
+ILI9341_ReadPowerMode(ILI9341State& ili9341, Bytes& bytes)
+{
+	ILI9341_Read(ili9341, ILI9341::Command::ReadPowerMode, bytes, 1);
+}
+
+void
+ILI9341_ReadMemoryAccessControl(ILI9341State& ili9341, Bytes& bytes)
+{
+	ILI9341_Read(ili9341, ILI9341::Command::ReadMemoryAccessControl, bytes, 1);
+}
+
+void
+ILI9341_ReadPixelFormat(ILI9341State& ili9341, Bytes& bytes)
+{
+	ILI9341_Read(ili9341, ILI9341::Command::ReadPixelFormat, bytes, 1);
+}
+
+void
+ILI9341_ReadImageFormat(ILI9341State& ili9341, Bytes& bytes)
+{
+	ILI9341_Read(ili9341, ILI9341::Command::ReadImageFormat, bytes, 1);
+}
+
+void
+ILI9341_ReadSignalMode(ILI9341State& ili9341, Bytes& bytes)
+{
+	ILI9341_Read(ili9341, ILI9341::Command::ReadSignalMode, bytes, 1);
+}
+
+void
+ILI9341_ReadSelfDiagnostic(ILI9341State& ili9341, Bytes& bytes)
+{
+	ILI9341_Read(ili9341, ILI9341::Command::ReadSelfDiagnostic, bytes, 1);
+}
+
 // -------------------------------------------------------------------------------------------------
 // Public API - Logic Functions
 
@@ -464,6 +512,7 @@ ILI9341_SetRect(ILI9341State& ili9341, v4u16 rect, u16 color)
 		ByteSlice bytes = {};
 		bytes.data   = colorData;
 		bytes.length = Min(remainingLen, colorDataLen);
+		bytes.stride = 1;
 
 		ILI9341_WriteDataRaw(ili9341, bytes);
 		remainingLen -= bytes.length;
@@ -567,7 +616,7 @@ void
 ILI9341_DrawFrame(ILI9341State& ili9341, ByteSlice bytes)
 {
 	Assert(ili9341.drawingFrames);
-	Assert(bytes.stride == 1);
+	Assert(!Slice_IsSparse(bytes));
 
 	// TODO: Remove endian swap when using parallel interface
 	Assert(bytes.length % 2 == 0);

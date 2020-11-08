@@ -28,7 +28,7 @@
       "C:/Program Files (x86)/Windows Kits/10/Include/10.0.18362.0/um",
       "C:/Program Files (x86)/Windows Kits/10/Include/10.0.18362.0/winrt",
       "C:/Program Files (x86)/Windows Kits/NETFXSDK/4.7.2/Include/um",
-      "${workspaceFolder}/LCDHardwareMonitor API",
+      "${workspaceFolder}/LCDHardwareMonitor/include",
       "${workspaceFolder}/LCDHardwareMonitor/src"
   ],
 }

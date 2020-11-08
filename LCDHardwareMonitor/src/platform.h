@@ -73,7 +73,7 @@ void       Platform_DestroyPipe            (Pipe&);
 PipeResult Platform_ConnectPipe            (Pipe&);
 PipeResult Platform_DisconnectPipe         (Pipe&);
 PipeResult Platform_UpdatePipeConnection   (Pipe&);
-PipeResult Platform_WritePipe              (Pipe&, Bytes bytes);
+PipeResult Platform_WritePipe              (Pipe&, ByteSlice bytes);
 PipeResult Platform_ReadPipe               (Pipe&, Bytes& bytes);
 PipeResult Platform_FlushPipe              (Pipe&);
 
@@ -85,3 +85,33 @@ PipeResult Platform_FlushPipe              (Pipe&);
 #define LOG(severity, format, ...)
 #define LOG_IF(expression, action, severity, format, ...)
 #endif
+
+// TODO: This belongs in LHMBytes, but it introduces a dependency on platform.h which currently
+// isn't part of the public API.
+void
+Bytes_Print(StringView prefix, ByteSlice bytes)
+{
+	if (bytes.length == 0) return;
+
+	String string = {};
+	defer { String_Free(string); };
+
+	for (u32 i = 0; i < 2; i++)
+	{
+		u32 length = 0;
+		length += ToStringf(string, "%s ", prefix.data);
+		length += ToStringf(string, "0x%.2X", bytes[0]);
+		for (u32 j = 1; j < bytes.length; j++)
+			length += ToStringf(string, " 0x%.2X", bytes[j]);
+
+		if (i == 0)
+			String_Reserve(string, length + 2);
+	}
+	string.data[string.length++] = '\n';
+	string.data[string.length] = '\0';
+
+	// TODO: Doesn't work :(
+	//Platform_Print(string);
+
+	Platform_Print("%", string.data);
+}
