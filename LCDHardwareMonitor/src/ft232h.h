@@ -18,8 +18,9 @@ void   FT232H_SetTracing          (FT232HState&, b8 enable);
 void   FT232H_SetDebugChecks      (FT232HState&, b8 enable);
 b8     FT232H_HasError            (FT232HState&);
 
-void   FT232H_Write               (FT232HState&, u8 command);
 void   FT232H_Write               (FT232HState&, ByteSlice bytes);
+void   FT232H_WriteImmediate      (FT232HState&, ByteSlice bytes);
+void   FT232H_Flush               (FT232HState&);
 void   FT232H_Read                (FT232HState&, Bytes& bytes, u16 numBytesToRead);
 void   FT232H_SendBytes           (FT232HState&, ByteSlice bytes);
 void   FT232H_RecvBytes           (FT232HState&, Bytes& bytes, u16 numBytesToRead);
