@@ -12,6 +12,7 @@ Cleanup hardware communication
 	There's a dummy cycle for reads > 1 byte. Is that normal? Something I should handle manually?
 Try ardnew's code
 Try out the logic analyzer
+Maybe add a DenseSlice?
 
 
 

@@ -396,6 +396,30 @@ FT232H_SetDC(FT232HState& ft232h, Signal signal)
 	}
 }
 
+Signal
+FT232H_GetCLK(FT232HState& ft232h)
+{
+	return (Signal) GetBit(ft232h.lowPinValues, FT232H::LowPins::CLKBit);
+}
+
+Signal
+FT232H_GetDO(FT232HState& ft232h)
+{
+	return (Signal) GetBit(ft232h.lowPinValues, FT232H::LowPins::DOBit);
+}
+
+Signal
+FT232H_GetCS(FT232HState& ft232h)
+{
+	return (Signal) GetBit(ft232h.highPinValues, FT232H::HighPins::CSBit);
+}
+
+Signal
+FT232H_GetDC(FT232HState& ft232h)
+{
+	return (Signal) GetBit(ft232h.highPinValues, FT232H::HighPins::DCBit);
+}
+
 void
 FT232H_BeginSPITransaction(FT232HState& ft232h)
 {
