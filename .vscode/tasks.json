@@ -4,7 +4,7 @@
     {
       "label": "build",
       "type": "shell",
-      "command": "msbuild /nologo /v:q /m LCDHardwareMonitor.sln /p:Configuration=Debug /p:Platform=x86",
+      "command": "msbuild /nologo /v:q /m build/vs/LCDHardwareMonitor.sln /p:Configuration=Debug /p:Platform=x86",
       "presentation": {
         "showReuseMessage": false,
         "clear": true,

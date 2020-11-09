@@ -1,21 +1,11 @@
 {
   "files.exclude": {
-    "**/bin":        true,
-    "**/obj":        true,
-    "run":           true,
-
-    ".git*":         true,
-    "modules":       true,
-
-    ".vs":           true,
-    "*.sdf":         true,
-    "*.db":          true,
-    "*.opendb":      true,
+    ".git*": true,
   },
 
   "search.exclude": {
-    "*.sln":         true,
-    "**/*.vcxproj*": true,
+    "modules": true,
+    "build":   true,
   },
 
   "C_Cpp.default.windowsSdkVersion": "8.1",

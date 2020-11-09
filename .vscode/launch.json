@@ -6,8 +6,8 @@
 			"type": "cppvsdbg",
 			"request": "launch",
 			// NOTE: Must be run as admin for OHM to work properly
-			"program": "${workspaceFolder}/run/LCDHardwareMonitor.exe",
-			"cwd": "${workspaceFolder}/run",
+			"program": "${workspaceFolder}/build/vs/run/LCDHardwareMonitor.exe",
+			"cwd": "${workspaceFolder}/build/vs/run",
 			"logging": {
 				"exceptions": false,
 				"moduleLoad": false,
