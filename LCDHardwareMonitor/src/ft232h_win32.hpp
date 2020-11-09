@@ -18,6 +18,7 @@ struct FT232HState
 	b8        enableTracing;
 	b8        enableDebugChecks;
 	b8        inSPITransaction;
+	b8        deferTransaction;
 	u8        latency;
 	u32       writeTimeout;
 	u32       readTimeout;
@@ -90,13 +91,13 @@ static void
 EnterErrorMode(FT232HState& ft232h)
 {
 	ft232h.errorMode = true;
+	List_Clear(ft232h.pendingCommands);
 }
 
 // NOTE: Be *super* careful with sprinkling this around. It will trash performance in a hurry
 static void
 WaitForResponse(FT232HState& ft232h)
 {
-	FT232H_Flush(ft232h);
 	Sleep((DWORD) (2 * ft232h.latency));
 }
 
@@ -200,6 +201,7 @@ FT232H_SetDebugChecks(FT232HState& ft232h, b8 enable)
 void
 FT232H_SetClockOverride(FT232HState& ft232h, b8 enable, u32 hz)
 {
+	Assert(!ft232h.inSPITransaction);
 	Assert(hz >= FT232H::ClockSpeedMin);
 	Assert(hz <= FT232H::ClockSpeedMax);
 	ft232h.clockSpeedOverride = enable ? hz : 0;
@@ -216,24 +218,31 @@ FT232H_Write(FT232HState& ft232h, ByteSlice bytes)
 {
 	if (ft232h.errorMode) return;
 
-	if (bytes.length <= ft232h.pendingCommands.capacity - ft232h.pendingCommands.length)
+	if (ft232h.deferTransaction)
 	{
-		List_AppendRange(ft232h.pendingCommands, bytes);
+		if (bytes.length <= ft232h.pendingCommands.capacity - ft232h.pendingCommands.length)
+		{
+			List_AppendRange(ft232h.pendingCommands, bytes);
 
-		if (ft232h.enableTracing)
-			Bytes_Print("queue", bytes);
-	}
-	else if (bytes.length < ft232h.pendingCommands.capacity)
-	{
-		FT232H_Flush(ft232h);
-		List_AppendRange(ft232h.pendingCommands, bytes);
+			if (ft232h.enableTracing)
+				Bytes_Print("queue", bytes);
+		}
+		else if (bytes.length < ft232h.pendingCommands.capacity)
+		{
+			FT232H_Flush(ft232h);
+			List_AppendRange(ft232h.pendingCommands, bytes);
 
-		if (ft232h.enableTracing)
-			Bytes_Print("queue", bytes);
+			if (ft232h.enableTracing)
+				Bytes_Print("queue", bytes);
+		}
+		else
+		{
+			FT232H_Flush(ft232h);
+			FT232H_WriteImmediate(ft232h, bytes);
+		}
 	}
 	else
 	{
-		FT232H_Flush(ft232h);
 		FT232H_WriteImmediate(ft232h, bytes);
 	}
 }
@@ -275,11 +284,10 @@ void
 FT232H_Read(FT232HState& ft232h, Bytes& bytes, u16 numBytesToRead)
 {
 	Assert(numBytesToRead != 0);
+	Assert(ft232h.pendingCommands.length == 0);
 	if (ft232h.errorMode) return;
 
 	FT_STATUS status;
-
-	FT232H_Flush(ft232h);
 
 	if (ft232h.enableDebugChecks)
 	{
@@ -345,20 +353,12 @@ FT232H_RecvBytes(FT232HState& ft232h, Bytes& bytes, u16 numBytesToRead)
 	Assert(numBytesToRead != 0);
 	if (ft232h.errorMode) return;
 
-	FT_STATUS status;
-
-	FT232H_Flush(ft232h);
-
 	// NOTE: LCD writes on the falling edge so read on the rising edge
 	u16 numBytesEnc = (u16) (numBytesToRead - 1);
 	u8 ftcmd[] = { FT232H::Command::RecvBytesRisingMSB, UnpackLSB2(numBytesEnc) };
 
-	u32 numBytesWritten;
-	status = FT_Write(ft232h.device, ftcmd, (DWORD) ArrayLength(ftcmd), (DWORD*) &numBytesWritten);
-	LOG_IF(status != FT_OK, EnterErrorMode(ft232h); return,
-		Severity::Error, "Failed to write to device: %", status);
-	Assert(ArrayLength(ftcmd) == numBytesWritten);
-
+	FT232H_Write(ft232h, ftcmd);
+	FT232H_Flush(ft232h);
 	FT232H_Read(ft232h, bytes, numBytesToRead);
 }
 
@@ -463,7 +463,7 @@ FT232H_GetDC(FT232HState& ft232h)
 }
 
 void
-FT232H_BeginSPITransaction(FT232HState& ft232h)
+FT232H_BeginSPI(FT232HState& ft232h)
 {
 	if (ft232h.enableTracing)
 		Platform_Print("begin spi\n");
@@ -475,17 +475,46 @@ FT232H_BeginSPITransaction(FT232HState& ft232h)
 }
 
 void
-FT232H_EndSPITransaction(FT232HState& ft232h)
+FT232H_EndSPI(FT232HState& ft232h)
 {
 	// NOTE: Currently assumes polarity 0
 	Assert(ft232h.inSPITransaction);
-	ft232h.inSPITransaction = false;
 	FT232H_SetCS(ft232h, Signal::High);
 	FT232H_SetDO(ft232h, Signal::Low);
 	FT232H_SetCLK(ft232h, Signal::Low);
+	ft232h.inSPITransaction = false;
 
 	if (ft232h.enableTracing)
 		Platform_Print("end spi\n");
+}
+
+void
+FT232H_BeginSPIDeferred(FT232HState& ft232h)
+{
+	if (ft232h.enableTracing)
+		Platform_Print("begin spi deferred\n");
+
+	// NOTE: Currently assumes polarity 0
+	Assert(!ft232h.inSPITransaction);
+	ft232h.inSPITransaction = true;
+	ft232h.deferTransaction = true;
+	FT232H_SetCS(ft232h, Signal::Low);
+}
+
+void
+FT232H_EndSPIDeferred(FT232HState& ft232h)
+{
+	// NOTE: Currently assumes polarity 0
+	Assert(ft232h.inSPITransaction);
+	FT232H_SetCS(ft232h, Signal::High);
+	FT232H_SetDO(ft232h, Signal::Low);
+	FT232H_SetCLK(ft232h, Signal::Low);
+	FT232H_Flush(ft232h);
+	ft232h.inSPITransaction = false;
+	ft232h.deferTransaction = false;
+
+	if (ft232h.enableTracing)
+		Platform_Print("end spi deferred\n");
 }
 
 // TODO: Maybe speed should be a double?
@@ -495,6 +524,7 @@ FT232H_SetClockSpeed(FT232HState& ft232h, u32 hz)
 	Assert(hz >= FT232H::ClockSpeedMin);
 	Assert(hz <= FT232H::ClockSpeedMax);
 
+	// TODO: Move inside state check
 	if (ft232h.enableTracing)
 		Platform_Print("set clock\n");
 
@@ -516,6 +546,12 @@ FT232H_SetClockSpeed(FT232HState& ft232h, u32 hz)
 	}
 
 	return ft232h.currentState.clockSpeedActual;
+}
+
+u32
+FT232H_GetClockSpeed(FT232HState& ft232h)
+{
+	return ft232h.currentState.clockSpeedDesired;
 }
 
 // -------------------------------------------------------------------------------------------------

@@ -16,6 +16,9 @@ struct ILI9341State
 
 namespace ILI9341
 {
+	static const u32 WriteClockSpeed = 30'000'000;
+	static const u32 ReadClockSpeed  = 15'000'000;
+
 	struct Command
 	{
 		static const u8 Nop                          = 0x00;
@@ -67,7 +70,7 @@ ILI9341_BeginWriteTransaction(ILI9341State& ili9341)
 	ili9341.inTransaction = true;
 
 	if (ili9341.enableSPIStrict)
-		FT232H_BeginSPITransaction(*ili9341.ft232h);
+		FT232H_BeginSPI(*ili9341.ft232h);
 }
 
 void
@@ -77,7 +80,7 @@ ILI9341_EndWriteTransaction(ILI9341State& ili9341)
 	ili9341.inTransaction = false;
 
 	if (ili9341.enableSPIStrict)
-		FT232H_EndSPITransaction(*ili9341.ft232h);
+		FT232H_EndSPI(*ili9341.ft232h);
 }
 
 void
@@ -103,11 +106,11 @@ ILI9341_WriteCmd(ILI9341State& ili9341, u8 cmd)
 
 	if (ili9341.enableSPIStrict)
 	{
-		FT232H_BeginSPITransaction(*ili9341.ft232h);
+		FT232H_BeginSPI(*ili9341.ft232h);
 		FT232H_SetDC(*ili9341.ft232h, Signal::Low);
 		FT232H_SendBytes(*ili9341.ft232h, cmd);
-		FT232H_EndSPITransaction(*ili9341.ft232h);
 		FT232H_SetDC(*ili9341.ft232h, Signal::High);
+		FT232H_EndSPI(*ili9341.ft232h);
 	}
 	else
 	{
@@ -123,10 +126,10 @@ ILI9341_WriteData(ILI9341State& ili9341, ByteSlice bytes)
 
 	if (ili9341.enableSPIStrict)
 	{
-		FT232H_BeginSPITransaction(*ili9341.ft232h);
+		FT232H_BeginSPI(*ili9341.ft232h);
 		FT232H_SetDC(*ili9341.ft232h, Signal::High);
 		FT232H_SendBytes(*ili9341.ft232h, bytes);
-		FT232H_EndSPITransaction(*ili9341.ft232h);
+		FT232H_EndSPI(*ili9341.ft232h);
 	}
 	else
 	{
@@ -142,12 +145,12 @@ ILI9341_Write(ILI9341State& ili9341, u8 cmd, ByteSlice bytes)
 
 	if (ili9341.enableSPIStrict)
 	{
-		FT232H_BeginSPITransaction(*ili9341.ft232h);
+		FT232H_BeginSPI(*ili9341.ft232h);
 		FT232H_SetDC(*ili9341.ft232h, Signal::Low);
 		FT232H_SendBytes(*ili9341.ft232h, cmd);
 		FT232H_SetDC(*ili9341.ft232h, Signal::High);
 		FT232H_SendBytes(*ili9341.ft232h, bytes);
-		FT232H_EndSPITransaction(*ili9341.ft232h);
+		FT232H_EndSPI(*ili9341.ft232h);
 	}
 	else
 	{
@@ -158,22 +161,24 @@ ILI9341_Write(ILI9341State& ili9341, u8 cmd, ByteSlice bytes)
 	}
 }
 
-// TODO: Don't want to change the read speed for individual reads.
 void
 ILI9341_Read(ILI9341State& ili9341, u8 cmd, Bytes& bytes, u16 numBytesToRead)
 {
 	Assert(!ili9341.inTransaction);
 
-	FT232H_SetClockSpeed(*ili9341.ft232h, 15'000'000);
-	FT232H_BeginSPITransaction(*ili9341.ft232h);
+	// NOTE: Toggling the clock speed for every read is inefficient, but we very rarely read and we
+	// do multiple sequential reads even less so this is fine for now.
+	FT232H_SetClockSpeed(*ili9341.ft232h, ILI9341::ReadClockSpeed);
+	FT232H_BeginSPIDeferred(*ili9341.ft232h);
 	FT232H_SetDC(*ili9341.ft232h, Signal::Low);
 	FT232H_SendBytes(*ili9341.ft232h, cmd);
 	FT232H_RecvBytes(*ili9341.ft232h, bytes, numBytesToRead);
-	FT232H_EndSPITransaction(*ili9341.ft232h);
-	FT232H_SetClockSpeed(*ili9341.ft232h, 30'000'000);
 
 	if (ili9341.enableSPIStrict)
 		FT232H_SetDC(*ili9341.ft232h, Signal::High);
+
+	FT232H_EndSPIDeferred(*ili9341.ft232h);
+	FT232H_SetClockSpeed(*ili9341.ft232h, ILI9341::WriteClockSpeed);
 }
 
 // -------------------------------------------------------------------------------------------------

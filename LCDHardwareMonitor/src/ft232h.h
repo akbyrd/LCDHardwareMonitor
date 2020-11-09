@@ -25,6 +25,9 @@ void   FT232H_Read                (FT232HState&, Bytes& bytes, u16 numBytesToRea
 void   FT232H_SendBytes           (FT232HState&, ByteSlice bytes);
 void   FT232H_RecvBytes           (FT232HState&, Bytes& bytes, u16 numBytesToRead);
 
+u32    FT232H_SetClockSpeed       (FT232HState&, u32 hz);
+u32    FT232H_GetClockSpeed       (FT232HState&);
+void   FT232H_SetClockOverride    (FT232HState&, b8 enable, u32 hz);
 void   FT232H_SetCLK              (FT232HState&, Signal signal);
 void   FT232H_SetDO               (FT232HState&, Signal signal);
 void   FT232H_SetCS               (FT232HState&, Signal signal);
@@ -33,7 +36,7 @@ Signal FT232H_GetCLK              (FT232HState&);
 Signal FT232H_GetDO               (FT232HState&);
 Signal FT232H_GetCS               (FT232HState&);
 Signal FT232H_GetDC               (FT232HState&);
-void   FT232H_BeginSPITransaction (FT232HState&);
-void   FT232H_EndSPITransaction   (FT232HState&);
-u32    FT232H_SetClockSpeed       (FT232HState&, u32 hz);
-void   FT232H_SetClockOverride    (FT232HState&, b8 enable, u32 hz);
+void   FT232H_BeginSPI            (FT232HState&);
+void   FT232H_EndSPI              (FT232HState&);
+void   FT232H_BeginSPIDeferred    (FT232HState&);
+void   FT232H_EndSPIDeferred      (FT232HState&);

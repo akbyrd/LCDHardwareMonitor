@@ -2140,7 +2140,7 @@ Simulation_Update(SimulationState& s)
 
 		if (!s.ft232hInitialized && s.ft232hRetryCount < 3)
 		{
-			FT232H_SetTracing(*s.ft232h, true);
+			//FT232H_SetTracing(*s.ft232h, true);
 			FT232H_SetDebugChecks(*s.ft232h, true);
 			//FT232H_SetClockOverride(*s.ft232h, true, 4'250'000);
 

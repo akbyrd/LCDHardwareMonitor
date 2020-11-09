@@ -1,7 +1,6 @@
 Current
 -------
 Cleanup hardware communication
-	Coalesce transactions instead
 	Coalesce pin changes
 	Add ILI9341 option to flush after each SPI transaction
 	Move CS, D/C, and RST to low pins
