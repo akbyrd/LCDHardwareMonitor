@@ -494,17 +494,20 @@ RegisterPlugin(SimulationState& s, StringView directory, StringView fileName)
 		if (!slot.ref)
 		{
 			plugin = &slot;
+			plugin->ref = List_GetRef(s.plugins, i);
 			break;
 		}
 	}
 
 	if (!plugin)
+	{
 		plugin = &List_Append(s.plugins);
+		plugin->ref = List_GetLastRef(s.plugins);
+	}
 
 	defer { ToGUI_PluginStatesChanged(s, *plugin); };
 	auto pluginGuard = guard { plugin->loadState = PluginLoadState::Broken; };
 
-	plugin->ref       = List_GetLastRef(s.plugins);
 	plugin->fileName  = String_FromView(fileName);
 	plugin->directory = String_FromView(directory);
 
@@ -557,14 +560,17 @@ LoadSensorPlugin(SimulationState& s, Plugin& plugin)
 		if (!slot.ref)
 		{
 			sensorPlugin = &slot;
+			sensorPlugin->ref = List_GetRef(s.sensorPlugins, i);
 			break;
 		}
 	}
 
 	if (!sensorPlugin)
+	{
 		sensorPlugin = &List_Append(s.sensorPlugins);
+		sensorPlugin->ref = List_GetLastRef(s.sensorPlugins);
+	}
 
-	sensorPlugin->ref = List_GetLastRef(s.sensorPlugins);
 	sensorPlugin->pluginRef = plugin.ref;
 
 	plugin.rawRefToKind = sensorPlugin->ref.value;
@@ -674,14 +680,17 @@ LoadWidgetPlugin(SimulationState& s, Plugin& plugin)
 		if (!slot.ref)
 		{
 			widgetPlugin = &slot;
+			widgetPlugin->ref = List_GetRef(s.widgetPlugins, i);
 			break;
 		}
 	}
 
 	if (!widgetPlugin)
+	{
 		widgetPlugin = &List_Append(s.widgetPlugins);
+		widgetPlugin->ref = List_GetLastRef(s.widgetPlugins);
+	}
 
-	widgetPlugin->ref = List_GetLastRef(s.widgetPlugins);
 	widgetPlugin->pluginRef = plugin.ref;
 
 	plugin.rawRefToKind = widgetPlugin->ref.value;
