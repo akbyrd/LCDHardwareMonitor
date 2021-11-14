@@ -2,7 +2,10 @@
 #pragma comment(lib, "DXGI.lib")
 //#pragma comment(lib, "d3dcompiler.lib")
 
-#pragma warning(push, 0)
+// NOTE: Visual Studio now allows separate warning settings for internal and external headers. For
+// the time being I've entirely disabled warnings in external headers so the pragma below is no
+// longer needed.
+//#pragma warning(push, 0)
 
 // For some GUID magic in the DirectX/DXGI headers. Must be included before them.
 #include <InitGuid.h>
@@ -24,7 +27,7 @@
 #include <wrl\client.h>
 using Microsoft::WRL::ComPtr;
 
-#pragma warning(pop)
+//#pragma warning(pop)
 
 namespace HLSLSemantic
 {
