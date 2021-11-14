@@ -12,6 +12,7 @@ Cleanup hardware communication
 	Why does python receive on the falling edge?
 	Assert when changing divider to be too low (is the FT_GetQueueStatus process correct?)
 	There's a dummy cycle for reads > 1 byte. Is that normal? Something I should handle manually?
+	The screen has a white flickering line along the left edge
 Try ardnew's code
 Maybe add a DenseSlice?
 
@@ -118,6 +119,7 @@ Add a way to profile time spent sleeping
 Write to a buffer and only flush when full or need to sleep (write batching)
 Switch to parallel interface
 Ensure we can always init, even if in a bad state
+Try using function pointers instead of early outs for errorMode (indirect call is faster than a branch).
 
 
 
@@ -262,6 +264,7 @@ Consider using a UAV for simultaneous read and write
 
 Reliability
 -----------
+Double check math rotations
 Check for mismatched push/pop calls in plugins
 We don't support XP. Don't allow running on it.
 Decide on static or dynamic linking to e.g. the CRT. Bundle redistributables if dynamically linking.

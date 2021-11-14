@@ -126,7 +126,7 @@ MPSSE up to 30 Mbits/s
 RS232 up to 12 Mbaud
 245 parallel FIFO up to 40 Mbytes/Sec
 Operation configuration mode and USB Description strings configurable in external EEPROM over the USB interface.
-The EEPROM is programmable in-circuit over USB using a  utility  program  called FT_Prog
+The EEPROM is programmable in-circuit over USB using a utility program called FT_Prog
 Supports JTAG
 
 https://github.com/adafruit/Adafruit_Python_GPIO/blob/master/Adafruit_GPIO/FT232H.py
