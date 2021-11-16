@@ -10,6 +10,9 @@
 
 // TODO: Maybe capacity should not include the null terminator
 // TODO: How do we handle immutable strings? Since there's no const transitivity, do we need separate types?
+// TODO: Not including the null terminator in length can be problematic. A null terminated empty
+// string and a zero initialized String struct both have length = 0, which is ambiguous and a bit of
+// a trap.
 
 struct StrPos
 {

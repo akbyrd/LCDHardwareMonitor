@@ -20,18 +20,18 @@ template<typename ...Args>
 constexpr inline void Unused(Args^ ...) {}
 
 void
-String_FromCLR(LHMString lhmString, CLRString^ clrString)
+String_FromCLR(LHMString& lhmString, CLRString^ clrString)
 {
 	using namespace System;
 	using namespace System::Runtime::InteropServices;
 
 	c8* cstring = (c8*) Marshal::StringToHGlobalAnsi(clrString).ToPointer();
 
-	u32 length = (u32) clrString->Length + 1;
-	String_Reserve(lhmString, length);
+	u32 length = (u32) clrString->Length;
+	String_Reserve(lhmString, length + 1);
 
 	lhmString.length = length;
-	strncpy_s(lhmString.data, lhmString.capacity, cstring, length);
+	strncpy_s(lhmString.data, lhmString.capacity, cstring, length + 1);
 
 	Marshal::FreeHGlobal((IntPtr) cstring);
 }
