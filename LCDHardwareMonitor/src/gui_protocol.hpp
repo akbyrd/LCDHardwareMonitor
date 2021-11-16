@@ -512,8 +512,7 @@ Serialize(ByteStream& stream, Slice<T>& slice)
 			for (u32 i = 0; i < slice.length; i++)
 				Serialize(stream, slice[i]);
 
-			// DEBUG: Easier to inspect
-			//slice.data   = nullptr;
+			slice.data   = nullptr;
 			break;
 		}
 	}
@@ -540,8 +539,15 @@ Serialize(ByteStream& stream, String& string)
 			break;
 
 		case ByteStreamMode::Write:
-			memcpy(data, string.data, string.length + 1);
-			string.data = nullptr;
+			if (string.data == nullptr)
+			{
+				data[0] = 0;
+			}
+			else
+			{
+				memcpy(data, string.data, string.length + 1);
+				string.data = nullptr;
+			}
 			break;
 	}
 }
@@ -567,8 +573,15 @@ Serialize(ByteStream& stream, StringView& string)
 			break;
 
 		case ByteStreamMode::Write:
-			memcpy(data, string.data, string.length + 1);
-			string.data = nullptr;
+			if (string.data == nullptr)
+			{
+				data[0] = 0;
+			}
+			else
+			{
+				memcpy(data, string.data, string.length + 1);
+				string.data = nullptr;
+			}
 			break;
 	}
 }
