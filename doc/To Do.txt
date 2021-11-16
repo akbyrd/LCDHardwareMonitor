@@ -23,7 +23,6 @@ Bugs
 Allow StringView to be used as a parameter to a constexpr function
 Using OpenHardwareMonitor tanks frame rate. Why? Has it always?
 Lag when selecting preview while GUI is open
-D3D leak when closing with selection
 D3D warning:
 	D3D11 WARNING: ID3D11DeviceContext::PSSetShaderResources:
 	Resource being set to PS shader resource slot 1 is still bound on output! Forcing to NULL.

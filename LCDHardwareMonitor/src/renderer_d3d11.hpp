@@ -302,7 +302,7 @@ CreateRenderTargetImpl(RendererState& s, StringView name, b8 resource, D3D11_TEX
 
 	auto renderTargetGuard = guard {
 		DestroyRenderTarget(s, renderTargetData);
-	List_RemoveLast(s.renderTargets);
+		List_RemoveLast(s.renderTargets);
 	};
 
 	String index = {};
@@ -1948,19 +1948,19 @@ Renderer_Teardown(RendererState& s)
 	List_Free(s.indexBuffer);
 	List_Free(s.vertexBuffer);
 
-	for (u32 i = 0; i < s.cpuTextures.length; i++)
-	{
-		CPUTextureData& ct = s.cpuTextures[i];
-		DestroyCPUTexture(s, ct);
-	}
-	List_Free(s.renderTargets);
-
 	for (u32 i = 0; i < s.depthBuffers.length; i++)
 	{
 		DepthBufferData& db = s.depthBuffers[i];
 		DestroyDepthBuffer(s, db);
 	}
 	List_Free(s.depthBuffers);
+
+	for (u32 i = 0; i < s.cpuTextures.length; i++)
+	{
+		CPUTextureData& ct = s.cpuTextures[i];
+		DestroyCPUTexture(s, ct);
+	}
+	List_Free(s.cpuTextures);
 
 	for (u32 i = 0; i < s.renderTargets.length; i++)
 	{
