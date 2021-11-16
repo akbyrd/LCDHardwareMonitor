@@ -751,7 +751,6 @@ Copy(RendererState& s, RenderTarget rtSource, CPUTexture ctDest)
 void
 Renderer_SetRenderSize(RendererState& s, v2u renderSize)
 {
-	Assert(!s.resourceCreationFinalized);
 	s.renderSize = renderSize;
 
 	// Initialize viewport
@@ -772,8 +771,6 @@ Renderer_SetRenderSize(RendererState& s, v2u renderSize)
 RenderTarget
 Renderer_CreateRenderTarget(RendererState& s, StringView name, b8 resource)
 {
-	Assert(!s.resourceCreationFinalized);
-
 	D3D11_TEXTURE2D_DESC desc = {};
 	desc.Width              = s.renderSize.x;
 	desc.Height             = s.renderSize.y;
@@ -792,8 +789,6 @@ Renderer_CreateRenderTarget(RendererState& s, StringView name, b8 resource)
 RenderTarget
 Renderer_CreateRenderTargetWithAlpha(RendererState& s, StringView name, b8 resource)
 {
-	Assert(!s.resourceCreationFinalized);
-
 	D3D11_TEXTURE2D_DESC desc = {};
 	desc.Width              = s.renderSize.x;
 	desc.Height             = s.renderSize.y;
@@ -812,8 +807,6 @@ Renderer_CreateRenderTargetWithAlpha(RendererState& s, StringView name, b8 resou
 RenderTarget
 Renderer_CreateSharedRenderTarget(RendererState& s, StringView name, b8 resource)
 {
-	Assert(!s.resourceCreationFinalized);
-
 	D3D11_TEXTURE2D_DESC desc = {};
 	desc.Width              = s.renderSize.x;
 	desc.Height             = s.renderSize.y;
@@ -857,8 +850,6 @@ Renderer_CreateSharedRenderTarget(RendererState& s, StringView name, b8 resource
 CPUTexture
 Renderer_CreateCPUTexture(RendererState& s, StringView name)
 {
-	Assert(!s.resourceCreationFinalized);
-
 	CPUTextureData& cpuTextureData = List_Append(s.cpuTextures);
 	cpuTextureData.ref = List_GetLastRef(s.cpuTextures);
 
@@ -900,8 +891,6 @@ Renderer_CreateCPUTexture(RendererState& s, StringView name)
 DepthBuffer
 Renderer_CreateDepthBuffer(RendererState& s, StringView name, b8 resource)
 {
-	Assert(!s.resourceCreationFinalized);
-
 	DepthBufferData& depthBufferData = List_Append(s.depthBuffers);
 	depthBufferData.ref = List_GetLastRef(s.depthBuffers);
 
@@ -1003,8 +992,6 @@ Renderer_CreateMesh(RendererState& s, StringView name, Slice<Vertex> vertices, S
 VertexShader
 Renderer_LoadVertexShader(RendererState& s, StringView name, StringView path, Slice<VertexAttribute> attributes, Slice<u32> cBufSizes)
 {
-	Assert(!s.resourceCreationFinalized);
-
 	// Vertex Shader
 	VertexShaderData& vs = List_Append(s.vertexShaders);
 	vs.ref = List_GetLastRef(s.vertexShaders);
@@ -1107,8 +1094,6 @@ Renderer_LoadVertexShader(RendererState& s, StringView name, StringView path, Sl
 PixelShader
 Renderer_LoadPixelShader(RendererState& s, StringView name, StringView path, Slice<u32> cBufSizes)
 {
-	Assert(!s.resourceCreationFinalized);
-
 	PixelShaderData& ps = List_Append(s.pixelShaders);
 	ps.ref = List_GetLastRef(s.pixelShaders);
 

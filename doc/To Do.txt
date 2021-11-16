@@ -20,6 +20,7 @@ Maybe add a DenseSlice?
 
 Bugs
 ----
+The renderer will probably crash when re-loading plugins that create meshes, after finalization.
 Allow StringView to be used as a parameter to a constexpr function
 Using OpenHardwareMonitor tanks frame rate. Why? Has it always?
 Lag when selecting preview while GUI is open
