@@ -213,6 +213,7 @@ Probably need a replacement SDK since it's unmaintained
 
 Features - Plugins
 ------------------
+Maybe plugins shouldn't have to copy/allocate strings as part of GetPluginInfo
 Consider using .NET Core instead of .NET Framework.
 	Does it make hosting the CLR easier?
 	Does it make dealing with the tlb easier?

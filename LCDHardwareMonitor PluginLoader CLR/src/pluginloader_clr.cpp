@@ -197,16 +197,12 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 		b8 success = LoadAssemblyAndInstantiateType(plugin.fileName, sensorPluginCLR.pluginInstance);
 		if (!success) return false;
 
-		String_Free(plugin.info.name);
-		String_Free(plugin.info.author);
-
 		sensorPluginCLR.pluginInstance->GetPluginInfo(plugin.info);
 		sensorPlugin.functions.GetPluginInfo = nullptr;
 
 		// DEBUG: Remove me (just for fast loading)
 		#if true
 		#pragma message("warning: Sensor plugin init temporarily disabled for faster loading")
-		Unused(sensorPlugin);
 		#else
 		auto iInitialize = dynamic_cast<ISensorPluginInitialize^>(sensorPluginCLR.pluginInstance);
 		if (iInitialize)
@@ -247,9 +243,6 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	{
 		b8 success = LoadAssemblyAndInstantiateType(plugin.fileName, widgetPluginCLR.pluginInstance);
 		if (!success) return false;
-
-		String_Free(plugin.info.name);
-		String_Free(plugin.info.author);
 
 		widgetPluginCLR.pluginInstance->GetPluginInfo(plugin.info);
 		widgetPlugin.functions.GetPluginInfo = nullptr;
