@@ -25,7 +25,7 @@
     <StartAction>Project</StartAction>
     <StartArguments>
     </StartArguments>
-    <StartWorkingDirectory>run</StartWorkingDirectory>
+    <StartWorkingDirectory>$(SolutionDir)run\</StartWorkingDirectory>
     <StartProgram>$(SolutionDir)run\GUI\LCDHardwareMonitor GUI.exe</StartProgram>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
@@ -33,7 +33,7 @@
     <StartAction>Project</StartAction>
     <StartArguments>
     </StartArguments>
-    <StartWorkingDirectory>run</StartWorkingDirectory>
+    <StartWorkingDirectory>$(SolutionDir)run\</StartWorkingDirectory>
     <StartProgram>$(SolutionDir)run\GUI\LCDHardwareMonitor GUI.exe</StartProgram>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
@@ -41,7 +41,7 @@
     <StartAction>Project</StartAction>
     <StartArguments>
     </StartArguments>
-    <StartWorkingDirectory>run</StartWorkingDirectory>
+    <StartWorkingDirectory>$(SolutionDir)run\</StartWorkingDirectory>
     <StartProgram>$(SolutionDir)run\GUI\LCDHardwareMonitor GUI.exe</StartProgram>
   </PropertyGroup>
 </Project>
