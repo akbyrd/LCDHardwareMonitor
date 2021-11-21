@@ -1,25 +1,29 @@
 Current
 -------
-Cleanup hardware communication
-	Coalesce pin changes
-	Add ILI9341 option to flush after each SPI transaction
-	Move CS, D/C, and RST to low pins
-		Do we need a read modify write sequence?
-		Does SendImmediate help?
-	Implement "next command time"
-	Handle device unplugged
-	Why does python use SendImmediate?
-	Why does python receive on the falling edge?
-	Assert when changing divider to be too low (is the FT_GetQueueStatus process correct?)
-	There's a dummy cycle for reads > 1 byte. Is that normal? Something I should handle manually?
-	The screen has a white flickering line along the left edge
-Try ardnew's code
-Maybe add a DenseSlice?
+Add a real dummy sensor
+- Sensor list doesn't update when unloading plugin
+- Widget list doesn't update when unloading plugin
+- Widgets don't re-appear when re-loading
+- Don't allow reloading for built-in plugins
+- Simulation_Teardown fails if plugins have been unloaded and rawRefToKind is still set
+Fix hover showing incorrect progress
+----
+Show widgets in list
+Link list selection to sim selection
+
 
 
 
 Bugs
 ----
+WPF has slow update rate when not focused on other PCs (not mine).
+	Probably a performance setting.
+	Seems to only happen when selecting the preview window.
+Simulation doesn't run without ftd2xx.dll. Package dll, delay load, or static link.
+Deleting widgets crashes
+GetCursorPos fails (and asserts) in the GUI sometimes. Looks like UAC prompts cause it.
+	Win32 documentation says "The input desktop must be the current desktop"
+Crash when closing preview (shutting down sim) and relaunching from gui, click designer tab
 The renderer will probably crash when re-loading plugins that create meshes, after finalization.
 Allow StringView to be used as a parameter to a constexpr function
 Using OpenHardwareMonitor tanks frame rate. Why? Has it always?
@@ -29,6 +33,8 @@ D3D warning:
 	Resource being set to PS shader resource slot 1 is still bound on output! Forcing to NULL.
 	[ STATE_SETTING WARNING #7: DEVICE_PSSETSHADERRESOURCES_HAZARD]
 Fix flush pipe error
+	Platform_FlushPipe - Failed to flush pipe 'LCDHardwareMonitor GUI Pipe': The pipe has been ended. (109)
+		D:\Dev\Atomic Bird Games\LCDHardwareMonitor\LCDHardwareMonitor\src\platform_win32.hpp(900)
 Fix VS crash
 	devenv crashes with Exception code: 0xc0000374 (heap corruption?)
 	only seems to happen with multiple startup projects
@@ -86,6 +92,7 @@ I'm sure there are places where we're going to end up in a partially initialized
 	errors occur. We need to double down on transactional changes. Check all existing code.
 
 
+
 Refactoring - Build Process
 ---------------------------
 Consider building with a batch script
@@ -107,7 +114,7 @@ Need to actually avoid processing broken plugins
 Users probably need to be able to create custom UI for plugin settings
 Watch plugin directory contents for registering, unregistering, and reloading plugins.
 Consider supporting linux
-
+GUI always opens on one monitor, doesn't remember
 
 
 
@@ -120,6 +127,18 @@ Write to a buffer and only flush when full or need to sleep (write batching)
 Switch to parallel interface
 Ensure we can always init, even if in a bad state
 Try using function pointers instead of early outs for errorMode (indirect call is faster than a branch).
+Coalesce pin changes
+Move CS, D/C, and RST to low pins
+	Do we need a read modify write sequence?
+	Does SendImmediate help?
+Implement "next command time"
+Handle device unplugged
+Why does python use SendImmediate?
+Why does python receive on the falling edge?
+Assert when changing divider to be too low (is the FT_GetQueueStatus process correct?)
+There's a dummy cycle for reads > 1 byte. Is that normal? Something I should handle manually?
+The screen has a white flickering line along the left edge
+Try ardnew's code
 
 
 
@@ -129,6 +148,7 @@ Profile and compare 16bit and 18bit modes. 16bit uses a lookup table. 18bit uses
 Add proper error handling
 Implement hardware reset
 Add a tracing option
+Add option to flush after each SPI transaction
 
 
 
@@ -260,6 +280,12 @@ Use premultiplied alpha to composite darken and highlight in a single pass
 Consider bringing hovered/selected widgets to the front to avoid outline depth issues
 Clamp outline to screen edges
 Consider using a UAV for simultaneous read and write
+
+
+
+Infrastructure
+--------------
+Maybe add a DenseSlice?
 
 
 

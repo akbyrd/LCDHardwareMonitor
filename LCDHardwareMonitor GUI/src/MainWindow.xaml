@@ -229,17 +229,17 @@
 							<DataGrid.Columns>
 								<DataGridTextColumn
 									Binding="{Binding PluginRef}"
-									Header="Ref"
+									Header="Plugin Ref"
 									Width="*"
 									IsReadOnly="true" />
 								<DataGridTextColumn
 									Binding="{Binding DataRef}"
-									Header="Name"
+									Header="Data Ref"
 									Width="*"
 									IsReadOnly="true" />
 								<DataGridTextColumn
 									Binding="{Binding Ref}"
-									Header="Name"
+									Header="Ref"
 									Width="*"
 									IsReadOnly="true" />
 							</DataGrid.Columns>
