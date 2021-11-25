@@ -34,6 +34,7 @@ struct SimulationState
 	Matrix                 iview;
 	i64                    startTime;
 	r32                    currentTime;
+	FullSensorRef          nullSensorRef;
 
 	// Hardware
 	CPUTexture             renderTargetCPUCopy;
@@ -820,6 +821,16 @@ UnloadWidgetPlugin(SimulationState& s, WidgetPlugin& widgetPlugin)
 
 // -------------------------------------------------------------------------------------------------
 
+#if false
+static Sensor&
+GetSensor(SimulationState& s, FullSensorRef ref)
+{
+	SensorPlugin& sensorPlugin = s.sensorPlugins[ref.pluginRef];
+	Sensor& sensor = sensorPlugin.sensors[ref.sensorRef];
+	return sensor;
+}
+#endif
+
 static String
 GetNameFromPath(StringView path)
 {
@@ -843,8 +854,8 @@ GetNameFromPath(StringView path)
 	return String_FromSlice(nameSlice);
 }
 
-static void
-AddWidgets(SimulationState& s, WidgetPlugin& widgetPlugin, WidgetData& widgetData, Slice<v2> positions)
+static Slice<Widget>
+AddWidgets(SimulationState& s, WidgetPlugin& widgetPlugin, WidgetData& widgetData, u32 count)
 {
 	u32 prevWidgetLen = widgetData.widgets.length;
 
@@ -853,8 +864,8 @@ AddWidgets(SimulationState& s, WidgetPlugin& widgetPlugin, WidgetData& widgetDat
 		widgetData.widgetsUserData.length = widgetData.desc.userDataSize * prevWidgetLen;
 	};
 
-	List_AppendRange(widgetData.widgets, positions.length);
-	List_AppendRange(widgetData.widgetsUserData, widgetData.desc.userDataSize * positions.length);
+	List_AppendRange(widgetData.widgets, count);
+	List_AppendRange(widgetData.widgetsUserData, widgetData.desc.userDataSize * count);
 
 	PluginContext context = {};
 	context.s            = &s;
@@ -866,29 +877,31 @@ AddWidgets(SimulationState& s, WidgetPlugin& widgetPlugin, WidgetData& widgetDat
 	api.widgetsUserData        = List_Slice(widgetData.widgetsUserData, widgetData.desc.userDataSize * prevWidgetLen);
 	api.widgetsUserData.stride = widgetData.desc.userDataSize;
 
-	widgetData.desc.Initialize(context, api);
-	if (!context.success) return;
-
-	for (u32 i = 0; i < positions.length; i++)
+	for (u32 i = 0; i < count; i++)
 	{
-		v2 position = positions[i];
 		Widget& widget = widgetData.widgets[prevWidgetLen + i];
-		widget.ref      = List_GetRef(widgetData.widgets, prevWidgetLen + i);
-		widget.position = position;
+		widget.ref             = List_GetRef(widgetData.widgets, prevWidgetLen + i);
+		widget.position        = {};
+		widget.sensorPluginRef = s.nullSensorRef.pluginRef;
+		widget.sensorRef       = s.nullSensorRef.sensorRef;
 	}
+
+	widgetData.desc.Initialize(context, api);
+	if (!context.success) return {};
 
 	Slice<Widget> newWidgets = List_Slice(widgetData.widgets, prevWidgetLen);
 	ToGUI_WidgetsAdded(s, widgetPlugin, widgetData, Slice_MemberSlice(newWidgets, &Widget::ref));
 
 	createGuard.dismiss = true;
+	return newWidgets;
 }
 
-static void
-AddWidgets(SimulationState& s, FullWidgetDataRef ref, Slice<v2> positions)
+static Slice<Widget>
+AddWidgets(SimulationState& s, FullWidgetDataRef ref, u32 count)
 {
 	WidgetPlugin& widgetPlugin = s.widgetPlugins[ref.pluginRef];
 	WidgetData& widgetData = widgetPlugin.widgetDatas[ref.dataRef];
-	AddWidgets(s, widgetPlugin, widgetData, positions);
+	return AddWidgets(s, widgetPlugin, widgetData, count);
 }
 
 static void
@@ -1433,7 +1446,11 @@ FromGUI_AddWidget(SimulationState& s, FromGUI::AddWidget& addWidget)
 	}
 
 	WidgetData& widgetData = widgetPlugin.widgetDatas[addWidget.ref.dataRef];
-	AddWidgets(s, widgetPlugin, widgetData, addWidget.position);
+	Slice<Widget> widgets = AddWidgets(s, widgetPlugin, widgetData, 1);
+	if (widgets.length == 0) return;
+
+	Widget& widget = widgets[0];
+	widget.position = addWidget.position;
 }
 
 static void
@@ -1519,14 +1536,23 @@ FromGUI_SetWidgetSelection(SimulationState& s, FromGUI::SetWidgetSelection& widg
 static b8
 BuiltinSensorPlugin_Initialize(PluginContext& context, SensorPluginAPI::Initialize api)
 {
-	Unused(context, api);
+	Sensor nullSensor = {};
+	nullSensor.name       = String_FromView("Null");
+	nullSensor.identifier = String_FromView("null");
+	nullSensor.format     = String_FromView("%f");
+	api.RegisterSensors(context, nullSensor);
 	return true;
 }
 
 static void
 BuiltinSensorPlugin_Update(PluginContext& context, SensorPluginAPI::Update api)
 {
-	Unused(context, api);
+	Unused(context);
+
+	Assert(api.sensors.length == 1);
+	Sensor& sensor = api.sensors[0];
+	r32 t = context.s->currentTime;
+	sensor.value = sinf(t) * sinf(t);
 }
 
 static void
@@ -1818,7 +1844,13 @@ Simulation_Initialize(
 		// pull sensors out so we can create a sensor here without a plugin at all.
 
 		Plugin& builtInPlugin = RegisterPlugin(s, {}, {});
-		LoadSensorPluginFromCode(s, builtInPlugin, BuiltinSensorPlugin_GetPluginInfo);
+		success = LoadSensorPluginFromCode(s, builtInPlugin, BuiltinSensorPlugin_GetPluginInfo);
+		Assert(success);
+
+		SensorPluginRef builtInSensorPluginRef = { builtInPlugin.rawRefToKind };
+		SensorPlugin& builtInSensorPlugin = s.sensorPlugins[builtInSensorPluginRef];
+		s.nullSensorRef.pluginRef = builtInSensorPlugin.ref;
+		s.nullSensorRef.sensorRef = List_GetLastRef(builtInSensorPlugin.sensors);
 	}
 
 	// DEBUG: Testing
@@ -1831,28 +1863,17 @@ Simulation_Initialize(
 		success = LoadWidgetPlugin(s, filledBarPlugin);
 		if (!success) return false;
 
-		//u32 debugSensorIndices[] = { 0, 1, 2, 3, 21 }; // Desktop 2080 Ti
-		//u32 debugSensorIndices[] = { 6, 7, 8, 9, 33 }; // Desktop 780 Tis
-		//u32 debugSensorIndices[] = { 0, 1, 2, 3, 12 }; // Laptop
-		u32 debugSensorIndices[] = { u32Max, u32Max, u32Max, u32Max, u32Max }; // Empty
-
-		WidgetPluginRef ref = { filledBarPlugin.rawRefToKind };
-		WidgetPlugin& filledBarWidgetPlugin = s.widgetPlugins[ref];
-		WidgetData& widgetData = filledBarWidgetPlugin.widgetDatas[0];
-
 		FullWidgetDataRef fullRef = {};
-		fullRef.pluginRef = filledBarWidgetPlugin.ref;
-		fullRef.dataRef = widgetData.ref;
+		fullRef.pluginRef = { filledBarPlugin.rawRefToKind };
+		fullRef.dataRef   = ToRef<WidgetData>(0);
 
-		v2 positions[ArrayLength(debugSensorIndices)] = {};
-		AddWidgets(s, fullRef, positions);
-
-		for (u32 i = 0; i < ArrayLength(debugSensorIndices); i++)
+		u32 dummyWidgetCount = 6;
+		Slice<Widget> widgets = AddWidgets(s, fullRef, dummyWidgetCount);
+		for (u32 i = 0; i < widgets.length; i++)
 		{
-			Widget& widget = widgetData.widgets[i];
+			Widget& widget = widgets[i];
 			widget.position    = ((v2) s.renderSize) / 2.0f;
 			widget.position.y += (2.0f - (r32) i) * (widget.size.y + 3.0f);
-			widget.sensorRef   = ToRef<Sensor>(debugSensorIndices[i]);
 		}
 	}
 

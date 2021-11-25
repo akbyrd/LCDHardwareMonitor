@@ -59,17 +59,9 @@ UpdateBarWidgets(PluginContext& context, WidgetAPI::Update api)
 		if (!widget.ref) continue;
 
 		// Update
-		if (widget.sensorRef)
 		{
 			Sensor& sensor = api.sensors[widget.sensorRef];
-			r32 value = sensor.value / 100.0f;
-			barWidget.psPerObject.fillAmount = Lerp(barWidget.psPerObject.fillAmount, value, 0.10f);
-		}
-		else
-		{
-			// DEBUG: Remove this (add a default dummy sensor)
-			r32 phase = (r32) i / (r32) (api.widgets.length + 1) * 0.5f * r32Pi;
-			barWidget.psPerObject.fillAmount = sinf(api.t + phase) * sinf(api.t + phase);
+			barWidget.psPerObject.fillAmount = Lerp(barWidget.psPerObject.fillAmount, sensor.value, 0.10f);
 		}
 
 		// Draw

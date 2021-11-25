@@ -50,6 +50,12 @@ struct SensorPlugin
 	//List<SensorRef> activeSensors;
 };
 
+struct FullSensorRef
+{
+	SensorPluginRef pluginRef;
+	SensorRef       sensorRef;
+};
+
 struct WidgetData;
 using WidgetDataRef = List<WidgetData>::RefT;
 
