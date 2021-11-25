@@ -53,7 +53,7 @@ Platform_LogImpl(Severity severity, Location location, StringView message)
 	defer { String_Free(fullMessage); };
 
 	Platform_PrintImpl(fullMessage);
-	if (severity > Severity::Info)
+	if (severity > Severity::Info && IsDebuggerPresent())
 		__debugbreak();
 }
 
