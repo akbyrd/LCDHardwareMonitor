@@ -110,6 +110,9 @@
     <ClInclude Include="..\..\LCDHardwareMonitor\include\WVP.vs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\LCDHardwareMonitor\include\LHMResult.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\..\LCDHardwareMonitor\res\Vertex Colored.ps">

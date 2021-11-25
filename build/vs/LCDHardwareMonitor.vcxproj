@@ -189,6 +189,7 @@
     <ClInclude Include="..\..\LCDHardwareMonitor\include\LHMMemory.hpp" />
     <ClInclude Include="..\..\LCDHardwareMonitor\include\LHMPlugin.h" />
     <ClInclude Include="..\..\LCDHardwareMonitor\include\LHMRenderer.h" />
+    <ClInclude Include="..\..\LCDHardwareMonitor\include\LHMResult.hpp" />
     <ClInclude Include="..\..\LCDHardwareMonitor\include\LHMSensorPlugin.h" />
     <ClInclude Include="..\..\LCDHardwareMonitor\include\LHMString.hpp" />
     <ClInclude Include="..\..\LCDHardwareMonitor\include\LHMWidgetPlugin.h" />

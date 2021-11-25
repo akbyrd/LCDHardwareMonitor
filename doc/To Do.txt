@@ -1,6 +1,5 @@
 Current
 -------
-Implement Result<T>?
 Implement a stack allocator
 Update sensors in the UI
 Simulation_Teardown fails if plugins have been unloaded and rawRefToKind is still set

@@ -594,7 +594,7 @@ AllocSensorPlugin(SimulationState& s)
 	return *sensorPlugin;
 }
 
-static b8
+static Result<SensorPlugin*>
 LoadSensorPluginImpl(SimulationState& s, Plugin& plugin, SensorPlugin& sensorPlugin)
 {
 	defer { ToGUI_PluginStatesChanged(s, plugin); };
@@ -640,10 +640,10 @@ LoadSensorPluginImpl(SimulationState& s, Plugin& plugin, SensorPlugin& sensorPlu
 	}
 
 	pluginGuard.dismiss = true;
-	return true;
+	return &sensorPlugin;
 }
 
-static b8
+static Result<SensorPlugin*>
 LoadSensorPluginFromCode(SimulationState& s, Plugin& plugin, SensorPluginFunctions::GetPluginInfoFn* getPluginInfo)
 {
 	Assert(plugin.loadState != PluginLoadState::Loaded);
@@ -655,7 +655,7 @@ LoadSensorPluginFromCode(SimulationState& s, Plugin& plugin, SensorPluginFunctio
 	return LoadSensorPluginImpl(s, plugin, sensorPlugin);
 }
 
-static b8
+static Result<SensorPlugin*>
 LoadSensorPlugin(SimulationState& s, Plugin& plugin)
 {
 	Assert(plugin.loadState != PluginLoadState::Loaded);
@@ -743,7 +743,7 @@ AllocWidgetPlugin(SimulationState& s)
 	return *widgetPlugin;
 }
 
-static b8
+static Result<WidgetPlugin*>
 LoadWidgetPluginImpl(SimulationState& s, Plugin& plugin, WidgetPlugin& widgetPlugin)
 {
 	defer { ToGUI_PluginStatesChanged(s, plugin); };
@@ -790,10 +790,10 @@ LoadWidgetPluginImpl(SimulationState& s, Plugin& plugin, WidgetPlugin& widgetPlu
 	}
 
 	pluginGuard.dismiss = true;
-	return true;
+	return &widgetPlugin;
 }
 
-static b8
+static Result<WidgetPlugin*>
 LoadWidgetPlugin(SimulationState& s, Plugin& plugin)
 {
 	Assert(plugin.loadState != PluginLoadState::Loaded);
@@ -1881,8 +1881,8 @@ Simulation_Initialize(
 		// pull sensors out so we can create a sensor here without a plugin at all.
 
 		Plugin& builtInPlugin = RegisterPlugin(s, {}, {});
-		success = LoadSensorPluginFromCode(s, builtInPlugin, BuiltinSensorPlugin_GetPluginInfo);
-		Assert(success);
+		Result<SensorPlugin*> sensorPlugin = LoadSensorPluginFromCode(s, builtInPlugin, BuiltinSensorPlugin_GetPluginInfo);
+		Assert(sensorPlugin);
 
 		SensorPluginRef builtInSensorPluginRef = { builtInPlugin.rawRefToKind };
 		SensorPlugin& builtInSensorPlugin = s.sensorPlugins[builtInSensorPluginRef];
@@ -1893,16 +1893,16 @@ Simulation_Initialize(
 	// DEBUG: Testing
 	{
 		Plugin& ohmPlugin = RegisterPlugin(s, "Sensor Plugins\\OpenHardwareMonitor", "Sensor.OpenHardwareMonitor.dll");
-		success = LoadSensorPlugin(s, ohmPlugin);
-		if (!success) return false;
+		Result<SensorPlugin*> sensorPlugin = LoadSensorPlugin(s, ohmPlugin);
+		if (!sensorPlugin) return false;
 
 		Plugin& filledBarPlugin = RegisterPlugin(s, "Widget Plugins\\Filled Bar", "Widget.FilledBar.dll");
-		success = LoadWidgetPlugin(s, filledBarPlugin);
-		if (!success) return false;
+		Result<WidgetPlugin*> widgetPlugin = LoadWidgetPlugin(s, filledBarPlugin);
+		if (!widgetPlugin) return false;
 
 		FullWidgetDataRef fullRef = {};
-		fullRef.pluginRef = { filledBarPlugin.rawRefToKind };
-		fullRef.dataRef   = ToRef<WidgetData>(0);
+		fullRef.pluginRef = widgetPlugin->ref;
+		fullRef.dataRef   = List_GetRef(widgetPlugin->widgetDatas, 0);
 
 		u32 dummyWidgetCount = 6;
 		Slice<Widget> widgets = AddWidgets(s, fullRef, dummyWidgetCount);

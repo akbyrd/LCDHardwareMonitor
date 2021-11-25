@@ -11,6 +11,7 @@
 #include "LHMList.hpp"
 #include "LHMBytes.hpp"
 #include "LHMHash.hpp"
+#include "LHMResult.hpp"
 
 // Systems
 #include "LHMRenderer.h"
