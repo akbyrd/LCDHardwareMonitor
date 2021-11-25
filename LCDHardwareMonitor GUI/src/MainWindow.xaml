@@ -300,6 +300,10 @@
 						Width="*"
 						IsReadOnly="true" />
 					<DataGridTextColumn
+						Header="Language" Binding="{Binding Language}"
+						Width="*"
+						IsReadOnly="true" />
+					<DataGridTextColumn
 						Header="Load State" Binding="{Binding LoadState}"
 						Width="*"
 						IsReadOnly="true" />
@@ -314,6 +318,7 @@
 									x:Name="btn"
 									Content="Load"
 									Style="{StaticResource MetroFlatButton}"
+									ToolTipService.ShowOnDisabled="True"
 									Click="LoadPlugin_Click">
 								</Button>
 
@@ -341,6 +346,10 @@
 									<DataTrigger Binding="{Binding LoadState}" Value="{x:Static lhmi:PluginLoadState.Broken}">
 										<Setter TargetName="btn" Property="IsEnabled" Value="false"/>
 										<Setter TargetName="btn" Property="Content" Value="Broken"/>
+									</DataTrigger>
+									<DataTrigger Binding="{Binding Language}" Value="{x:Static lhmi:PluginLanguage.Builtin}">
+										<Setter TargetName="btn" Property="IsEnabled" Value="false"/>
+										<Setter TargetName="btn" Property="ToolTip" Value="Built-in plugins cannot be unloaded"/>
 									</DataTrigger>
 								</DataTemplate.Triggers>
 							</DataTemplate>

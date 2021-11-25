@@ -33,10 +33,11 @@ namespace ToGUI
 	// TODO: PluginsRemoved
 	struct PluginsAdded
 	{
-		Header             header;
-		Slice<PluginRef>   refs;
-		Slice<PluginKind>  kinds;
-		Slice<PluginInfo>  infos;
+		Header                header;
+		Slice<PluginRef>      refs;
+		Slice<PluginKind>     kinds;
+		Slice<PluginInfo>     infos;
+		Slice<PluginLanguage> languages;
 	};
 
 	struct PluginStatesChanged
@@ -593,6 +594,7 @@ Serialize(ByteStream& stream, ToGUI::PluginsAdded& pluginsAdded)
 	Serialize(stream, pluginsAdded.refs);
 	Serialize(stream, pluginsAdded.kinds);
 	Serialize(stream, pluginsAdded.infos);
+	Serialize(stream, pluginsAdded.languages);
 }
 
 void

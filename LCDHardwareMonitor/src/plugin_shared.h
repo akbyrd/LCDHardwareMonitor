@@ -9,6 +9,7 @@ b8 operator!(PluginKind kind) { return kind == PluginKind::Null; }
 enum struct PluginLanguage
 {
 	Null,
+	Builtin,
 	Native,
 	Managed,
 };

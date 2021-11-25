@@ -346,9 +346,10 @@ ToGUI_PluginsAdded(SimulationState& s, Slice<Plugin> plugins)
 	if (s.guiConnection.pipe.state != PipeState::Connected) return;
 
 	ToGUI::PluginsAdded pluginsAdded = {};
-	pluginsAdded.refs  = Slice_MemberSlice(plugins, &Plugin::ref);
-	pluginsAdded.kinds = Slice_MemberSlice(plugins, &Plugin::kind);
-	pluginsAdded.infos = Slice_MemberSlice(plugins, &Plugin::info);
+	pluginsAdded.refs      = Slice_MemberSlice(plugins, &Plugin::ref);
+	pluginsAdded.kinds     = Slice_MemberSlice(plugins, &Plugin::kind);
+	pluginsAdded.infos     = Slice_MemberSlice(plugins, &Plugin::info);
+	pluginsAdded.languages = Slice_MemberSlice(plugins, &Plugin::language);
 	SerializeAndQueueMessage(s.guiConnection, pluginsAdded);
 }
 
@@ -519,6 +520,7 @@ static void
 UnregisterPlugin(SimulationState& s, Plugin& plugin)
 {
 	Assert(plugin.loadState != PluginLoadState::Loaded);
+	// TODO: This is going to send nonsense. Look for similar issues.
 	defer { ToGUI_PluginStatesChanged(s, plugin); };
 
 	String_Free(plugin.fileName);
@@ -545,14 +547,13 @@ TeardownSensorPlugin(SensorPlugin& sensorPlugin)
 		TeardownSensor(sensor);
 	}
 	List_Free(sensorPlugin.sensors);
+
 	sensorPlugin = {};
 }
 
-static b8
-LoadSensorPlugin(SimulationState& s, Plugin& plugin)
+static SensorPlugin&
+AllocSensorPlugin(SimulationState& s)
 {
-	Assert(plugin.loadState != PluginLoadState::Loaded);
-
 	SensorPlugin* sensorPlugin = nullptr;
 	for (u32 i = 0; i < s.sensorPlugins.length; i++)
 	{
@@ -571,46 +572,72 @@ LoadSensorPlugin(SimulationState& s, Plugin& plugin)
 		sensorPlugin->ref = List_GetLastRef(s.sensorPlugins);
 	}
 
-	sensorPlugin->pluginRef = plugin.ref;
+	return *sensorPlugin;
+}
 
-	plugin.rawRefToKind = sensorPlugin->ref.value;
-	plugin.kind = PluginKind::Sensor;
-
+static b8
+LoadSensorPluginImpl(SimulationState& s, Plugin& plugin, SensorPlugin& sensorPlugin)
+{
 	defer { ToGUI_PluginStatesChanged(s, plugin); };
 	auto pluginGuard = guard { plugin.loadState = PluginLoadState::Broken; };
 
-	b8 success = PluginLoader_LoadSensorPlugin(*s.pluginLoader, plugin, *sensorPlugin);
+	plugin.rawRefToKind = sensorPlugin.ref.value;
+	plugin.kind = PluginKind::Sensor;
+
+	sensorPlugin.name = plugin.info.name;
+	sensorPlugin.pluginRef = plugin.ref;
+	// TODO: Leak on failure?
+	List_Reserve(sensorPlugin.sensors, 32);
+
+	b8 success = PluginLoader_LoadSensorPlugin(*s.pluginLoader, plugin, sensorPlugin);
 	LOG_IF(!success, return false,
 		Severity::Error, "Failed to load Sensor plugin '%'", plugin.fileName);
 
-	sensorPlugin->name = plugin.info.name;
-	// TODO: Leak on failure?
-	List_Reserve(sensorPlugin->sensors, 32);
-
 	// TODO: try/catch?
-	if (sensorPlugin->functions.Initialize)
+	if (sensorPlugin.functions.Initialize)
 	{
 		PluginContext context = {};
 		context.s            = &s;
-		context.sensorPlugin = sensorPlugin;
+		context.sensorPlugin = &sensorPlugin;
 		context.success      = true;
 
 		SensorPluginAPI::Initialize api = {};
 		api.RegisterSensors = RegisterSensors;
 
-		success = sensorPlugin->functions.Initialize(context, api);
+		success = sensorPlugin.functions.Initialize(context, api);
 		success &= context.success;
 		if (!success)
 		{
 			LOG(Severity::Error, "Failed to initialize Sensor plugin '%'", plugin.info.name);
 			// Remove all sensors so they don't get used
-			TeardownSensorPlugin(*sensorPlugin);
+			TeardownSensorPlugin(sensorPlugin);
 			return false;
 		}
 	}
 
 	pluginGuard.dismiss = true;
 	return true;
+}
+
+static b8
+LoadSensorPluginFromCode(SimulationState& s, Plugin& plugin, SensorPluginFunctions::GetPluginInfoFn* getPluginInfo)
+{
+	Assert(plugin.loadState != PluginLoadState::Loaded);
+
+	plugin.language = PluginLanguage::Builtin;
+
+	SensorPlugin& sensorPlugin = AllocSensorPlugin(s);
+	sensorPlugin.functions.GetPluginInfo = getPluginInfo;
+	return LoadSensorPluginImpl(s, plugin, sensorPlugin);
+}
+
+static b8
+LoadSensorPlugin(SimulationState& s, Plugin& plugin)
+{
+	Assert(plugin.loadState != PluginLoadState::Loaded);
+
+	SensorPlugin& sensorPlugin = AllocSensorPlugin(s);
+	return LoadSensorPluginImpl(s, plugin, sensorPlugin);
 }
 
 static b8
@@ -695,6 +722,11 @@ LoadWidgetPlugin(SimulationState& s, Plugin& plugin)
 
 	plugin.rawRefToKind = widgetPlugin->ref.value;
 	plugin.kind = PluginKind::Widget;
+
+	// NOTE: We keep the name and author around for display purposes when a plugin is unloaded. If it
+	// gets loaded again we need to be sure we free the old strings properly.
+	String_Free(plugin.info.name);
+	String_Free(plugin.info.author);
 
 	defer { ToGUI_PluginStatesChanged(s, plugin); };
 	auto pluginGuard = guard { plugin.loadState = PluginLoadState::Broken; };
@@ -1324,6 +1356,13 @@ FromGUI_SetPluginLoadStates(SimulationState& s, FromGUI::SetPluginLoadStates& se
 		}
 
 		Plugin& plugin = s.plugins[pluginRef];
+
+		if (plugin.language == PluginLanguage::Builtin)
+		{
+			LOG(Severity::Warning, "Received SetPluginLoadState request for a built-in plugin. This will be ignored.");
+			continue;
+		}
+
 		switch (loadState)
 		{
 			default:
@@ -1472,6 +1511,41 @@ static void
 FromGUI_SetWidgetSelection(SimulationState& s, FromGUI::SetWidgetSelection& widgetSelection)
 {
 	SelectWidgets(s, widgetSelection.refs);
+}
+
+// -------------------------------------------------------------------------------------------------
+// Built-in Plugins
+
+static b8
+BuiltinSensorPlugin_Initialize(PluginContext& context, SensorPluginAPI::Initialize api)
+{
+	Unused(context, api);
+	return true;
+}
+
+static void
+BuiltinSensorPlugin_Update(PluginContext& context, SensorPluginAPI::Update api)
+{
+	Unused(context, api);
+}
+
+static void
+BuiltinSensorPlugin_Teardown(PluginContext& context, SensorPluginAPI::Teardown api)
+{
+	Unused(context, api);
+}
+
+static void
+BuiltinSensorPlugin_GetPluginInfo(PluginInfo& info, SensorPluginFunctions& functions)
+{
+	info.name       = String_FromView( "Built-in Sensors");
+	info.author     = String_FromView( "akbyrd");
+	info.version    = 1;
+	info.lhmVersion = LHMVersion;
+
+	functions.Initialize = BuiltinSensorPlugin_Initialize;
+	functions.Update     = BuiltinSensorPlugin_Update;
+	functions.Teardown   = BuiltinSensorPlugin_Teardown;
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -1736,6 +1810,15 @@ Simulation_Initialize(
 		s.depthToAlphaShader = Renderer_LoadPixelShader(*s.renderer, "Depth to Alpha", "Shaders/Depth to Alpha.ps.cso", {});
 		LOG_IF(!s.depthToAlphaShader, return false,
 			Severity::Error, "Failed to load depth to alpha pixel shader");
+	}
+
+	// Built-in Sensors
+	{
+		// NOTE: This is awkward because we store sensors inside sensor plugins. It might be nicer to
+		// pull sensors out so we can create a sensor here without a plugin at all.
+
+		Plugin& builtInPlugin = RegisterPlugin(s, {}, {});
+		LoadSensorPluginFromCode(s, builtInPlugin, BuiltinSensorPlugin_GetPluginInfo);
 	}
 
 	// DEBUG: Testing

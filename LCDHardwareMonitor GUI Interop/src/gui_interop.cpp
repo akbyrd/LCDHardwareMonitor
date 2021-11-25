@@ -50,6 +50,14 @@ namespace LCDHardwareMonitor::GUI
 		Widget,
 	};
 
+	public enum struct PluginLanguage
+	{
+		Null,
+		Builtin,
+		Native,
+		Managed,
+	};
+
 	public enum struct PluginLoadState
 	{
 		Null,
@@ -73,6 +81,7 @@ namespace LCDHardwareMonitor::GUI
 		property PluginLoadState LoadState;
 		property PluginInfo      Info;
 		property PluginKind      Kind;
+		property PluginLanguage  Language;
 	};
 
 	public value struct Sensor
@@ -424,6 +433,7 @@ namespace LCDHardwareMonitor::GUI
 				Plugin mPlugin = {};
 				mPlugin.Ref  = pluginsAdded.refs[i].value;
 				mPlugin.Kind = (PluginKind) pluginsAdded.kinds[i];
+				mPlugin.Language = (PluginLanguage) pluginsAdded.languages[i];
 
 				PluginInfo mPluginInfo = {};
 				mPluginInfo.Name    = ToManagedString(pluginsAdded.infos[i].name);

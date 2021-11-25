@@ -227,15 +227,26 @@ PluginLoader_LoadSensorPlugin(PluginLoaderState& s, Plugin& plugin, SensorPlugin
 {
 	auto pluginGuard = guard { plugin.loadState = PluginLoadState::Broken; };
 
-	b8 success = DetectPluginLanguage(plugin);
-	if (!success) return false;
+	if (plugin.language != PluginLanguage::Builtin)
+	{
+		b8 success = DetectPluginLanguage(plugin);
+		if (!success) return false;
+	}
 
+	b8 success = false;
 	switch (plugin.language)
 	{
 		default:
 		case PluginLanguage::Null:
 			success = false;
 			break;
+
+		case PluginLanguage::Builtin:
+		{
+			sensorPlugin.functions.GetPluginInfo(plugin.info, sensorPlugin.functions);
+			success = true;
+			break;
+		}
 
 		case PluginLanguage::Native:
 		{
@@ -300,6 +311,10 @@ PluginLoader_UnloadSensorPlugin(PluginLoaderState& s, Plugin& plugin, SensorPlug
 			success = false;
 			break;
 
+		case PluginLanguage::Builtin:
+			success = true;
+			break;
+
 		case PluginLanguage::Native:
 			success = FreeLibrary((HMODULE) plugin.loaderData);
 			LOG_IF(!success, break,
@@ -325,15 +340,26 @@ PluginLoader_LoadWidgetPlugin(PluginLoaderState& s, Plugin& plugin, WidgetPlugin
 {
 	auto pluginGuard = guard { plugin.loadState = PluginLoadState::Broken; };
 
-	b8 success = DetectPluginLanguage(plugin);
-	if (!success) return false;
+	if (plugin.language != PluginLanguage::Builtin)
+	{
+		b8 success = DetectPluginLanguage(plugin);
+		if (!success) return false;
+	}
 
+	b8 success = false;
 	switch (plugin.language)
 	{
 		default:
 		case PluginLanguage::Null:
 			success = false;
 			break;
+
+		case PluginLanguage::Builtin:
+		{
+			widgetPlugin.functions.GetPluginInfo(plugin.info, widgetPlugin.functions);
+			success = true;
+			break;
+		}
 
 		case PluginLanguage::Native:
 		{
@@ -396,6 +422,10 @@ PluginLoader_UnloadWidgetPlugin(PluginLoaderState& s, Plugin& plugin, WidgetPlug
 		default:
 		case PluginLanguage::Null:
 			success = false;
+			break;
+
+		case PluginLanguage::Builtin:
+			success = true;
 			break;
 
 		case PluginLanguage::Native:

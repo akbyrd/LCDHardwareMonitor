@@ -1,16 +1,16 @@
 Current
 -------
 Add a real dummy sensor
-- Sensor list doesn't update when unloading plugin
-- Widget list doesn't update when unloading plugin
-- Widgets don't re-appear when re-loading
-- Don't allow reloading for built-in plugins
-- Simulation_Teardown fails if plugins have been unloaded and rawRefToKind is still set
-Fix hover showing incorrect progress
+- Add a dummy sensor to the built-in plugin
+- Use the dummy sensor for widgets without a sensor
 ----
+Simulation_Teardown fails if plugins have been unloaded and rawRefToKind is still set
+Sensor list doesn't update when unloading plugin
+Widget list doesn't update when unloading plugin
+Widgets don't re-appear when re-loading
+Fix hover showing incorrect progress
 Show widgets in list
 Link list selection to sim selection
-
 
 
 
@@ -280,12 +280,6 @@ Use premultiplied alpha to composite darken and highlight in a single pass
 Consider bringing hovered/selected widgets to the front to avoid outline depth issues
 Clamp outline to screen edges
 Consider using a UAV for simultaneous read and write
-
-
-
-Infrastructure
---------------
-Maybe add a DenseSlice?
 
 
 
