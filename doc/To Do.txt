@@ -1,13 +1,14 @@
 Current
 -------
+Refactor GetWidgetPluginInfo to take StringViews instead of Strings
 Update sensors in the UI
-Use a different struct for registering sensors (don't care about ref and value)
 Simulation_Teardown fails if plugins have been unloaded and rawRefToKind is still set
 Sensor list doesn't update when unloading plugin
 Widget list doesn't update when unloading plugin
 Widgets don't re-appear when re-loading
 Show widgets in list
 Link list selection to sim selection
+Rip out ListRef. It's a nuisance.
 
 
 

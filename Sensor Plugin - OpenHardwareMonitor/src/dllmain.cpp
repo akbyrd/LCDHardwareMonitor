@@ -6,10 +6,12 @@
 // happen at the hardware level.
 
 using namespace System;
-using namespace System::Collections::Generic;
 using namespace System::Runtime::InteropServices;
 using namespace OpenHardwareMonitor;
 using namespace OpenHardwareMonitor::Hardware;
+
+template<typename T>
+using Stack = System::Collections::Generic::Stack<T>;
 
 template<typename T>
 using CLRList = System::Collections::Generic::List<T>;
@@ -92,11 +94,14 @@ public ref struct State : ISensorPlugin, ISensorPluginInitialize, ISensorPluginU
 				// TODO: Don't update unless changed
 				CLRString^ value  = CLRString::Format(format, ohmSensor.Value);
 
-				Sensor sensor = {};
-				String_FromCLR(sensor.name,       ohmSensor.Name);
-				String_FromCLR(sensor.identifier, ohmSensor.Identifier->ToString());
-				String_FromCLR(sensor.format,     value);
+				SensorDesc sensor = {};
+				sensor.name       = StringView_PinCLR(ohmSensor.Name);
+				sensor.identifier = StringView_PinCLR(ohmSensor.Identifier->ToString());
+				sensor.format     = StringView_PinCLR(value);
 				api.RegisterSensors(context, sensor);
+				StringView_ReleaseCLR(sensor.name);
+				StringView_ReleaseCLR(sensor.identifier);
+				StringView_ReleaseCLR(sensor.format);
 			}
 
 			// Sub-Hardware

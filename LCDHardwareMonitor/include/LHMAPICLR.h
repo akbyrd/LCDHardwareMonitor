@@ -36,4 +36,25 @@ String_FromCLR(LHMString& lhmString, CLRString^ clrString)
 	Marshal::FreeHGlobal((IntPtr) cstring);
 }
 
+StringView
+StringView_PinCLR(CLRString^ clrString)
+{
+	using namespace System::Runtime::InteropServices;
+
+	StringView string = {};
+	string.length = (u32) clrString->Length;
+	string.data = (c8*) Marshal::StringToHGlobalAnsi(clrString).ToPointer();
+	return string;
+}
+
+void
+StringView_ReleaseCLR(StringView& string)
+{
+	using namespace System;
+	using namespace System::Runtime::InteropServices;
+
+	Marshal::FreeHGlobal((IntPtr) string.data);
+	string = {};
+}
+
 #endif

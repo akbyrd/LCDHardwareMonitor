@@ -89,19 +89,37 @@ static void SelectWidgets(SimulationState&, Slice<FullWidgetRef>);
 // Sensor API
 
 static void
-RegisterSensors(PluginContext& context, Slice<Sensor> sensors)
+RegisterSensors(PluginContext& context, Slice<SensorDesc> sensors)
 {
 	if (!context.success) return;
 
 	SensorPlugin& sensorPlugin = *context.sensorPlugin;
+
+	u32 emptySlots = 0;
+	for (u32 i = 0; i < sensorPlugin.sensors.length; i++)
+	{
+		Sensor& sensor = sensorPlugin.sensors[i];
+		if (!sensor.ref)
+			emptySlots++;
+	}
+	u32 requiredSlots = sensors.length - emptySlots;
+	List_AppendRange(sensorPlugin.sensors, requiredSlots);
+
+	u32 nextSlot = 0;
 	for (u32 i = 0; i < sensors.length; i++)
 	{
-		Sensor& sensor = sensors[i];
-		sensor.ref = { sensorPlugin.sensors.length + i };
-	}
+		while(sensorPlugin.sensors[nextSlot].ref)
+			nextSlot++;
+		Assert(nextSlot < sensorPlugin.sensors.length);
 
-	// TODO: Re-use empty slots in the list (from removes)
-	List_AppendRange(sensorPlugin.sensors, sensors);
+		Sensor& sensor = sensorPlugin.sensors[nextSlot];
+		SensorDesc& desc = sensors[i];
+
+		sensor.ref        = { sensorPlugin.sensors.length + i };
+		sensor.name       = String_FromView(desc.name);
+		sensor.identifier = String_FromView(desc.identifier);
+		sensor.format     = String_FromView(desc.format);
+	}
 }
 
 static void
@@ -1536,10 +1554,10 @@ FromGUI_SetWidgetSelection(SimulationState& s, FromGUI::SetWidgetSelection& widg
 static b8
 BuiltinSensorPlugin_Initialize(PluginContext& context, SensorPluginAPI::Initialize api)
 {
-	Sensor nullSensor = {};
-	nullSensor.name       = String_FromView("Null");
-	nullSensor.identifier = String_FromView("null");
-	nullSensor.format     = String_FromView("%f");
+	SensorDesc nullSensor = {};
+	nullSensor.name       = "Null";
+	nullSensor.identifier = "null";
+	nullSensor.format     = "%f";
 	api.RegisterSensors(context, nullSensor);
 	return true;
 }
