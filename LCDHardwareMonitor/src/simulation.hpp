@@ -608,6 +608,11 @@ LoadSensorPluginImpl(SimulationState& s, Plugin& plugin, SensorPlugin& sensorPlu
 	// TODO: Leak on failure?
 	List_Reserve(sensorPlugin.sensors, 32);
 
+	// NOTE: We keep the name and author around for display purposes when a plugin is unloaded. If it
+	// gets loaded again we need to be sure we free the old strings properly.
+	String_Free(plugin.info.name);
+	String_Free(plugin.info.author);
+
 	b8 success = PluginLoader_LoadSensorPlugin(*s.pluginLoader, plugin, sensorPlugin);
 	LOG_IF(!success, return false,
 		Severity::Error, "Failed to load Sensor plugin '%'", plugin.fileName);
