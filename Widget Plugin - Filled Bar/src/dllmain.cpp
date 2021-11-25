@@ -106,12 +106,12 @@ Initialize(PluginContext& context, WidgetPluginAPI::Initialize api)
 }
 
 EXPORT void
-GetWidgetPluginInfo(PluginInfo& info, WidgetPluginFunctions& functions)
+GetWidgetPluginInfo(PluginDesc& desc, WidgetPluginFunctions& functions)
 {
-	info.name       = String_FromView("Filled Bar");
-	info.author     = String_FromView("akbyrd");
-	info.version    = 1;
-	info.lhmVersion = LHMVersion;
+	desc.name       = "Filled Bar";
+	desc.author     = "akbyrd";
+	desc.version    = 1;
+	desc.lhmVersion = LHMVersion;
 
 	functions.Initialize = Initialize;
 }

@@ -2,11 +2,13 @@
 using b8 = bool;
 
 struct Plugin {};
+struct PluginDesc {};
 struct SensorPlugin {};
 struct WidgetPlugin {};
 
 #pragma managed
 #pragma make_public(Plugin)
+#pragma make_public(PluginDesc)
 #pragma make_public(SensorPlugin)
 #pragma make_public(WidgetPlugin)
 
@@ -18,8 +20,8 @@ using namespace System::Runtime::InteropServices;
 public interface class
 ILHMPluginLoader
 {
-	b8 LoadSensorPlugin   (Plugin& plugin, SensorPlugin& sensorPlugin);
+	b8 LoadSensorPlugin   (Plugin& plugin, SensorPlugin& sensorPlugin, PluginDesc& pluginDesc);
 	b8 UnloadSensorPlugin (Plugin& plugin, SensorPlugin& sensorPlugin);
-	b8 LoadWidgetPlugin   (Plugin& plugin, WidgetPlugin& widgetPlugin);
+	b8 LoadWidgetPlugin   (Plugin& plugin, WidgetPlugin& widgetPlugin, PluginDesc& pluginDesc);
 	b8 UnloadWidgetPlugin (Plugin& plugin, WidgetPlugin& widgetPlugin);
 };

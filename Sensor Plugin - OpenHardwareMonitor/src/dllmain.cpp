@@ -29,12 +29,12 @@ public ref struct State : ISensorPlugin, ISensorPluginInitialize, ISensorPluginU
 	};
 
 	virtual void
-	GetPluginInfo(PluginInfo& info)
+	GetPluginInfo(PluginDesc& desc)
 	{
-		info.name       = String_FromView("OHM Sensors");
-		info.author     = String_FromView("akbyrd");
-		info.version    = 1;
-		info.lhmVersion = LHMVersion;
+		desc.name       = "OHM Sensors";
+		desc.author     = "akbyrd";
+		desc.version    = 1;
+		desc.lhmVersion = LHMVersion;
 	}
 
 	virtual b8

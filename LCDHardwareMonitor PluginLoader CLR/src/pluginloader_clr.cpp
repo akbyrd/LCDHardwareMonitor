@@ -57,13 +57,13 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	}
 
 	virtual b8
-	LoadSensorPlugin(Plugin& plugin, SensorPlugin& sensorPlugin)
+	LoadSensorPlugin(Plugin& plugin, SensorPlugin& sensorPlugin, PluginDesc& pluginDesc)
 	{
 		b8 success = LoadPlugin(plugin);
 		if (!success) return false;
 
 		LHMPluginLoader% pluginLoader = GetDomainResidentLoader(plugin);
-		success = pluginLoader.InitializeSensorPlugin(plugin, sensorPlugin);
+		success = pluginLoader.InitializeSensorPlugin(plugin, sensorPlugin, pluginDesc);
 		if (!success) return false;
 
 		return true;
@@ -83,13 +83,13 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	}
 
 	virtual b8
-	LoadWidgetPlugin(Plugin& plugin, WidgetPlugin& widgetPlugin)
+	LoadWidgetPlugin(Plugin& plugin, WidgetPlugin& widgetPlugin, PluginDesc& pluginDesc)
 	{
 		b8 success = LoadPlugin(plugin);
 		if (!success) return false;
 
 		LHMPluginLoader% pluginLoader = GetDomainResidentLoader(plugin);
-		success = pluginLoader.InitializeWidgetPlugin(plugin, widgetPlugin);
+		success = pluginLoader.InitializeWidgetPlugin(plugin, widgetPlugin, pluginDesc);
 		if (!success) return false;
 
 		return true;
@@ -192,12 +192,12 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	}
 
 	b8
-	InitializeSensorPlugin(Plugin& plugin, SensorPlugin& sensorPlugin)
+	InitializeSensorPlugin(Plugin& plugin, SensorPlugin& sensorPlugin, PluginDesc& pluginDesc)
 	{
 		b8 success = LoadAssemblyAndInstantiateType(plugin.fileName, sensorPluginCLR.pluginInstance);
 		if (!success) return false;
 
-		sensorPluginCLR.pluginInstance->GetPluginInfo(plugin.info);
+		sensorPluginCLR.pluginInstance->GetPluginInfo(pluginDesc);
 		sensorPlugin.functions.GetPluginInfo = nullptr;
 
 		// DEBUG: Remove me (just for fast loading)
@@ -239,12 +239,12 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 	}
 
 	b8
-	InitializeWidgetPlugin(Plugin& plugin, WidgetPlugin& widgetPlugin)
+	InitializeWidgetPlugin(Plugin& plugin, WidgetPlugin& widgetPlugin, PluginDesc& pluginDesc)
 	{
 		b8 success = LoadAssemblyAndInstantiateType(plugin.fileName, widgetPluginCLR.pluginInstance);
 		if (!success) return false;
 
-		widgetPluginCLR.pluginInstance->GetPluginInfo(plugin.info);
+		widgetPluginCLR.pluginInstance->GetPluginInfo(pluginDesc);
 		widgetPlugin.functions.GetPluginInfo = nullptr;
 
 		auto iInitialize = dynamic_cast<IWidgetPluginInitialize^>(widgetPluginCLR.pluginInstance);

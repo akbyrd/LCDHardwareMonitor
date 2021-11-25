@@ -1,12 +1,12 @@
 #ifndef LHM_Plugin
 #define LHM_Plugin
 
-struct PluginInfo
+struct PluginDesc
 {
-	String name;
-	String author;
-	u32    version;
-	u32    lhmVersion;
+	StringView name;
+	StringView author;
+	u32        version;
+	u32        lhmVersion;
 };
 
 struct PluginContext;

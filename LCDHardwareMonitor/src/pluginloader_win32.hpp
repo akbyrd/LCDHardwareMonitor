@@ -212,13 +212,13 @@ DetectPluginLanguage(Plugin& plugin)
 }
 
 static b8
-ValidatePluginInfo(PluginInfo& pluginInfo)
+ValidatePluginDesc(PluginDesc& pluginDesc)
 {
 	b8 valid = true;
-	valid = valid && pluginInfo.name.length > 0;
-	valid = valid && pluginInfo.author.length > 0;
-	valid = valid && pluginInfo.version;
-	valid = valid && pluginInfo.lhmVersion == LHMVersion;
+	valid = valid && pluginDesc.name.length > 0;
+	valid = valid && pluginDesc.author.length > 0;
+	valid = valid && pluginDesc.version;
+	valid = valid && pluginDesc.lhmVersion == LHMVersion;
 	return valid;
 }
 
@@ -233,6 +233,8 @@ PluginLoader_LoadSensorPlugin(PluginLoaderState& s, Plugin& plugin, SensorPlugin
 		if (!success) return false;
 	}
 
+	PluginDesc pluginDesc = {};
+
 	b8 success = false;
 	switch (plugin.language)
 	{
@@ -243,7 +245,7 @@ PluginLoader_LoadSensorPlugin(PluginLoaderState& s, Plugin& plugin, SensorPlugin
 
 		case PluginLanguage::Builtin:
 		{
-			sensorPlugin.functions.GetPluginInfo(plugin.info, sensorPlugin.functions);
+			sensorPlugin.functions.GetPluginInfo(pluginDesc, sensorPlugin.functions);
 			success = true;
 			break;
 		}
@@ -270,7 +272,7 @@ PluginLoader_LoadSensorPlugin(PluginLoaderState& s, Plugin& plugin, SensorPlugin
 			LOG_IF(!sensorPlugin.functions.GetPluginInfo, break,
 				Severity::Error, "Failed to find unmanaged GetSensorPluginInfo '%'", plugin.fileName);
 
-			sensorPlugin.functions.GetPluginInfo(plugin.info, sensorPlugin.functions);
+			sensorPlugin.functions.GetPluginInfo(pluginDesc, sensorPlugin.functions);
 
 			success = true;
 			break;
@@ -280,7 +282,7 @@ PluginLoader_LoadSensorPlugin(PluginLoaderState& s, Plugin& plugin, SensorPlugin
 		{
 			// NOTE: fuslogvw is great for debugging managed assembly loading.
 			// TODO: Do we need to try/catch the managed code?
-			success = (b8) s.lhmPluginLoader->LoadSensorPlugin(&plugin, &sensorPlugin);
+			success = (b8) s.lhmPluginLoader->LoadSensorPlugin(&plugin, &sensorPlugin, &pluginDesc);
 			LOG_IF(!success, IGNORE,
 				Severity::Error, "Failed to load managed Sensor plugin '%'", plugin.fileName);
 			break;
@@ -288,12 +290,17 @@ PluginLoader_LoadSensorPlugin(PluginLoaderState& s, Plugin& plugin, SensorPlugin
 	}
 	if (!success) return false;
 
-	success = ValidatePluginInfo(plugin.info);
+	success = ValidatePluginDesc(pluginDesc);
 	LOG_IF(!success, return false,
-		Severity::Error, "Sensor plugin provided invalid info '%'", plugin.fileName);
+		Severity::Error, "Sensor plugin provided invalid description '%'", plugin.fileName);
+
+	plugin.loadState       = PluginLoadState::Loaded;
+	plugin.info.name       = String_FromView(pluginDesc.name);
+	plugin.info.author     = String_FromView(pluginDesc.author);
+	plugin.info.version    = pluginDesc.version;
+	plugin.info.lhmVersion = pluginDesc.lhmVersion;
 
 	pluginGuard.dismiss = true;
-	plugin.loadState = PluginLoadState::Loaded;
 	return true;
 }
 
@@ -346,6 +353,8 @@ PluginLoader_LoadWidgetPlugin(PluginLoaderState& s, Plugin& plugin, WidgetPlugin
 		if (!success) return false;
 	}
 
+	PluginDesc pluginDesc = {};
+
 	b8 success = false;
 	switch (plugin.language)
 	{
@@ -356,7 +365,7 @@ PluginLoader_LoadWidgetPlugin(PluginLoaderState& s, Plugin& plugin, WidgetPlugin
 
 		case PluginLanguage::Builtin:
 		{
-			widgetPlugin.functions.GetPluginInfo(plugin.info, widgetPlugin.functions);
+			widgetPlugin.functions.GetPluginInfo(pluginDesc, widgetPlugin.functions);
 			success = true;
 			break;
 		}
@@ -383,7 +392,7 @@ PluginLoader_LoadWidgetPlugin(PluginLoaderState& s, Plugin& plugin, WidgetPlugin
 			LOG_IF(!widgetPlugin.functions.GetPluginInfo, break,
 				Severity::Error, "Failed to find unmanaged GetWidgetPluginInfo '%'", plugin.fileName);
 
-			widgetPlugin.functions.GetPluginInfo(plugin.info, widgetPlugin.functions);
+			widgetPlugin.functions.GetPluginInfo(pluginDesc, widgetPlugin.functions);
 
 			success = true;
 			break;
@@ -393,7 +402,7 @@ PluginLoader_LoadWidgetPlugin(PluginLoaderState& s, Plugin& plugin, WidgetPlugin
 		{
 			// NOTE: fuslogvw is great for debugging managed assembly loading.
 			// TODO: Do we need to try/catch the managed code?
-			success = (b8) s.lhmPluginLoader->LoadWidgetPlugin(&plugin, &widgetPlugin);
+			success = (b8) s.lhmPluginLoader->LoadWidgetPlugin(&plugin, &widgetPlugin, &pluginDesc);
 			LOG_IF(!success, IGNORE,
 				Severity::Error, "Failed to load managed Widget plugin '%'", plugin.fileName);
 			break;
@@ -401,12 +410,17 @@ PluginLoader_LoadWidgetPlugin(PluginLoaderState& s, Plugin& plugin, WidgetPlugin
 	}
 	if (!success) return false;
 
-	success = ValidatePluginInfo(plugin.info);
+	success = ValidatePluginDesc(pluginDesc);
 	LOG_IF(!success, return false,
-		Severity::Error, "Widget plugin provided invalid info '%'", plugin.fileName);
+		Severity::Error, "Widget plugin provided invalid description '%'", plugin.fileName);
+
+	plugin.loadState       = PluginLoadState::Loaded;
+	plugin.info.name       = String_FromView(pluginDesc.name);
+	plugin.info.author     = String_FromView(pluginDesc.author);
+	plugin.info.version    = pluginDesc.version;
+	plugin.info.lhmVersion = pluginDesc.lhmVersion;
 
 	pluginGuard.dismiss = true;
-	plugin.loadState = PluginLoadState::Loaded;
 	return true;
 }
 

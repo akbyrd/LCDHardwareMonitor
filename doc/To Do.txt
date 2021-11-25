@@ -1,6 +1,8 @@
 Current
 -------
-Refactor GetWidgetPluginInfo to take StringViews instead of Strings
+Refactor widget load functions to match sensor load functions
+Implement Result<T>?
+Implement a stack allocator
 Update sensors in the UI
 Simulation_Teardown fails if plugins have been unloaded and rawRefToKind is still set
 Sensor list doesn't update when unloading plugin
@@ -231,7 +233,6 @@ Probably need a replacement SDK since it's unmaintained
 
 Features - Plugins
 ------------------
-Maybe plugins shouldn't have to copy/allocate strings as part of GetPluginInfo
 Consider using .NET Core instead of .NET Framework.
 	Does it make hosting the CLR easier?
 	Does it make dealing with the tlb easier?

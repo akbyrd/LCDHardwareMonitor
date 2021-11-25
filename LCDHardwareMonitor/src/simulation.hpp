@@ -1580,12 +1580,12 @@ BuiltinSensorPlugin_Teardown(PluginContext& context, SensorPluginAPI::Teardown a
 }
 
 static void
-BuiltinSensorPlugin_GetPluginInfo(PluginInfo& info, SensorPluginFunctions& functions)
+BuiltinSensorPlugin_GetPluginInfo(PluginDesc& desc, SensorPluginFunctions& functions)
 {
-	info.name       = String_FromView( "Built-in Sensors");
-	info.author     = String_FromView( "akbyrd");
-	info.version    = 1;
-	info.lhmVersion = LHMVersion;
+	desc.name       = "Built-in Sensors";
+	desc.author     = "akbyrd";
+	desc.version    = 1;
+	desc.lhmVersion = LHMVersion;
 
 	functions.Initialize = BuiltinSensorPlugin_Initialize;
 	functions.Update     = BuiltinSensorPlugin_Update;

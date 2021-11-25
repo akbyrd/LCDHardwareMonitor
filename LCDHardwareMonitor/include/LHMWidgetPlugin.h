@@ -96,7 +96,7 @@ struct WidgetPluginAPI
 
 struct WidgetPluginFunctions
 {
-	using GetPluginInfoFn = void(PluginInfo& info, WidgetPluginFunctions& functions);
+	using GetPluginInfoFn = void(PluginDesc& desc, WidgetPluginFunctions& functions);
 	using InitializeFn    = b8  (PluginContext& context, WidgetPluginAPI::Initialize api);
 	using UpdateFn        = void(PluginContext& context, WidgetPluginAPI::Update     api);
 	using TeardownFn      = void(PluginContext& context, WidgetPluginAPI::Teardown   api);
