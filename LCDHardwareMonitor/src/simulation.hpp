@@ -714,11 +714,9 @@ TeardownWidgetPlugin(WidgetPlugin& widgetPlugin)
 	widgetPlugin = {};
 }
 
-static b8
-LoadWidgetPlugin(SimulationState& s, Plugin& plugin)
+static WidgetPlugin&
+AllocWidgetPlugin(SimulationState& s)
 {
-	Assert(plugin.loadState != PluginLoadState::Loaded);
-
 	WidgetPlugin* widgetPlugin = nullptr;
 	for (u32 i = 0; i < s.widgetPlugins.length; i++)
 	{
@@ -737,50 +735,66 @@ LoadWidgetPlugin(SimulationState& s, Plugin& plugin)
 		widgetPlugin->ref = List_GetLastRef(s.widgetPlugins);
 	}
 
-	widgetPlugin->pluginRef = plugin.ref;
+	return *widgetPlugin;
+}
 
-	plugin.rawRefToKind = widgetPlugin->ref.value;
+static b8
+LoadWidgetPluginImpl(SimulationState& s, Plugin& plugin, WidgetPlugin& widgetPlugin)
+{
+	defer { ToGUI_PluginStatesChanged(s, plugin); };
+	auto pluginGuard = guard { plugin.loadState = PluginLoadState::Broken; };
+
+	plugin.rawRefToKind = widgetPlugin.ref.value;
 	plugin.kind = PluginKind::Widget;
+
+	widgetPlugin.name = plugin.info.name;
+	widgetPlugin.pluginRef = plugin.ref;
 
 	// NOTE: We keep the name and author around for display purposes when a plugin is unloaded. If it
 	// gets loaded again we need to be sure we free the old strings properly.
 	String_Free(plugin.info.name);
 	String_Free(plugin.info.author);
 
-	defer { ToGUI_PluginStatesChanged(s, plugin); };
-	auto pluginGuard = guard { plugin.loadState = PluginLoadState::Broken; };
-
-	b8 success = PluginLoader_LoadWidgetPlugin(*s.pluginLoader, plugin, *widgetPlugin);
+	b8 success = PluginLoader_LoadWidgetPlugin(*s.pluginLoader, plugin, widgetPlugin);
 	LOG_IF(!success, return false,
 		Severity::Error, "Failed to load Widget plugin '%'", plugin.fileName);
 
-	widgetPlugin->name = plugin.info.name;
+	widgetPlugin.name = plugin.info.name;
 
 	// TODO: try/catch?
-	if (widgetPlugin->functions.Initialize)
+	if (widgetPlugin.functions.Initialize)
 	{
 		PluginContext context = {};
 		context.s            = &s;
-		context.widgetPlugin = widgetPlugin;
+		context.widgetPlugin = &widgetPlugin;
 		context.success      = true;
 
 		WidgetPluginAPI::Initialize api = {};
 		api.RegisterWidgets = RegisterWidgets;
 		api.LoadPixelShader = LoadPixelShader;
 
-		success = widgetPlugin->functions.Initialize(context, api);
+		success = widgetPlugin.functions.Initialize(context, api);
 		success &= context.success;
 		if (!success)
 		{
 			LOG(Severity::Error, "Failed to initialize Widget plugin '%'", plugin.info.name);
 			// Remove all widgets so they don't get used
-			TeardownWidgetPlugin(*widgetPlugin);
+			TeardownWidgetPlugin(widgetPlugin);
 			return false;
 		}
 	}
 
 	pluginGuard.dismiss = true;
 	return true;
+}
+
+static b8
+LoadWidgetPlugin(SimulationState& s, Plugin& plugin)
+{
+	Assert(plugin.loadState != PluginLoadState::Loaded);
+
+	WidgetPlugin& widgetPlugin = AllocWidgetPlugin(s);
+	return LoadWidgetPluginImpl(s, plugin, widgetPlugin);
 }
 
 static b8

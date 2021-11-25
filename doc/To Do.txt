@@ -1,6 +1,5 @@
 Current
 -------
-Refactor widget load functions to match sensor load functions
 Implement Result<T>?
 Implement a stack allocator
 Update sensors in the UI
