@@ -1,14 +1,14 @@
 Current
 -------
 Implement a stack allocator
-Update sensors in the UI
 Simulation_Teardown fails if plugins have been unloaded and rawRefToKind is still set
+----
+Update sensors in the UI
 Sensor list doesn't update when unloading plugin
 Widget list doesn't update when unloading plugin
 Widgets don't re-appear when re-loading
 Show widgets in list
 Link list selection to sim selection
-Rip out ListRef. It's a nuisance.
 
 
 

@@ -39,7 +39,7 @@ struct PSConstantBufferUpdate
 	void*       data;
 };
 
-using CPUTexture = List<struct CPUTextureData>::RefT;
+struct CPUTexture : Index {};
 
 struct CPUTextureBytes
 {
@@ -55,7 +55,7 @@ b8              Renderer_Render                         (RendererState&);
 
 void            Renderer_SetRenderSize                  (RendererState&, v2u renderSize);
 b8              Renderer_FinalizeResourceCreation       (RendererState&);
-Mesh            Renderer_CreateMesh                     (RendererState&, StringView name, Slice<Vertex> vertices, Slice<Index> indices);
+Mesh            Renderer_CreateMesh                     (RendererState&, StringView name, Slice<Vertex> vertices, Slice<MIndex> indices);
 VertexShader    Renderer_LoadVertexShader               (RendererState&, StringView name, StringView path, Slice<VertexAttribute> attributes, Slice<u32> cBufSizes);
 PixelShader     Renderer_LoadPixelShader                (RendererState&, StringView name, StringView path, Slice<u32> cBufSizes);
 RenderTarget    Renderer_CreateRenderTarget             (RendererState&, StringView name, b8 resource);

@@ -32,8 +32,7 @@ enum struct PluginLoadState
 	Broken,
 };
 
-struct Plugin;
-using PluginRef = List<Plugin>::RefT;
+struct PluginRef : Index {};
 
 struct Plugin
 {
@@ -64,8 +63,7 @@ struct FullSensorRef
 	SensorRef       sensorRef;
 };
 
-struct WidgetData;
-using WidgetDataRef = List<WidgetData>::RefT;
+struct WidgetDataRef : Index {};
 
 struct WidgetData
 {

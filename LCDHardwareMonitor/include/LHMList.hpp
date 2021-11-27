@@ -20,31 +20,6 @@
 //   Grow returns false.
 //   Append returns a nullptr instead of a pointer to the new slot.
 
-// TODO: Consider renaming this to Handle or something. Ref is overloaded
-template<typename T>
-struct ListRef
-{
-	u32 value;
-
-	static const ListRef<T> Null;
-	explicit operator b8() { return *this != Null; }
-};
-
-template<typename T>
-const ListRef<T> ListRef<T>::Null = {};
-
-template<typename T>
-inline b8 operator== (ListRef<T> lhs, ListRef<T> rhs) { return lhs.value == rhs.value; }
-
-template<typename T>
-inline b8 operator!= (ListRef<T> lhs, ListRef<T> rhs) { return lhs.value != rhs.value; }
-
-template<typename T>
-inline u32 ToIndex (ListRef<T> ref) { return ref.value - 1; }
-
-template<typename T>
-inline ListRef<T> ToRef (u32 index) { return { index + 1 }; }
-
 template<typename T>
 struct List
 {
@@ -52,9 +27,15 @@ struct List
 	u32 capacity;
 	T*  data;
 
-	using RefT = ListRef<T>;
-	inline T& operator[] (RefT r) { u32 i = ToIndex(r); Assert(i < length); return data[i]; }
-	inline T& operator[] (u32 i)  { Assert(i < length); return data[i]; }
+	inline T& operator[] (u32 i) { Assert(i < length); return data[i]; }
+};
+
+struct Index
+{
+	u32 value;
+
+	b8 operator== (Index rhs) { return value == rhs.value; }
+	explicit operator b8() { return value != 0; }
 };
 
 #if false
@@ -83,8 +64,6 @@ struct Slice
 	template<typename U>
 	explicit operator Slice<U>() { return *(Slice<U>*) this; }
 
-	using RefT = ListRef<T>;
-	inline T& operator[] (RefT r) { u32 i = ToIndex(r); Assert(i < length); return (T&) ((u8*) data)[stride*i]; }
 	inline T& operator[] (u32 i)  { Assert(i < length); return (T&) ((u8*) data)[stride*i]; }
 };
 
@@ -187,6 +166,14 @@ List_Contains(List<T>& list, T item)
 }
 
 template<typename T>
+inline b8
+List_ContainsIndex(List<T>& list, u32 index)
+{
+	b8 result = index < list.length;
+	return result;
+}
+
+template<typename T>
 inline void
 List_Duplicate(List<T>& list, Slice<T> slice)
 {
@@ -220,25 +207,25 @@ List_Equal(List<T>& lhs, List<T>& rhs)
 }
 
 template<typename T>
-inline ListRef<T>
+inline Result<u32>
 List_FindFirst(List<T>& list, T item)
 {
 	for (u32 i = 0; i < list.length; i++)
 		if (list[i] == item)
-			return List_GetRef(list, i);
+			return i;
 
-	return ListRef<T>::Null;
+	return false;
 }
 
 template<typename T>
-inline ListRef<T>
+inline Result<u32>
 List_FindLast(List<T>& list, T item)
 {
 	for (u32 i = list.length; i > 0; i--)
 		if (list[i - 1] == item)
-			return List_GetRef(list, i);
+			return i;
 
-	return ListRef<T>::Null;
+	return false;
 }
 
 template<typename T>
@@ -272,29 +259,6 @@ List_GetLast(List<T>& list)
 }
 
 template<typename T>
-inline ListRef<T>
-List_GetRef(List<T>& list, u32 index)
-{
-	Unused(list);
-	Assert(index < list.length);
-	return ToRef<T>(index);
-}
-
-template<typename T>
-inline ListRef<T>
-List_GetFirstRef(List<T>& list)
-{
-	return List_GetRef(list, 0);
-}
-
-template<typename T>
-inline ListRef<T>
-List_GetLastRef(List<T>& list)
-{
-	return List_GetRef(list, list.length - 1);
-}
-
-template<typename T>
 inline u32
 List_GetRemaining(List<T>& list)
 {
@@ -303,10 +267,9 @@ List_GetRemaining(List<T>& list)
 
 template<typename T>
 inline b8
-List_IsRefValid(List<T>& list, ListRef<T> ref)
+List_IsIndexValid(List<T>& list, u32 index)
 {
-	b8 result = ToIndex(ref) < list.length;
-	return result;
+	return index < list.length;
 }
 
 template<typename T>
@@ -334,32 +297,10 @@ List_Pop(List<T>& list)
 
 template<typename T>
 inline void
-List_Remove(List<T>& list, ListRef<T> ref)
-{
-	Assert(List_IsRefValid(list, ref));
-	u32 index = ToIndex(ref);
-	memmove(&list[index], &list[index + 1], sizeof(T) * (list.length - index - 1));
-	List_ZeroRange(list, list.length - 1, 1);
-	list.length--;
-}
-
-template<typename T>
-inline void
 List_Remove(List<T>& list, u32 index)
 {
 	Assert(index < list.length);
 	memmove(&list[index], &list.data[index + 1], sizeof(T) * (list.length - index - 1));
-	List_ZeroRange(list, list.length - 1, 1);
-	list.length--;
-}
-
-template<typename T>
-inline void
-List_RemoveFast(List<T>& list, ListRef<T> ref)
-{
-	Assert(List_IsRefValid(list, ref));
-	T& slot = list[ref];
-	slot = list[list.length - 1];
 	List_ZeroRange(list, list.length - 1, 1);
 	list.length--;
 }

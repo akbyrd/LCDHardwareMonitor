@@ -1,11 +1,11 @@
 #ifndef LHM_RENDERER
 #define LHM_RENDERER
 
-using Mesh         = List<struct MeshData>::RefT;
-using VertexShader = List<struct VertexShaderData>::RefT;
-using PixelShader  = List<struct PixelShaderData>::RefT;
-using RenderTarget = List<struct RenderTargetData>::RefT;
-using DepthBuffer  = List<struct DepthBufferData>::RefT;
+struct Mesh         : Index {};
+struct VertexShader : Index {};
+struct PixelShader  : Index {};
+struct RenderTarget : Index {};
+struct DepthBuffer  : Index {};
 
 // TODO: Re-order structs in this file
 enum struct ShaderStage
@@ -22,43 +22,43 @@ struct Vertex
 	v2 uv;
 };
 
-using Index = u32;
+using MIndex = u32;
 
 namespace StandardRenderTarget
 {
-	static const RenderTarget Null = { 1 };
-	static const RenderTarget Main = { 2 };
+	static const RenderTarget Null = {{ 0 }};
+	static const RenderTarget Main = {{ 1 }};
 };
 
 namespace StandardDepthBuffer
 {
-	static const DepthBuffer Null = { 1 };
-	static const DepthBuffer Main = { 2 };
+	static const DepthBuffer Null = {{ 0 }};
+	static const DepthBuffer Main = {{ 1 }};
 };
 
 namespace StandardMesh
 {
-	static const Mesh Null       = { 1 };
-	static const Mesh Triangle   = { 2 };
-	static const Mesh Quad       = { 3 };
-	static const Mesh Cube       = { 4 };
-	static const Mesh Fullscreen = { 5 };
+	static const Mesh Null       = {{ 0 }};
+	static const Mesh Triangle   = {{ 1 }};
+	static const Mesh Quad       = {{ 2 }};
+	static const Mesh Cube       = {{ 3 }};
+	static const Mesh Fullscreen = {{ 4 }};
 };
 
 namespace StandardVertexShader
 {
-	static const VertexShader Null      = { 1 };
-	static const VertexShader WVP       = { 2 };
-	static const VertexShader ClipSpace = { 3 };
+	static const VertexShader Null      = {{ 0 }};
+	static const VertexShader WVP       = {{ 1 }};
+	static const VertexShader ClipSpace = {{ 2 }};
 };
 
 namespace StandardPixelShader
 {
-	static const PixelShader Null             = { 1 };
-	static const PixelShader SolidColored     = { 2 };
-	static const PixelShader VertexColored    = { 3 };
-	static const PixelShader DebugCoordinates = { 4 };
-	static const PixelShader Composite        = { 5 };
+	static const PixelShader Null             = {{ 0 }};
+	static const PixelShader SolidColored     = {{ 1 }};
+	static const PixelShader VertexColored    = {{ 2 }};
+	static const PixelShader DebugCoordinates = {{ 3 }};
+	static const PixelShader Composite        = {{ 4 }};
 };
 
 #endif

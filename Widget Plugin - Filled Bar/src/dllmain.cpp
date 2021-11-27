@@ -60,7 +60,7 @@ UpdateBarWidgets(PluginContext& context, WidgetAPI::Update api)
 
 		// Update
 		{
-			Sensor& sensor = api.sensors[widget.sensorRef];
+			Sensor& sensor = api.sensors[widget.sensorRef.value];
 			barWidget.psPerObject.fillAmount = Lerp(barWidget.psPerObject.fillAmount, sensor.value, 0.10f);
 		}
 

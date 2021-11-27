@@ -1,11 +1,8 @@
 #ifndef LHM_WIDGETPLUGIN
 #define LHM_WIDGETPLUGIN
 
-struct WidgetPlugin;
-using WidgetPluginRef = List<WidgetPlugin>::RefT;
-
-struct Widget;
-using WidgetRef = List<Widget>::RefT;
+struct WidgetPluginRef : Index {};
+struct WidgetRef       : Index {};
 
 struct Widget
 {
@@ -62,8 +59,7 @@ struct WidgetAPI
 	};
 };
 
-struct WidgetDesc;
-using WidgetDescRef = List<WidgetDesc>::RefT;
+struct WidgetDescRef : Index {};
 
 struct WidgetDesc
 {

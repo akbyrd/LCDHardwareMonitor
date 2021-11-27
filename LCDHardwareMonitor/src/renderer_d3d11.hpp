@@ -298,7 +298,7 @@ CreateRenderTargetImpl(RendererState& s, StringView name, b8 resource, D3D11_TEX
 	HRESULT hr;
 
 	RenderTargetData& renderTargetData = List_Append(s.renderTargets);
-	renderTargetData.ref = List_GetLastRef(s.renderTargets);
+	renderTargetData.ref = {{ s.renderTargets.length - 1 }};
 
 	auto renderTargetGuard = guard {
 		DestroyRenderTarget(s, renderTargetData);
@@ -440,7 +440,7 @@ UpdateConstantBuffer(RendererState& s, ConstantBuffer& cBuf, void* data)
 static inline b8
 UpdateVSConstantBuffer(RendererState& s, VSConstantBufferUpdate& cbu)
 {
-	VertexShaderData& vs   = s.vertexShaders[cbu.vs];
+	VertexShaderData& vs   = s.vertexShaders[cbu.vs.value];
 	ConstantBuffer&   cBuf = vs.constantBuffers[cbu.index];
 	return UpdateConstantBuffer(s, cBuf, cbu.data);
 }
@@ -448,7 +448,7 @@ UpdateVSConstantBuffer(RendererState& s, VSConstantBufferUpdate& cbu)
 static inline b8
 UpdatePSConstantBuffer(RendererState& s, PSConstantBufferUpdate& cbu)
 {
-	PixelShaderData& ps   = s.pixelShaders[cbu.ps];
+	PixelShaderData& ps   = s.pixelShaders[cbu.ps.value];
 	ConstantBuffer&  cBuf = ps.constantBuffers[cbu.index];
 	return UpdateConstantBuffer(s, cBuf, cbu.data);
 }
@@ -456,7 +456,7 @@ UpdatePSConstantBuffer(RendererState& s, PSConstantBufferUpdate& cbu)
 static inline void
 DrawMesh(RendererState& s, Mesh mesh)
 {
-	MeshData& meshData = s.meshes[mesh];
+	MeshData& meshData = s.meshes[mesh.value];
 	Assert(meshData.vOffset < i32Max);
 	s.d3dContext->DrawIndexed(meshData.iCount, meshData.iOffset, (i32) meshData.vOffset);
 }
@@ -486,7 +486,7 @@ PushRenderTarget(RendererState& s, RenderTarget renderTarget)
 {
 	Assert(s.renderTargetStack.length != 0);
 	RenderTargetData& boundRT = *List_GetLast(s.renderTargetStack);
-	RenderTargetData& rt      = *List_Push(s.renderTargetStack, &s.renderTargets[renderTarget]);
+	RenderTargetData& rt      = *List_Push(s.renderTargetStack, &s.renderTargets[renderTarget.value]);
 	DepthBufferData&  db      = *List_GetLast(s.depthBufferStack);
 
 	if (&boundRT != &rt)
@@ -519,7 +519,7 @@ PushDepthBuffer(RendererState& s, DepthBuffer depthBuffer)
 {
 	Assert(s.depthBufferStack.length != 0);
 	DepthBufferData&  boundDB = *List_GetLast(s.depthBufferStack);
-	DepthBufferData&  db      = *List_Push(s.depthBufferStack, &s.depthBuffers[depthBuffer]);
+	DepthBufferData&  db      = *List_Push(s.depthBufferStack, &s.depthBuffers[depthBuffer.value]);
 	RenderTargetData& rt      = *List_GetLast(s.renderTargetStack);
 
 	if (&boundDB != &db)
@@ -551,7 +551,7 @@ PushVertexShader(RendererState& s, VertexShader vertexShader)
 {
 	Assert(s.vertexShaderStack.length != 0);
 	VertexShaderData& boundVS = *List_GetLast(s.vertexShaderStack);
-	VertexShaderData& vs      = *List_Push(s.vertexShaderStack, &s.vertexShaders[vertexShader]);
+	VertexShaderData& vs      = *List_Push(s.vertexShaderStack, &s.vertexShaders[vertexShader.value]);
 
 	if (&boundVS != &vs)
 	{
@@ -603,7 +603,7 @@ PushPixelShader(RendererState& s, PixelShader pixelShader)
 {
 	Assert(s.pixelShaderStack.length != 0);
 	PixelShaderData& boundPS = *List_GetLast(s.pixelShaderStack);
-	PixelShaderData& ps      = *List_Push(s.pixelShaderStack, &s.pixelShaders[pixelShader]);
+	PixelShaderData& ps      = *List_Push(s.pixelShaderStack, &s.pixelShaders[pixelShader.value]);
 
 	if (&boundPS != &ps)
 	{
@@ -645,7 +645,7 @@ PushPSResource(RendererState& s, RenderTarget renderTarget, u32 slot)
 
 	psr.type         = ResourceType::RenderTarget;
 	psr.slot         = slot;
-	psr.renderTarget = &s.renderTargets[renderTarget];
+	psr.renderTarget = &s.renderTargets[renderTarget.value];
 
 	if (boundPSR.type != psr.type || boundPSR.renderTarget != psr.renderTarget)
 		s.d3dContext->PSSetShaderResources(psr.slot, 1, psr.renderTarget->d3dRenderTargetResourceView.GetAddressOf());
@@ -660,7 +660,7 @@ PushPSResource(RendererState& s, DepthBuffer depthBuffer, u32 slot)
 
 	psr.type        = ResourceType::DepthBuffer;
 	psr.slot        = slot;
-	psr.depthBuffer = &s.depthBuffers[depthBuffer];
+	psr.depthBuffer = &s.depthBuffers[depthBuffer.value];
 
 	if (boundPSR.type != psr.type || boundPSR.depthBuffer != psr.depthBuffer)
 		s.d3dContext->PSSetShaderResources(psr.slot, 1, psr.depthBuffer->d3dDepthBufferResourceView.GetAddressOf());
@@ -733,8 +733,8 @@ SetBlendMode(RendererState& s, b8 alpha)
 static inline void
 Copy(RendererState& s, RenderTarget rtSource, CPUTexture ctDest)
 {
-	RenderTargetData& source = s.renderTargets[rtSource];
-	CPUTextureData&   dest   = s.cpuTextures[ctDest];
+	RenderTargetData& source = s.renderTargets[rtSource.value];
+	CPUTextureData&   dest   = s.cpuTextures[ctDest.value];
 
 	if (dest.mappedResource.pData)
 	{
@@ -822,7 +822,7 @@ Renderer_CreateSharedRenderTarget(RendererState& s, StringView name, b8 resource
 	RenderTarget rt = CreateRenderTargetImpl(s, name, resource, desc);
 	if (!rt) return {};
 
-	RenderTargetData& renderTargetData = s.renderTargets[rt];
+	RenderTargetData& renderTargetData = s.renderTargets[rt.value];
 
 	auto renderTargetGuard = guard {
 		DestroyRenderTarget(s, renderTargetData);
@@ -851,7 +851,7 @@ CPUTexture
 Renderer_CreateCPUTexture(RendererState& s, StringView name)
 {
 	CPUTextureData& cpuTextureData = List_Append(s.cpuTextures);
-	cpuTextureData.ref = List_GetLastRef(s.cpuTextures);
+	cpuTextureData.ref = {{ s.cpuTextures.length - 1 }};
 
 	auto cpuTextureGuard = guard {
 		DestroyCPUTexture(s, cpuTextureData);
@@ -892,7 +892,7 @@ DepthBuffer
 Renderer_CreateDepthBuffer(RendererState& s, StringView name, b8 resource)
 {
 	DepthBufferData& depthBufferData = List_Append(s.depthBuffers);
-	depthBufferData.ref = List_GetLastRef(s.depthBuffers);
+	depthBufferData.ref = {{ s.depthBuffers.length - 1 }};
 
 	auto depthBufferGuard = guard {
 		DestroyDepthBuffer(s, depthBufferData);
@@ -967,12 +967,12 @@ Renderer_CreateDepthBuffer(RendererState& s, StringView name, b8 resource)
 }
 
 Mesh
-Renderer_CreateMesh(RendererState& s, StringView name, Slice<Vertex> vertices, Slice<Index> indices)
+Renderer_CreateMesh(RendererState& s, StringView name, Slice<Vertex> vertices, Slice<MIndex> indices)
 {
 	Assert(!s.resourceCreationFinalized);
 
 	MeshData& mesh = List_Append(s.meshes);
-	mesh.ref  = List_GetLastRef(s.meshes);
+	mesh.ref  = {{ s.meshes.length - 1 }};
 	mesh.name = String_FromView(name);
 
 	// Copy Data
@@ -994,7 +994,7 @@ Renderer_LoadVertexShader(RendererState& s, StringView name, StringView path, Sl
 {
 	// Vertex Shader
 	VertexShaderData& vs = List_Append(s.vertexShaders);
-	vs.ref = List_GetLastRef(s.vertexShaders);
+	vs.ref = {{ s.vertexShaders.length - 1 }};
 
 	auto vsGuard = guard {
 		DestroyVertexShader(s, vs);
@@ -1008,13 +1008,13 @@ Renderer_LoadVertexShader(RendererState& s, StringView name, StringView path, Sl
 	defer { List_Free(vsBytes); };
 	{
 		vsBytes = Platform_LoadFileBytes(path);
-		if (!vsBytes.data) return VertexShader::Null;
+		if (!vsBytes.data) return StandardVertexShader::Null;
 	}
 
 	// Create
 	{
 		HRESULT hr = s.d3dDevice->CreateVertexShader(vsBytes.data, vsBytes.length, nullptr, &vs.d3dVertexShader);
-		LOG_HRESULT_IF_FAILED(hr, return VertexShader::Null,
+		LOG_HRESULT_IF_FAILED(hr, return StandardVertexShader::Null,
 			Severity::Error, "Failed to create vertex shader '%'", path);
 		SetDebugObjectName(vs.d3dVertexShader, "Vertex Shader: %", name);
 	}
@@ -1029,7 +1029,7 @@ Renderer_LoadVertexShader(RendererState& s, StringView name, StringView path, Sl
 			cBuf.size = cBufSizes[i];
 
 			b8 success = CreateConstantBuffer(s, name, i, cBuf);
-			LOG_IF(!success, return VertexShader::Null,
+			LOG_IF(!success, return StandardVertexShader::Null,
 				Severity::Error, "Failed to create VS constant buffer % for '%'", i, path);
 		}
 	}
@@ -1051,7 +1051,7 @@ Renderer_LoadVertexShader(RendererState& s, StringView name, StringView path, Sl
 				case VertexAttributeSemantic::Null:
 				case VertexAttributeSemantic::Count:
 					LOG(Severity::Error, "Unrecognized VS attribute semantic % '%'", (i32) attributes[i].semantic, path);
-					return VertexShader::Null;
+					return StandardVertexShader::Null;
 			}
 
 			DXGI_FORMAT format;
@@ -1065,7 +1065,7 @@ Renderer_LoadVertexShader(RendererState& s, StringView name, StringView path, Sl
 				case VertexAttributeFormat::Null:
 				case VertexAttributeFormat::Count:
 					LOG(Severity::Error, "Unrecognized VS attribute format % '%'", (i32) attributes[i].format, path);
-					return VertexShader::Null;
+					return StandardVertexShader::Null;
 			}
 
 			D3D11_INPUT_ELEMENT_DESC inputDesc = {};
@@ -1080,7 +1080,7 @@ Renderer_LoadVertexShader(RendererState& s, StringView name, StringView path, Sl
 		}
 
 		HRESULT hr = s.d3dDevice->CreateInputLayout(vsInputDescs.data, vsInputDescs.length, vsBytes.data, vsBytes.length, &vs.d3dInputLayout);
-		LOG_HRESULT_IF_FAILED(hr, return VertexShader::Null,
+		LOG_HRESULT_IF_FAILED(hr, return StandardVertexShader::Null,
 			Severity::Error, "Failed to create VS input layout '%'", path);
 		SetDebugObjectName(vs.d3dInputLayout, "Input Layout: %", name);
 
@@ -1095,7 +1095,7 @@ PixelShader
 Renderer_LoadPixelShader(RendererState& s, StringView name, StringView path, Slice<u32> cBufSizes)
 {
 	PixelShaderData& ps = List_Append(s.pixelShaders);
-	ps.ref = List_GetLastRef(s.pixelShaders);
+	ps.ref = {{ s.pixelShaders.length - 1 }};
 
 	auto psGuard = guard {
 		DestroyPixelShader(s, ps);
@@ -1109,13 +1109,13 @@ Renderer_LoadPixelShader(RendererState& s, StringView name, StringView path, Sli
 	defer { List_Free(psBytes); };
 	{
 		psBytes = Platform_LoadFileBytes(path);
-		if (!psBytes.data) return PixelShader::Null;
+		if (!psBytes.data) return StandardPixelShader::Null;
 	}
 
 	// Create
 	{
 		HRESULT hr = s.d3dDevice->CreatePixelShader(psBytes.data, (u64) psBytes.length, nullptr, &ps.d3dPixelShader);
-		LOG_HRESULT_IF_FAILED(hr, return PixelShader::Null,
+		LOG_HRESULT_IF_FAILED(hr, return StandardPixelShader::Null,
 			Severity::Error, "Failed to create pixel shader '%'", path);
 		SetDebugObjectName(ps.d3dPixelShader, "Pixel Shader: %", name);
 	}
@@ -1130,7 +1130,7 @@ Renderer_LoadPixelShader(RendererState& s, StringView name, StringView path, Sli
 			cBuf.size = cBufSizes[i];
 
 			b8 success = CreateConstantBuffer(s, name, i, cBuf);
-			LOG_IF(!success, return PixelShader::Null,
+			LOG_IF(!success, return StandardPixelShader::Null,
 				Severity::Error, "Failed to create PS constant buffer % for '%'", i, path);
 		}
 	}
@@ -1273,7 +1273,7 @@ Renderer_PopEvent(RendererState& s)
 b8
 Renderer_ValidateRenderTarget(RendererState& s, RenderTarget rt)
 {
-	return List_IsRefValid(s.renderTargets, rt);
+	return List_IsIndexValid(s.renderTargets, rt.value);
 }
 
 void
@@ -1323,7 +1323,7 @@ Renderer_ClearRenderTarget(RendererState& s, v4 color)
 b8
 Renderer_ValidateDepthBuffer(RendererState& s, DepthBuffer db)
 {
-	return List_IsRefValid(s.depthBuffers, db);
+	return List_IsIndexValid(s.depthBuffers, db.value);
 }
 
 void
@@ -1373,7 +1373,7 @@ b8
 Renderer_ValidateVSConstantBufferUpdate(RendererState& s, VSConstantBufferUpdate& cbu)
 {
 	if (!Renderer_ValidateVertexShader(s, cbu.vs)) return false;
-	VertexShaderData& vs = s.vertexShaders[cbu.vs];
+	VertexShaderData& vs = s.vertexShaders[cbu.vs.value];
 	return cbu.index < vs.constantBuffers.length;
 }
 
@@ -1396,7 +1396,7 @@ b8
 Renderer_ValidatePSConstantBufferUpdate(RendererState& s, PSConstantBufferUpdate& cbu)
 {
 	if (!Renderer_ValidatePixelShader(s, cbu.ps)) return false;
-	PixelShaderData& ps = s.pixelShaders[cbu.ps];
+	PixelShaderData& ps = s.pixelShaders[cbu.ps.value];
 	return cbu.index < ps.constantBuffers.length;
 }
 
@@ -1418,7 +1418,7 @@ Renderer_UpdatePSConstantBuffer(RendererState& s, PSConstantBufferUpdate& cbu)
 b8
 Renderer_ValidateVertexShader(RendererState& s, VertexShader vs)
 {
-	return List_IsRefValid(s.vertexShaders, vs);
+	return List_IsIndexValid(s.vertexShaders, vs.value);
 }
 
 void
@@ -1453,7 +1453,7 @@ Renderer_PopVertexShader(RendererState& s)
 b8
 Renderer_ValidatePixelShader(RendererState& s, PixelShader ps)
 {
-	return List_IsRefValid(s.pixelShaders, ps);
+	return List_IsIndexValid(s.pixelShaders, ps.value);
 }
 
 void
@@ -1567,7 +1567,7 @@ Renderer_SetBlendMode(RendererState& s, b8 alpha)
 b8
 Renderer_ValidateMesh(RendererState& s, Mesh mesh)
 {
-	return List_IsRefValid(s.meshes, mesh);
+	return List_IsIndexValid(s.meshes, mesh.value);
 }
 
 void
@@ -1589,7 +1589,7 @@ b8
 Renderer_ValidateCopy(RendererState& s, RenderTarget rt, CPUTexture ct)
 {
 	if (!Renderer_ValidateRenderTarget(s, rt)) return false;
-	return List_IsRefValid(s.cpuTextures, ct);
+	return List_IsIndexValid(s.cpuTextures, ct.value);
 }
 
 void
@@ -1614,14 +1614,14 @@ Renderer_Copy(RendererState& s, RenderTarget rt, CPUTexture ct)
 size
 Renderer_GetSharedRenderTargetHandle(RendererState& s, RenderTarget rt)
 {
-	RenderTargetData& renderTargetData = s.renderTargets[rt];
+	RenderTargetData& renderTargetData = s.renderTargets[rt.value];
 	return (size) renderTargetData.sharedHandle;
 }
 
 CPUTextureBytes
 Renderer_GetCPUTextureBytes(RendererState& s, CPUTexture ct)
 {
-	CPUTextureData& cpuTextureData = s.cpuTextures[ct];
+	CPUTextureData& cpuTextureData = s.cpuTextures[ct.value];
 
 	CPUTextureBytes textureBytes = {};
 	textureBytes.bytes.data   = (u8*) cpuTextureData.mappedResource.pData;
@@ -1872,19 +1872,19 @@ Renderer_Initialize(RendererState& s)
 	// Create null resources
 	{
 		RenderTargetData& nullRT = List_Push(s.renderTargets);
-		nullRT.ref = List_GetLastRef(s.renderTargets);
+		nullRT.ref = {{ s.renderTargets.length - 1 }};
 
 		DepthBufferData& nullRB = List_Push(s.depthBuffers);
-		nullRB.ref = List_GetLastRef(s.depthBuffers);
+		nullRB.ref = {{ s.depthBuffers.length - 1 }};
 
 		MeshData& nullMesh = List_Push(s.meshes);
-		nullMesh.ref = List_GetLastRef(s.meshes);
+		nullMesh.ref = {{ s.meshes.length - 1 }};
 
 		VertexShaderData& nullVS = List_Push(s.vertexShaders);
-		nullVS.ref = List_GetLastRef(s.vertexShaders);
+		nullVS.ref = {{ s.vertexShaders.length - 1 }};
 
 		PixelShaderData& nullPS = List_Push(s.pixelShaders);
-		nullPS.ref = List_GetLastRef(s.pixelShaders);
+		nullPS.ref = {{ s.pixelShaders.length - 1 }};
 	}
 
 

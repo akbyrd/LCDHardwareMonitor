@@ -214,7 +214,7 @@ PreviewWindow_Render(PreviewWindowState& s)
 
 	// TODO: Want to label this, but it doesn't go through the normal render queue...
 	//Renderer_PushEvent(rendererState, "Update Preview Window");
-	RenderTargetData mainRTGUI = rendererState.renderTargets[simulationState.renderTargetGUICopy];
+	RenderTargetData mainRTGUI = rendererState.renderTargets[simulationState.renderTargetGUICopy.value];
 	rendererState.d3dContext->CopyResource(s.backBuffer.Get(), mainRTGUI.d3dRenderTarget.Get());
 	//Renderer_PopEvent(rendererState);
 

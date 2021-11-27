@@ -8,10 +8,10 @@
 #include "LHMDefer.hpp"
 #include "LHMMemory.hpp"
 #include "LHMString.hpp"
+#include "LHMResult.hpp"
 #include "LHMList.hpp"
 #include "LHMBytes.hpp"
 #include "LHMHash.hpp"
-#include "LHMResult.hpp"
 
 // Systems
 #include "LHMRenderer.h"

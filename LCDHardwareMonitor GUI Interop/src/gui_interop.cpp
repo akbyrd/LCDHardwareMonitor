@@ -235,7 +235,7 @@ namespace LCDHardwareMonitor::GUI
 			Plugin plugin = simState->Plugins[ref - 1];
 			Assert(plugin.Ref == ref);
 
-			PluginRef nRef = { plugin.Ref };
+			PluginRef nRef = {{ plugin.Ref }};
 			::PluginLoadState nLoadState = (::PluginLoadState) loadState;
 
 			FromGUI::SetPluginLoadStates setLoadStates = {};
@@ -341,8 +341,8 @@ namespace LCDHardwareMonitor::GUI
 			Assert(simState->Interaction == Interaction::Null);
 
 			FullWidgetDataRef ref = {};
-			ref.pluginRef = { pluginRef };
-			ref.dataRef = { descRef };
+			ref.pluginRef = {{ pluginRef }};
+			ref.dataRef = {{ descRef }};
 
 			FromGUI::AddWidget addWidget = {};
 			addWidget.ref = ref;
@@ -370,9 +370,9 @@ namespace LCDHardwareMonitor::GUI
 				Widget% selectedWidget = (Widget%) selectedWidgets[i];
 
 				FullWidgetRef ref = {};
-				ref.pluginRef = { selectedWidget.PluginRef };
-				ref.dataRef   = { selectedWidget.DataRef };
-				ref.widgetRef = { selectedWidget.Ref };
+				ref.pluginRef = {{ selectedWidget.PluginRef }};
+				ref.dataRef   = {{ selectedWidget.DataRef }};
+				ref.widgetRef = {{ selectedWidget.Ref }};
 				List_Append(selection, ref);
 			}
 

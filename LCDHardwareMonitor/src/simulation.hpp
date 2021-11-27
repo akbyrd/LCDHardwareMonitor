@@ -115,7 +115,7 @@ RegisterSensors(PluginContext& context, Slice<SensorDesc> sensors)
 		Sensor& sensor = sensorPlugin.sensors[nextSlot];
 		SensorDesc& desc = sensors[i];
 
-		sensor.ref        = { sensorPlugin.sensors.length + i };
+		sensor.ref        = {{ sensorPlugin.sensors.length + i }};
 		sensor.name       = String_FromView(desc.name);
 		sensor.identifier = String_FromView(desc.identifier);
 		sensor.format     = String_FromView(desc.format);
@@ -135,11 +135,11 @@ UnregisterSensors(PluginContext& context, Slice<SensorRef> sensorRefs)
 		SensorRef sensorRef = sensorRefs[i];
 
 		b8 valid = true;
-		valid = valid && List_IsRefValid(sensorPlugin.sensors, sensorRef);
-		valid = valid && sensorPlugin.sensors[sensorRef].ref == sensorRef;
+		valid = valid && sensorRef.value;
+		valid = valid && sensorPlugin.sensors[sensorRef.value].ref == sensorRef;
 		LOG_IF(!valid, return,
 			Severity::Error, "Sensor plugin gave a bad SensorRef '%'",
-			context.s->plugins[sensorPlugin.pluginRef].info.name);
+			context.s->plugins[sensorPlugin.pluginRef.value].info.name);
 	}
 
 	RemoveSensorRefs(*context.s, sensorPlugin.ref, sensorRefs);
@@ -147,7 +147,7 @@ UnregisterSensors(PluginContext& context, Slice<SensorRef> sensorRefs)
 	for (u32 i = 0; i < sensorRefs.length; i++)
 	{
 		SensorRef sensorRef = sensorRefs[i];
-		sensorPlugin.sensors[sensorRef] = {};
+		sensorPlugin.sensors[sensorRef.value] = {};
 	}
 
 	context.success = true;
@@ -170,9 +170,9 @@ RegisterWidgets(PluginContext& context, Slice<WidgetDesc> widgetDescs)
 		WidgetDesc& widgetDesc = widgetDescs[i];
 
 		WidgetData& widgetData = List_Append(widgetPlugin.widgetDatas);
-		widgetData.ref = List_GetLastRef(widgetPlugin.widgetDatas);
-		widgetData.desc = widgetDesc;
-		widgetData.desc.ref = { widgetData.ref.value };
+		widgetData.ref.value = widgetPlugin.widgetDatas.length - 1;
+		widgetData.desc      = widgetDesc;
+		widgetData.desc.ref  = {{ widgetData.ref.value }};
 
 		List_Reserve(widgetData.widgets, 8);
 		List_Reserve(widgetData.widgetsUserData, 8 * widgetDesc.userDataSize);
@@ -182,10 +182,10 @@ RegisterWidgets(PluginContext& context, Slice<WidgetDesc> widgetDescs)
 static PixelShader
 LoadPixelShader(PluginContext& context, StringView relPath, Slice<u32> cBufSizes)
 {
-	if (!context.success) return PixelShader::Null;
+	if (!context.success) return StandardPixelShader::Null;
 	context.success = false;
 
-	Plugin& plugin = context.s->plugins[context.widgetPlugin->pluginRef];
+	Plugin& plugin = context.s->plugins[context.widgetPlugin->pluginRef.value];
 	RendererState& rendererState = *context.s->renderer;
 
 	String path = String_Format("%/%", plugin.directory, relPath);
@@ -195,7 +195,7 @@ LoadPixelShader(PluginContext& context, StringView relPath, Slice<u32> cBufSizes
 	defer { String_Free(psName); };
 
 	PixelShader ps = Renderer_LoadPixelShader(rendererState, psName, path, cBufSizes);
-	LOG_IF(!ps, return PixelShader::Null,
+	LOG_IF(!ps, return StandardPixelShader::Null,
 		Severity::Error, "Failed to load pixel shader '%'", path);
 
 	context.success = true;
@@ -514,7 +514,7 @@ RegisterPlugin(SimulationState& s, StringView directory, StringView fileName)
 		if (!slot.ref)
 		{
 			plugin = &slot;
-			plugin->ref = List_GetRef(s.plugins, i);
+			plugin->ref.value = i;
 			break;
 		}
 	}
@@ -522,7 +522,7 @@ RegisterPlugin(SimulationState& s, StringView directory, StringView fileName)
 	if (!plugin)
 	{
 		plugin = &List_Append(s.plugins);
-		plugin->ref = List_GetLastRef(s.plugins);
+		plugin->ref.value = s.plugins.length - 1;
 	}
 
 	defer { ToGUI_PluginStatesChanged(s, *plugin); };
@@ -580,7 +580,7 @@ AllocSensorPlugin(SimulationState& s)
 		if (!slot.ref)
 		{
 			sensorPlugin = &slot;
-			sensorPlugin->ref = List_GetRef(s.sensorPlugins, i);
+			sensorPlugin->ref.value = i;
 			break;
 		}
 	}
@@ -588,7 +588,7 @@ AllocSensorPlugin(SimulationState& s)
 	if (!sensorPlugin)
 	{
 		sensorPlugin = &List_Append(s.sensorPlugins);
-		sensorPlugin->ref = List_GetLastRef(s.sensorPlugins);
+		sensorPlugin->ref.value = s.sensorPlugins.length - 1;
 	}
 
 	return *sensorPlugin;
@@ -667,7 +667,7 @@ LoadSensorPlugin(SimulationState& s, Plugin& plugin)
 static b8
 UnloadSensorPlugin(SimulationState& s, SensorPlugin& sensorPlugin)
 {
-	Plugin& plugin = s.plugins[sensorPlugin.pluginRef];
+	Plugin& plugin = s.plugins[sensorPlugin.pluginRef.value];
 	Assert(plugin.loadState != PluginLoadState::Unloaded);
 
 	defer { ToGUI_PluginStatesChanged(s, plugin); };
@@ -729,7 +729,7 @@ AllocWidgetPlugin(SimulationState& s)
 		if (!slot.ref)
 		{
 			widgetPlugin = &slot;
-			widgetPlugin->ref = List_GetRef(s.widgetPlugins, i);
+			widgetPlugin->ref.value = i;
 			break;
 		}
 	}
@@ -737,7 +737,7 @@ AllocWidgetPlugin(SimulationState& s)
 	if (!widgetPlugin)
 	{
 		widgetPlugin = &List_Append(s.widgetPlugins);
-		widgetPlugin->ref = List_GetLastRef(s.widgetPlugins);
+		widgetPlugin->ref.value = s.widgetPlugins.length - 1;
 	}
 
 	return *widgetPlugin;
@@ -805,7 +805,7 @@ LoadWidgetPlugin(SimulationState& s, Plugin& plugin)
 static b8
 UnloadWidgetPlugin(SimulationState& s, WidgetPlugin& widgetPlugin)
 {
-	Plugin& plugin = s.plugins[widgetPlugin.pluginRef];
+	Plugin& plugin = s.plugins[widgetPlugin.pluginRef.value];
 	Assert(plugin.loadState != PluginLoadState::Unloaded);
 
 	defer { ToGUI_PluginStatesChanged(s, plugin); };
@@ -917,7 +917,7 @@ AddWidgets(SimulationState& s, WidgetPlugin& widgetPlugin, WidgetData& widgetDat
 	for (u32 i = 0; i < count; i++)
 	{
 		Widget& widget = widgetData.widgets[prevWidgetLen + i];
-		widget.ref             = List_GetRef(widgetData.widgets, prevWidgetLen + i);
+		widget.ref.value       = prevWidgetLen + i;
 		widget.position        = {};
 		widget.sensorPluginRef = s.nullSensorRef.pluginRef;
 		widget.sensorRef       = s.nullSensorRef.sensorRef;
@@ -936,8 +936,8 @@ AddWidgets(SimulationState& s, WidgetPlugin& widgetPlugin, WidgetData& widgetDat
 static Slice<Widget>
 AddWidgets(SimulationState& s, FullWidgetDataRef ref, u32 count)
 {
-	WidgetPlugin& widgetPlugin = s.widgetPlugins[ref.pluginRef];
-	WidgetData& widgetData = widgetPlugin.widgetDatas[ref.dataRef];
+	WidgetPlugin& widgetPlugin = s.widgetPlugins[ref.pluginRef.value];
+	WidgetData& widgetData = widgetPlugin.widgetDatas[ref.dataRef.value];
 	return AddWidgets(s, widgetPlugin, widgetData, count);
 }
 
@@ -979,7 +979,7 @@ RemoveWidgetRefs(SimulationState& s, WidgetPluginRef pluginRef, WidgetData& widg
 	// TODO: Should widgets have their own refs?
 	for (u32 i = 0; i < widgetData.widgets.length; i++)
 	{
-		ref.widgetRef = ToRef<Widget>(i);
+		ref.widgetRef.value = i;
 		RemoveWidgetRefs(s, ref);
 	}
 }
@@ -993,12 +993,12 @@ RemoveWidgets(SimulationState& s, Slice<FullWidgetRef> refs)
 	{
 		FullWidgetRef ref = refs[i];
 
-		WidgetPlugin& plugin = s.widgetPlugins[ref.pluginRef];
-		WidgetData& data = plugin.widgetDatas[ref.dataRef];
+		WidgetPlugin& plugin = s.widgetPlugins[ref.pluginRef.value];
+		WidgetData& data = plugin.widgetDatas[ref.dataRef.value];
 
 		// NOTE: Can't 'remove fast' because it invalidates refs
-		data.widgets[ref.widgetRef] = {};
-		List_ZeroRange(data.widgetsUserData, data.desc.userDataSize * ToIndex(ref.widgetRef), data.desc.userDataSize);
+		data.widgets[ref.widgetRef.value] = {};
+		List_ZeroRange(data.widgetsUserData, data.desc.userDataSize * ref.widgetRef.value, data.desc.userDataSize);
 	}
 }
 
@@ -1021,8 +1021,8 @@ RemoveSensorRefs(SimulationState& s, SensorPluginRef sensorPluginRef, Slice<Sens
 					// TODO: Add FullSensorRef
 					if (widget.sensorPluginRef == sensorPluginRef && widget.sensorRef == sensorRef)
 					{
-						widget.sensorPluginRef = SensorPluginRef::Null;
-						widget.sensorRef       = SensorRef::Null;
+						widget.sensorPluginRef = {};
+						widget.sensorRef       = {};
 					}
 				}
 			}
@@ -1039,9 +1039,9 @@ RemoveSelectedWidgets(SimulationState& s)
 static Widget&
 GetWidget(SimulationState& s, FullWidgetRef ref)
 {
-	WidgetPlugin& plugin = s.widgetPlugins[ref.pluginRef];
-	WidgetData& data = plugin.widgetDatas[ref.dataRef];
-	Widget& widget = data.widgets[ref.widgetRef];
+	WidgetPlugin& plugin = s.widgetPlugins[ref.pluginRef.value];
+	WidgetData& data = plugin.widgetDatas[ref.dataRef.value];
+	Widget& widget = data.widgets[ref.widgetRef.value];
 	return widget;
 }
 
@@ -1169,16 +1169,16 @@ HighlightWidgets(SimulationState& s, Slice<FullWidgetRef> refs, Outline::PSPerPa
 		{
 			FullWidgetRef widgetRef = refs[i];
 
-			WidgetPlugin& widgetPlugin = s.widgetPlugins[widgetRef.pluginRef];
-			WidgetData&   widgetData   = widgetPlugin.widgetDatas[widgetRef.dataRef];
-			Widget&       widget       = widgetData.widgets[widgetRef.widgetRef];
+			WidgetPlugin& widgetPlugin = s.widgetPlugins[widgetRef.pluginRef.value];
+			WidgetData&   widgetData   = widgetPlugin.widgetDatas[widgetRef.dataRef.value];
+			Widget&       widget       = widgetData.widgets[widgetRef.widgetRef.value];
 
 			context.widgetPlugin = &widgetPlugin;
 			context.success      = true;
 
 			widgetAPI.widgets                = widget;
 			// TODO: Can this be made simpler?
-			widgetAPI.widgetsUserData        = widgetData.widgetsUserData[widgetData.desc.userDataSize * ToIndex(widget.ref)];
+			widgetAPI.widgetsUserData        = widgetData.widgetsUserData[widgetData.desc.userDataSize * widget.ref.value];
 			widgetAPI.widgetsUserData.stride = widgetData.desc.userDataSize;
 
 			// TODO: try/catch?
@@ -1399,13 +1399,13 @@ FromGUI_SetPluginLoadStates(SimulationState& s, FromGUI::SetPluginLoadStates& se
 		PluginRef pluginRef = setStates.refs[i];
 		PluginLoadState loadState = setStates.loadStates[i];
 
-		if (!List_IsRefValid(s.plugins, pluginRef))
+		if (!pluginRef || !List_IsIndexValid(s.plugins, pluginRef.value))
 		{
 			LOG(Severity::Warning, "Received SetPluginLoadState request for a plugin that no longer exists");
 			continue;
 		}
 
-		Plugin& plugin = s.plugins[pluginRef];
+		Plugin& plugin = s.plugins[pluginRef.value];
 
 		if (plugin.language == PluginLanguage::Builtin)
 		{
@@ -1433,14 +1433,14 @@ FromGUI_SetPluginLoadStates(SimulationState& s, FromGUI::SetPluginLoadStates& se
 			case PluginLoadState::Unloaded:
 				if (plugin.kind == PluginKind::Sensor)
 				{
-					SensorPluginRef ref = { plugin.rawRefToKind };
-					SensorPlugin& sensorPlugin = s.sensorPlugins[ref];
+					SensorPluginRef ref = {{ plugin.rawRefToKind }};
+					SensorPlugin& sensorPlugin = s.sensorPlugins[ref.value];
 					UnloadSensorPlugin(s, sensorPlugin);
 				}
 				else
 				{
-					WidgetPluginRef ref = { plugin.rawRefToKind };
-					WidgetPlugin& widgetPlugin = s.widgetPlugins[ref];
+					WidgetPluginRef ref = {{ plugin.rawRefToKind }};
+					WidgetPlugin& widgetPlugin = s.widgetPlugins[ref.value];
 					UnloadWidgetPlugin(s, widgetPlugin);
 				}
 				break;
@@ -1469,20 +1469,20 @@ FromGUI_DragDrop(SimulationState& s, FromGUI::DragDrop& dragDrop)
 static void
 FromGUI_AddWidget(SimulationState& s, FromGUI::AddWidget& addWidget)
 {
-	if (!List_IsRefValid(s.widgetPlugins, addWidget.ref.pluginRef))
+	if (!addWidget.ref.pluginRef || !List_IsIndexValid(s.widgetPlugins, addWidget.ref.pluginRef.value))
 	{
 		LOG(Severity::Warning, "Received AddWidget request for a plugin that no longer exists");
 		return;
 	}
 
-	WidgetPlugin& widgetPlugin = s.widgetPlugins[addWidget.ref.pluginRef];
-	if (!List_IsRefValid(widgetPlugin.widgetDatas, addWidget.ref.dataRef))
+	WidgetPlugin& widgetPlugin = s.widgetPlugins[addWidget.ref.pluginRef.value];
+	if (!addWidget.ref.dataRef || !List_IsIndexValid(widgetPlugin.widgetDatas, addWidget.ref.dataRef.value))
 	{
 		LOG(Severity::Warning, "Received AddWidget request for a widget type that no longer exists");
 		return;
 	}
 
-	WidgetData& widgetData = widgetPlugin.widgetDatas[addWidget.ref.dataRef];
+	WidgetData& widgetData = widgetPlugin.widgetDatas[addWidget.ref.dataRef.value];
 	Slice<Widget> widgets = AddWidgets(s, widgetPlugin, widgetData, 1);
 	if (widgets.length == 0) return;
 
@@ -1493,21 +1493,21 @@ FromGUI_AddWidget(SimulationState& s, FromGUI::AddWidget& addWidget)
 static void
 FromGUI_RemoveWidget(SimulationState& s, FromGUI::RemoveWidget& removeWidget)
 {
-	if (!List_IsRefValid(s.widgetPlugins, removeWidget.ref.pluginRef))
+	if (!removeWidget.ref.pluginRef || !List_IsIndexValid(s.widgetPlugins, removeWidget.ref.pluginRef.value))
 	{
 		LOG(Severity::Warning, "Received RemoveWidget request for a plugin that no longer exists");
 		return;
 	}
 
-	WidgetPlugin& widgetPlugin = s.widgetPlugins[removeWidget.ref.pluginRef];
-	if (!List_IsRefValid(widgetPlugin.widgetDatas, removeWidget.ref.dataRef))
+	WidgetPlugin& widgetPlugin = s.widgetPlugins[removeWidget.ref.pluginRef.value];
+	if (!removeWidget.ref.dataRef || !List_IsIndexValid(widgetPlugin.widgetDatas, removeWidget.ref.dataRef.value))
 	{
 		LOG(Severity::Warning, "Received RemoveWidget request for a widget type that no longer exists");
 		return;
 	}
 
-	WidgetData& widgetData = widgetPlugin.widgetDatas[removeWidget.ref.dataRef];
-	if (!List_IsRefValid(widgetData.widgets, removeWidget.ref.widgetRef))
+	WidgetData& widgetData = widgetPlugin.widgetDatas[removeWidget.ref.dataRef.value];
+	if (!removeWidget.ref.widgetRef || !List_IsIndexValid(widgetData.widgets, removeWidget.ref.widgetRef.value))
 	{
 		LOG(Severity::Warning, "Received RemoveWidget request for a widget that no longer exists");
 		return;
@@ -1723,7 +1723,7 @@ Simulation_Initialize(
 				{ {  0.5f, -0.433f, 0 }, { 0.0f, 1.0f, 0.0f, 1.0f }, { 1.0f, 1.0f } },
 			};
 
-			Index indices[] = {
+			MIndex indices[] = {
 				0, 1, 2,
 			};
 
@@ -1740,7 +1740,7 @@ Simulation_Initialize(
 				{ {  0.5f, -0.5f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f } },
 			};
 
-			Index indices[] = {
+			MIndex indices[] = {
 				0, 1, 2,
 				2, 3, 0,
 			};
@@ -1792,7 +1792,7 @@ Simulation_Initialize(
 				{ {  0.5f, -0.5f, -0.5f }, { 0.0f, 0.5f, 0.0f, 1.0f }, { 1.0f, 1.0f } },
 			};
 
-			Index indices[] = {
+			MIndex indices[] = {
 				// Back
 				 0,  1,  2,
 				 2,  3,  0,
@@ -1830,7 +1830,7 @@ Simulation_Initialize(
 				{ {  3.0f, -1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }, { 2.0f,  1.0f } }, // BR
 			};
 
-			Index indices[] = {
+			MIndex indices[] = {
 				0, 1, 2,
 			};
 
@@ -1884,10 +1884,10 @@ Simulation_Initialize(
 		Result<SensorPlugin*> sensorPlugin = LoadSensorPluginFromCode(s, builtInPlugin, BuiltinSensorPlugin_GetPluginInfo);
 		Assert(sensorPlugin);
 
-		SensorPluginRef builtInSensorPluginRef = { builtInPlugin.rawRefToKind };
-		SensorPlugin& builtInSensorPlugin = s.sensorPlugins[builtInSensorPluginRef];
+		SensorPluginRef builtInSensorPluginRef = {{ builtInPlugin.rawRefToKind }};
+		SensorPlugin& builtInSensorPlugin = s.sensorPlugins[builtInSensorPluginRef.value];
 		s.nullSensorRef.pluginRef = builtInSensorPlugin.ref;
-		s.nullSensorRef.sensorRef = List_GetLastRef(builtInSensorPlugin.sensors);
+		s.nullSensorRef.sensorRef = {{ builtInSensorPlugin.sensors.length - 1 }};
 	}
 
 	// DEBUG: Testing
@@ -1902,7 +1902,7 @@ Simulation_Initialize(
 
 		FullWidgetDataRef fullRef = {};
 		fullRef.pluginRef = widgetPlugin->ref;
-		fullRef.dataRef   = List_GetRef(widgetPlugin->widgetDatas, 0);
+		fullRef.dataRef   = {{ 1 }};
 
 		u32 dummyWidgetCount = 6;
 		Slice<Widget> widgets = AddWidgets(s, fullRef, dummyWidgetCount);
@@ -2138,8 +2138,8 @@ Simulation_Update(SimulationState& s)
 							{
 								FullWidgetRef& hovered = List_Append(s.hovered);
 								hovered.pluginRef = widgetPlugin.ref;
-								hovered.dataRef   = { j + 1 };
-								hovered.widgetRef = { k + 1 };
+								hovered.dataRef   = {{ j + 1 }};
+								hovered.widgetRef = {{ k + 1 }};
 
 								if (IsWidgetSelected(s, hovered))
 								{
@@ -2385,13 +2385,13 @@ Simulation_Teardown(SimulationState& s)
 		if (plugin.kind == PluginKind::Widget)
 		{
 			// TODO: Can probably make this cleaner
-			WidgetPluginRef ref = { plugin.rawRefToKind };
-			UnloadWidgetPlugin(s, s.widgetPlugins[ref]);
+			WidgetPluginRef ref = {{ plugin.rawRefToKind }};
+			UnloadWidgetPlugin(s, s.widgetPlugins[ref.value]);
 		}
 		if (plugin.kind == PluginKind::Sensor)
 		{
-			SensorPluginRef ref = { plugin.rawRefToKind };
-			UnloadSensorPlugin(s, s.sensorPlugins[ref]);
+			SensorPluginRef ref = {{ plugin.rawRefToKind }};
+			UnloadSensorPlugin(s, s.sensorPlugins[ref.value]);
 		}
 		UnregisterPlugin(s, plugin);
 	}
