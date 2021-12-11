@@ -8,7 +8,6 @@ Widget list doesn't update when unloading plugin
 Widgets don't re-appear when re-loading
 Show widgets in list
 Link list selection to sim selection
-Rip out ListRef. It's a nuisance.
 
 
 

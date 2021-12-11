@@ -8,7 +8,7 @@ struct Result
 	T  value;
 
 	Result(b8 success) : success(success) { Assert(!success); }
-	Result(T value)   : success(false), value(value) {}
+	Result(T value)   : success(true), value(value) {}
 
 	explicit operator b8() { return success; }
 	T& operator*() { Assert(success); return value; }
