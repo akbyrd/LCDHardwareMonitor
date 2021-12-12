@@ -7,7 +7,7 @@
 	#define matrix  Matrix
 #endif
 
-cbuffer PSInitialize
+cbuffer PSPerObject
 {
 	float4 borderColor;
 	float2 borderSizeUV;
@@ -16,13 +16,9 @@ cbuffer PSInitialize
 	float4 backgroundColor;
 	float4 fillColor;
 	float1 fillBlur;
-	float3 padding1;
-};
 
-cbuffer PSPerObject
-{
 	float1 fillAmount;
-	float3 padding2;
+	float2 padding1;
 };
 
 #if __cplusplus

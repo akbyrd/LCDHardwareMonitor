@@ -2113,7 +2113,7 @@ Simulation_Update(SimulationState& s)
 
 			for (u32 j = 0; j < widgetPlugin.widgetDatas.length; j++)
 			{
-				WidgetData& widgetData = widgetPlugin.widgetDatas[i];
+				WidgetData& widgetData = widgetPlugin.widgetDatas[j];
 				if (widgetData.widgets.length == 0) continue;
 
 				context.success = true;

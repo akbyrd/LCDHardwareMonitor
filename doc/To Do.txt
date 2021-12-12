@@ -24,7 +24,6 @@ Simulation doesn't run without ftd2xx.dll. Package dll, delay load, or static li
 	Option 3: Statically link the dll
 		Is it a good idea to compile in code for all possible supported screens?
 	Option 4: ???
-Deleting the top widget breaks animations on all subsequent widgets.
 WPF has slow update rate when not focused on other PCs (not mine).
 	Probably a performance setting.
 	Seems to only happen when selecting the preview window.

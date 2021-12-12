@@ -4,11 +4,10 @@
 
 struct BarWidget
 {
-	r32          borderSize;
-	r32          borderBlur;
-	VSPerObject  vsPerObject;
-	PSInitialize psInitialize;
-	PSPerObject  psPerObject;
+	r32         borderSize;
+	r32         borderBlur;
+	VSPerObject vsPerObject;
+	PSPerObject psPerObject;
 };
 
 static PixelShader filledBarPS = {};
@@ -29,11 +28,11 @@ InitializeBarWidgets(PluginContext& context, WidgetAPI::Initialize api)
 		barWidget.borderBlur = 0.0f;
 
 		v2 pixelsPerUV = 1.0f / widget.size;
-		barWidget.psInitialize.borderSizeUV    = barWidget.borderSize * pixelsPerUV;
-		barWidget.psInitialize.borderBlurUV    = barWidget.borderBlur * pixelsPerUV;
-		barWidget.psInitialize.borderColor     = Color128(47, 112, 22, 255);
-		barWidget.psInitialize.fillColor       = Color128(47, 112, 22, 255);
-		barWidget.psInitialize.backgroundColor = Color128( 0,   0,  0, 255);
+		barWidget.psPerObject.borderSizeUV    = barWidget.borderSize * pixelsPerUV;
+		barWidget.psPerObject.borderBlurUV    = barWidget.borderBlur * pixelsPerUV;
+		barWidget.psPerObject.borderColor     = Color128(47, 112, 22, 255);
+		barWidget.psPerObject.fillColor       = Color128(47, 112, 22, 255);
+		barWidget.psPerObject.backgroundColor = Color128( 0,   0,  0, 255);
 	}
 	return true;
 }
@@ -42,10 +41,6 @@ static void
 UpdateBarWidgets(PluginContext& context, WidgetAPI::Update api)
 {
 	if (api.widgets.length == 0) return;
-
-	// TODO:This shouldn't be stored on every widget!
-	BarWidget& barWidgetShared = (BarWidget&) api.widgetsUserData[0];
-	api.UpdatePSConstantBuffer(context, filledBarPS, 0, &barWidgetShared.psInitialize);
 
 	api.PushVertexShader(context, StandardVertexShader::WVP);
 	api.PushPixelShader(context, filledBarPS);
@@ -76,7 +71,7 @@ UpdateBarWidgets(PluginContext& context, WidgetAPI::Update api)
 
 			// TODO: Can we use instancing to accelerate this?
 			api.UpdateVSConstantBuffer(context, StandardVertexShader::WVP, 0, &barWidget.vsPerObject);
-			api.UpdatePSConstantBuffer(context, filledBarPS, 1, &barWidget.psPerObject);
+			api.UpdatePSConstantBuffer(context, filledBarPS, 0, &barWidget.psPerObject);
 			api.DrawMesh(context, StandardMesh::Quad);
 		}
 	}
@@ -96,7 +91,6 @@ Initialize(PluginContext& context, WidgetPluginAPI::Initialize api)
 	api.RegisterWidgets(context, widgetDesc);
 
 	u32 cBufSizes[] = {
-		{ sizeof(PSInitialize) },
 		{ sizeof(PSPerObject)  }
 	};
 	filledBarPS = api.LoadPixelShader(context, "Filled Bar.ps.cso", cBufSizes);
