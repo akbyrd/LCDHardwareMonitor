@@ -84,6 +84,7 @@ static String GetNameFromPath(StringView);
 static void RemoveSensorRefs(SimulationState&, SensorPluginRef, Slice<SensorRef>);
 static void RemoveWidgetRefs(SimulationState&, WidgetPluginRef, WidgetData&);
 static void SelectWidgets(SimulationState&, Slice<FullWidgetRef>);
+static void RemoveHoverAnimation(SimulationState&, u32);
 
 // -------------------------------------------------------------------------------------------------
 // Sensor API
@@ -944,12 +945,16 @@ AddWidgets(SimulationState& s, FullWidgetDataRef ref, u32 count)
 static void
 RemoveWidgetRefs(SimulationState& s, Slice<FullWidgetRef> refs)
 {
-	for (u32 i = 0; i < refs.length; i++)
+	// NOTE: We allow the list of refs to remove to be s.selected or s.hovered. So we have to be
+	// careful about how we remove from those lists here to avoid invalidating the memory refs is
+	// pointing to.
+
+	for (u32 i = refs.length - 1; (i32) i >= 0; i--)
 	{
 		FullWidgetRef ref = refs[i];
 
 		// NOTE: Do slow removes to maintain selection order
-		for (u32 j = 0; j < s.hovered.length; j++)
+		for (u32 j = s.hovered.length - 1; (i32) j >= 0; j--)
 		{
 			if (s.hovered[j] == ref)
 			{
@@ -958,12 +963,28 @@ RemoveWidgetRefs(SimulationState& s, Slice<FullWidgetRef> refs)
 			}
 		}
 
-		for (u32 j = 0; j < s.selected.length; j++)
+		for (u32 j = s.selected.length - 1; (i32) j >= 0; j--)
 		{
 			if (s.selected[j] == ref)
 			{
 				List_Remove(s.selected, j);
 				break;
+			}
+		}
+
+		// NOTE: A single widget can be in multiple animations simultaneously.
+		for (u32 j = s.hoverAnimations.length - 1; (i32) j >= 0; j--)
+		{
+			OutlineAnimation& anim = s.hoverAnimations[j];
+			for (u32 k = 0; k < anim.widgets.length; k++)
+			{
+				if (anim.widgets[k] == ref)
+				{
+					List_Remove(anim.widgets, k);
+					if (anim.widgets.length == 0)
+						RemoveHoverAnimation(s, k);
+					break;
+				}
 			}
 		}
 	}
@@ -987,8 +1008,6 @@ RemoveWidgetRefs(SimulationState& s, WidgetPluginRef pluginRef, WidgetData& widg
 static void
 RemoveWidgets(SimulationState& s, Slice<FullWidgetRef> refs)
 {
-	RemoveWidgetRefs(s, refs);
-
 	for (u32 i = 0; i < refs.length; i++)
 	{
 		FullWidgetRef ref = refs[i];
@@ -1000,6 +1019,8 @@ RemoveWidgets(SimulationState& s, Slice<FullWidgetRef> refs)
 		data.widgets[ref.widgetRef] = {};
 		List_ZeroRange(data.widgetsUserData, data.desc.userDataSize * ToIndex(ref.widgetRef), data.desc.userDataSize);
 	}
+
+	RemoveWidgetRefs(s, refs);
 }
 
 static void
@@ -1319,6 +1340,13 @@ HighlightWidgets(SimulationState& s, Slice<FullWidgetRef> refs, Outline::PSPerPa
 
 	Renderer_PopVertexShader(*s.renderer);
 	Renderer_PopDepthBuffer(*s.renderer);
+}
+
+static void
+RemoveHoverAnimation(SimulationState& s, u32 index)
+{
+	List_Free(s.hoverAnimations[index].widgets);
+	List_RemoveFast(s.hoverAnimations, index);
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -2186,8 +2214,7 @@ Simulation_Update(SimulationState& s)
 			// Clear completed fades
 			else if (isFading && isComplete)
 			{
-				List_Free(anim.widgets);
-				List_RemoveFast(s.hoverAnimations, i);
+				RemoveHoverAnimation(s, i);
 			}
 		}
 
