@@ -982,7 +982,7 @@ RemoveWidgetRefs(SimulationState& s, Slice<FullWidgetRef> refs)
 				{
 					List_Remove(anim.widgets, k);
 					if (anim.widgets.length == 0)
-						RemoveHoverAnimation(s, k);
+						RemoveHoverAnimation(s, j);
 					break;
 				}
 			}
