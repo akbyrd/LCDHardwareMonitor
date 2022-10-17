@@ -118,7 +118,7 @@
     </ClCompile>
     <PostBuildEvent>
       <Command>
-Deploy.bat ProjectPostBuild "$(SolutionDir)..\..\LCDHardwareMonitor PluginLoader CLR" "$(OutDir)"</Command>
+Deploy.bat ProjectPostBuild "$(PlatformTarget)" "$(OutDir)" "$(SolutionDir)..\..\LCDHardwareMonitor PluginLoader CLR"</Command>
     </PostBuildEvent>
     <Link />
     <Manifest />
@@ -134,7 +134,7 @@ Deploy.bat ProjectPostBuild "$(SolutionDir)..\..\LCDHardwareMonitor PluginLoader
     </ClCompile>
     <PostBuildEvent>
       <Command>
-Deploy.bat ProjectPostBuild "$(SolutionDir)..\..\LCDHardwareMonitor PluginLoader CLR" "$(OutDir)"</Command>
+Deploy.bat ProjectPostBuild "$(PlatformTarget)" "$(OutDir)" "$(SolutionDir)..\..\LCDHardwareMonitor PluginLoader CLR"</Command>
     </PostBuildEvent>
     <Link />
     <Manifest />
@@ -156,7 +156,7 @@ Deploy.bat ProjectPostBuild "$(SolutionDir)..\..\LCDHardwareMonitor PluginLoader
     </Link>
     <PostBuildEvent>
       <Command>
-Deploy.bat ProjectPostBuild "$(SolutionDir)..\..\LCDHardwareMonitor PluginLoader CLR" "$(OutDir)"</Command>
+Deploy.bat ProjectPostBuild "$(PlatformTarget)" "$(OutDir)" "$(SolutionDir)..\..\LCDHardwareMonitor PluginLoader CLR"</Command>
     </PostBuildEvent>
     <Manifest />
     <Manifest />
@@ -177,7 +177,7 @@ Deploy.bat ProjectPostBuild "$(SolutionDir)..\..\LCDHardwareMonitor PluginLoader
     </Link>
     <PostBuildEvent>
       <Command>
-Deploy.bat ProjectPostBuild "$(SolutionDir)..\..\LCDHardwareMonitor PluginLoader CLR" "$(OutDir)"</Command>
+Deploy.bat ProjectPostBuild "$(PlatformTarget)" "$(OutDir)" "$(SolutionDir)..\..\LCDHardwareMonitor PluginLoader CLR"</Command>
     </PostBuildEvent>
     <Manifest />
     <Manifest />

@@ -93,7 +93,7 @@ Initialize(PluginContext& context, WidgetPluginAPI::Initialize api)
 	u32 cBufSizes[] = {
 		{ sizeof(PSPerObject)  }
 	};
-	filledBarPS = api.LoadPixelShader(context, "Filled Bar.ps.cso", cBufSizes);
+	filledBarPS = api.LoadPixelShader(context, "Shaders/Filled Bar.ps.cso", cBufSizes);
 	// TODO: Assert shader
 
 	return true;

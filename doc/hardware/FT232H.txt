@@ -1,3 +1,10 @@
+License
+-------
+The driver may be distributed. Safe to include in the git repo and package with
+software distributions.
+
+
+
 Interfaces
 ----------
 UART                     12 mbaud (default)

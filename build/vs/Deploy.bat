@@ -1,12 +1,13 @@
 SETLOCAL
+SETLOCAL EnableDelayedExpansion
 REM @ECHO OFF
 
 REM TODO: Add clean function
 
 REM Usage
-REM Deploy.bat SolutionPreBuild "$(WindowsSdkDir)" "$(PlatformTarget)"
-REM Deploy.bat ProjectPostBuild "Project folder" "$(OutDir)" "Sub-directory" "Shader directory"
-REM Deploy.bat GenerateTLB      "$(OutDir)" "$(TargetName)" "$(PlatformTarget)"
+REM Deploy.bat SolutionPreBuild "$(PlatformTarget)" "$(WindowsSdkDir)"
+REM Deploy.bat ProjectPostBuild "$(PlatformTarget)" "$(OutDir)" "<PROJECT_DIR>" ["<SUB_DIR>" <ext directory names>]
+REM Deploy.bat GenerateTLB      "$(PlatformTarget)" "$(OutDir)" "$(TargetName)"
 
 REM NOTE: Must use CRLF. LF results in "the system cannot find the batch label specified"
 
@@ -17,9 +18,9 @@ ECHO.
 GOTO :%FUNCTION%
 
 :SolutionPreBuild
-	SET WIN_SDK_DIR=%~2
-	SET WIN_SDK_ARCH=%~3
-	SET D3D_COMPILER=%WIN_SDK_DIR%Redist\D3D\%WIN_SDK_ARCH%\d3dcompiler_47.dll
+	SET PLATFORM_ARCH=%~2
+	SET WIN_SDK_DIR=%~3
+	SET D3D_COMPILER=%WIN_SDK_DIR%Redist\D3D\%PLATFORM_ARCH%\d3dcompiler_47.dll
 
 	ECHO  **** Copying shader compiler
 	XCOPY /Y /I /S /B "%D3D_COMPILER%" "%RUN_DIR%\" > NUL
@@ -27,21 +28,34 @@ GOTO :%FUNCTION%
 	GOTO Exit
 
 :ProjectPostBuild
-	SET PROJECT_DIR=%~2
+	SET PLATFORM_ARCH=%~2
 	SET OUT_DIR=%~3
-	SET SUB_DIR=%~4
-	SET SHADER_DIR=%~5
+	SET PROJECT_DIR=%~4
+	SET SUB_DIR=%~5
 
 	ECHO  **** Copying output to run
 	XCOPY /Y /I /S /B /EXCLUDE:exclude_from_copy.txt "%OUT_DIR%*" "%RUN_DIR%\%SUB_DIR%" > NUL
 	IF ERRORLEVEL 1 GOTO Abort
-	XCOPY /Y /I /S /B "%OUT_DIR%*.cso" "%RUN_DIR%\%SUB_DIR%\%SHADER_DIR%" > NUL 2>&1
+
+	XCOPY /Y /I /S /B "%OUT_DIR%*.cso" "%RUN_DIR%\%SUB_DIR%\Shaders" > NUL 2>&1
 	IF ERRORLEVEL 1 GOTO Abort
 
-	IF EXIST "%PROJECT_DIR%/include" (
+	IF EXIST "%PROJECT_DIR%\include" (
 		ECHO  **** Copying public headers to run
-		XCOPY /Y /I /S /B "%PROJECT_DIR%/include" "%RUN_DIR%/Include" > NUL
+		XCOPY /Y /I /S /B /EXCLUDE:exclude_from_copy.txt "%PROJECT_DIR%\include" "%RUN_DIR%\%SUB_DIR%\Include" > NUL
+		IF ERRORLEVEL 1 GOTO Abort
 	)
+
+	ECHO  **** Copying external dependencies to run
+	:Loop
+		IF NOT "%~6"=="" (
+			SET EXT_DIR=%~6
+			ECHO "%PROJECT_DIR%\ext\!EXT_DIR!\lib_%PLATFORM_ARCH%"
+			XCOPY /Y /I /S /B /EXCLUDE:exclude_from_copy.txt "%PROJECT_DIR%\ext\!EXT_DIR!\lib_%PLATFORM_ARCH%" "%RUN_DIR%\%SUB_DIR%" > NUL
+			IF ERRORLEVEL 1 GOTO Abort
+			SHIFT /6
+			GOTO Loop
+		)
 	GOTO Exit
 
 :GenerateTLB
@@ -52,12 +66,12 @@ GOTO :%FUNCTION%
 	REM prevent it. It's complaining that all library references should be specified when cross-
 	REM compiling but 1) I'm not cross-compiling and 2) I shouldn't have any dependencies.
 
-	SET OUT_DIR=%~2
-	SET TARGET_NAME=%~3
-	SET WIN_SDK_ARCH=%~4
+	SET PLATFORM_ARCH=%~2
+	SET OUT_DIR=%~3
+	SET TARGET_NAME=%~4
 	SET TARGET_FILE_NO_EXT=%OUT_DIR%%TARGET_NAME%
-	IF      "%WIN_SDK_ARCH%" == "x86" ( SET TLB_ARCH=win32 ) ^
-	ELSE IF "%WIN_SDK_ARCH%" == "x64" ( SET TLB_ARCH=win64 )
+	IF      "%PLATFORM_ARCH%" == "x86" ( SET TLB_ARCH=win32 ) ^
+	ELSE IF "%PLATFORM_ARCH%" == "x64" ( SET TLB_ARCH=win64 )
 
 	ECHO  **** Generating TLB
 	tlbexp ^

@@ -7,6 +7,13 @@ enum struct Severity
 	Fatal,
 };
 
+enum struct DLLState
+{
+	Null,
+	NotFound,
+	Found,
+};
+
 struct Location
 {
 	StringView file;

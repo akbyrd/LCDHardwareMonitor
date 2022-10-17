@@ -28,26 +28,26 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -90,15 +90,16 @@
       <WarningLevel>EnableAllWarnings</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(OutDir)..\LCDHardwareMonitor PluginLoader CLR Interface;$(SolutionDir)..\..\LCDHardwareMonitor\include;..\..\ext\d2xx\include\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(OutDir)..\LCDHardwareMonitor PluginLoader CLR Interface;$(SolutionDir)..\..\LCDHardwareMonitor\include;$(SolutionDir)..\..\LCDHardwareMonitor\ext\d2xx\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
     </ClCompile>
     <PostBuildEvent>
-      <Command>Deploy.bat ProjectPostBuild "$(SolutionDir)..\..\LCDHardwareMonitor" "$(OutDir)" "" "Shaders"</Command>
+      <Command>Deploy.bat ProjectPostBuild "$(PlatformTarget)" "$(OutDir)" "$(SolutionDir)..\..\LCDHardwareMonitor" "" "d2xx"</Command>
     </PostBuildEvent>
     <Link>
-      <AdditionalLibraryDirectories>..\..\ext\d2xx\lib_$(PlatformTarget)\</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\..\LCDHardwareMonitor\ext\d2xx\lib_$(PlatformTarget)\</AdditionalLibraryDirectories>
+      <DelayLoadDLLs>FTD2XX.dll</DelayLoadDLLs>
     </Link>
     <PreBuildEvent>
       <Command>
@@ -110,15 +111,16 @@
       <WarningLevel>EnableAllWarnings</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(OutDir)..\LCDHardwareMonitor PluginLoader CLR Interface;$(SolutionDir)..\..\LCDHardwareMonitor\include;..\..\ext\d2xx\include\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(OutDir)..\LCDHardwareMonitor PluginLoader CLR Interface;$(SolutionDir)..\..\LCDHardwareMonitor\include;$(SolutionDir)..\..\LCDHardwareMonitor\ext\d2xx\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
     </ClCompile>
     <PostBuildEvent>
-      <Command>Deploy.bat ProjectPostBuild "$(SolutionDir)..\..\LCDHardwareMonitor" "$(OutDir)" "" "Shaders"</Command>
+      <Command>Deploy.bat ProjectPostBuild "$(PlatformTarget)" "$(OutDir)" "$(SolutionDir)..\..\LCDHardwareMonitor" "" "d2xx"</Command>
     </PostBuildEvent>
     <Link>
-      <AdditionalLibraryDirectories>..\..\ext\d2xx\lib_$(PlatformTarget)\</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\..\LCDHardwareMonitor\ext\d2xx\lib_$(PlatformTarget)\</AdditionalLibraryDirectories>
+      <DelayLoadDLLs>FTD2XX.dll</DelayLoadDLLs>
     </Link>
     <PreBuildEvent>
       <Command>
@@ -132,17 +134,18 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(OutDir)..\LCDHardwareMonitor PluginLoader CLR Interface;$(SolutionDir)..\..\LCDHardwareMonitor\include;..\..\ext\d2xx\include\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(OutDir)..\LCDHardwareMonitor PluginLoader CLR Interface;$(SolutionDir)..\..\LCDHardwareMonitor\include;$(SolutionDir)..\..\LCDHardwareMonitor\ext\d2xx\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>..\..\ext\d2xx\lib_$(PlatformTarget)\</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\..\LCDHardwareMonitor\ext\d2xx\lib_$(PlatformTarget)\</AdditionalLibraryDirectories>
+      <DelayLoadDLLs>FTD2XX.dll</DelayLoadDLLs>
     </Link>
     <PostBuildEvent>
-      <Command>Deploy.bat ProjectPostBuild "$(SolutionDir)..\..\LCDHardwareMonitor" "$(OutDir)" "" "Shaders"</Command>
+      <Command>Deploy.bat ProjectPostBuild "$(PlatformTarget)" "$(OutDir)" "$(SolutionDir)..\..\LCDHardwareMonitor" "" "d2xx"</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>
@@ -156,17 +159,18 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(OutDir)..\LCDHardwareMonitor PluginLoader CLR Interface;$(SolutionDir)..\..\LCDHardwareMonitor\include;..\..\ext\d2xx\include\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(OutDir)..\LCDHardwareMonitor PluginLoader CLR Interface;$(SolutionDir)..\..\LCDHardwareMonitor\include;$(SolutionDir)..\..\LCDHardwareMonitor\ext\d2xx\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>..\..\ext\d2xx\lib_$(PlatformTarget)\</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\..\LCDHardwareMonitor\ext\d2xx\lib_$(PlatformTarget)\</AdditionalLibraryDirectories>
+      <DelayLoadDLLs>FTD2XX.dll</DelayLoadDLLs>
     </Link>
     <PostBuildEvent>
-      <Command>Deploy.bat ProjectPostBuild "$(SolutionDir)..\..\LCDHardwareMonitor" "$(OutDir)" "" "Shaders"</Command>
+      <Command>Deploy.bat ProjectPostBuild "$(PlatformTarget)" "$(OutDir)" "$(SolutionDir)..\..\LCDHardwareMonitor" "" "d2xx"</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>

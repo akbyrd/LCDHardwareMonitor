@@ -3,6 +3,7 @@
 
 struct FT232HState
 {
+	DLLState  dllState;
 	FT_HANDLE device;
 	b8        errorMode;
 	b8        enableTracing;
@@ -144,7 +145,7 @@ AssertEmptyReadBuffer(FT232HState& ft232h)
 	}
 }
 
-u32
+static u32
 ToString(String& string, FT_STATUS status)
 {
 	#define X(s) case s: return ToString(string, #s); break;
@@ -174,6 +175,33 @@ ToString(String& string, FT_STATUS status)
 
 	Assert(false);
 	return (u32) -1;
+}
+
+static b8
+CheckForDll(FT232HState& ft232h)
+{
+	// NOTE: FTD2XX.dll is delay loaded. We trigger delay loading with a dummy
+	// function call and handle the load exception to determine if the dll is
+	// present.
+
+	// NOTE: THis has to be in a separate function because SEH cannot be used in
+	// functions with stack unwinding (e.g. defer).
+
+	__try
+	{
+		DWORD version;
+		FT_GetLibraryVersion(&version);
+	}
+	__except (HRESULT_CODE(GetExceptionCode()) == ERROR_MOD_NOT_FOUND
+		? EXCEPTION_EXECUTE_HANDLER
+		: EXCEPTION_CONTINUE_SEARCH)
+	{
+		ft232h.dllState = DLLState::NotFound;
+		return false;
+	}
+
+	ft232h.dllState = DLLState::Found;
+	return true;
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -555,6 +583,9 @@ b8
 FT232H_Initialize(FT232HState& ft232h)
 {
 	FT_STATUS status;
+
+	if (!CheckForDll(ft232h))
+		return false;
 
 	List_Reserve(ft232h.pendingCommands, FT232H::MaxSendBytes);
 

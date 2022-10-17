@@ -1,3 +1,20 @@
+DLL Loading
+-----------
+In some cases dlls for communication chips may not exist at runtime. If we can
+legally distribute them we probably will, but I don't know if that's always
+going to be the case. We don't want to statically link them because we might
+support a large number of devices and we don't want to load libraries and
+dependencies for all of them when we're most likely only ever going to use one
+at a time. There's also no guarantee all vendors will provide static libraries.
+
+So, we set all chip dlls as delay loaded and probe for their existence at
+runtime. We need to handle their absence gracefully. The intent is to do this
+by making a throwawy call into the library and using structured exception
+handling to deal with missing libraries.
+
+
+
+
 LCDSysInfo
 ----------
 Chips

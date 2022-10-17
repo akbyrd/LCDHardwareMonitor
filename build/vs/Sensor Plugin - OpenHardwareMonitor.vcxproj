@@ -105,7 +105,7 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <PostBuildEvent>
-      <Command>Deploy.bat ProjectPostBuild "$(SolutionDir)..\..\Sensor Plugin - OpenHardwareMonitor" "$(OutDir)" "Sensor Plugins\OpenHardwareMonitor"</Command>
+      <Command>Deploy.bat ProjectPostBuild "$(PlatformTarget)" "$(OutDir)" "$(SolutionDir)..\..\Sensor Plugin - OpenHardwareMonitor" "Sensor Plugins\OpenHardwareMonitor"</Command>
     </PostBuildEvent>
     <Link />
   </ItemDefinitionGroup>
@@ -118,7 +118,7 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <PostBuildEvent>
-      <Command>Deploy.bat ProjectPostBuild "$(SolutionDir)..\..\Sensor Plugin - OpenHardwareMonitor" "$(OutDir)" "Sensor Plugins\OpenHardwareMonitor"</Command>
+      <Command>Deploy.bat ProjectPostBuild "$(PlatformTarget)" "$(OutDir)" "$(SolutionDir)..\..\Sensor Plugin - OpenHardwareMonitor" "Sensor Plugins\OpenHardwareMonitor"</Command>
     </PostBuildEvent>
     <Link />
   </ItemDefinitionGroup>
@@ -137,7 +137,7 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PostBuildEvent>
-      <Command>Deploy.bat ProjectPostBuild "$(SolutionDir)..\..\Sensor Plugin - OpenHardwareMonitor" "$(OutDir)" "Sensor Plugins\OpenHardwareMonitor"</Command>
+      <Command>Deploy.bat ProjectPostBuild "$(PlatformTarget)" "$(OutDir)" "$(SolutionDir)..\..\Sensor Plugin - OpenHardwareMonitor" "Sensor Plugins\OpenHardwareMonitor"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -155,12 +155,12 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PostBuildEvent>
-      <Command>Deploy.bat ProjectPostBuild "$(SolutionDir)..\..\Sensor Plugin - OpenHardwareMonitor" "$(OutDir)" "Sensor Plugins\OpenHardwareMonitor"</Command>
+      <Command>Deploy.bat ProjectPostBuild "$(PlatformTarget)" "$(OutDir)" "$(SolutionDir)..\..\Sensor Plugin - OpenHardwareMonitor" "Sensor Plugins\OpenHardwareMonitor"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <Reference Include="OpenHardwareMonitorLib">
-      <HintPath>..\..\ext\OpenHardwareMonitorLib.dll</HintPath>
+      <HintPath>..\..\Sensor Plugin - OpenHardwareMonitor\ext\OpenHardwareMonitorLib.dll</HintPath>
     </Reference>
     <Reference Include="System" />
   </ItemGroup>
