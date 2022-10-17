@@ -4,6 +4,7 @@
 #if _MSC_VER
 	// Some warnings are just fucking stupid
 	#pragma warning (disable: 4201) // Nameless struct/union
+	#pragma warning (disable: 5246) // Initialization of a subobject braces
 	#pragma warning (disable: 4514) // Unreferenced inline removed
 	#pragma warning (disable: 4710) // Function not inlined
 	#pragma warning (disable: 4711) // Function inlined

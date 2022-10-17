@@ -1,5 +1,7 @@
 Current
 -------
+Choose a new scripting language for deployment
+Consider removing anonymous structs from math types
 Update sensors in the UI
 Simulation_Teardown fails if plugins have been unloaded and rawRefToKind is still set
 Sensor list doesn't update when unloading plugin
