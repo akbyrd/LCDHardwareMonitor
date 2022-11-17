@@ -14,6 +14,11 @@ Link list selection to sim selection
 
 Bugs
 ----
+Hang during shutdown on Samsung laptop
+	Only happens when hosting the CLR, using DirectX, and the mixed mode debugger
+	Might also be related Intel graphics driver
+	Reported to Microsoft https://developercommunity.visualstudio.com/t/Deadlock-when-using-Mixed-NET-Framewor/10206805?
+Slight hang when clicking title bar on Samsung laptop
 Widgets change slightly when hovered (may only happen on laptop)
  WPF has slow update rate when not focused on other PCs (not mine).
 	Probably a performance setting.
