@@ -34,7 +34,7 @@ namespace ToGUI
 	struct PluginsAdded
 	{
 		Header                header;
-		Slice<PluginRef>      refs;
+		Slice<Handle<Plugin>> handles;
 		Slice<PluginKind>     kinds;
 		Slice<PluginInfo>     infos;
 		Slice<PluginLanguage> languages;
@@ -43,7 +43,7 @@ namespace ToGUI
 	struct PluginStatesChanged
 	{
 		Header                 header;
-		Slice<PluginRef>       refs;
+		Slice<Handle<Plugin>>  handles;
 		Slice<PluginKind>      kinds;
 		Slice<PluginLoadState> loadStates;
 	};
@@ -92,7 +92,7 @@ namespace FromGUI
 	struct SetPluginLoadStates
 	{
 		Header                 header;
-		Slice<PluginRef>       refs;
+		Slice<Handle<Plugin>>  handles;
 		Slice<PluginLoadState> loadStates;
 	};
 
@@ -591,7 +591,7 @@ void
 Serialize(ByteStream& stream, ToGUI::PluginsAdded& pluginsAdded)
 {
 	Serialize(stream, pluginsAdded.header);
-	Serialize(stream, pluginsAdded.refs);
+	Serialize(stream, pluginsAdded.handles);
 	Serialize(stream, pluginsAdded.kinds);
 	Serialize(stream, pluginsAdded.infos);
 	Serialize(stream, pluginsAdded.languages);
@@ -601,7 +601,7 @@ void
 Serialize(ByteStream& stream, ToGUI::PluginStatesChanged& statesChanged)
 {
 	Serialize(stream, statesChanged.header);
-	Serialize(stream, statesChanged.refs);
+	Serialize(stream, statesChanged.handles);
 	Serialize(stream, statesChanged.kinds);
 	Serialize(stream, statesChanged.loadStates);
 }
@@ -610,7 +610,7 @@ void
 Serialize(ByteStream& stream, FromGUI::SetPluginLoadStates& pluginloadStates)
 {
 	Serialize(stream, pluginloadStates.header);
-	Serialize(stream, pluginloadStates.refs);
+	Serialize(stream, pluginloadStates.handles);
 	Serialize(stream, pluginloadStates.loadStates);
 }
 

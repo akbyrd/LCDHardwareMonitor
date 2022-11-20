@@ -32,12 +32,9 @@ enum struct PluginLoadState
 	Broken,
 };
 
-struct Plugin;
-using PluginRef = List<Plugin>::RefT;
-
 struct Plugin
 {
-	PluginRef       ref;
+	Handle<Plugin>  handle;
 	u32             rawRefToKind;
 	PluginInfo      info;
 	PluginKind      kind;
@@ -51,7 +48,7 @@ struct Plugin
 struct SensorPlugin
 {
 	SensorPluginRef       ref;
-	PluginRef             pluginRef;
+	Handle<Plugin>        pluginHandle;
 	StringSlice           name;
 	SensorPluginFunctions functions;
 	List<Sensor>          sensors;
@@ -78,7 +75,7 @@ struct WidgetData
 struct WidgetPlugin
 {
 	WidgetPluginRef       ref;
-	PluginRef             pluginRef;
+	Handle<Plugin>        pluginHandle;
 	StringSlice           name;
 	WidgetPluginFunctions functions;
 	List<WidgetData>      widgetDatas;

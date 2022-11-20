@@ -235,11 +235,11 @@ namespace LCDHardwareMonitor::GUI
 			Plugin plugin = simState->Plugins[ref - 1];
 			Assert(plugin.Ref == ref);
 
-			PluginRef nRef = { plugin.Ref };
+			Handle<::Plugin> nHandle = { plugin.Ref };
 			::PluginLoadState nLoadState = (::PluginLoadState) loadState;
 
 			FromGUI::SetPluginLoadStates setLoadStates = {};
-			setLoadStates.refs = nRef;
+			setLoadStates.handles = nHandle;
 			setLoadStates.loadStates = nLoadState;
 			SerializeAndQueueMessage(state.simConnection, setLoadStates);
 
@@ -431,7 +431,7 @@ namespace LCDHardwareMonitor::GUI
 			for (u32 i = 0; i < pluginsAdded.infos.length; i++)
 			{
 				Plugin mPlugin = {};
-				mPlugin.Ref  = pluginsAdded.refs[i].value;
+				mPlugin.Ref  = pluginsAdded.handles[i].value;
 				mPlugin.Kind = (PluginKind) pluginsAdded.kinds[i];
 				mPlugin.Language = (PluginLanguage) pluginsAdded.languages[i];
 
@@ -450,12 +450,13 @@ namespace LCDHardwareMonitor::GUI
 		static void
 		FromSim_PluginStatesChanged(SimulationState% simState, ToGUI::PluginStatesChanged& statesChanged)
 		{
-			for (u32 i = 0; i < statesChanged.refs.length; i++)
+			for (u32 i = 0; i < statesChanged.handles.length; i++)
 			{
 				for (u32 j = 0; j < (u32) simState.Plugins->Count; j++)
 				{
 					Plugin p = simState.Plugins[(i32) j];
-					if ((::PluginKind) p.Kind == statesChanged.kinds[i] && p.Ref == statesChanged.refs[i].value)
+					// TODO: I don't think we need to check the kind here. This is the untyped plugin handle
+					if ((::PluginKind) p.Kind == statesChanged.kinds[i] && p.Ref == statesChanged.handles[i].value)
 					{
 						p.LoadState = (PluginLoadState) statesChanged.loadStates[i];
 						simState.Plugins[(i32) j] = p;

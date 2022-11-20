@@ -1,6 +1,58 @@
 #include "Solid Colored.ps.h"
 #include "Outline.ps.h"
 
+template <typename T>
+struct HandleTable
+{
+	union Element
+	{
+		T*  pointer  = nullptr;
+		u32 nextFree;
+	};
+
+	u32           firstFree = 0;
+	List<Element> elements;
+
+	inline Handle<T> Add(T* pointer)
+	{
+		Handle<T> result = {};
+		Element* element = nullptr;
+
+		if (firstFree)
+		{
+			element = &elements[firstFree - 1];
+			result.value = firstFree;
+			firstFree = element->nextFree;
+		}
+		else
+		{
+			element = &List_Append(elements);
+			result.value = elements.length;
+		}
+
+		element->pointer = pointer;
+		return result;
+	}
+
+	inline void Remove(Handle<T> handle)
+	{
+		Element& element = elements[handle.value - 1];
+		element.nextFree = firstFree;
+		firstFree = handle.value;
+	}
+
+	inline b8 IsValid(Handle<T> handle)
+	{
+		b8 result = handle.value <= elements.length;
+		return result;
+	}
+
+	inline T*& operator[](Handle<T> handle)
+	{
+		return elements[handle.value - 1].pointer;
+	}
+};
+
 enum struct GUIInteraction
 {
 	Null,
@@ -23,6 +75,7 @@ struct SimulationState
 	RendererState*         renderer;
 
 	List<Plugin>           plugins;
+	HandleTable<Plugin>    pluginHandles;
 	List<SensorPlugin>     sensorPlugins;
 	List<WidgetPlugin>     widgetPlugins;
 
@@ -83,7 +136,6 @@ struct PluginContext
 static String GetNameFromPath(StringView);
 static void RemoveSensorRefs(SimulationState&, SensorPluginRef, Slice<SensorRef>);
 static void RemoveWidgetRefs(SimulationState&, WidgetPluginRef, WidgetData&);
-static void SelectWidgets(SimulationState&, Slice<FullWidgetRef>);
 static void RemoveHoverAnimation(SimulationState&, u32);
 
 // -------------------------------------------------------------------------------------------------
@@ -140,7 +192,7 @@ UnregisterSensors(PluginContext& context, Slice<SensorRef> sensorRefs)
 		valid = valid && sensorPlugin.sensors[sensorRef].ref == sensorRef;
 		LOG_IF(!valid, return,
 			Severity::Error, "Sensor plugin gave a bad SensorRef '%'",
-			context.s->plugins[sensorPlugin.pluginRef].info.name);
+			context.s->pluginHandles[sensorPlugin.pluginHandle]->info.name);
 	}
 
 	RemoveSensorRefs(*context.s, sensorPlugin.ref, sensorRefs);
@@ -186,7 +238,7 @@ LoadPixelShader(PluginContext& context, StringView relPath, Slice<u32> cBufSizes
 	if (!context.success) return PixelShader::Null;
 	context.success = false;
 
-	Plugin& plugin = context.s->plugins[context.widgetPlugin->pluginRef];
+	Plugin& plugin = *context.s->pluginHandles[context.widgetPlugin->pluginHandle];
 	RendererState& rendererState = *context.s->renderer;
 
 	String path = String_Format("%/%", plugin.directory, relPath);
@@ -366,7 +418,7 @@ ToGUI_PluginsAdded(SimulationState& s, Slice<Plugin> plugins)
 	if (s.guiConnection.pipe.state != PipeState::Connected) return;
 
 	ToGUI::PluginsAdded pluginsAdded = {};
-	pluginsAdded.refs      = Slice_MemberSlice(plugins, &Plugin::ref);
+	pluginsAdded.handles   = Slice_MemberSlice(plugins, &Plugin::handle);
 	pluginsAdded.kinds     = Slice_MemberSlice(plugins, &Plugin::kind);
 	pluginsAdded.infos     = Slice_MemberSlice(plugins, &Plugin::info);
 	pluginsAdded.languages = Slice_MemberSlice(plugins, &Plugin::language);
@@ -379,7 +431,7 @@ ToGUI_PluginStatesChanged(SimulationState& s, Slice<Plugin> plugins)
 	if (s.guiConnection.pipe.state != PipeState::Connected) return;
 
 	ToGUI::PluginStatesChanged statesChanged = {};
-	statesChanged.refs       = Slice_MemberSlice(plugins, &Plugin::ref);
+	statesChanged.handles    = Slice_MemberSlice(plugins, &Plugin::handle);
 	statesChanged.kinds      = Slice_MemberSlice(plugins, &Plugin::kind);
 	statesChanged.loadStates = Slice_MemberSlice(plugins, &Plugin::loadState);
 	SerializeAndQueueMessage(s.guiConnection, statesChanged);
@@ -507,33 +559,17 @@ OnTeardown(ConnectionState& con)
 static Plugin&
 RegisterPlugin(SimulationState& s, StringView directory, StringView fileName)
 {
-	// Re-use empty slots from unregistered plugins
-	Plugin* plugin = nullptr;
-	for (u32 i = 0; i < s.plugins.length; i++)
-	{
-		Plugin& slot = s.plugins[i];
-		if (!slot.ref)
-		{
-			plugin = &slot;
-			plugin->ref = List_GetRef(s.plugins, i);
-			break;
-		}
-	}
+	Plugin& plugin = List_Append(s.plugins);
 
-	if (!plugin)
-	{
-		plugin = &List_Append(s.plugins);
-		plugin->ref = List_GetLastRef(s.plugins);
-	}
+	defer { ToGUI_PluginStatesChanged(s, plugin); };
+	auto pluginGuard = guard { plugin.loadState = PluginLoadState::Broken; };
 
-	defer { ToGUI_PluginStatesChanged(s, *plugin); };
-	auto pluginGuard = guard { plugin->loadState = PluginLoadState::Broken; };
-
-	plugin->fileName  = String_FromView(fileName);
-	plugin->directory = String_FromView(directory);
+	plugin.handle    = s.pluginHandles.Add(&plugin);
+	plugin.fileName  = String_FromView(fileName);
+	plugin.directory = String_FromView(directory);
 
 	pluginGuard.dismiss = true;
-	return *plugin;
+	return plugin;
 }
 
 static void
@@ -543,6 +579,7 @@ UnregisterPlugin(SimulationState& s, Plugin& plugin)
 	// TODO: This is going to send nonsense. Look for similar issues.
 	defer { ToGUI_PluginStatesChanged(s, plugin); };
 
+	s.pluginHandles.Remove(plugin.handle);
 	String_Free(plugin.fileName);
 	String_Free(plugin.directory);
 	String_Free(plugin.info.name);
@@ -605,7 +642,7 @@ LoadSensorPluginImpl(SimulationState& s, Plugin& plugin, SensorPlugin& sensorPlu
 	plugin.kind = PluginKind::Sensor;
 
 	sensorPlugin.name = plugin.info.name;
-	sensorPlugin.pluginRef = plugin.ref;
+	sensorPlugin.pluginHandle = plugin.handle;
 	// TODO: Leak on failure?
 	List_Reserve(sensorPlugin.sensors, 32);
 
@@ -668,7 +705,7 @@ LoadSensorPlugin(SimulationState& s, Plugin& plugin)
 static b8
 UnloadSensorPlugin(SimulationState& s, SensorPlugin& sensorPlugin)
 {
-	Plugin& plugin = s.plugins[sensorPlugin.pluginRef];
+	Plugin& plugin = *s.pluginHandles[sensorPlugin.pluginHandle];
 	Assert(plugin.loadState != PluginLoadState::Unloaded);
 
 	defer { ToGUI_PluginStatesChanged(s, plugin); };
@@ -754,7 +791,7 @@ LoadWidgetPluginImpl(SimulationState& s, Plugin& plugin, WidgetPlugin& widgetPlu
 	plugin.kind = PluginKind::Widget;
 
 	widgetPlugin.name = plugin.info.name;
-	widgetPlugin.pluginRef = plugin.ref;
+	widgetPlugin.pluginHandle = plugin.handle;
 
 	// NOTE: We keep the name and author around for display purposes when a plugin is unloaded. If it
 	// gets loaded again we need to be sure we free the old strings properly.
@@ -806,7 +843,7 @@ LoadWidgetPlugin(SimulationState& s, Plugin& plugin)
 static b8
 UnloadWidgetPlugin(SimulationState& s, WidgetPlugin& widgetPlugin)
 {
-	Plugin& plugin = s.plugins[widgetPlugin.pluginRef];
+	Plugin& plugin = *s.pluginHandles[widgetPlugin.pluginHandle];
 	Assert(plugin.loadState != PluginLoadState::Unloaded);
 
 	defer { ToGUI_PluginStatesChanged(s, plugin); };
@@ -1422,19 +1459,19 @@ FromGUI_SetPluginLoadStates(SimulationState& s, FromGUI::SetPluginLoadStates& se
 {
 	// TODO: If a plugin is unloaded and a new one is load it will take up the same slot and the ref
 	// here will be invalidated (tombstone?)
-	Assert(setStates.refs.length == setStates.loadStates.length);
-	for (u32 i = 0; i < setStates.refs.length; i++)
+	Assert(setStates.handles.length == setStates.loadStates.length);
+	for (u32 i = 0; i < setStates.handles.length; i++)
 	{
-		PluginRef pluginRef = setStates.refs[i];
+		Handle<Plugin> pluginHandle = setStates.handles[i];
 		PluginLoadState loadState = setStates.loadStates[i];
 
-		if (!List_IsRefValid(s.plugins, pluginRef))
+		if (!s.pluginHandles.IsValid(pluginHandle))
 		{
 			LOG(Severity::Warning, "Received SetPluginLoadState request for a plugin that no longer exists");
 			continue;
 		}
 
-		Plugin& plugin = s.plugins[pluginRef];
+		Plugin& plugin = *s.pluginHandles[pluginHandle];
 
 		if (plugin.language == PluginLanguage::Builtin)
 		{
@@ -1668,6 +1705,8 @@ Simulation_Initialize(
 	b8 success = PluginLoader_Initialize(*s.pluginLoader);
 	if (!success) return false;
 
+	List_Reserve(s.plugins, 16);
+	List_Reserve(s.pluginHandles.elements, 64);
 	List_Reserve(s.sensorPlugins, 8);
 	List_Reserve(s.widgetPlugins, 8);
 
