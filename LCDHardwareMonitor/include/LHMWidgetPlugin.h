@@ -1,9 +1,6 @@
 #ifndef LHM_WIDGETPLUGIN
 #define LHM_WIDGETPLUGIN
 
-struct WidgetPlugin;
-using WidgetPluginRef = List<WidgetPlugin>::RefT;
-
 struct Widget;
 using WidgetRef = List<Widget>::RefT;
 

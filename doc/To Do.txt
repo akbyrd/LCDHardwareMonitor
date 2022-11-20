@@ -14,6 +14,7 @@ Link list selection to sim selection
 
 Bugs
 ----
+GUI isn't pixel perfect (Samsung laptop)
 Widgets aren't deleted correctly
 Hang during shutdown on Samsung laptop
 	Only happens when hosting the CLR, using DirectX, and the mixed mode debugger

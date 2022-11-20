@@ -4,6 +4,9 @@ struct Handle
 	u32 value = 0;
 };
 
+template <typename T>
+inline b8 operator== (Handle<T> lhs, Handle<T> rhs) { return lhs.value == rhs.value; }
+
 struct PluginInfo
 {
 	String name;
@@ -80,7 +83,7 @@ struct WidgetData
 
 struct WidgetPlugin
 {
-	WidgetPluginRef       ref;
+	Handle<WidgetPlugin>  handle;
 	Handle<Plugin>        pluginHandle;
 	StringSlice           name;
 	WidgetPluginFunctions functions;
@@ -89,21 +92,21 @@ struct WidgetPlugin
 
 struct FullWidgetDataRef
 {
-	WidgetPluginRef pluginRef;
-	WidgetDataRef   dataRef;
+	Handle<WidgetPlugin> pluginHandle;
+	WidgetDataRef        dataRef;
 };
 
 struct FullWidgetRef
 {
-	WidgetPluginRef pluginRef;
-	WidgetDataRef   dataRef;
-	WidgetRef       widgetRef;
+	Handle<WidgetPlugin> pluginHandle;
+	WidgetDataRef        dataRef;
+	WidgetRef            widgetRef;
 };
 
 inline b8 operator== (FullWidgetRef lhs, FullWidgetRef rhs)
 {
 	b8 result = true;
-	result &= lhs.pluginRef == rhs.pluginRef;
+	result &= lhs.pluginHandle == rhs.pluginHandle;
 	result &= lhs.dataRef == rhs.dataRef;
 	result &= lhs.widgetRef == rhs.widgetRef;
 	return result;

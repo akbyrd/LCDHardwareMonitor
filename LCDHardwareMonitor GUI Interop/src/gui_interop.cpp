@@ -96,14 +96,14 @@ namespace LCDHardwareMonitor::GUI
 
 	public value struct WidgetDesc
 	{
-		property UInt32     PluginRef;
+		property UInt32     PluginHandle;
 		property UInt32     Ref;
 		property CLRString^ Name;
 	};
 
 	public value struct Widget
 	{
-		property UInt32 PluginRef;
+		property UInt32 PluginHandle;
 		property UInt32 DataRef;
 		property UInt32 Ref;
 	};
@@ -335,13 +335,13 @@ namespace LCDHardwareMonitor::GUI
 		}
 
 		static void
-		AddWidget(SimulationState^ simState, UInt32 pluginRef, UInt32 descRef, Point pos)
+		AddWidget(SimulationState^ simState, UInt32 pluginHandle, UInt32 descRef, Point pos)
 		{
 			Unused(simState);
 			Assert(simState->Interaction == Interaction::Null);
 
 			FullWidgetDataRef ref = {};
-			ref.pluginRef = { pluginRef };
+			ref.pluginHandle = { pluginHandle };
 			ref.dataRef = { descRef };
 
 			FromGUI::AddWidget addWidget = {};
@@ -370,9 +370,9 @@ namespace LCDHardwareMonitor::GUI
 				Widget% selectedWidget = (Widget%) selectedWidgets[i];
 
 				FullWidgetRef ref = {};
-				ref.pluginRef = { selectedWidget.PluginRef };
-				ref.dataRef   = { selectedWidget.DataRef };
-				ref.widgetRef = { selectedWidget.Ref };
+				ref.pluginHandle = { selectedWidget.PluginHandle };
+				ref.dataRef      = { selectedWidget.DataRef };
+				ref.widgetRef    = { selectedWidget.Ref };
 				List_Append(selection, ref);
 			}
 
@@ -500,9 +500,9 @@ namespace LCDHardwareMonitor::GUI
 					::WidgetDesc& desc = widgetDescs[j];
 
 					WidgetDesc mWidgetDesc = {};
-					mWidgetDesc.PluginRef = widgetDescsAdded.widgetPluginRefs[i].value;
-					mWidgetDesc.Ref       = desc.ref.value;
-					mWidgetDesc.Name      = ToManagedString(desc.name);
+					mWidgetDesc.PluginHandle = widgetDescsAdded.widgetPluginHandles[i].value;
+					mWidgetDesc.Ref          = desc.ref.value;
+					mWidgetDesc.Name         = ToManagedString(desc.name);
 					simState.WidgetDescs->Add(mWidgetDesc);
 				}
 			}
@@ -515,9 +515,9 @@ namespace LCDHardwareMonitor::GUI
 			for (u32 i = 0; i < widgetsAdded.widgetRefs.length; i++)
 			{
 				Widget mWidget = {};
-				mWidget.PluginRef = widgetsAdded.pluginRef.value;
-				mWidget.DataRef   = widgetsAdded.dataRef.value;
-				mWidget.Ref       = widgetsAdded.widgetRefs[i].value;
+				mWidget.PluginHandle = widgetsAdded.pluginHandle.value;
+				mWidget.DataRef      = widgetsAdded.dataRef.value;
+				mWidget.Ref          = widgetsAdded.widgetRefs[i].value;
 				simState.Widgets->Add(mWidget);
 			}
 			simState.NotifyPropertyChanged("");
@@ -531,9 +531,9 @@ namespace LCDHardwareMonitor::GUI
 			for (u32 i = 0; i < widgetSelection.refs.length; i++)
 			{
 				Widget mWidget = {};
-				mWidget.PluginRef = widgetSelection.refs[i].pluginRef.value;
-				mWidget.DataRef   = widgetSelection.refs[i].dataRef.value;
-				mWidget.Ref       = widgetSelection.refs[i].widgetRef.value;
+				mWidget.PluginHandle = widgetSelection.refs[i].pluginHandle.value;
+				mWidget.DataRef      = widgetSelection.refs[i].dataRef.value;
+				mWidget.Ref          = widgetSelection.refs[i].widgetRef.value;
 				simState.SelectedWidgets->Add(mWidget);
 			}
 			simState.NotifyPropertyChanged("");

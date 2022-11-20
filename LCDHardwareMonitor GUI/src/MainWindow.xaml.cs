@@ -261,7 +261,7 @@ namespace LCDHardwareMonitor.GUI
 		private struct DragDropData
 		{
 			public PluginKind pluginKind;
-			public UInt32 pluginRef;
+			public UInt32 pluginHandle;
 			public UInt32 widgetRef;
 		}
 
@@ -278,7 +278,7 @@ namespace LCDHardwareMonitor.GUI
 
 				DragDropData data = new DragDropData();
 				data.pluginKind = PluginKind.Widget;
-				data.pluginRef = widgetDesc.PluginRef;
+				data.pluginHandle = widgetDesc.PluginHandle;
 				data.widgetRef = widgetDesc.Ref;
 				Interop.DragDrop(simState, PluginKind.Widget, true);
 				DragDropEffects effect = DragDrop.DoDragDrop(dataGridRow, data, DragDropEffects.Copy);
@@ -308,7 +308,7 @@ namespace LCDHardwareMonitor.GUI
 					Debug.Assert(false);
 					break;
 
-				case PluginKind.Widget: Interop.AddWidget(simState, data.pluginRef, data.widgetRef, GetMousePosition()); break;
+				case PluginKind.Widget: Interop.AddWidget(simState, data.pluginHandle, data.widgetRef, GetMousePosition()); break;
 				case PluginKind.Sensor: break;
 			}
 		}

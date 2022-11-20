@@ -228,8 +228,8 @@
 							</DataGrid.Style>
 							<DataGrid.Columns>
 								<DataGridTextColumn
-									Binding="{Binding PluginRef}"
-									Header="Plugin Ref"
+									Binding="{Binding PluginHandle}"
+									Header="Plugin Handle"
 									Width="*"
 									IsReadOnly="true" />
 								<DataGridTextColumn
