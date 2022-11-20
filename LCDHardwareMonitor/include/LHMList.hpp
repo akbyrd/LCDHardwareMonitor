@@ -89,7 +89,7 @@ struct Slice
 };
 
 template<typename T>
-inline void
+inline b8
 List_Reserve(List<T>& list, u32 capacity)
 {
 	if (list.capacity < capacity)
@@ -100,11 +100,13 @@ List_Reserve(List<T>& list, u32 capacity)
 		list.capacity = capacity;
 		list.data     = (T*) ReallocChecked(list.data, (size) totalSize);
 		memset(&list.data[list.length], 0, (size) emptySize);
+		return true;
 	}
+	return false;
 }
 
 template<typename T>
-inline void
+inline b8
 List_Grow(List<T>& list)
 {
 	if (list.length == list.capacity)
@@ -116,7 +118,9 @@ List_Grow(List<T>& list)
 		list.capacity = capacity;
 		list.data     = (T*) ReallocChecked(list.data, (size) totalSize);
 		memset(&list.data[list.length], 0, (size) emptySize);
+		return true;
 	}
+	return false;
 }
 
 template<typename T>
