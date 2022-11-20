@@ -12,6 +12,7 @@
 	#pragma warning (disable: 4774) // printf format not a literal
 	#pragma warning (disable: 4820) // Struct padding added
 	#pragma warning (disable: 5045) // Spectre mitigations
+	#pragma warning (disable: 5264) // const variable unused
 
 	#define EXPORT extern "C" __declspec(dllexport)
 	#define __FUNCTION_FULL_NAME__ __FUNCSIG__

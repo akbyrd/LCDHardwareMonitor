@@ -2005,20 +2005,20 @@ Simulation_Update(SimulationState& s)
 					Assert(false);
 					break;
 
-				HANDLE_MESSAGE(TerminateSimulation);
-				HANDLE_MESSAGE(MouseMove);
-				HANDLE_MESSAGE(SelectHovered);
-				HANDLE_MESSAGE(BeginMouseLook);
-				HANDLE_MESSAGE(EndMouseLook);
-				HANDLE_MESSAGE(ResetCamera);
-				HANDLE_MESSAGE(SetPluginLoadStates);
-				HANDLE_MESSAGE(DragDrop);
-				HANDLE_MESSAGE(AddWidget);
-				HANDLE_MESSAGE(RemoveWidget);
-				HANDLE_MESSAGE(RemoveSelectedWidgets);
-				HANDLE_MESSAGE(BeginDragSelection);
-				HANDLE_MESSAGE(EndDragSelection);
-				HANDLE_MESSAGE(SetWidgetSelection);
+				HANDLE_MESSAGE(TerminateSimulation)
+				HANDLE_MESSAGE(MouseMove)
+				HANDLE_MESSAGE(SelectHovered)
+				HANDLE_MESSAGE(BeginMouseLook)
+				HANDLE_MESSAGE(EndMouseLook)
+				HANDLE_MESSAGE(ResetCamera)
+				HANDLE_MESSAGE(SetPluginLoadStates)
+				HANDLE_MESSAGE(DragDrop)
+				HANDLE_MESSAGE(AddWidget)
+				HANDLE_MESSAGE(RemoveWidget)
+				HANDLE_MESSAGE(RemoveSelectedWidgets)
+				HANDLE_MESSAGE(BeginDragSelection)
+				HANDLE_MESSAGE(EndDragSelection)
+				HANDLE_MESSAGE(SetWidgetSelection)
 			}
 		}
 

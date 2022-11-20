@@ -613,14 +613,14 @@ namespace LCDHardwareMonitor::GUI
 							Assert(false);
 							break;
 
-						HANDLE_MESSAGE(Connect);
-						HANDLE_MESSAGE(Disconnect);
-						HANDLE_MESSAGE(PluginsAdded);
-						HANDLE_MESSAGE(PluginStatesChanged);
-						HANDLE_MESSAGE(SensorsAdded);
-						HANDLE_MESSAGE(WidgetDescsAdded);
-						HANDLE_MESSAGE(WidgetsAdded);
-						HANDLE_MESSAGE(WidgetSelectionChanged);
+						HANDLE_MESSAGE(Connect)
+						HANDLE_MESSAGE(Disconnect)
+						HANDLE_MESSAGE(PluginsAdded)
+						HANDLE_MESSAGE(PluginStatesChanged)
+						HANDLE_MESSAGE(SensorsAdded)
+						HANDLE_MESSAGE(WidgetDescsAdded)
+						HANDLE_MESSAGE(WidgetsAdded)
+						HANDLE_MESSAGE(WidgetSelectionChanged)
 					}
 				}
 
