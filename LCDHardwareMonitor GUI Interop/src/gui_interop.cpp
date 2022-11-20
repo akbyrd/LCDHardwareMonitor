@@ -77,7 +77,7 @@ namespace LCDHardwareMonitor::GUI
 
 	public value struct Plugin
 	{
-		property UInt32          Ref;
+		property UInt32          Handle;
 		property PluginLoadState LoadState;
 		property PluginInfo      Info;
 		property PluginKind      Kind;
@@ -230,12 +230,12 @@ namespace LCDHardwareMonitor::GUI
 		}
 
 		static void
-		SetPluginLoadState(SimulationState^ simState, UInt32 ref, PluginLoadState loadState)
+		SetPluginLoadState(SimulationState^ simState, UInt32 handle, PluginLoadState loadState)
 		{
-			Plugin plugin = simState->Plugins[ref - 1];
-			Assert(plugin.Ref == ref);
+			Plugin plugin = simState->Plugins[handle - 1];
+			Assert(plugin.Handle == handle);
 
-			Handle<::Plugin> nHandle = { plugin.Ref };
+			Handle<::Plugin> nHandle = { plugin.Handle };
 			::PluginLoadState nLoadState = (::PluginLoadState) loadState;
 
 			FromGUI::SetPluginLoadStates setLoadStates = {};
@@ -244,7 +244,7 @@ namespace LCDHardwareMonitor::GUI
 			SerializeAndQueueMessage(state.simConnection, setLoadStates);
 
 			plugin.LoadState = loadState == PluginLoadState::Unloaded ? PluginLoadState::Unloading : PluginLoadState::Loading;
-			simState->Plugins[ref - 1] = plugin;
+			simState->Plugins[handle - 1] = plugin;
 			simState->NotifyPropertyChanged("");
 		}
 
@@ -431,8 +431,8 @@ namespace LCDHardwareMonitor::GUI
 			for (u32 i = 0; i < pluginsAdded.infos.length; i++)
 			{
 				Plugin mPlugin = {};
-				mPlugin.Ref  = pluginsAdded.handles[i].value;
-				mPlugin.Kind = (PluginKind) pluginsAdded.kinds[i];
+				mPlugin.Handle   = pluginsAdded.handles[i].value;
+				mPlugin.Kind     = (PluginKind) pluginsAdded.kinds[i];
 				mPlugin.Language = (PluginLanguage) pluginsAdded.languages[i];
 
 				PluginInfo mPluginInfo = {};
@@ -456,7 +456,7 @@ namespace LCDHardwareMonitor::GUI
 				{
 					Plugin p = simState.Plugins[(i32) j];
 					// TODO: I don't think we need to check the kind here. This is the untyped plugin handle
-					if ((::PluginKind) p.Kind == statesChanged.kinds[i] && p.Ref == statesChanged.handles[i].value)
+					if ((::PluginKind) p.Kind == statesChanged.kinds[i] && p.Handle == statesChanged.handles[i].value)
 					{
 						p.LoadState = (PluginLoadState) statesChanged.loadStates[i];
 						simState.Plugins[(i32) j] = p;

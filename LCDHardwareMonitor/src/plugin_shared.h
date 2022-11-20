@@ -1,3 +1,9 @@
+template <typename T>
+struct Handle
+{
+	u32 value = 0;
+};
+
 struct PluginInfo
 {
 	String name;
