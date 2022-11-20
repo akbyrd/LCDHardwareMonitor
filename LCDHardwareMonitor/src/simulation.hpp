@@ -1015,6 +1015,7 @@ RemoveWidgets(SimulationState& s, Slice<FullWidgetRef> refs)
 		WidgetPlugin& plugin = s.widgetPlugins[ref.pluginRef];
 		WidgetData& data = plugin.widgetDatas[ref.dataRef];
 
+		// TODO: We end up sending invalid widgets to plugins
 		// NOTE: Can't 'remove fast' because it invalidates refs
 		data.widgets[ref.widgetRef] = {};
 		List_ZeroRange(data.widgetsUserData, data.desc.userDataSize * ToIndex(ref.widgetRef), data.desc.userDataSize);
@@ -2150,7 +2151,7 @@ Simulation_Update(SimulationState& s)
 			WidgetPlugin& widgetPlugin = s.widgetPlugins[i];
 			for (u32 j = 0; j < widgetPlugin.widgetDatas.length; j++)
 			{
-				WidgetData& widgetData = widgetPlugin.widgetDatas[i];
+				WidgetData& widgetData = widgetPlugin.widgetDatas[j];
 				for (u32 k = 0; k < widgetData.widgets.length; k++)
 				{
 					Widget& widget = widgetData.widgets[k];

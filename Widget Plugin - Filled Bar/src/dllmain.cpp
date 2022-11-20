@@ -55,6 +55,12 @@ UpdateBarWidgets(PluginContext& context, WidgetAPI::Update api)
 
 		// Update
 		{
+			// TODO: Lerping here means rendering has side effects. This interferes with rendering more
+			// than once to highlight widgets.
+			// Option 1 - Store lastValue
+			// Option 2 - Split Update and Render for widgets
+			// Option 3 - Don't render multiple times - push shader overrides before updating
+			// Option 4 - Don't render multiple times - remember rendering calls and replay them
 			Sensor& sensor = api.sensors[widget.sensorRef];
 			barWidget.psPerObject.fillAmount = Lerp(barWidget.psPerObject.fillAmount, sensor.value, 0.10f);
 		}
