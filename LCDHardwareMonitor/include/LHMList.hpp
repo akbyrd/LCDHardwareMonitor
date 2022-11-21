@@ -363,9 +363,9 @@ List_Remove(List<T>& list, T& value)
 {
 	Assert(list.length > 0);
 	Assert(&value >= &list[0] && &value <= &list[list.length - 1]);
-	Assert((&value - &list[0]) % sizeof(T) == 0);
+	Assert(((u8*) &value - (u8*) &list[0]) % sizeof(T) == 0);
 
-	u32 index = u32((&value - list.data) / sizeof(T));
+	u32 index = u32(&value - list.data);
 	List_RemoveFast(list, index);
 }
 

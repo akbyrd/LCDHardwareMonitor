@@ -138,7 +138,7 @@ struct PluginContext
 // C++ is Stupid.
 
 static String GetNameFromPath(StringView);
-static void RemoveSensorRefs(SimulationState&, SensorPluginRef, Slice<SensorRef>);
+static void RemoveSensorRefs(SimulationState&, Handle<SensorPlugin>, Slice<SensorRef>);
 static void RemoveWidgetRefs(SimulationState&, Handle<WidgetPlugin>, WidgetData&);
 static void RemoveHoverAnimation(SimulationState&, u32);
 
@@ -199,7 +199,7 @@ UnregisterSensors(PluginContext& context, Slice<SensorRef> sensorRefs)
 			context.s->handleTable[sensorPlugin.pluginHandle]->info.name);
 	}
 
-	RemoveSensorRefs(*context.s, sensorPlugin.ref, sensorRefs);
+	RemoveSensorRefs(*context.s, sensorPlugin.handle, sensorRefs);
 
 	for (u32 i = 0; i < sensorRefs.length; i++)
 	{
@@ -442,13 +442,13 @@ ToGUI_PluginStatesChanged(SimulationState& s, Slice<Plugin> plugins)
 }
 
 static void
-ToGUI_SensorsAdded(SimulationState& s, Slice<SensorPluginRef> sensorPluginRefs, Slice<List<Sensor>> sensors)
+ToGUI_SensorsAdded(SimulationState& s, Slice<Handle<SensorPlugin>> sensorPluginHandles, Slice<List<Sensor>> sensors)
 {
 	if (s.guiConnection.pipe.state != PipeState::Connected) return;
 
 	ToGUI::SensorsAdded sensorsAdded = {};
-	sensorsAdded.sensorPluginRefs = sensorPluginRefs;
-	sensorsAdded.sensors          = sensors;
+	sensorsAdded.sensorPluginHandles = sensorPluginHandles;
+	sensorsAdded.sensors             = sensors;
 	SerializeAndQueueMessage(s.guiConnection, sensorsAdded);
 }
 
@@ -496,9 +496,9 @@ OnConnect(SimulationState& s)
 	ToGUI_PluginStatesChanged(s, s.plugins);
 
 	{
-		Slice<SensorPluginRef> sensorPluginRefs = List_MemberSlice(s.sensorPlugins, &SensorPlugin::ref);
-		Slice<List<Sensor>>    sensors          = List_MemberSlice(s.sensorPlugins, &SensorPlugin::sensors);
-		ToGUI_SensorsAdded(s, sensorPluginRefs, sensors);
+		Slice<Handle<SensorPlugin>> sensorPluginHandles = List_MemberSlice(s.sensorPlugins, &SensorPlugin::handle);
+		Slice<List<Sensor>>         sensors             = List_MemberSlice(s.sensorPlugins, &SensorPlugin::sensors);
+		ToGUI_SensorsAdded(s, sensorPluginHandles, sensors);
 	}
 
 	for (u32 i = 0; i < s.widgetPlugins.length; i++)
@@ -608,47 +608,29 @@ TeardownSensorPlugin(SensorPlugin& sensorPlugin)
 		TeardownSensor(sensor);
 	}
 	List_Free(sensorPlugin.sensors);
-
-	sensorPlugin = {};
-}
-
-static SensorPlugin&
-AllocSensorPlugin(SimulationState& s)
-{
-	SensorPlugin* sensorPlugin = nullptr;
-	for (u32 i = 0; i < s.sensorPlugins.length; i++)
-	{
-		SensorPlugin& slot = s.sensorPlugins[i];
-		if (!slot.ref)
-		{
-			sensorPlugin = &slot;
-			sensorPlugin->ref = List_GetRef(s.sensorPlugins, i);
-			break;
-		}
-	}
-
-	if (!sensorPlugin)
-	{
-		sensorPlugin = &List_Append(s.sensorPlugins);
-		sensorPlugin->ref = List_GetLastRef(s.sensorPlugins);
-	}
-
-	return *sensorPlugin;
 }
 
 static Result<SensorPlugin*>
-LoadSensorPluginImpl(SimulationState& s, Plugin& plugin, SensorPlugin& sensorPlugin)
+LoadSensorPlugin(SimulationState& s, Plugin& plugin, SensorPluginFunctions::GetPluginInfoFn* getPluginInfo = nullptr)
 {
-	defer { ToGUI_PluginStatesChanged(s, plugin); };
-	auto pluginGuard = guard { plugin.loadState = PluginLoadState::Broken; };
+	Assert(plugin.loadState != PluginLoadState::Loaded);
 
-	plugin.rawRefToKind = sensorPlugin.ref.value;
-	plugin.kind = PluginKind::Sensor;
-
-	sensorPlugin.name = plugin.info.name;
-	sensorPlugin.pluginHandle = plugin.handle;
+	SensorPlugin& sensorPlugin = List_Append(s.sensorPlugins);
+	sensorPlugin.handle                  = s.handleTable.Add(&sensorPlugin);
+	sensorPlugin.pluginHandle            = plugin.handle;
+	sensorPlugin.functions.GetPluginInfo = getPluginInfo;
 	// TODO: Leak on failure?
 	List_Reserve(sensorPlugin.sensors, 32);
+
+	defer { ToGUI_PluginStatesChanged(s, plugin); };
+	auto pluginGuard = guard
+	{
+		plugin.loadState = PluginLoadState::Broken;
+		List_RemoveLast(s.sensorPlugins);
+	};
+
+	plugin.rawRefToKind = sensorPlugin.handle.value;
+	plugin.kind = PluginKind::Sensor;
 
 	// NOTE: We keep the name and author around for display purposes when a plugin is unloaded. If it
 	// gets loaded again we need to be sure we free the old strings properly.
@@ -658,6 +640,8 @@ LoadSensorPluginImpl(SimulationState& s, Plugin& plugin, SensorPlugin& sensorPlu
 	b8 success = PluginLoader_LoadSensorPlugin(*s.pluginLoader, plugin, sensorPlugin);
 	LOG_IF(!success, return false,
 		Severity::Error, "Failed to load Sensor plugin '%'", plugin.fileName);
+
+	sensorPlugin.name = plugin.info.name;
 
 	// TODO: try/catch?
 	if (sensorPlugin.functions.Initialize)
@@ -685,27 +669,6 @@ LoadSensorPluginImpl(SimulationState& s, Plugin& plugin, SensorPlugin& sensorPlu
 	return &sensorPlugin;
 }
 
-static Result<SensorPlugin*>
-LoadSensorPluginFromCode(SimulationState& s, Plugin& plugin, SensorPluginFunctions::GetPluginInfoFn* getPluginInfo)
-{
-	Assert(plugin.loadState != PluginLoadState::Loaded);
-
-	plugin.language = PluginLanguage::Builtin;
-
-	SensorPlugin& sensorPlugin = AllocSensorPlugin(s);
-	sensorPlugin.functions.GetPluginInfo = getPluginInfo;
-	return LoadSensorPluginImpl(s, plugin, sensorPlugin);
-}
-
-static Result<SensorPlugin*>
-LoadSensorPlugin(SimulationState& s, Plugin& plugin)
-{
-	Assert(plugin.loadState != PluginLoadState::Loaded);
-
-	SensorPlugin& sensorPlugin = AllocSensorPlugin(s);
-	return LoadSensorPluginImpl(s, plugin, sensorPlugin);
-}
-
 static b8
 UnloadSensorPlugin(SimulationState& s, SensorPlugin& sensorPlugin)
 {
@@ -729,12 +692,15 @@ UnloadSensorPlugin(SimulationState& s, SensorPlugin& sensorPlugin)
 		sensorPlugin.functions.Teardown(context, api);
 	}
 
-	RemoveSensorRefs(s, sensorPlugin.ref, List_MemberSlice(sensorPlugin.sensors, &Sensor::ref));
+	RemoveSensorRefs(s, sensorPlugin.handle, List_MemberSlice(sensorPlugin.sensors, &Sensor::ref));
 	TeardownSensorPlugin(sensorPlugin);
 
 	b8 success = PluginLoader_UnloadSensorPlugin(*s.pluginLoader, plugin, sensorPlugin);
 	LOG_IF(!success, return false,
 		Severity::Error, "Failed to unload Sensor plugin '%'", plugin.info.name);
+
+	s.handleTable.Remove(sensorPlugin.handle);
+	sensorPlugin = {};
 
 	plugin.rawRefToKind = 0;
 
@@ -865,7 +831,8 @@ UnloadWidgetPlugin(SimulationState& s, WidgetPlugin& widgetPlugin)
 	LOG_IF(!success, return false,
 		Severity::Error, "Failed to unload Widget plugin '%'", plugin.info.name);
 
-	List_Remove(s.widgetPlugins, widgetPlugin);
+	s.handleTable.Remove(widgetPlugin.handle);
+	widgetPlugin = {};
 
 	plugin.rawRefToKind = 0;
 
@@ -879,7 +846,7 @@ UnloadWidgetPlugin(SimulationState& s, WidgetPlugin& widgetPlugin)
 static Sensor&
 GetSensor(SimulationState& s, FullSensorRef ref)
 {
-	SensorPlugin& sensorPlugin = s.sensorPlugins[ref.pluginRef];
+	SensorPlugin& sensorPlugin = *s.handleTable[ref.pluginHandle];
 	Sensor& sensor = sensorPlugin.sensors[ref.sensorRef];
 	return sensor;
 }
@@ -934,10 +901,10 @@ AddWidgets(SimulationState& s, WidgetPlugin& widgetPlugin, WidgetData& widgetDat
 	for (u32 i = 0; i < count; i++)
 	{
 		Widget& widget = widgetData.widgets[prevWidgetLen + i];
-		widget.ref             = List_GetRef(widgetData.widgets, prevWidgetLen + i);
-		widget.position        = {};
-		widget.sensorPluginRef = s.nullSensorRef.pluginRef;
-		widget.sensorRef       = s.nullSensorRef.sensorRef;
+		widget.ref                = List_GetRef(widgetData.widgets, prevWidgetLen + i);
+		widget.position           = {};
+		widget.sensorPluginHandle = s.nullSensorRef.pluginHandle;
+		widget.sensorRef          = s.nullSensorRef.sensorRef;
 	}
 
 	widgetData.desc.Initialize(context, api);
@@ -1041,7 +1008,7 @@ RemoveWidgets(SimulationState& s, Slice<FullWidgetRef> refs)
 }
 
 static void
-RemoveSensorRefs(SimulationState& s, SensorPluginRef sensorPluginRef, Slice<SensorRef> sensorRefs)
+RemoveSensorRefs(SimulationState& s, Handle<SensorPlugin> sensorPluginHandle, Slice<SensorRef> sensorRefs)
 {
 	for (u32 i = 0; i < sensorRefs.length; i++)
 	{
@@ -1056,11 +1023,10 @@ RemoveSensorRefs(SimulationState& s, SensorPluginRef sensorPluginRef, Slice<Sens
 				for (u32 l = 0; l < widgetData.widgets.length; l++)
 				{
 					Widget& widget = widgetData.widgets[l];
-					// TODO: Add FullSensorRef
-					if (widget.sensorPluginRef == sensorPluginRef && widget.sensorRef == sensorRef)
+					if (widget.sensorPluginHandle == sensorPluginHandle && widget.sensorRef == sensorRef)
 					{
-						widget.sensorPluginRef = SensorPluginRef::Null;
-						widget.sensorRef       = SensorRef::Null;
+						widget.sensorPluginHandle = Handle<SensorPlugin>::Null;
+						widget.sensorRef          = SensorRef::Null;
 					}
 				}
 			}
@@ -1478,8 +1444,8 @@ FromGUI_SetPluginLoadStates(SimulationState& s, FromGUI::SetPluginLoadStates& se
 			case PluginLoadState::Unloaded:
 				if (plugin.kind == PluginKind::Sensor)
 				{
-					SensorPluginRef ref = { plugin.rawRefToKind };
-					SensorPlugin& sensorPlugin = s.sensorPlugins[ref];
+					Handle<SensorPlugin> handle = { plugin.rawRefToKind };
+					SensorPlugin& sensorPlugin = *s.handleTable[handle];
 					UnloadSensorPlugin(s, sensorPlugin);
 				}
 				else
@@ -1928,13 +1894,14 @@ Simulation_Initialize(
 		// pull sensors out so we can create a sensor here without a plugin at all.
 
 		Plugin& builtInPlugin = RegisterPlugin(s, {}, {});
-		Result<SensorPlugin*> sensorPlugin = LoadSensorPluginFromCode(s, builtInPlugin, BuiltinSensorPlugin_GetPluginInfo);
+		builtInPlugin.language = PluginLanguage::Builtin;
+		Result<SensorPlugin*> sensorPlugin = LoadSensorPlugin(s, builtInPlugin, BuiltinSensorPlugin_GetPluginInfo);
 		Assert(sensorPlugin);
 
-		SensorPluginRef builtInSensorPluginRef = { builtInPlugin.rawRefToKind };
-		SensorPlugin& builtInSensorPlugin = s.sensorPlugins[builtInSensorPluginRef];
-		s.nullSensorRef.pluginRef = builtInSensorPlugin.ref;
-		s.nullSensorRef.sensorRef = List_GetLastRef(builtInSensorPlugin.sensors);
+		Handle<SensorPlugin> builtInSensorPluginHandle = { builtInPlugin.rawRefToKind };
+		SensorPlugin& builtInSensorPlugin = *s.handleTable[builtInSensorPluginHandle];
+		s.nullSensorRef.pluginHandle = builtInSensorPlugin.handle;
+		s.nullSensorRef.sensorRef    = List_GetLastRef(builtInSensorPlugin.sensors);
 	}
 
 	// DEBUG: Testing
@@ -2432,12 +2399,14 @@ Simulation_Teardown(SimulationState& s)
 		{
 			// TODO: Can probably make this cleaner
 			Handle<WidgetPlugin> handle = { plugin.rawRefToKind };
-			UnloadWidgetPlugin(s, *s.handleTable[handle]);
+			WidgetPlugin& widgetPlugin = *s.handleTable[handle];
+			UnloadWidgetPlugin(s, widgetPlugin);
 		}
 		if (plugin.kind == PluginKind::Sensor)
 		{
-			SensorPluginRef ref = { plugin.rawRefToKind };
-			UnloadSensorPlugin(s, s.sensorPlugins[ref]);
+			Handle<SensorPlugin> handle = { plugin.rawRefToKind };
+			SensorPlugin& sensorPlugin = *s.handleTable[handle];
+			UnloadSensorPlugin(s, sensorPlugin);
 		}
 		UnregisterPlugin(s, plugin);
 	}

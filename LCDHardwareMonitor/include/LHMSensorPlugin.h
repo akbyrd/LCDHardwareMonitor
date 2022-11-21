@@ -1,9 +1,6 @@
 #ifndef LHM_SENSORPLUGIN
 #define LHM_SENSORPLUGIN
 
-struct SensorPlugin;
-using SensorPluginRef = List<SensorPlugin>::RefT;
-
 struct Sensor;
 using SensorRef = List<Sensor>::RefT;
 

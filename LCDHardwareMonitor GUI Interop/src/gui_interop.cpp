@@ -86,7 +86,7 @@ namespace LCDHardwareMonitor::GUI
 
 	public value struct Sensor
 	{
-		property UInt32     PluginRef;
+		property UInt32     PluginHandle;
 		property UInt32     Ref;
 		property CLRString^ Name;
 		property CLRString^ Identifier;
@@ -230,11 +230,8 @@ namespace LCDHardwareMonitor::GUI
 		}
 
 		static void
-		SetPluginLoadState(SimulationState^ simState, UInt32 handle, PluginLoadState loadState)
+		SetPluginLoadState(SimulationState^ simState, Plugin% plugin, PluginLoadState loadState)
 		{
-			Plugin plugin = simState->Plugins[handle - 1];
-			Assert(plugin.Handle == handle);
-
 			Handle<::Plugin> nHandle = { plugin.Handle };
 			::PluginLoadState nLoadState = (::PluginLoadState) loadState;
 
@@ -243,8 +240,8 @@ namespace LCDHardwareMonitor::GUI
 			setLoadStates.loadStates = nLoadState;
 			SerializeAndQueueMessage(state.simConnection, setLoadStates);
 
+			// TODO: Plugin isn't actually being passed by reference
 			plugin.LoadState = loadState == PluginLoadState::Unloaded ? PluginLoadState::Unloading : PluginLoadState::Loading;
-			simState->Plugins[handle - 1] = plugin;
 			simState->NotifyPropertyChanged("");
 		}
 
@@ -477,12 +474,12 @@ namespace LCDHardwareMonitor::GUI
 					::Sensor& sensor = sensors[j];
 
 					Sensor mSensor = {};
-					mSensor.PluginRef  = sensorsAdded.sensorPluginRefs[i].value;
-					mSensor.Ref        = sensor.ref.value;
-					mSensor.Name       = ToManagedString(sensor.name);
-					mSensor.Identifier = ToManagedString(sensor.identifier);
-					mSensor.Format     = ToManagedString(sensor.format);
-					mSensor.Value      = sensor.value;
+					mSensor.PluginHandle = sensorsAdded.sensorPluginHandles[i].value;
+					mSensor.Ref          = sensor.ref.value;
+					mSensor.Name         = ToManagedString(sensor.name);
+					mSensor.Identifier   = ToManagedString(sensor.identifier);
+					mSensor.Format       = ToManagedString(sensor.format);
+					mSensor.Value        = sensor.value;
 					simState.Sensors->Add(mSensor);
 				}
 			}

@@ -51,9 +51,9 @@ namespace ToGUI
 	// TODO: SensorsRemoved
 	struct SensorsAdded
 	{
-		Header                 header;
-		Slice<SensorPluginRef> sensorPluginRefs;
-		Slice<List<Sensor>>    sensors;
+		Header                      header;
+		Slice<Handle<SensorPlugin>> sensorPluginHandles;
+		Slice<List<Sensor>>         sensors;
 	};
 
 	// TODO: WidgetDescsRemoved
@@ -633,7 +633,7 @@ void
 Serialize(ByteStream& stream, ToGUI::SensorsAdded& sensorsAdded)
 {
 	Serialize(stream, sensorsAdded.header);
-	Serialize(stream, sensorsAdded.sensorPluginRefs);
+	Serialize(stream, sensorsAdded.sensorPluginHandles);
 	Serialize(stream, sensorsAdded.sensors);
 }
 

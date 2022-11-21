@@ -1,12 +1,3 @@
-template <typename T>
-struct Handle
-{
-	u32 value = 0;
-};
-
-template <typename T>
-inline b8 operator== (Handle<T> lhs, Handle<T> rhs) { return lhs.value == rhs.value; }
-
 struct PluginInfo
 {
 	String name;
@@ -56,7 +47,7 @@ struct Plugin
 
 struct SensorPlugin
 {
-	SensorPluginRef       ref;
+	Handle<SensorPlugin>  handle;
 	Handle<Plugin>        pluginHandle;
 	StringSlice           name;
 	SensorPluginFunctions functions;
@@ -66,8 +57,8 @@ struct SensorPlugin
 
 struct FullSensorRef
 {
-	SensorPluginRef pluginRef;
-	SensorRef       sensorRef;
+	Handle<SensorPlugin> pluginHandle;
+	SensorRef            sensorRef;
 };
 
 struct WidgetData;

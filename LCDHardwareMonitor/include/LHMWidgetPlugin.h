@@ -4,15 +4,17 @@
 struct Widget;
 using WidgetRef = List<Widget>::RefT;
 
+struct SensorPlugin; // TODO: Remove
+
 struct Widget
 {
-	WidgetRef       ref;
-	v2              position;
-	v2              size;
-	v2              pivot;
-	r32             depth;
-	SensorPluginRef sensorPluginRef;
-	SensorRef       sensorRef;
+	WidgetRef            ref;
+	v2                   position;
+	v2                   size;
+	v2                   pivot;
+	r32                  depth;
+	Handle<SensorPlugin> sensorPluginHandle;
+	SensorRef            sensorRef;
 };
 
 struct WidgetAPI
