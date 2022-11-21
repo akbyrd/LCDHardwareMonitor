@@ -67,10 +67,10 @@ namespace ToGUI
 	// TODO: WidgetsRemoved
 	struct WidgetsAdded
 	{
-		Header               header;
-		Handle<WidgetPlugin> pluginHandle;
-		WidgetDataRef        dataRef;
-		Slice<WidgetRef>     widgetRefs;
+		Header                header;
+		Handle<WidgetPlugin>  pluginHandle;
+		WidgetDataRef         dataRef;
+		Slice<Handle<Widget>> widgetHandles;
 	};
 
 	struct WidgetSelectionChanged
@@ -675,7 +675,7 @@ Serialize(ByteStream& stream, ToGUI::WidgetsAdded& widgetsAdded)
 	Serialize(stream, widgetsAdded.header);
 	Serialize(stream, widgetsAdded.pluginHandle);
 	Serialize(stream, widgetsAdded.dataRef);
-	Serialize(stream, widgetsAdded.widgetRefs);
+	Serialize(stream, widgetsAdded.widgetHandles);
 }
 
 void

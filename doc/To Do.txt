@@ -1,3 +1,35 @@
+Handle Table with pointesr
+Pointers + patch after changes
+
+Want something stable across changes for the GUI
+Might want it for plugin update functions
+
+[x] PluginRef
+[x] WidgetPluginRef
+[x] SensorPluginRef
+[x] Ensure remove from lists
+[x] Ensure remove from handle table
+[x] Remove rawRefToKind
+[x] WidgetRef
+[ ] SensorRef
+[ ] Widget::sensorPluginHandle
+[ ] Handle plugin list resize
+[ ] Handle widget plugin list resize
+[ ] Handle sensor plugin list resize
+[ ] Handle widget list resize
+----
+[ ] FullWidgetDataRef
+[ ] FullWidgetRef
+[ ] WidgetDataRef
+[ ] FullSensorRef
+[ ] Remove ListRef
+[ ] Improve HandleTable API
+[ ]	Add tombstone
+[ ] Rename Plugin to PluginFile
+[ ] Reuse Plugins
+
+
+
 Current
 -------
 Choose a new scripting language for deployment
@@ -13,6 +45,8 @@ Link list selection to sim selection
 
 Bugs
 ----
+GUI mouse position is wrong (Samsung laptop)
+GUI and preview window are fighting over mouse position
 GUI isn't pixel perfect (Samsung laptop)
 Widgets aren't deleted correctly
 Hang during shutdown on Samsung laptop

@@ -43,6 +43,12 @@ struct HandleTable
 	}
 
 	template <typename T>
+	inline void Update(Handle<T> handle, T* pointer)
+	{
+		elements[handle.value - 1].pointer = pointer;
+	}
+
+	template <typename T>
 	inline b8 IsValid(Handle<T> handle)
 	{
 		b8 result = handle.value <= elements.length;
@@ -464,14 +470,14 @@ ToGUI_WidgetDescsAdded(SimulationState& s, Handle<WidgetPlugin> widgetPluginHand
 }
 
 static void
-ToGUI_WidgetsAdded(SimulationState& s, WidgetPlugin& widgetPlugin, WidgetData widgetData, Slice<WidgetRef> widgetRefs)
+ToGUI_WidgetsAdded(SimulationState& s, WidgetPlugin& widgetPlugin, WidgetData widgetData, Slice<Handle<Widget>> widgetHandles)
 {
 	if (s.guiConnection.pipe.state != PipeState::Connected) return;
 
 	ToGUI::WidgetsAdded widgetsAdded = {};
-	widgetsAdded.pluginHandle = widgetPlugin.handle;
-	widgetsAdded.dataRef      = widgetData.ref;
-	widgetsAdded.widgetRefs   = widgetRefs;
+	widgetsAdded.pluginHandle  = widgetPlugin.handle;
+	widgetsAdded.dataRef       = widgetData.ref;
+	widgetsAdded.widgetHandles = widgetHandles;
 	SerializeAndQueueMessage(s.guiConnection, widgetsAdded);
 }
 
@@ -514,8 +520,8 @@ OnConnect(SimulationState& s)
 		{
 			WidgetData& widgetData = widgetPlugin.widgetDatas[j];
 
-			Slice<WidgetRef> refs = List_MemberSlice(widgetData.widgets, &Widget::ref);
-			ToGUI_WidgetsAdded(s, widgetPlugin, widgetData, refs);
+			Slice<Handle<Widget>> handles = List_MemberSlice(widgetData.widgets, &Widget::handle);
+			ToGUI_WidgetsAdded(s, widgetPlugin, widgetData, handles);
 		}
 	}
 }
@@ -895,7 +901,7 @@ AddWidgets(SimulationState& s, WidgetPlugin& widgetPlugin, WidgetData& widgetDat
 	for (u32 i = 0; i < count; i++)
 	{
 		Widget& widget = widgetData.widgets[prevWidgetLen + i];
-		widget.ref                = List_GetRef(widgetData.widgets, prevWidgetLen + i);
+		widget.handle             = s.handleTable.Add(&widget);
 		widget.position           = {};
 		widget.sensorPluginHandle = s.nullSensorRef.pluginHandle;
 		widget.sensorRef          = s.nullSensorRef.sensorRef;
@@ -905,7 +911,7 @@ AddWidgets(SimulationState& s, WidgetPlugin& widgetPlugin, WidgetData& widgetDat
 	if (!context.success) return {};
 
 	Slice<Widget> newWidgets = List_Slice(widgetData.widgets, prevWidgetLen);
-	ToGUI_WidgetsAdded(s, widgetPlugin, widgetData, Slice_MemberSlice(newWidgets, &Widget::ref));
+	ToGUI_WidgetsAdded(s, widgetPlugin, widgetData, Slice_MemberSlice(newWidgets, &Widget::handle));
 
 	createGuard.dismiss = true;
 	return newWidgets;
@@ -974,10 +980,10 @@ RemoveWidgetRefs(SimulationState& s, Handle<WidgetPlugin> pluginHandle, WidgetDa
 	ref.pluginHandle = pluginHandle;
 	ref.dataRef = widgetData.ref;
 
-	// TODO: Should widgets have their own refs?
 	for (u32 i = 0; i < widgetData.widgets.length; i++)
 	{
-		ref.widgetRef = ToRef<Widget>(i);
+		Widget& widget = widgetData.widgets[i];
+		ref.widgetHandle = widget.handle;
 		RemoveWidgetRefs(s, ref);
 	}
 }
@@ -991,11 +997,17 @@ RemoveWidgets(SimulationState& s, Slice<FullWidgetRef> refs)
 
 		WidgetPlugin& plugin = *s.handleTable[ref.pluginHandle];
 		WidgetData& data = plugin.widgetDatas[ref.dataRef];
+		Widget& widget = *s.handleTable[ref.widgetHandle];
 
-		// TODO: We end up sending invalid widgets to plugins
-		// NOTE: Can't 'remove fast' because it invalidates refs
-		data.widgets[ref.widgetRef] = {};
-		List_ZeroRange(data.widgetsUserData, data.desc.userDataSize * ToIndex(ref.widgetRef), data.desc.userDataSize);
+		u32 widgetIndex = List_PointerToIndex(data.widgets, widget);
+		List_RemoveFast(data.widgets, widgetIndex);
+		List_RemoveRangeFast(data.widgetsUserData, data.desc.userDataSize * widgetIndex, data.desc.userDataSize);
+
+		if (data.widgets.length > 0)
+		{
+			Widget& movedWidget = data.widgets[widgetIndex];
+			s.handleTable.Update(movedWidget.handle, &movedWidget);
+		}
 	}
 
 	RemoveWidgetRefs(s, refs);
@@ -1032,15 +1044,6 @@ static void
 RemoveSelectedWidgets(SimulationState& s)
 {
 	RemoveWidgets(s, s.selected);
-}
-
-static Widget&
-GetWidget(SimulationState& s, FullWidgetRef ref)
-{
-	WidgetPlugin& plugin = *s.handleTable[ref.pluginHandle];
-	WidgetData& data = plugin.widgetDatas[ref.dataRef];
-	Widget& widget = data.widgets[ref.widgetRef];
-	return widget;
 }
 
 static void
@@ -1126,7 +1129,7 @@ DragSelection(SimulationState& s)
 		{
 			FullWidgetRef selected = s.selected[i];
 
-			Widget& widget = GetWidget(s, selected);
+			Widget& widget = *s.handleTable[selected.widgetHandle];
 			widget.position += (v2) deltaPos;
 		}
 	}
@@ -1165,18 +1168,19 @@ HighlightWidgets(SimulationState& s, Slice<FullWidgetRef> refs, Outline::PSPerPa
 		Renderer_ClearDepthBuffer(*s.renderer);
 		for (u32 i = 0; i < refs.length ; i++)
 		{
-			FullWidgetRef widgetRef = refs[i];
+			FullWidgetRef fullWidgetRef = refs[i];
 
-			WidgetPlugin& widgetPlugin = *s.handleTable[widgetRef.pluginHandle];
-			WidgetData&   widgetData   = widgetPlugin.widgetDatas[widgetRef.dataRef];
-			Widget&       widget       = widgetData.widgets[widgetRef.widgetRef];
+			WidgetPlugin& widgetPlugin = *s.handleTable[fullWidgetRef.pluginHandle];
+			WidgetData&   widgetData   = widgetPlugin.widgetDatas[fullWidgetRef.dataRef];
+			Widget&       widget       = *s.handleTable[fullWidgetRef.widgetHandle];
 
 			context.widgetPlugin = &widgetPlugin;
 			context.success      = true;
 
 			widgetAPI.widgets                = widget;
 			// TODO: Can this be made simpler?
-			widgetAPI.widgetsUserData        = widgetData.widgetsUserData[widgetData.desc.userDataSize * ToIndex(widget.ref)];
+			u32 widgetIndex = List_PointerToIndex(widgetData.widgets, widget);
+			widgetAPI.widgetsUserData        = widgetData.widgetsUserData[widgetData.desc.userDataSize * widgetIndex];
 			widgetAPI.widgetsUserData.stride = widgetData.desc.userDataSize;
 
 			// TODO: try/catch?
@@ -1523,8 +1527,7 @@ FromGUI_RemoveWidget(SimulationState& s, FromGUI::RemoveWidget& removeWidget)
 		return;
 	}
 
-	WidgetData& widgetData = widgetPlugin.widgetDatas[removeWidget.ref.dataRef];
-	if (!List_IsRefValid(widgetData.widgets, removeWidget.ref.widgetRef))
+	if (!s.handleTable.IsValid(removeWidget.ref.widgetHandle))
 	{
 		LOG(Severity::Warning, "Received RemoveWidget request for a widget that no longer exists");
 		return;
@@ -1555,7 +1558,7 @@ FromGUI_BeginDragSelection(SimulationState& s, FromGUI::BeginDragSelection&)
 		{
 			FullWidgetRef selected = s.selected[i];
 
-			Widget& widget = GetWidget(s, selected);
+			Widget& widget = *s.handleTable[selected.widgetHandle];
 			v4i widgetRect = (v4i) WidgetRect(widget);
 			s.interactionRect = RectCombine(s.interactionRect, widgetRect);
 		}
@@ -2156,8 +2159,8 @@ Simulation_Update(SimulationState& s)
 							{
 								FullWidgetRef& hovered = List_Append(s.hovered);
 								hovered.pluginHandle = widgetPlugin.handle;
-								hovered.dataRef      = { j + 1 };
-								hovered.widgetRef    = { k + 1 };
+								hovered.dataRef      = widgetData.ref;
+								hovered.widgetHandle = widget.handle;
 
 								if (IsWidgetSelected(s, hovered))
 								{

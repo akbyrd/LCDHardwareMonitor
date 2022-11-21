@@ -314,6 +314,18 @@ List_IsRefValid(List<T>& list, ListRef<T> ref)
 }
 
 template<typename T>
+inline u32
+List_PointerToIndex(List<T>& list, T& value)
+{
+	Assert(list.length > 0);
+	Assert(&value >= &list[0] && &value <= &list[list.length - 1]);
+	Assert(((u8*) &value - (u8*) &list[0]) % sizeof(T) == 0);
+
+	u32 result = u32(&value - list.data);
+	return result;
+}
+
+template<typename T>
 inline T&
 List_Push(List<T>& list)
 {
@@ -355,18 +367,6 @@ List_Remove(List<T>& list, u32 index)
 	memmove(&list[index], &list.data[index + 1], sizeof(T) * (list.length - index - 1));
 	List_ZeroRange(list, list.length - 1, 1);
 	list.length--;
-}
-
-template<typename T>
-inline void
-List_Remove(List<T>& list, T& value)
-{
-	Assert(list.length > 0);
-	Assert(&value >= &list[0] && &value <= &list[list.length - 1]);
-	Assert(((u8*) &value - (u8*) &list[0]) % sizeof(T) == 0);
-
-	u32 index = u32(&value - list.data);
-	List_RemoveFast(list, index);
 }
 
 template<typename T>

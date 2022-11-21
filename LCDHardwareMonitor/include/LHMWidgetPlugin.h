@@ -1,14 +1,11 @@
 #ifndef LHM_WIDGETPLUGIN
 #define LHM_WIDGETPLUGIN
 
-struct Widget;
-using WidgetRef = List<Widget>::RefT;
-
 struct SensorPlugin; // TODO: Remove
 
 struct Widget
 {
-	WidgetRef            ref;
+	Handle<Widget>       handle;
 	v2                   position;
 	v2                   size;
 	v2                   pivot;

@@ -90,7 +90,7 @@ struct FullWidgetRef
 {
 	Handle<WidgetPlugin> pluginHandle;
 	WidgetDataRef        dataRef;
-	WidgetRef            widgetRef;
+	Handle<Widget>       widgetHandle;
 };
 
 inline b8 operator== (FullWidgetRef lhs, FullWidgetRef rhs)
@@ -98,7 +98,7 @@ inline b8 operator== (FullWidgetRef lhs, FullWidgetRef rhs)
 	b8 result = true;
 	result &= lhs.pluginHandle == rhs.pluginHandle;
 	result &= lhs.dataRef == rhs.dataRef;
-	result &= lhs.widgetRef == rhs.widgetRef;
+	result &= lhs.widgetHandle == rhs.widgetHandle;
 	return result;
 }
 inline b8 operator!= (FullWidgetRef lhs, FullWidgetRef rhs) { return !(lhs == rhs); }

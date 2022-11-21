@@ -262,7 +262,7 @@ namespace LCDHardwareMonitor.GUI
 		{
 			public PluginKind pluginKind;
 			public UInt32 pluginHandle;
-			public UInt32 widgetRef;
+			public UInt32 widgetHandle;
 		}
 
 		// TODO: Looks like there's a bug in .NET where dragging over Firefox, Desktop, other? Crashes with DV_E_FORMATETC
@@ -279,7 +279,7 @@ namespace LCDHardwareMonitor.GUI
 				DragDropData data = new DragDropData();
 				data.pluginKind = PluginKind.Widget;
 				data.pluginHandle = widgetDesc.PluginHandle;
-				data.widgetRef = widgetDesc.Ref;
+				data.widgetHandle = widgetDesc.Ref;
 				Interop.DragDrop(simState, PluginKind.Widget, true);
 				DragDropEffects effect = DragDrop.DoDragDrop(dataGridRow, data, DragDropEffects.Copy);
 				Interop.DragDrop(simState, PluginKind.Widget, false);
@@ -308,7 +308,7 @@ namespace LCDHardwareMonitor.GUI
 					Debug.Assert(false);
 					break;
 
-				case PluginKind.Widget: Interop.AddWidget(simState, data.pluginHandle, data.widgetRef, GetMousePosition()); break;
+				case PluginKind.Widget: Interop.AddWidget(simState, data.pluginHandle, data.widgetHandle, GetMousePosition()); break;
 				case PluginKind.Sensor: break;
 			}
 		}

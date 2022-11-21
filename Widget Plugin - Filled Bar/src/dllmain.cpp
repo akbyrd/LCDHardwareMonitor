@@ -50,9 +50,6 @@ UpdateBarWidgets(PluginContext& context, WidgetAPI::Update api)
 		Widget&    widget    = api.widgets[i];
 		BarWidget& barWidget = (BarWidget&) api.widgetsUserData[i];
 
-		// TODO: Not the biggest fan of this...
-		if (!widget.ref) continue;
-
 		// Update
 		{
 			// TODO: Lerping here means rendering has side effects. This interferes with rendering more

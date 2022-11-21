@@ -105,7 +105,7 @@ namespace LCDHardwareMonitor::GUI
 	{
 		property UInt32 PluginHandle;
 		property UInt32 DataRef;
-		property UInt32 Ref;
+		property UInt32 Handle;
 	};
 
 	public enum struct ProcessState
@@ -369,7 +369,7 @@ namespace LCDHardwareMonitor::GUI
 				FullWidgetRef ref = {};
 				ref.pluginHandle = { selectedWidget.PluginHandle };
 				ref.dataRef      = { selectedWidget.DataRef };
-				ref.widgetRef    = { selectedWidget.Ref };
+				ref.widgetHandle = { selectedWidget.Handle };
 				List_Append(selection, ref);
 			}
 
@@ -509,12 +509,12 @@ namespace LCDHardwareMonitor::GUI
 		static void
 		FromSim_WidgetsAdded(SimulationState% simState, ToGUI::WidgetsAdded& widgetsAdded)
 		{
-			for (u32 i = 0; i < widgetsAdded.widgetRefs.length; i++)
+			for (u32 i = 0; i < widgetsAdded.widgetHandles.length; i++)
 			{
 				Widget mWidget = {};
 				mWidget.PluginHandle = widgetsAdded.pluginHandle.value;
 				mWidget.DataRef      = widgetsAdded.dataRef.value;
-				mWidget.Ref          = widgetsAdded.widgetRefs[i].value;
+				mWidget.Handle       = widgetsAdded.widgetHandles[i].value;
 				simState.Widgets->Add(mWidget);
 			}
 			simState.NotifyPropertyChanged("");
@@ -530,7 +530,7 @@ namespace LCDHardwareMonitor::GUI
 				Widget mWidget = {};
 				mWidget.PluginHandle = widgetSelection.refs[i].pluginHandle.value;
 				mWidget.DataRef      = widgetSelection.refs[i].dataRef.value;
-				mWidget.Ref          = widgetSelection.refs[i].widgetRef.value;
+				mWidget.Handle       = widgetSelection.refs[i].widgetHandle.value;
 				simState.SelectedWidgets->Add(mWidget);
 			}
 			simState.NotifyPropertyChanged("");
