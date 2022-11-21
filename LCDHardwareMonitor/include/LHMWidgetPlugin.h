@@ -11,7 +11,7 @@ struct Widget
 	v2                   pivot;
 	r32                  depth;
 	Handle<SensorPlugin> sensorPluginHandle;
-	SensorRef            sensorRef;
+	Handle<Sensor>       sensorHandle;
 };
 
 struct WidgetAPI
@@ -24,21 +24,23 @@ struct WidgetAPI
 
 	struct Update
 	{
-		using GetViewMatrixFn           = Matrix(PluginContext&);
-		using GetProjectionMatrixFn     = Matrix(PluginContext&);
-		using GetViewProjectionMatrixFn = Matrix(PluginContext&);
-		using UpdateVSConstantBufferFn  = void  (PluginContext&, VertexShader, u32 index, void* data);
-		using UpdatePSConstantBufferFn  = void  (PluginContext&, PixelShader, u32 index, void* data);
-		using DrawMeshFn                = void  (PluginContext&, Mesh);
-		using PushVertexShaderFn        = void  (PluginContext&, VertexShader);
-		using PushPixelShaderFn         = void  (PluginContext&, PixelShader);
-		using PopVertexShaderFn         = void  (PluginContext&);
-		using PopPixelShaderFn          = void  (PluginContext&);
+		using GetSensorFn               = Sensor*(PluginContext&, Handle<Sensor>);
+		using GetViewMatrixFn           = Matrix (PluginContext&);
+		using GetProjectionMatrixFn     = Matrix (PluginContext&);
+		using GetViewProjectionMatrixFn = Matrix (PluginContext&);
+		using UpdateVSConstantBufferFn  = void   (PluginContext&, VertexShader, u32 index, void* data);
+		using UpdatePSConstantBufferFn  = void   (PluginContext&, PixelShader, u32 index, void* data);
+		using DrawMeshFn                = void   (PluginContext&, Mesh);
+		using PushVertexShaderFn        = void   (PluginContext&, VertexShader);
+		using PushPixelShaderFn         = void   (PluginContext&, PixelShader);
+		using PopVertexShaderFn         = void   (PluginContext&);
+		using PopPixelShaderFn          = void   (PluginContext&);
 
 		r32                        t;
 		Slice<Widget>              widgets;
 		ByteSlice                  widgetsUserData;
 		Slice<Sensor>              sensors;
+		GetSensorFn*               GetSensor;
 		GetViewMatrixFn*           GetViewMatrix;
 		GetProjectionMatrixFn*     GetProjectionMatrix;
 		GetViewProjectionMatrixFn* GetViewProjectionMatrix;

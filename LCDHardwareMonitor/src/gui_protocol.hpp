@@ -640,7 +640,7 @@ Serialize(ByteStream& stream, ToGUI::SensorsAdded& sensorsAdded)
 void
 Serialize(ByteStream& stream, Sensor& sensor)
 {
-	Serialize(stream, sensor.ref);
+	Serialize(stream, sensor.handle);
 	Serialize(stream, sensor.name);
 	Serialize(stream, sensor.identifier);
 	Serialize(stream, sensor.format);

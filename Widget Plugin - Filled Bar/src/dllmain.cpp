@@ -58,7 +58,7 @@ UpdateBarWidgets(PluginContext& context, WidgetAPI::Update api)
 			// Option 2 - Split Update and Render for widgets
 			// Option 3 - Don't render multiple times - push shader overrides before updating
 			// Option 4 - Don't render multiple times - remember rendering calls and replay them
-			Sensor& sensor = api.sensors[widget.sensorRef];
+			Sensor& sensor = *api.GetSensor(context, widget.sensorHandle);
 			barWidget.psPerObject.fillAmount = Lerp(barWidget.psPerObject.fillAmount, sensor.value, 0.10f);
 		}
 

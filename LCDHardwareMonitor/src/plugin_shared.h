@@ -51,13 +51,13 @@ struct SensorPlugin
 	StringSlice           name;
 	SensorPluginFunctions functions;
 	List<Sensor>          sensors;
-	//List<SensorRef> activeSensors;
+	//List<Handle<Sensor>> activeSensors;
 };
 
 struct FullSensorRef
 {
 	Handle<SensorPlugin> pluginHandle;
-	SensorRef            sensorRef;
+	Handle<Sensor>       sensorHandle;
 };
 
 struct WidgetData;

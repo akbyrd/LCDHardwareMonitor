@@ -87,7 +87,7 @@ namespace LCDHardwareMonitor::GUI
 	public value struct Sensor
 	{
 		property UInt32     PluginHandle;
-		property UInt32     Ref;
+		property UInt32     Handle;
 		property CLRString^ Name;
 		property CLRString^ Identifier;
 		property CLRString^ Format;
@@ -475,7 +475,7 @@ namespace LCDHardwareMonitor::GUI
 
 					Sensor mSensor = {};
 					mSensor.PluginHandle = sensorsAdded.sensorPluginHandles[i].value;
-					mSensor.Ref          = sensor.ref.value;
+					mSensor.Handle       = sensor.handle.value;
 					mSensor.Name         = ToManagedString(sensor.name);
 					mSensor.Identifier   = ToManagedString(sensor.identifier);
 					mSensor.Format       = ToManagedString(sensor.format);

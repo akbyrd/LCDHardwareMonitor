@@ -11,18 +11,19 @@ Might want it for plugin update functions
 [x] Ensure remove from handle table
 [x] Remove rawRefToKind
 [x] WidgetRef
-[ ] SensorRef
+[x] SensorRef
+[ ] WidgetDataRef
+[ ] Remove ListRef
+[ ] FullWidgetDataRef
+[ ] FullWidgetRef
+[ ] FullSensorRef
+----
 [ ] Widget::sensorPluginHandle
 [ ] Handle plugin list resize
 [ ] Handle widget plugin list resize
 [ ] Handle sensor plugin list resize
 [ ] Handle widget list resize
 ----
-[ ] FullWidgetDataRef
-[ ] FullWidgetRef
-[ ] WidgetDataRef
-[ ] FullSensorRef
-[ ] Remove ListRef
 [ ] Improve HandleTable API
 [ ]	Add tombstone
 [ ] Rename Plugin to PluginFile

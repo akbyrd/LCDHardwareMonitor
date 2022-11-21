@@ -124,6 +124,24 @@ List_Grow(List<T>& list)
 }
 
 template<typename T>
+inline b8
+List_Grow(List<T>& list, u32 count)
+{
+	if (list.length + count < list.capacity)
+	{
+		u32 capacity  = list.capacity + count;
+		u64 totalSize = sizeof(T) * u64(capacity);
+		u64 emptySize = sizeof(T) * u64(count);
+
+		list.capacity = capacity;
+		list.data     = (T*) ReallocChecked(list.data, (size) totalSize);
+		memset(&list.data[list.length], 0, (size) emptySize);
+		return true;
+	}
+	return false;
+}
+
+template<typename T>
 inline T&
 List_Append(List<T>& list, T item)
 {

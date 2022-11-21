@@ -144,8 +144,8 @@ struct PluginContext
 // C++ is Stupid.
 
 static String GetNameFromPath(StringView);
-static void RemoveSensorRefs(SimulationState&, Handle<SensorPlugin>, Slice<SensorRef>);
-static void RemoveWidgetRefs(SimulationState&, Handle<WidgetPlugin>, WidgetData&);
+static void RemoveSensorReferences(SimulationState&, Handle<SensorPlugin>, Slice<Handle<Sensor>>);
+static void RemoveWidgetReferences(SimulationState&, Handle<WidgetPlugin>, WidgetData&);
 static void RemoveHoverAnimation(SimulationState&, u32);
 
 // -------------------------------------------------------------------------------------------------
@@ -158,27 +158,13 @@ RegisterSensors(PluginContext& context, Slice<SensorDesc> sensors)
 
 	SensorPlugin& sensorPlugin = *context.sensorPlugin;
 
-	u32 emptySlots = 0;
-	for (u32 i = 0; i < sensorPlugin.sensors.length; i++)
-	{
-		Sensor& sensor = sensorPlugin.sensors[i];
-		if (!sensor.ref)
-			emptySlots++;
-	}
-	u32 requiredSlots = sensors.length - emptySlots;
-	List_AppendRange(sensorPlugin.sensors, requiredSlots);
-
-	u32 nextSlot = 0;
+	List_Grow(sensorPlugin.sensors, sensors.length);
 	for (u32 i = 0; i < sensors.length; i++)
 	{
-		while(sensorPlugin.sensors[nextSlot].ref)
-			nextSlot++;
-		Assert(nextSlot < sensorPlugin.sensors.length);
-
-		Sensor& sensor = sensorPlugin.sensors[nextSlot];
+		Sensor& sensor = List_Append(sensorPlugin.sensors);
 		SensorDesc& desc = sensors[i];
 
-		sensor.ref        = { sensorPlugin.sensors.length + i };
+		sensor.handle     = context.s->handleTable.Add(&sensor);
 		sensor.name       = String_FromView(desc.name);
 		sensor.identifier = String_FromView(desc.identifier);
 		sensor.format     = String_FromView(desc.format);
@@ -186,31 +172,36 @@ RegisterSensors(PluginContext& context, Slice<SensorDesc> sensors)
 }
 
 static void
-UnregisterSensors(PluginContext& context, Slice<SensorRef> sensorRefs)
+UnregisterSensors(PluginContext& context, Slice<Handle<Sensor>> sensorHandles)
 {
 	if (!context.success) return;
 	context.success = false;
 
 	SensorPlugin& sensorPlugin = *context.sensorPlugin;
 
-	for (u32 i = 0; i < sensorRefs.length; i++)
+	for (u32 i = 0; i < sensorHandles.length; i++)
 	{
-		SensorRef sensorRef = sensorRefs[i];
+		Handle<Sensor> sensorHandle = sensorHandles[i];
 
-		b8 valid = true;
-		valid = valid && List_IsRefValid(sensorPlugin.sensors, sensorRef);
-		valid = valid && sensorPlugin.sensors[sensorRef].ref == sensorRef;
-		LOG_IF(!valid, return,
-			Severity::Error, "Sensor plugin gave a bad SensorRef '%'",
-			context.s->handleTable[sensorPlugin.pluginHandle]->info.name);
+		LOG_IF(!context.s->handleTable.IsValid(sensorHandle), return,
+			Severity::Error, "Sensor plugin gave a bad Sensor handle '%'", sensorPlugin.name);
 	}
 
-	RemoveSensorRefs(*context.s, sensorPlugin.handle, sensorRefs);
+	RemoveSensorReferences(*context.s, sensorPlugin.handle, sensorHandles);
 
-	for (u32 i = 0; i < sensorRefs.length; i++)
+	for (u32 i = 0; i < sensorHandles.length; i++)
 	{
-		SensorRef sensorRef = sensorRefs[i];
-		sensorPlugin.sensors[sensorRef] = {};
+		Handle<Sensor> sensorHandle = sensorHandles[i];
+		Sensor& sensor = *context.s->handleTable[sensorHandle];
+
+		u32 sensorIndex = List_PointerToIndex(sensorPlugin.sensors, sensor);
+		List_RemoveFast(sensorPlugin.sensors, sensorIndex);
+
+		if (sensorPlugin.sensors.length)
+		{
+			Sensor& movedSensor = sensorPlugin.sensors[sensorIndex];
+			context.s->handleTable.Update(movedSensor.handle, &movedSensor);
+		}
 	}
 
 	context.success = true;
@@ -263,6 +254,22 @@ LoadPixelShader(PluginContext& context, StringView relPath, Slice<u32> cBufSizes
 
 	context.success = true;
 	return ps;
+}
+
+static Sensor*
+GetSensor(PluginContext& context, Handle<Sensor> sensorHandle)
+{
+	if (!context.success) return nullptr;
+	context.success = false;
+
+	WidgetPlugin& widgetPlugin = *context.widgetPlugin;
+
+	LOG_IF(!context.s->handleTable.IsValid(sensorHandle), return nullptr,
+		Severity::Warning, "Attempting to get an invalid sensor from plugin '%'", widgetPlugin.name);
+
+	Sensor& sensor = *context.s->handleTable[sensorHandle];
+	context.success = true;
+	return &sensor;
 }
 
 static Matrix
@@ -697,7 +704,7 @@ UnloadSensorPlugin(SimulationState& s, SensorPlugin& sensorPlugin)
 		sensorPlugin.functions.Teardown(context, api);
 	}
 
-	RemoveSensorRefs(s, sensorPlugin.handle, List_MemberSlice(sensorPlugin.sensors, &Sensor::ref));
+	RemoveSensorReferences(s, sensorPlugin.handle, List_MemberSlice(sensorPlugin.sensors, &Sensor::handle));
 	TeardownSensorPlugin(sensorPlugin);
 
 	b8 success = PluginLoader_UnloadSensorPlugin(*s.pluginLoader, plugin, sensorPlugin);
@@ -825,7 +832,7 @@ UnloadWidgetPlugin(SimulationState& s, WidgetPlugin& widgetPlugin)
 	for (u32 i = 0; i < widgetPlugin.widgetDatas.length; i++)
 	{
 		WidgetData& widgetData = widgetPlugin.widgetDatas[i];
-		RemoveWidgetRefs(s, widgetPlugin.handle, widgetData);
+		RemoveWidgetReferences(s, widgetPlugin.handle, widgetData);
 	}
 	TeardownWidgetPlugin(widgetPlugin);
 
@@ -841,16 +848,6 @@ UnloadWidgetPlugin(SimulationState& s, WidgetPlugin& widgetPlugin)
 }
 
 // -------------------------------------------------------------------------------------------------
-
-#if false
-static Sensor&
-GetSensor(SimulationState& s, FullSensorRef ref)
-{
-	SensorPlugin& sensorPlugin = *s.handleTable[ref.pluginHandle];
-	Sensor& sensor = sensorPlugin.sensors[ref.sensorRef];
-	return sensor;
-}
-#endif
 
 static String
 GetNameFromPath(StringView path)
@@ -904,7 +901,7 @@ AddWidgets(SimulationState& s, WidgetPlugin& widgetPlugin, WidgetData& widgetDat
 		widget.handle             = s.handleTable.Add(&widget);
 		widget.position           = {};
 		widget.sensorPluginHandle = s.nullSensorRef.pluginHandle;
-		widget.sensorRef          = s.nullSensorRef.sensorRef;
+		widget.sensorHandle       = s.nullSensorRef.sensorHandle;
 	}
 
 	widgetData.desc.Initialize(context, api);
@@ -926,7 +923,7 @@ AddWidgets(SimulationState& s, FullWidgetDataRef ref, u32 count)
 }
 
 static void
-RemoveWidgetRefs(SimulationState& s, Slice<FullWidgetRef> refs)
+RemoveWidgetReferences(SimulationState& s, Slice<FullWidgetRef> refs)
 {
 	// NOTE: We allow the list of refs to remove to be s.selected or s.hovered. So we have to be
 	// careful about how we remove from those lists here to avoid invalidating the memory refs is
@@ -974,7 +971,7 @@ RemoveWidgetRefs(SimulationState& s, Slice<FullWidgetRef> refs)
 }
 
 static void
-RemoveWidgetRefs(SimulationState& s, Handle<WidgetPlugin> pluginHandle, WidgetData& widgetData)
+RemoveWidgetReferences(SimulationState& s, Handle<WidgetPlugin> pluginHandle, WidgetData& widgetData)
 {
 	FullWidgetRef ref = {};
 	ref.pluginHandle = pluginHandle;
@@ -984,7 +981,7 @@ RemoveWidgetRefs(SimulationState& s, Handle<WidgetPlugin> pluginHandle, WidgetDa
 	{
 		Widget& widget = widgetData.widgets[i];
 		ref.widgetHandle = widget.handle;
-		RemoveWidgetRefs(s, ref);
+		RemoveWidgetReferences(s, ref);
 	}
 }
 
@@ -1010,15 +1007,15 @@ RemoveWidgets(SimulationState& s, Slice<FullWidgetRef> refs)
 		}
 	}
 
-	RemoveWidgetRefs(s, refs);
+	RemoveWidgetReferences(s, refs);
 }
 
 static void
-RemoveSensorRefs(SimulationState& s, Handle<SensorPlugin> sensorPluginHandle, Slice<SensorRef> sensorRefs)
+RemoveSensorReferences(SimulationState& s, Handle<SensorPlugin> sensorPluginHandle, Slice<Handle<Sensor>> sensorHandles)
 {
-	for (u32 i = 0; i < sensorRefs.length; i++)
+	for (u32 i = 0; i < sensorHandles.length; i++)
 	{
-		SensorRef sensorRef = sensorRefs[i];
+		Handle<Sensor> sensorHandle = sensorHandles[i];
 		// TODO: Widget iterator!
 		for (u32 j = 0; j < s.widgetPlugins.length; j++)
 		{
@@ -1029,10 +1026,10 @@ RemoveSensorRefs(SimulationState& s, Handle<SensorPlugin> sensorPluginHandle, Sl
 				for (u32 l = 0; l < widgetData.widgets.length; l++)
 				{
 					Widget& widget = widgetData.widgets[l];
-					if (widget.sensorPluginHandle == sensorPluginHandle && widget.sensorRef == sensorRef)
+					if (widget.sensorPluginHandle == sensorPluginHandle && widget.sensorHandle == sensorHandle)
 					{
 						widget.sensorPluginHandle = Handle<SensorPlugin>::Null;
-						widget.sensorRef          = SensorRef::Null;
+						widget.sensorHandle       = Handle<Sensor>::Null;
 					}
 				}
 			}
@@ -1151,6 +1148,7 @@ HighlightWidgets(SimulationState& s, Slice<FullWidgetRef> refs, Outline::PSPerPa
 		WidgetAPI::Update widgetAPI = {};
 		widgetAPI.t                       = s.currentTime;
 		widgetAPI.sensors                 = s.sensorPlugins[0].sensors;
+		widgetAPI.GetSensor               = GetSensor;
 		widgetAPI.GetViewMatrix           = GetViewMatrix;
 		widgetAPI.GetProjectionMatrix     = GetProjectionMatrix;
 		widgetAPI.GetViewProjectionMatrix = GetViewProjectionMatrix;
@@ -1908,7 +1906,7 @@ Simulation_Initialize(
 		Assert(sensorPlugin);
 
 		s.nullSensorRef.pluginHandle = sensorPlugin->handle;
-		s.nullSensorRef.sensorRef    = List_GetLastRef(sensorPlugin->sensors);
+		s.nullSensorRef.sensorHandle = sensorPlugin->sensors[0].handle;
 	}
 
 	// DEBUG: Testing
@@ -2078,6 +2076,7 @@ Simulation_Update(SimulationState& s)
 		WidgetAPI::Update widgetAPI = {};
 		widgetAPI.t                       = s.currentTime;
 		widgetAPI.sensors                 = s.sensorPlugins[0].sensors;
+		widgetAPI.GetSensor               = GetSensor;
 		widgetAPI.GetViewMatrix           = GetViewMatrix;
 		widgetAPI.GetProjectionMatrix     = GetProjectionMatrix;
 		widgetAPI.GetViewProjectionMatrix = GetViewProjectionMatrix;

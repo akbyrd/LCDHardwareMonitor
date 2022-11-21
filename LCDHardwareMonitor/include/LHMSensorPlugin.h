@@ -1,16 +1,13 @@
 #ifndef LHM_SENSORPLUGIN
 #define LHM_SENSORPLUGIN
 
-struct Sensor;
-using SensorRef = List<Sensor>::RefT;
-
 struct Sensor
 {
-	SensorRef ref;
-	String    name;
-	String    identifier;
-	String    format;
-	r32       value;
+	Handle<Sensor> handle;
+	String         name;
+	String         identifier;
+	String         format;
+	r32            value;
 
 	// TODO: Might want an integer Type field with a plugin provided to-string function.
 };
@@ -36,7 +33,7 @@ struct SensorPluginAPI
 		// NOTE: Plugins should not free Sensor members until *after* calling UnregisterSensors!
 
 		using RegisterSensorsFn   = void(PluginContext&, Slice<SensorDesc>);
-		using UnregisterSensorsFn = void(PluginContext&, Slice<SensorRef>);
+		using UnregisterSensorsFn = void(PluginContext&, Slice<Handle<Sensor>>);
 
 		RegisterSensorsFn*   RegisterSensors;
 		UnregisterSensorsFn* UnregisterSensors;
