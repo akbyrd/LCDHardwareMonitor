@@ -35,7 +35,6 @@ enum struct PluginLoadState
 struct Plugin
 {
 	Handle<Plugin>  handle;
-	u32             rawRefToKind;
 	PluginInfo      info;
 	PluginKind      kind;
 	PluginLanguage  language;

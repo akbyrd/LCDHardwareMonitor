@@ -629,7 +629,6 @@ LoadSensorPlugin(SimulationState& s, Plugin& plugin, SensorPluginFunctions::GetP
 		List_RemoveLast(s.sensorPlugins);
 	};
 
-	plugin.rawRefToKind = sensorPlugin.handle.value;
 	plugin.kind = PluginKind::Sensor;
 
 	// NOTE: We keep the name and author around for display purposes when a plugin is unloaded. If it
@@ -702,8 +701,6 @@ UnloadSensorPlugin(SimulationState& s, SensorPlugin& sensorPlugin)
 	s.handleTable.Remove(sensorPlugin.handle);
 	sensorPlugin = {};
 
-	plugin.rawRefToKind = 0;
-
 	pluginGuard.dismiss = true;
 	return true;
 }
@@ -742,8 +739,7 @@ LoadWidgetPlugin(SimulationState& s, Plugin& plugin)
 		List_RemoveLast(s.widgetPlugins);
 	};
 
-	plugin.rawRefToKind = widgetPlugin.handle.value;
-	plugin.kind         = PluginKind::Widget;
+	plugin.kind = PluginKind::Widget;
 
 	// NOTE: We keep the name and author around for display purposes when a plugin is unloaded. If it
 	// gets loaded again we need to be sure we free the old strings properly.
@@ -833,8 +829,6 @@ UnloadWidgetPlugin(SimulationState& s, WidgetPlugin& widgetPlugin)
 
 	s.handleTable.Remove(widgetPlugin.handle);
 	widgetPlugin = {};
-
-	plugin.rawRefToKind = 0;
 
 	pluginGuard.dismiss = true;
 	return true;
@@ -1444,15 +1438,27 @@ FromGUI_SetPluginLoadStates(SimulationState& s, FromGUI::SetPluginLoadStates& se
 			case PluginLoadState::Unloaded:
 				if (plugin.kind == PluginKind::Sensor)
 				{
-					Handle<SensorPlugin> handle = { plugin.rawRefToKind };
-					SensorPlugin& sensorPlugin = *s.handleTable[handle];
-					UnloadSensorPlugin(s, sensorPlugin);
+					for (i32 j = (i32) s.sensorPlugins.length - 1; j >= 0; j--)
+					{
+						SensorPlugin& sensorPlugin = s.sensorPlugins[(u32) j];
+						if (sensorPlugin.pluginHandle == pluginHandle)
+						{
+							UnloadSensorPlugin(s, sensorPlugin);
+							List_RemoveFast(s.sensorPlugins, (u32) j);
+						}
+					}
 				}
 				else
 				{
-					Handle<WidgetPlugin> handle = { plugin.rawRefToKind };
-					WidgetPlugin& widgetPlugin = *s.handleTable[handle];
-					UnloadWidgetPlugin(s, widgetPlugin);
+					for (i32 j = (i32) s.widgetPlugins.length - 1; j >= 0; j--)
+					{
+						WidgetPlugin& widgetPlugin = s.widgetPlugins[(u32) j];
+						if (widgetPlugin.pluginHandle == pluginHandle)
+						{
+							UnloadWidgetPlugin(s, widgetPlugin);
+							List_RemoveFast(s.widgetPlugins, (u32) j);
+						}
+					}
 				}
 				break;
 		}
@@ -1898,10 +1904,8 @@ Simulation_Initialize(
 		Result<SensorPlugin*> sensorPlugin = LoadSensorPlugin(s, builtInPlugin, BuiltinSensorPlugin_GetPluginInfo);
 		Assert(sensorPlugin);
 
-		Handle<SensorPlugin> builtInSensorPluginHandle = { builtInPlugin.rawRefToKind };
-		SensorPlugin& builtInSensorPlugin = *s.handleTable[builtInSensorPluginHandle];
-		s.nullSensorRef.pluginHandle = builtInSensorPlugin.handle;
-		s.nullSensorRef.sensorRef    = List_GetLastRef(builtInSensorPlugin.sensors);
+		s.nullSensorRef.pluginHandle = sensorPlugin->handle;
+		s.nullSensorRef.sensorRef    = List_GetLastRef(sensorPlugin->sensors);
 	}
 
 	// DEBUG: Testing
@@ -2392,26 +2396,25 @@ Simulation_Teardown(SimulationState& s)
 		FT232H_Teardown(*s.ft232h);
 	}
 
-	for (u32 i = 0; i < s.plugins.length; i++)
+	for (u32 i = 0; i < s.widgetPlugins.length; i++)
 	{
-		Plugin& plugin = s.plugins[i];
-		if (plugin.kind == PluginKind::Widget)
-		{
-			// TODO: Can probably make this cleaner
-			Handle<WidgetPlugin> handle = { plugin.rawRefToKind };
-			WidgetPlugin& widgetPlugin = *s.handleTable[handle];
-			UnloadWidgetPlugin(s, widgetPlugin);
-		}
-		if (plugin.kind == PluginKind::Sensor)
-		{
-			Handle<SensorPlugin> handle = { plugin.rawRefToKind };
-			SensorPlugin& sensorPlugin = *s.handleTable[handle];
-			UnloadSensorPlugin(s, sensorPlugin);
-		}
-		UnregisterPlugin(s, plugin);
+		WidgetPlugin& widgetPlugin = s.widgetPlugins[i];
+		UnloadWidgetPlugin(s, widgetPlugin);
 	}
 	List_Free(s.widgetPlugins);
+
+	for (u32 i = 0; i < s.widgetPlugins.length; i++)
+	{
+		SensorPlugin& sensorPlugin = s.sensorPlugins[i];
+		UnloadSensorPlugin(s, sensorPlugin);
+	}
 	List_Free(s.sensorPlugins);
+
+	for (u32 i = 0; i < s.widgetPlugins.length; i++)
+	{
+		Plugin& plugin = s.plugins[i];
+		UnregisterPlugin(s, plugin);
+	}
 	List_Free(s.plugins);
 
 	PluginLoader_Teardown(*s.pluginLoader);
