@@ -332,17 +332,13 @@ namespace LCDHardwareMonitor::GUI
 		}
 
 		static void
-		AddWidget(SimulationState^ simState, UInt32 pluginHandle, UInt32 descHandle, Point pos)
+		AddWidget(SimulationState^ simState, UInt32 Handle, Point pos)
 		{
 			Unused(simState);
 			Assert(simState->Interaction == Interaction::Null);
 
-			FullWidgetDataRef ref = {};
-			ref.pluginHandle = { pluginHandle };
-			ref.dataHandle = { descHandle };
-
 			FromGUI::AddWidget addWidget = {};
-			addWidget.ref = ref;
+			addWidget.handle   = { Handle };
 			addWidget.position = { (float) pos.X, (float) pos.Y };
 			SerializeAndQueueMessage(state.simConnection, addWidget);
 		}

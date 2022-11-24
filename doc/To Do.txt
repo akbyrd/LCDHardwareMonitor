@@ -14,7 +14,7 @@ Might want it for plugin update functions
 [x] SensorRef
 [x] WidgetDataRef
 [x] WidgetDescRef
-[ ] FullWidgetDataRef
+[x] FullWidgetDataRef
 [ ] FullWidgetRef
 [ ] FullSensorRef
 [ ] Widget::sensorPluginHandle

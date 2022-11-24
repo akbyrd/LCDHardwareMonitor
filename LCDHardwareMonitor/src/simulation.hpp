@@ -224,9 +224,10 @@ RegisterWidgets(PluginContext& context, Slice<WidgetDesc> widgetDescs)
 		WidgetDesc& widgetDesc = widgetDescs[i];
 
 		WidgetData& widgetData = List_Append(widgetPlugin.widgetDatas);
-		widgetData.handle      = context.s->handleTable.Add(&widgetData);
-		widgetData.desc        = widgetDesc;
-		widgetData.desc.handle = { widgetData.handle.value };
+		widgetData.handle             = context.s->handleTable.Add(&widgetData);
+		widgetData.widgetPluginHandle = widgetPlugin.handle;
+		widgetData.desc               = widgetDesc;
+		widgetData.desc.handle        = { widgetData.handle.value };
 
 		List_Reserve(widgetData.widgets, 8);
 		List_Reserve(widgetData.widgetsUserData, 8 * widgetDesc.userDataSize);
@@ -873,7 +874,7 @@ GetNameFromPath(StringView path)
 }
 
 static Slice<Widget>
-AddWidgets(SimulationState& s, WidgetPlugin& widgetPlugin, WidgetData& widgetData, u32 count)
+AddWidgets(SimulationState& s, WidgetData& widgetData, u32 count)
 {
 	u32 prevWidgetLen = widgetData.widgets.length;
 
@@ -884,6 +885,8 @@ AddWidgets(SimulationState& s, WidgetPlugin& widgetPlugin, WidgetData& widgetDat
 
 	List_AppendRange(widgetData.widgets, count);
 	List_AppendRange(widgetData.widgetsUserData, widgetData.desc.userDataSize * count);
+
+	WidgetPlugin& widgetPlugin = *s.handleTable[widgetData.widgetPluginHandle];
 
 	PluginContext context = {};
 	context.s            = &s;
@@ -912,14 +915,6 @@ AddWidgets(SimulationState& s, WidgetPlugin& widgetPlugin, WidgetData& widgetDat
 
 	createGuard.dismiss = true;
 	return newWidgets;
-}
-
-static Slice<Widget>
-AddWidgets(SimulationState& s, FullWidgetDataRef ref, u32 count)
-{
-	WidgetPlugin& widgetPlugin = *s.handleTable[ref.pluginHandle];
-	WidgetData& widgetData = *s.handleTable[ref.dataHandle];
-	return AddWidgets(s, widgetPlugin, widgetData, count);
 }
 
 static void
@@ -1488,21 +1483,14 @@ FromGUI_DragDrop(SimulationState& s, FromGUI::DragDrop& dragDrop)
 static void
 FromGUI_AddWidget(SimulationState& s, FromGUI::AddWidget& addWidget)
 {
-	if (!s.handleTable.IsValid(addWidget.ref.pluginHandle))
-	{
-		LOG(Severity::Warning, "Received AddWidget request for a plugin that no longer exists");
-		return;
-	}
-
-	WidgetPlugin& widgetPlugin = *s.handleTable[addWidget.ref.pluginHandle];
-	if (!s.handleTable.IsValid(addWidget.ref.dataHandle))
+	if (!s.handleTable.IsValid(addWidget.handle))
 	{
 		LOG(Severity::Warning, "Received AddWidget request for a widget type that no longer exists");
 		return;
 	}
 
-	WidgetData& widgetData = *s.handleTable[addWidget.ref.dataHandle];
-	Slice<Widget> widgets = AddWidgets(s, widgetPlugin, widgetData, 1);
+	WidgetData& widgetData = *s.handleTable[addWidget.handle];
+	Slice<Widget> widgets = AddWidgets(s, widgetData, 1);
 	if (widgets.length == 0) return;
 
 	Widget& widget = widgets[0];
@@ -1919,12 +1907,10 @@ Simulation_Initialize(
 		Result<WidgetPlugin*> widgetPlugin = LoadWidgetPlugin(s, filledBarPlugin);
 		if (!widgetPlugin) return false;
 
-		FullWidgetDataRef fullRef = {};
-		fullRef.pluginHandle = widgetPlugin->handle;
-		fullRef.dataHandle   = s.handleTable.Add(&widgetPlugin->widgetDatas[0]);
 
 		u32 dummyWidgetCount = 6;
-		Slice<Widget> widgets = AddWidgets(s, fullRef, dummyWidgetCount);
+		WidgetData& widgetData = widgetPlugin->widgetDatas[0];
+		Slice<Widget> widgets = AddWidgets(s, widgetData, dummyWidgetCount);
 		for (u32 i = 0; i < widgets.length; i++)
 		{
 			Widget& widget = widgets[i];

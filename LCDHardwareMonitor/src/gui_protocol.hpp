@@ -131,9 +131,9 @@ namespace FromGUI
 
 	struct AddWidget
 	{
-		Header            header;
-		FullWidgetDataRef ref;
-		v2                position;
+		Header             header;
+		Handle<WidgetData> handle;
+		v2                 position;
 	};
 
 	struct RemoveWidget

@@ -60,12 +60,15 @@ struct FullSensorRef
 	Handle<Sensor>       sensorHandle;
 };
 
+struct WidgetPlugin;
+
 struct WidgetData
 {
-	Handle<WidgetData> handle;
-	WidgetDesc         desc;
-	List<Widget>       widgets;
-	Bytes              widgetsUserData;
+	Handle<WidgetData>   handle;
+	Handle<WidgetPlugin> widgetPluginHandle;
+	WidgetDesc           desc;
+	List<Widget>         widgets;
+	Bytes                widgetsUserData;
 };
 
 struct WidgetPlugin
@@ -75,12 +78,6 @@ struct WidgetPlugin
 	StringSlice           name;
 	WidgetPluginFunctions functions;
 	List<WidgetData>      widgetDatas;
-};
-
-struct FullWidgetDataRef
-{
-	Handle<WidgetPlugin> pluginHandle;
-	Handle<WidgetData>   dataHandle;
 };
 
 struct FullWidgetRef
