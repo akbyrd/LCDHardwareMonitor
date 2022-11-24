@@ -186,9 +186,9 @@
 							IsReadOnly="true">
 							<DataGrid.Columns>
 								<DataGridTextColumn
-									Binding="{Binding Ref}"
-									Header="Ref"
-									Width="42"
+									Binding="{Binding Handle}"
+									Header="Handle"
+									Width="70"
 									IsReadOnly="true" />
 								<DataGridTextColumn
 									Binding="{Binding Name}"
@@ -233,13 +233,13 @@
 									Width="*"
 									IsReadOnly="true" />
 								<DataGridTextColumn
-									Binding="{Binding DataRef}"
-									Header="Data Ref"
+									Binding="{Binding DataHandle}"
+									Header="Data Handle"
 									Width="*"
 									IsReadOnly="true" />
 								<DataGridTextColumn
-									Binding="{Binding Ref}"
-									Header="Ref"
+									Binding="{Binding Handle}"
+									Header="Handle"
 									Width="*"
 									IsReadOnly="true" />
 							</DataGrid.Columns>

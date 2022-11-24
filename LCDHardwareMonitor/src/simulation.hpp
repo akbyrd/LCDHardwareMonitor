@@ -224,9 +224,9 @@ RegisterWidgets(PluginContext& context, Slice<WidgetDesc> widgetDescs)
 		WidgetDesc& widgetDesc = widgetDescs[i];
 
 		WidgetData& widgetData = List_Append(widgetPlugin.widgetDatas);
-		widgetData.ref = List_GetLastRef(widgetPlugin.widgetDatas);
-		widgetData.desc = widgetDesc;
-		widgetData.desc.ref = { widgetData.ref.value };
+		widgetData.handle   = context.s->handleTable.Add(&widgetData);
+		widgetData.desc     = widgetDesc;
+		widgetData.desc.ref = { widgetData.handle.value };
 
 		List_Reserve(widgetData.widgets, 8);
 		List_Reserve(widgetData.widgetsUserData, 8 * widgetDesc.userDataSize);
@@ -483,7 +483,7 @@ ToGUI_WidgetsAdded(SimulationState& s, WidgetPlugin& widgetPlugin, WidgetData wi
 
 	ToGUI::WidgetsAdded widgetsAdded = {};
 	widgetsAdded.pluginHandle  = widgetPlugin.handle;
-	widgetsAdded.dataRef       = widgetData.ref;
+	widgetsAdded.dataHandle    = widgetData.handle;
 	widgetsAdded.widgetHandles = widgetHandles;
 	SerializeAndQueueMessage(s.guiConnection, widgetsAdded);
 }
@@ -918,7 +918,7 @@ static Slice<Widget>
 AddWidgets(SimulationState& s, FullWidgetDataRef ref, u32 count)
 {
 	WidgetPlugin& widgetPlugin = *s.handleTable[ref.pluginHandle];
-	WidgetData& widgetData = widgetPlugin.widgetDatas[ref.dataRef];
+	WidgetData& widgetData = *s.handleTable[ref.dataHandle];
 	return AddWidgets(s, widgetPlugin, widgetData, count);
 }
 
@@ -975,7 +975,7 @@ RemoveWidgetReferences(SimulationState& s, Handle<WidgetPlugin> pluginHandle, Wi
 {
 	FullWidgetRef ref = {};
 	ref.pluginHandle = pluginHandle;
-	ref.dataRef = widgetData.ref;
+	ref.dataHandle   = widgetData.handle;
 
 	for (u32 i = 0; i < widgetData.widgets.length; i++)
 	{
@@ -993,7 +993,7 @@ RemoveWidgets(SimulationState& s, Slice<FullWidgetRef> refs)
 		FullWidgetRef ref = refs[i];
 
 		WidgetPlugin& plugin = *s.handleTable[ref.pluginHandle];
-		WidgetData& data = plugin.widgetDatas[ref.dataRef];
+		WidgetData& data = *s.handleTable[ref.dataHandle];
 		Widget& widget = *s.handleTable[ref.widgetHandle];
 
 		u32 widgetIndex = List_PointerToIndex(data.widgets, widget);
@@ -1169,7 +1169,7 @@ HighlightWidgets(SimulationState& s, Slice<FullWidgetRef> refs, Outline::PSPerPa
 			FullWidgetRef fullWidgetRef = refs[i];
 
 			WidgetPlugin& widgetPlugin = *s.handleTable[fullWidgetRef.pluginHandle];
-			WidgetData&   widgetData   = widgetPlugin.widgetDatas[fullWidgetRef.dataRef];
+			WidgetData&   widgetData   = *s.handleTable[fullWidgetRef.dataHandle];
 			Widget&       widget       = *s.handleTable[fullWidgetRef.widgetHandle];
 
 			context.widgetPlugin = &widgetPlugin;
@@ -1495,13 +1495,13 @@ FromGUI_AddWidget(SimulationState& s, FromGUI::AddWidget& addWidget)
 	}
 
 	WidgetPlugin& widgetPlugin = *s.handleTable[addWidget.ref.pluginHandle];
-	if (!List_IsRefValid(widgetPlugin.widgetDatas, addWidget.ref.dataRef))
+	if (!s.handleTable.IsValid(addWidget.ref.dataHandle))
 	{
 		LOG(Severity::Warning, "Received AddWidget request for a widget type that no longer exists");
 		return;
 	}
 
-	WidgetData& widgetData = widgetPlugin.widgetDatas[addWidget.ref.dataRef];
+	WidgetData& widgetData = *s.handleTable[addWidget.ref.dataHandle];
 	Slice<Widget> widgets = AddWidgets(s, widgetPlugin, widgetData, 1);
 	if (widgets.length == 0) return;
 
@@ -1519,7 +1519,7 @@ FromGUI_RemoveWidget(SimulationState& s, FromGUI::RemoveWidget& removeWidget)
 	}
 
 	WidgetPlugin& widgetPlugin = *s.handleTable[removeWidget.ref.pluginHandle];
-	if (!List_IsRefValid(widgetPlugin.widgetDatas, removeWidget.ref.dataRef))
+	if (!s.handleTable.IsValid(removeWidget.ref.dataHandle))
 	{
 		LOG(Severity::Warning, "Received RemoveWidget request for a widget type that no longer exists");
 		return;
@@ -1921,7 +1921,7 @@ Simulation_Initialize(
 
 		FullWidgetDataRef fullRef = {};
 		fullRef.pluginHandle = widgetPlugin->handle;
-		fullRef.dataRef      = List_GetRef(widgetPlugin->widgetDatas, 0);
+		fullRef.dataHandle   = s.handleTable.Add(&widgetPlugin->widgetDatas[0]);
 
 		u32 dummyWidgetCount = 6;
 		Slice<Widget> widgets = AddWidgets(s, fullRef, dummyWidgetCount);
@@ -2158,7 +2158,7 @@ Simulation_Update(SimulationState& s)
 							{
 								FullWidgetRef& hovered = List_Append(s.hovered);
 								hovered.pluginHandle = widgetPlugin.handle;
-								hovered.dataRef      = widgetData.ref;
+								hovered.dataHandle   = widgetData.handle;
 								hovered.widgetHandle = widget.handle;
 
 								if (IsWidgetSelected(s, hovered))

@@ -69,7 +69,7 @@ namespace ToGUI
 	{
 		Header                header;
 		Handle<WidgetPlugin>  pluginHandle;
-		WidgetDataRef         dataRef;
+		Handle<WidgetData>    dataHandle;
 		Slice<Handle<Widget>> widgetHandles;
 	};
 
@@ -674,7 +674,7 @@ Serialize(ByteStream& stream, ToGUI::WidgetsAdded& widgetsAdded)
 {
 	Serialize(stream, widgetsAdded.header);
 	Serialize(stream, widgetsAdded.pluginHandle);
-	Serialize(stream, widgetsAdded.dataRef);
+	Serialize(stream, widgetsAdded.dataHandle);
 	Serialize(stream, widgetsAdded.widgetHandles);
 }
 

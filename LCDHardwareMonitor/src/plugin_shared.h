@@ -60,15 +60,12 @@ struct FullSensorRef
 	Handle<Sensor>       sensorHandle;
 };
 
-struct WidgetData;
-using WidgetDataRef = List<WidgetData>::RefT;
-
 struct WidgetData
 {
-	WidgetDataRef ref;
-	WidgetDesc    desc;
-	List<Widget>  widgets;
-	Bytes         widgetsUserData;
+	Handle<WidgetData> handle;
+	WidgetDesc         desc;
+	List<Widget>       widgets;
+	Bytes              widgetsUserData;
 };
 
 struct WidgetPlugin
@@ -83,13 +80,13 @@ struct WidgetPlugin
 struct FullWidgetDataRef
 {
 	Handle<WidgetPlugin> pluginHandle;
-	WidgetDataRef        dataRef;
+	Handle<WidgetData>   dataHandle;
 };
 
 struct FullWidgetRef
 {
 	Handle<WidgetPlugin> pluginHandle;
-	WidgetDataRef        dataRef;
+	Handle<WidgetData>   dataHandle;
 	Handle<Widget>       widgetHandle;
 };
 
@@ -97,7 +94,7 @@ inline b8 operator== (FullWidgetRef lhs, FullWidgetRef rhs)
 {
 	b8 result = true;
 	result &= lhs.pluginHandle == rhs.pluginHandle;
-	result &= lhs.dataRef == rhs.dataRef;
+	result &= lhs.dataHandle == rhs.dataHandle;
 	result &= lhs.widgetHandle == rhs.widgetHandle;
 	return result;
 }
