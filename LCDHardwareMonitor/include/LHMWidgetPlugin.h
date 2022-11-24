@@ -60,21 +60,18 @@ struct WidgetAPI
 	};
 };
 
-struct WidgetDesc;
-using WidgetDescRef = List<WidgetDesc>::RefT;
-
 struct WidgetDesc
 {
 	using InitializeFn = b8  (PluginContext&, WidgetAPI::Initialize);
 	using UpdateFn     = void(PluginContext&, WidgetAPI::Update);
 	using TeardownFn   = void(PluginContext&, WidgetAPI::Teardown);
 
-	WidgetDescRef ref;
-	String        name;
-	u32           userDataSize;
-	InitializeFn* Initialize;
-	UpdateFn*     Update;
-	TeardownFn*   Teardown;
+	Handle<WidgetDesc> handle;
+	String             name;
+	u32                userDataSize;
+	InitializeFn*      Initialize;
+	UpdateFn*          Update;
+	TeardownFn*        Teardown;
 };
 
 struct WidgetPluginAPI

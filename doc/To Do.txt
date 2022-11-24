@@ -13,12 +13,14 @@ Might want it for plugin update functions
 [x] WidgetRef
 [x] SensorRef
 [x] WidgetDataRef
-[ ] WidgetDescRef
-[ ] Remove ListRef
+[x] WidgetDescRef
 [ ] FullWidgetDataRef
 [ ] FullWidgetRef
 [ ] FullSensorRef
 [ ] Widget::sensorPluginHandle
+[ ] Remove old TODOs
+[ ] Renderer still uses refs
+[ ] Remove ListRef
 ----
 [ ] Handle plugin list resize
 [ ] Handle widget plugin list resize

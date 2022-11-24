@@ -164,9 +164,9 @@
 							</DataGrid.RowStyle>
 							<DataGrid.Columns>
 								<DataGridTextColumn
-									Binding="{Binding Ref}"
-									Header="Ref"
-									Width="42"
+									Binding="{Binding Handle}"
+									Header="Handle"
+									Width="70"
 									IsReadOnly="true" />
 								<DataGridTextColumn
 									Binding="{Binding Name}"

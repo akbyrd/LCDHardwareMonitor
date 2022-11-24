@@ -279,7 +279,7 @@ namespace LCDHardwareMonitor.GUI
 				DragDropData data = new DragDropData();
 				data.pluginKind = PluginKind.Widget;
 				data.pluginHandle = widgetDesc.PluginHandle;
-				data.widgetHandle = widgetDesc.Ref;
+				data.widgetHandle = widgetDesc.Handle;
 				Interop.DragDrop(simState, PluginKind.Widget, true);
 				DragDropEffects effect = DragDrop.DoDragDrop(dataGridRow, data, DragDropEffects.Copy);
 				Interop.DragDrop(simState, PluginKind.Widget, false);

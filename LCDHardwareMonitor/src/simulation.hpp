@@ -224,9 +224,9 @@ RegisterWidgets(PluginContext& context, Slice<WidgetDesc> widgetDescs)
 		WidgetDesc& widgetDesc = widgetDescs[i];
 
 		WidgetData& widgetData = List_Append(widgetPlugin.widgetDatas);
-		widgetData.handle   = context.s->handleTable.Add(&widgetData);
-		widgetData.desc     = widgetDesc;
-		widgetData.desc.ref = { widgetData.handle.value };
+		widgetData.handle      = context.s->handleTable.Add(&widgetData);
+		widgetData.desc        = widgetDesc;
+		widgetData.desc.handle = { widgetData.handle.value };
 
 		List_Reserve(widgetData.widgets, 8);
 		List_Reserve(widgetData.widgetsUserData, 8 * widgetDesc.userDataSize);

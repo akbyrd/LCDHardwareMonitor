@@ -658,7 +658,7 @@ Serialize(ByteStream& stream, ToGUI::WidgetDescsAdded& widgetDescsAdded)
 void
 Serialize(ByteStream& stream, WidgetDesc& widgetDesc)
 {
-	Serialize(stream, widgetDesc.ref);
+	Serialize(stream, widgetDesc.handle);
 	Serialize(stream, widgetDesc.name);
 	Serialize(stream, widgetDesc.userDataSize);
 	if (stream.mode == ByteStreamMode::Write)

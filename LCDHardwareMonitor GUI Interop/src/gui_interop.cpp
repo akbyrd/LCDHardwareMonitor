@@ -97,7 +97,7 @@ namespace LCDHardwareMonitor::GUI
 	public value struct WidgetDesc
 	{
 		property UInt32     PluginHandle;
-		property UInt32     Ref;
+		property UInt32     Handle;
 		property CLRString^ Name;
 	};
 
@@ -498,7 +498,7 @@ namespace LCDHardwareMonitor::GUI
 
 					WidgetDesc mWidgetDesc = {};
 					mWidgetDesc.PluginHandle = widgetDescsAdded.widgetPluginHandles[i].value;
-					mWidgetDesc.Ref          = desc.ref.value;
+					mWidgetDesc.Handle       = desc.handle.value;
 					mWidgetDesc.Name         = ToManagedString(desc.name);
 					simState.WidgetDescs->Add(mWidgetDesc);
 				}
