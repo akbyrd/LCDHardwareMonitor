@@ -54,12 +54,6 @@ struct SensorPlugin
 	//List<Handle<Sensor>> activeSensors;
 };
 
-struct FullSensorRef
-{
-	Handle<SensorPlugin> pluginHandle;
-	Handle<Sensor>       sensorHandle;
-};
-
 struct WidgetPlugin;
 
 struct WidgetData

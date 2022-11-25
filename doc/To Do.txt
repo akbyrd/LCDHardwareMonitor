@@ -16,7 +16,7 @@ Might want it for plugin update functions
 [x] WidgetDescRef
 [x] FullWidgetDataRef
 [x] FullWidgetRef
-[ ] FullSensorRef
+[x] FullSensorRef
 [ ] Widget::sensorPluginHandle
 [ ] WidgetDesc vs WidgetData
 [ ] Remove old TODOs

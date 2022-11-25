@@ -8,14 +8,13 @@ struct Sensor;
 
 struct Widget
 {
-	Handle<Widget>       handle;
-	Handle<WidgetData>   dataHandle;
-	v2                   position;
-	v2                   size;
-	v2                   pivot;
-	r32                  depth;
-	Handle<SensorPlugin> sensorPluginHandle;
-	Handle<Sensor>       sensorHandle;
+	Handle<Widget>     handle;
+	Handle<WidgetData> dataHandle;
+	Handle<Sensor>     sensorHandle;
+	v2                 position;
+	v2                 size;
+	v2                 pivot;
+	r32                depth;
 };
 
 struct WidgetAPI

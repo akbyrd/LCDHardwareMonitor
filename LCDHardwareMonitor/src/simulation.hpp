@@ -97,7 +97,7 @@ struct SimulationState
 	Matrix                 iview;
 	i64                    startTime;
 	r32                    currentTime;
-	FullSensorRef          nullSensorRef;
+	Handle<Sensor>         nullSensorHandle;
 
 	// Hardware
 	CPUTexture             renderTargetCPUCopy;
@@ -144,7 +144,7 @@ struct PluginContext
 // C++ is Stupid.
 
 static String GetNameFromPath(StringView);
-static void RemoveSensorReferences(SimulationState&, Handle<SensorPlugin>, Slice<Handle<Sensor>>);
+static void RemoveSensorReferences(SimulationState&, Slice<Handle<Sensor>>);
 static void RemoveWidgetReferences(SimulationState&, Slice<Handle<Widget>>);
 static void RemoveHoverAnimation(SimulationState&, u32);
 
@@ -187,7 +187,7 @@ UnregisterSensors(PluginContext& context, Slice<Handle<Sensor>> sensorHandles)
 			Severity::Error, "Sensor plugin gave a bad Sensor handle '%'", sensorPlugin.name);
 	}
 
-	RemoveSensorReferences(*context.s, sensorPlugin.handle, sensorHandles);
+	RemoveSensorReferences(*context.s, sensorHandles);
 
 	for (u32 i = 0; i < sensorHandles.length; i++)
 	{
@@ -478,7 +478,7 @@ ToGUI_WidgetDescsAdded(SimulationState& s, Handle<WidgetPlugin> widgetPluginHand
 }
 
 static void
-ToGUI_WidgetsAdded(SimulationState& s, WidgetPlugin& widgetPlugin, WidgetData widgetData, Slice<Handle<Widget>> widgetHandles)
+ToGUI_WidgetsAdded(SimulationState& s, Slice<Handle<Widget>> widgetHandles)
 {
 	if (s.guiConnection.pipe.state != PipeState::Connected) return;
 
@@ -527,7 +527,7 @@ OnConnect(SimulationState& s)
 			WidgetData& widgetData = widgetPlugin.widgetDatas[j];
 
 			Slice<Handle<Widget>> handles = List_MemberSlice(widgetData.widgets, &Widget::handle);
-			ToGUI_WidgetsAdded(s, widgetPlugin, widgetData, handles);
+			ToGUI_WidgetsAdded(s, handles);
 		}
 	}
 }
@@ -703,7 +703,7 @@ UnloadSensorPlugin(SimulationState& s, SensorPlugin& sensorPlugin)
 		sensorPlugin.functions.Teardown(context, api);
 	}
 
-	RemoveSensorReferences(s, sensorPlugin.handle, List_MemberSlice(sensorPlugin.sensors, &Sensor::handle));
+	RemoveSensorReferences(s, List_MemberSlice(sensorPlugin.sensors, &Sensor::handle));
 	TeardownSensorPlugin(sensorPlugin);
 
 	b8 success = PluginLoader_UnloadSensorPlugin(*s.pluginLoader, plugin, sensorPlugin);
@@ -831,8 +831,7 @@ UnloadWidgetPlugin(SimulationState& s, WidgetPlugin& widgetPlugin)
 	for (u32 i = 0; i < widgetPlugin.widgetDatas.length; i++)
 	{
 		WidgetData& widgetData = widgetPlugin.widgetDatas[i];
-		Slice<Handle<Widget>> handles = List_MemberSlice(widgetData.widgets, &Widget::handle);
-		RemoveWidgetReferences(s, handles);
+		RemoveWidgetReferences(s, List_MemberSlice(widgetData.widgets, &Widget::handle));
 	}
 	TeardownWidgetPlugin(widgetPlugin);
 
@@ -885,11 +884,9 @@ AddWidgets(SimulationState& s, WidgetData& widgetData, u32 count)
 	List_AppendRange(widgetData.widgets, count);
 	List_AppendRange(widgetData.widgetsUserData, widgetData.desc.userDataSize * count);
 
-	WidgetPlugin& widgetPlugin = *s.handleTable[widgetData.widgetPluginHandle];
-
 	PluginContext context = {};
 	context.s            = &s;
-	context.widgetPlugin = &widgetPlugin;
+	context.widgetPlugin = s.handleTable[widgetData.widgetPluginHandle];
 	context.success      = true;
 
 	WidgetAPI::Initialize api = {};
@@ -900,18 +897,17 @@ AddWidgets(SimulationState& s, WidgetData& widgetData, u32 count)
 	for (u32 i = 0; i < count; i++)
 	{
 		Widget& widget = widgetData.widgets[prevWidgetLen + i];
-		widget.handle             = s.handleTable.Add(&widget);
-		widget.dataHandle         = widgetData.handle;
-		widget.position           = {};
-		widget.sensorPluginHandle = s.nullSensorRef.pluginHandle;
-		widget.sensorHandle       = s.nullSensorRef.sensorHandle;
+		widget.handle       = s.handleTable.Add(&widget);
+		widget.dataHandle   = widgetData.handle;
+		widget.sensorHandle = s.nullSensorHandle;
+		widget.position     = {};
 	}
 
 	widgetData.desc.Initialize(context, api);
 	if (!context.success) return {};
 
 	Slice<Widget> newWidgets = List_Slice(widgetData.widgets, prevWidgetLen);
-	ToGUI_WidgetsAdded(s, widgetPlugin, widgetData, Slice_MemberSlice(newWidgets, &Widget::handle));
+	ToGUI_WidgetsAdded(s, Slice_MemberSlice(newWidgets, &Widget::handle));
 
 	createGuard.dismiss = true;
 	return newWidgets;
@@ -990,7 +986,7 @@ RemoveWidgets(SimulationState& s, Slice<Handle<Widget>> handles)
 }
 
 static void
-RemoveSensorReferences(SimulationState& s, Handle<SensorPlugin> sensorPluginHandle, Slice<Handle<Sensor>> sensorHandles)
+RemoveSensorReferences(SimulationState& s, Slice<Handle<Sensor>> sensorHandles)
 {
 	for (u32 i = 0; i < sensorHandles.length; i++)
 	{
@@ -1005,10 +1001,9 @@ RemoveSensorReferences(SimulationState& s, Handle<SensorPlugin> sensorPluginHand
 				for (u32 l = 0; l < widgetData.widgets.length; l++)
 				{
 					Widget& widget = widgetData.widgets[l];
-					if (widget.sensorPluginHandle == sensorPluginHandle && widget.sensorHandle == sensorHandle)
+					if (widget.sensorHandle == sensorHandle)
 					{
-						widget.sensorPluginHandle = Handle<SensorPlugin>::Null;
-						widget.sensorHandle       = Handle<Sensor>::Null;
+						widget.sensorHandle = Handle<Sensor>::Null;
 					}
 				}
 			}
@@ -1855,8 +1850,7 @@ Simulation_Initialize(
 		Result<SensorPlugin*> sensorPlugin = LoadSensorPlugin(s, builtInPlugin, BuiltinSensorPlugin_GetPluginInfo);
 		Assert(sensorPlugin);
 
-		s.nullSensorRef.pluginHandle = sensorPlugin->handle;
-		s.nullSensorRef.sensorHandle = sensorPlugin->sensors[0].handle;
+		s.nullSensorHandle = sensorPlugin->sensors[0].handle;
 	}
 
 	// DEBUG: Testing
