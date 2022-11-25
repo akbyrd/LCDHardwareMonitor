@@ -167,7 +167,7 @@ template<typename T>
 inline void
 List_AppendRange(List<T>& list, u32 count)
 {
-	List_Reserve(list, list.length + count);
+	List_Grow(list, count);
 	list.length += count;
 }
 
@@ -175,7 +175,7 @@ template<typename T>
 inline void
 List_AppendRange(List<T>& list, Slice<T> items)
 {
-	List_Reserve(list, list.length + items.length);
+	List_Grow(list, items.length);
 	if (items.stride == sizeof(T))
 	{
 		memcpy(&list.data[list.length], items.data, sizeof(T) * items.length);
