@@ -27,4 +27,7 @@ const Handle<T> Handle<T>::Null = {};
 template <typename T>
 inline b8 operator== (Handle<T> lhs, Handle<T> rhs) { return lhs.value == rhs.value; }
 
+template <typename T>
+inline b8 operator!= (Handle<T> lhs, Handle<T> rhs) { return lhs.value != rhs.value; }
+
 #endif

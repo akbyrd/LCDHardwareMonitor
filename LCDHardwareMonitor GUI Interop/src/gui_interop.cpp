@@ -103,8 +103,6 @@ namespace LCDHardwareMonitor::GUI
 
 	public value struct Widget
 	{
-		property UInt32 PluginHandle;
-		property UInt32 DataHandle;
 		property UInt32 Handle;
 	};
 
@@ -355,22 +353,17 @@ namespace LCDHardwareMonitor::GUI
 		static void
 		SetWidgetSelection(SimulationState^, System::Collections::IList^ selectedWidgets)
 		{
-			List<FullWidgetRef> selection = {};
+			List<Handle<::Widget>> selection = {};
 			defer { List_Free(selection); };
 
 			for (i32 i = 0; i < selectedWidgets->Count; i++)
 			{
 				Widget% selectedWidget = (Widget%) selectedWidgets[i];
-
-				FullWidgetRef ref = {};
-				ref.pluginHandle = { selectedWidget.PluginHandle };
-				ref.dataHandle   = { selectedWidget.DataHandle };
-				ref.widgetHandle = { selectedWidget.Handle };
-				List_Append(selection, ref);
+				List_Append(selection, { selectedWidget.Handle });
 			}
 
 			FromGUI::SetWidgetSelection widgetSelection = {};
-			widgetSelection.refs = selection;
+			widgetSelection.handles = selection;
 			SerializeAndQueueMessage(state.simConnection, widgetSelection);
 		}
 
@@ -508,9 +501,7 @@ namespace LCDHardwareMonitor::GUI
 			for (u32 i = 0; i < widgetsAdded.widgetHandles.length; i++)
 			{
 				Widget mWidget = {};
-				mWidget.PluginHandle = widgetsAdded.pluginHandle.value;
-				mWidget.DataHandle   = widgetsAdded.dataHandle.value;
-				mWidget.Handle       = widgetsAdded.widgetHandles[i].value;
+				mWidget.Handle = widgetsAdded.widgetHandles[i].value;
 				simState.Widgets->Add(mWidget);
 			}
 			simState.NotifyPropertyChanged("");
@@ -521,12 +512,10 @@ namespace LCDHardwareMonitor::GUI
 		{
 			simState.UpdatingSelection = true;
 			simState.SelectedWidgets->Clear();
-			for (u32 i = 0; i < widgetSelection.refs.length; i++)
+			for (u32 i = 0; i < widgetSelection.handles.length; i++)
 			{
 				Widget mWidget = {};
-				mWidget.PluginHandle = widgetSelection.refs[i].pluginHandle.value;
-				mWidget.DataHandle   = widgetSelection.refs[i].dataHandle.value;
-				mWidget.Handle       = widgetSelection.refs[i].widgetHandle.value;
+				mWidget.Handle = widgetSelection.handles[i].value;
 				simState.SelectedWidgets->Add(mWidget);
 			}
 			simState.NotifyPropertyChanged("");

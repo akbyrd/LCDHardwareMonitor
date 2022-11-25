@@ -73,10 +73,10 @@ enum struct GUIInteraction
 
 struct OutlineAnimation
 {
-	b8                  isShowing;
-	Lerped<r32>         alpha;
-	List<FullWidgetRef> widgets;
-	Outline::PSPerPass  psPerPass;
+	b8                   isShowing;
+	Lerped<r32>          alpha;
+	List<Handle<Widget>> widgets;
+	Outline::PSPerPass   psPerPass;
 };
 
 struct SimulationState
@@ -117,8 +117,8 @@ struct SimulationState
 	v2i                    mousePosStart;
 	v2                     cameraRot;
 	v2                     cameraRotStart;
-	List<FullWidgetRef>    selected;
-	List<FullWidgetRef>    hovered;
+	List<Handle<Widget>>   selected;
+	List<Handle<Widget>>   hovered;
 
 	// Post Process
 	RenderTarget           tempRenderTargets[2];
@@ -145,7 +145,7 @@ struct PluginContext
 
 static String GetNameFromPath(StringView);
 static void RemoveSensorReferences(SimulationState&, Handle<SensorPlugin>, Slice<Handle<Sensor>>);
-static void RemoveWidgetReferences(SimulationState&, Handle<WidgetPlugin>, WidgetData&);
+static void RemoveWidgetReferences(SimulationState&, Slice<Handle<Widget>>);
 static void RemoveHoverAnimation(SimulationState&, u32);
 
 // -------------------------------------------------------------------------------------------------
@@ -483,19 +483,17 @@ ToGUI_WidgetsAdded(SimulationState& s, WidgetPlugin& widgetPlugin, WidgetData wi
 	if (s.guiConnection.pipe.state != PipeState::Connected) return;
 
 	ToGUI::WidgetsAdded widgetsAdded = {};
-	widgetsAdded.pluginHandle  = widgetPlugin.handle;
-	widgetsAdded.dataHandle    = widgetData.handle;
 	widgetsAdded.widgetHandles = widgetHandles;
 	SerializeAndQueueMessage(s.guiConnection, widgetsAdded);
 }
 
 static void
-ToGUI_WidgetSelectionChanged(SimulationState& s, Slice<FullWidgetRef> refs)
+ToGUI_WidgetSelectionChanged(SimulationState& s, Slice<Handle<Widget>> handles)
 {
 	if (s.guiConnection.pipe.state != PipeState::Connected) return;
 
 	ToGUI::WidgetSelectionChanged widgetSelection = {};
-	widgetSelection.refs = refs;
+	widgetSelection.handles = handles;
 	SerializeAndQueueMessage(s.guiConnection, widgetSelection);
 }
 
@@ -833,7 +831,8 @@ UnloadWidgetPlugin(SimulationState& s, WidgetPlugin& widgetPlugin)
 	for (u32 i = 0; i < widgetPlugin.widgetDatas.length; i++)
 	{
 		WidgetData& widgetData = widgetPlugin.widgetDatas[i];
-		RemoveWidgetReferences(s, widgetPlugin.handle, widgetData);
+		Slice<Handle<Widget>> handles = List_MemberSlice(widgetData.widgets, &Widget::handle);
+		RemoveWidgetReferences(s, handles);
 	}
 	TeardownWidgetPlugin(widgetPlugin);
 
@@ -902,6 +901,7 @@ AddWidgets(SimulationState& s, WidgetData& widgetData, u32 count)
 	{
 		Widget& widget = widgetData.widgets[prevWidgetLen + i];
 		widget.handle             = s.handleTable.Add(&widget);
+		widget.dataHandle         = widgetData.handle;
 		widget.position           = {};
 		widget.sensorPluginHandle = s.nullSensorRef.pluginHandle;
 		widget.sensorHandle       = s.nullSensorRef.sensorHandle;
@@ -918,20 +918,20 @@ AddWidgets(SimulationState& s, WidgetData& widgetData, u32 count)
 }
 
 static void
-RemoveWidgetReferences(SimulationState& s, Slice<FullWidgetRef> refs)
+RemoveWidgetReferences(SimulationState& s, Slice<Handle<Widget>> handles)
 {
-	// NOTE: We allow the list of refs to remove to be s.selected or s.hovered. So we have to be
-	// careful about how we remove from those lists here to avoid invalidating the memory refs is
+	// NOTE: We allow the list of handles to remove to be s.selected or s.hovered. So we have to be
+	// careful about how we remove from those lists here to avoid invalidating memory the handles are
 	// pointing to.
 
-	for (u32 i = refs.length - 1; (i32) i >= 0; i--)
+	for (u32 i = handles.length - 1; (i32) i >= 0; i--)
 	{
-		FullWidgetRef ref = refs[i];
+		Handle<Widget> handle = handles[i];
 
 		// NOTE: Do slow removes to maintain selection order
 		for (u32 j = s.hovered.length - 1; (i32) j >= 0; j--)
 		{
-			if (s.hovered[j] == ref)
+			if (s.hovered[j] == handle)
 			{
 				List_Remove(s.hovered, j);
 				break;
@@ -940,7 +940,7 @@ RemoveWidgetReferences(SimulationState& s, Slice<FullWidgetRef> refs)
 
 		for (u32 j = s.selected.length - 1; (i32) j >= 0; j--)
 		{
-			if (s.selected[j] == ref)
+			if (s.selected[j] == handle)
 			{
 				List_Remove(s.selected, j);
 				break;
@@ -953,7 +953,7 @@ RemoveWidgetReferences(SimulationState& s, Slice<FullWidgetRef> refs)
 			OutlineAnimation& anim = s.hoverAnimations[j];
 			for (u32 k = 0; k < anim.widgets.length; k++)
 			{
-				if (anim.widgets[k] == ref)
+				if (anim.widgets[k] == handle)
 				{
 					List_Remove(anim.widgets, k);
 					if (anim.widgets.length == 0)
@@ -966,30 +966,14 @@ RemoveWidgetReferences(SimulationState& s, Slice<FullWidgetRef> refs)
 }
 
 static void
-RemoveWidgetReferences(SimulationState& s, Handle<WidgetPlugin> pluginHandle, WidgetData& widgetData)
+RemoveWidgets(SimulationState& s, Slice<Handle<Widget>> handles)
 {
-	FullWidgetRef ref = {};
-	ref.pluginHandle = pluginHandle;
-	ref.dataHandle   = widgetData.handle;
-
-	for (u32 i = 0; i < widgetData.widgets.length; i++)
+	for (u32 i = 0; i < handles.length; i++)
 	{
-		Widget& widget = widgetData.widgets[i];
-		ref.widgetHandle = widget.handle;
-		RemoveWidgetReferences(s, ref);
-	}
-}
+		Handle<Widget> handle = handles[i];
 
-static void
-RemoveWidgets(SimulationState& s, Slice<FullWidgetRef> refs)
-{
-	for (u32 i = 0; i < refs.length; i++)
-	{
-		FullWidgetRef ref = refs[i];
-
-		WidgetPlugin& plugin = *s.handleTable[ref.pluginHandle];
-		WidgetData& data = *s.handleTable[ref.dataHandle];
-		Widget& widget = *s.handleTable[ref.widgetHandle];
+		Widget&     widget = *s.handleTable[handle];
+		WidgetData& data   = *s.handleTable[widget.dataHandle];
 
 		u32 widgetIndex = List_PointerToIndex(data.widgets, widget);
 		List_RemoveFast(data.widgets, widgetIndex);
@@ -1002,7 +986,7 @@ RemoveWidgets(SimulationState& s, Slice<FullWidgetRef> refs)
 		}
 	}
 
-	RemoveWidgetReferences(s, refs);
+	RemoveWidgetReferences(s, handles);
 }
 
 static void
@@ -1039,22 +1023,13 @@ RemoveSelectedWidgets(SimulationState& s)
 }
 
 static void
-SelectWidgets(SimulationState& s, Slice<FullWidgetRef> widgets)
+SelectWidgets(SimulationState& s, Slice<Handle<Widget>> widgets)
 {
 	// TODO: Validate
 	List_Clear(s.selected);
 	List_AppendRange(s.selected, widgets);
 
 	ToGUI_WidgetSelectionChanged(s, s.selected);
-}
-
-static b8
-IsWidgetSelected(SimulationState& s, FullWidgetRef widget)
-{
-	for (u32 i = 0; i < s.selected.length; i++)
-		if (s.selected[i] == widget)
-			return true;
-	return false;
 }
 
 static void
@@ -1119,9 +1094,9 @@ DragSelection(SimulationState& s)
 
 		for (u32 i = 0; i < s.selected.length; i++)
 		{
-			FullWidgetRef selected = s.selected[i];
+			Handle<Widget> selected = s.selected[i];
+			Widget& widget = *s.handleTable[selected];
 
-			Widget& widget = *s.handleTable[selected.widgetHandle];
 			widget.position += (v2) deltaPos;
 		}
 	}
@@ -1129,9 +1104,9 @@ DragSelection(SimulationState& s)
 
 // TODO: This rendering detail is leaking awfully high up...
 static void
-HighlightWidgets(SimulationState& s, Slice<FullWidgetRef> refs, Outline::PSPerPass& compositeCBuf, b8 darken)
+HighlightWidgets(SimulationState& s, Slice<Handle<Widget>> handles, Outline::PSPerPass& compositeCBuf, b8 darken)
 {
-	Assert(refs.length != 0);
+	Assert(handles.length != 0);
 
 	// Re-render widgets
 	// -> Depth 2
@@ -1159,13 +1134,13 @@ HighlightWidgets(SimulationState& s, Slice<FullWidgetRef> refs, Outline::PSPerPa
 		Renderer_PushRenderTarget(*s.renderer, StandardRenderTarget::Null);
 		Renderer_PushDepthBuffer(*s.renderer, s.tempDepthBuffers[2]);
 		Renderer_ClearDepthBuffer(*s.renderer);
-		for (u32 i = 0; i < refs.length ; i++)
+		for (u32 i = 0; i < handles.length ; i++)
 		{
-			FullWidgetRef fullWidgetRef = refs[i];
+			Handle<Widget> handle = handles[i];
 
-			WidgetPlugin& widgetPlugin = *s.handleTable[fullWidgetRef.pluginHandle];
-			WidgetData&   widgetData   = *s.handleTable[fullWidgetRef.dataHandle];
-			Widget&       widget       = *s.handleTable[fullWidgetRef.widgetHandle];
+			Widget&       widget       = *s.handleTable[handle];
+			WidgetData&   widgetData   = *s.handleTable[widget.dataHandle];
+			WidgetPlugin& widgetPlugin = *s.handleTable[widgetData.widgetPluginHandle];
 
 			context.widgetPlugin = &widgetPlugin;
 			context.success      = true;
@@ -1500,26 +1475,13 @@ FromGUI_AddWidget(SimulationState& s, FromGUI::AddWidget& addWidget)
 static void
 FromGUI_RemoveWidget(SimulationState& s, FromGUI::RemoveWidget& removeWidget)
 {
-	if (!s.handleTable.IsValid(removeWidget.ref.pluginHandle))
-	{
-		LOG(Severity::Warning, "Received RemoveWidget request for a plugin that no longer exists");
-		return;
-	}
-
-	WidgetPlugin& widgetPlugin = *s.handleTable[removeWidget.ref.pluginHandle];
-	if (!s.handleTable.IsValid(removeWidget.ref.dataHandle))
-	{
-		LOG(Severity::Warning, "Received RemoveWidget request for a widget type that no longer exists");
-		return;
-	}
-
-	if (!s.handleTable.IsValid(removeWidget.ref.widgetHandle))
+	if (!s.handleTable.IsValid(removeWidget.handle))
 	{
 		LOG(Severity::Warning, "Received RemoveWidget request for a widget that no longer exists");
 		return;
 	}
 
-	RemoveWidgets(s, removeWidget.ref);
+	RemoveWidgets(s, removeWidget.handle);
 }
 
 static void
@@ -1542,9 +1504,9 @@ FromGUI_BeginDragSelection(SimulationState& s, FromGUI::BeginDragSelection&)
 
 		for (u32 i = 0; i < s.selected.length; i++)
 		{
-			FullWidgetRef selected = s.selected[i];
+			Handle<Widget> selected = s.selected[i];
+			Widget& widget = *s.handleTable[selected];
 
-			Widget& widget = *s.handleTable[selected.widgetHandle];
 			v4i widgetRect = (v4i) WidgetRect(widget);
 			s.interactionRect = RectCombine(s.interactionRect, widgetRect);
 		}
@@ -1570,7 +1532,7 @@ FromGUI_EndDragSelection(SimulationState& s, FromGUI::EndDragSelection&)
 static void
 FromGUI_SetWidgetSelection(SimulationState& s, FromGUI::SetWidgetSelection& widgetSelection)
 {
-	SelectWidgets(s, widgetSelection.refs);
+	SelectWidgets(s, widgetSelection.handles);
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -2142,12 +2104,8 @@ Simulation_Update(SimulationState& s)
 							v4 rect = WidgetRect(widget);
 							if (RectContains(rect, selectionPos))
 							{
-								FullWidgetRef& hovered = List_Append(s.hovered);
-								hovered.pluginHandle = widgetPlugin.handle;
-								hovered.dataHandle   = widgetData.handle;
-								hovered.widgetHandle = widget.handle;
-
-								if (IsWidgetSelected(s, hovered))
+								List_Append(s.hovered, widget.handle);
+								if (List_Contains(s.selected, widget.handle))
 								{
 									List_Duplicate(s.hovered, Slice(s.selected));
 									break;

@@ -1,11 +1,15 @@
 #ifndef LHM_WIDGETPLUGIN
 #define LHM_WIDGETPLUGIN
 
-struct SensorPlugin; // TODO: Remove
+// TODO: Remove?
+struct WidgetData;
+struct SensorPlugin;
+struct Sensor;
 
 struct Widget
 {
 	Handle<Widget>       handle;
+	Handle<WidgetData>   dataHandle;
 	v2                   position;
 	v2                   size;
 	v2                   pivot;

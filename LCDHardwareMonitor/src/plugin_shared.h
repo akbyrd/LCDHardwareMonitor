@@ -79,20 +79,3 @@ struct WidgetPlugin
 	WidgetPluginFunctions functions;
 	List<WidgetData>      widgetDatas;
 };
-
-struct FullWidgetRef
-{
-	Handle<WidgetPlugin> pluginHandle;
-	Handle<WidgetData>   dataHandle;
-	Handle<Widget>       widgetHandle;
-};
-
-inline b8 operator== (FullWidgetRef lhs, FullWidgetRef rhs)
-{
-	b8 result = true;
-	result &= lhs.pluginHandle == rhs.pluginHandle;
-	result &= lhs.dataHandle == rhs.dataHandle;
-	result &= lhs.widgetHandle == rhs.widgetHandle;
-	return result;
-}
-inline b8 operator!= (FullWidgetRef lhs, FullWidgetRef rhs) { return !(lhs == rhs); }

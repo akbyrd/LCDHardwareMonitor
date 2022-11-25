@@ -68,15 +68,13 @@ namespace ToGUI
 	struct WidgetsAdded
 	{
 		Header                header;
-		Handle<WidgetPlugin>  pluginHandle;
-		Handle<WidgetData>    dataHandle;
 		Slice<Handle<Widget>> widgetHandles;
 	};
 
 	struct WidgetSelectionChanged
 	{
-		Header               header;
-		Slice<FullWidgetRef> refs;
+		Header                header;
+		Slice<Handle<Widget>> handles;
 	};
 }
 
@@ -138,8 +136,8 @@ namespace FromGUI
 
 	struct RemoveWidget
 	{
-		Header        header;
-		FullWidgetRef ref;
+		Header         header;
+		Handle<Widget> handle;
 	};
 
 	struct RemoveSelectedWidgets
@@ -159,8 +157,8 @@ namespace FromGUI
 
 	struct SetWidgetSelection
 	{
-		Header               header;
-		Slice<FullWidgetRef> refs;
+		Header                header;
+		Slice<Handle<Widget>> handles;
 	};
 }
 
@@ -618,7 +616,7 @@ void
 Serialize(ByteStream& stream, FromGUI::SetWidgetSelection& widgetSelection)
 {
 	Serialize(stream, widgetSelection.header);
-	Serialize(stream, widgetSelection.refs);
+	Serialize(stream, widgetSelection.handles);
 }
 
 void
@@ -673,8 +671,6 @@ void
 Serialize(ByteStream& stream, ToGUI::WidgetsAdded& widgetsAdded)
 {
 	Serialize(stream, widgetsAdded.header);
-	Serialize(stream, widgetsAdded.pluginHandle);
-	Serialize(stream, widgetsAdded.dataHandle);
 	Serialize(stream, widgetsAdded.widgetHandles);
 }
 
@@ -682,7 +678,7 @@ void
 Serialize(ByteStream& stream, ToGUI::WidgetSelectionChanged& widgetSelection)
 {
 	Serialize(stream, widgetSelection.header);
-	Serialize(stream, widgetSelection.refs);
+	Serialize(stream, widgetSelection.handles);
 }
 
 // TODO: Code gen the actual Serialize functions
