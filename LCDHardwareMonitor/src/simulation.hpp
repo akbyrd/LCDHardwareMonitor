@@ -143,6 +143,8 @@ struct PluginContext
 // -------------------------------------------------------------------------------------------------
 // C++ is Stupid.
 
+template <typename T>
+static T& ListWithHandles_Append(HandleTable&, List<T>&, u32 = 1);
 static String GetNameFromPath(StringView);
 static void RemoveSensorReferences(SimulationState&, Slice<Handle<Sensor>>);
 static void RemoveWidgetReferences(SimulationState&, Slice<Handle<Widget>>);
@@ -161,10 +163,9 @@ RegisterSensors(PluginContext& context, Slice<SensorDesc> sensorDescs)
 	List_Grow(sensorPlugin. sensors, sensorDescs.length);
 	for (u32 i = 0; i < sensorDescs.length; i++)
 	{
-		Sensor& sensor = List_Append(sensorPlugin.sensors);
 		SensorDesc& desc = sensorDescs[i];
 
-		sensor.handle     = context.s->handleTable.Add(&sensor);
+		Sensor& sensor = ListWithHandles_Append(context.s->handleTable, sensorPlugin.sensors);
 		sensor.name       = String_FromView(desc.name);
 		sensor.identifier = String_FromView(desc.identifier);
 		sensor.format     = String_FromView(desc.format);
@@ -223,8 +224,7 @@ RegisterWidgetTypes(PluginContext& context, Slice<WidgetDesc> widgetDescs)
 	{
 		WidgetDesc& widgetDesc = widgetDescs[i];
 
-		WidgetType& widgetType = List_Append(widgetPlugin.widgetTypes);
-		widgetType.handle             = context.s->handleTable.Add(&widgetType);
+		WidgetType& widgetType = ListWithHandles_Append(context.s->handleTable, widgetPlugin.widgetTypes);
 		widgetType.widgetPluginHandle = widgetPlugin.handle;
 		widgetType.name               = String_FromView(widgetDesc.name);
 		widgetType.userDataSize       = widgetDesc.userDataSize;
@@ -571,12 +571,11 @@ OnTeardown(ConnectionState& con)
 static Plugin&
 RegisterPlugin(SimulationState& s, StringView directory, StringView fileName)
 {
-	Plugin& plugin = List_Append(s.plugins);
+	Plugin& plugin = ListWithHandles_Append(s.handleTable, s.plugins);
 
 	defer { ToGUI_PluginStatesChanged(s, plugin); };
 	auto pluginGuard = guard { plugin.loadState = PluginLoadState::Broken; };
 
-	plugin.handle    = s.handleTable.Add(&plugin);
 	plugin.fileName  = String_FromView(fileName);
 	plugin.directory = String_FromView(directory);
 
@@ -623,8 +622,7 @@ LoadSensorPlugin(SimulationState& s, Plugin& plugin, SensorPluginFunctions::GetP
 {
 	Assert(plugin.loadState != PluginLoadState::Loaded);
 
-	SensorPlugin& sensorPlugin = List_Append(s.sensorPlugins);
-	sensorPlugin.handle                  = s.handleTable.Add(&sensorPlugin);
+	SensorPlugin& sensorPlugin = ListWithHandles_Append(s.handleTable, s.sensorPlugins);
 	sensorPlugin.pluginHandle            = plugin.handle;
 	sensorPlugin.functions.GetPluginInfo = getPluginInfo;
 	// TODO: Leak on failure?
@@ -736,8 +734,7 @@ LoadWidgetPlugin(SimulationState& s, Plugin& plugin)
 {
 	Assert(plugin.loadState != PluginLoadState::Loaded);
 
-	WidgetPlugin& widgetPlugin = List_Append(s.widgetPlugins);
-	widgetPlugin.handle       = s.handleTable.Add(&widgetPlugin);
+	WidgetPlugin& widgetPlugin = ListWithHandles_Append(s.handleTable, s.widgetPlugins);
 	widgetPlugin.pluginHandle = plugin.handle;
 
 	defer { ToGUI_PluginStatesChanged(s, plugin); };
@@ -844,6 +841,31 @@ UnloadWidgetPlugin(SimulationState& s, WidgetPlugin& widgetPlugin)
 
 // -------------------------------------------------------------------------------------------------
 
+template <typename T>
+static T&
+ListWithHandles_Append(HandleTable& handleTable, List<T>& list, u32 count)
+{
+	u32 prevCapacity = list.capacity;
+	List_AppendRange(list, count);
+	if (list.capacity > prevCapacity)
+	{
+		for (u32 i = 0; i < list.length - count; i++)
+		{
+			T& element = list[i];
+			handleTable.Update(element.handle, &element);
+		}
+	}
+
+	for (u32 i = list.length - count; i < list.length; i++)
+	{
+		T& element = list[i];
+		element.handle = handleTable.Add(&element);
+	}
+
+	T& element = List_Get(list, list.length - count);
+	return element;
+}
+
 static String
 GetNameFromPath(StringView path)
 {
@@ -877,7 +899,7 @@ AddWidgets(SimulationState& s, WidgetType& widgetType, u32 count)
 	widgetType.widgetsUserData.length = widgetType.userDataSize * prevWidgetLen;
 	};
 
-	List_AppendRange(widgetType.widgets, count);
+	ListWithHandles_Append(s.handleTable, widgetType.widgets, count);
 	List_AppendRange(widgetType.widgetsUserData, widgetType.userDataSize * count);
 
 	PluginContext context = {};
@@ -1129,7 +1151,7 @@ HighlightWidgets(SimulationState& s, Slice<Handle<Widget>> widgetHandles, Outlin
 		{
 			Handle<Widget> widgetHandle = widgetHandles[i];
 			Widget&        widget       = *s.handleTable[widgetHandle];
-			WidgetType&    widgetType = *s.handleTable[widget.typeHandle];
+			WidgetType&    widgetType   = *s.handleTable[widget.typeHandle];
 			WidgetPlugin&  widgetPlugin = *s.handleTable[widgetType.widgetPluginHandle];
 
 			context.widgetPlugin = &widgetPlugin;

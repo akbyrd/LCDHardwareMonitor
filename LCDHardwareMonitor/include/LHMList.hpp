@@ -130,9 +130,9 @@ template<typename T>
 inline b8
 List_Grow(List<T>& list, u32 count)
 {
-	if (list.length + count < list.capacity)
+	if (list.length + count >= list.capacity)
 	{
-		u32 capacity  = list.capacity + count;
+		u32 capacity  = Max(list.capacity ? 2*list.capacity : 4, list.length + count);
 		u64 totalSize = sizeof(T) * u64(capacity);
 		u64 emptySize = sizeof(T) * u64(count);
 

@@ -1,19 +1,8 @@
-[x] Naming: fooHandle or foo?
-[x] WidgetDesc vs WidgetData
-[ ] Multiple handles in plugin_shared.h
-[ ] Replace Widget::sensorHandle with a value?
-[ ] Renderer still uses refs
-[ ] Remove ListRef
-----
-[ ] Handle plugin list resize
-[ ] Handle widget plugin list resize
-[ ] Handle sensor plugin list resize
-[ ] Handle widget type list resize
-[ ] Handle widget list resize
-[ ] Handle sensor list resize
-----
 [ ] Improve HandleTable API
 [ ]	Add tombstone
+----
+[ ] Renderer still uses refs
+[ ] Remove ListRef
 [ ] Rename Plugin to PluginFile
 [ ] Reuse Plugins
 
