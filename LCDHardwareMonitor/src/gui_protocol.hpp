@@ -67,7 +67,7 @@ namespace ToGUI
 	struct WidgetsAdded
 	{
 		Header                header;
-		Slice<Handle<Widget>> widgetHandles;
+		Slice<Handle<Widget>> handles;
 	};
 
 	struct WidgetSelectionChanged
@@ -669,7 +669,7 @@ void
 Serialize(ByteStream& stream, ToGUI::WidgetsAdded& widgetsAdded)
 {
 	Serialize(stream, widgetsAdded.header);
-	Serialize(stream, widgetsAdded.widgetHandles);
+	Serialize(stream, widgetsAdded.handles);
 }
 
 void

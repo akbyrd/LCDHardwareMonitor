@@ -332,7 +332,7 @@ namespace LCDHardwareMonitor::GUI
 
 			FromGUI::AddWidget addWidget = {};
 			addWidget.handle   = { Handle };
-			addWidget.position = { (float) pos.X, (float) pos.Y };
+			addWidget.position = { (r32) pos.X, (r32) pos.Y };
 			SerializeAndQueueMessage(state.simConnection, addWidget);
 		}
 
@@ -348,17 +348,17 @@ namespace LCDHardwareMonitor::GUI
 		static void
 		SetWidgetSelection(SimulationState^, System::Collections::IList^ selectedWidgets)
 		{
-			List<Handle<::Widget>> selection = {};
-			defer { List_Free(selection); };
+			List<Handle<::Widget>> selectedHandles = {};
+			defer { List_Free(selectedHandles); };
 
 			for (i32 i = 0; i < selectedWidgets->Count; i++)
 			{
 				Widget% selectedWidget = (Widget%) selectedWidgets[i];
-				List_Append(selection, { selectedWidget.Handle });
+				List_Append(selectedHandles, { selectedWidget.Handle });
 			}
 
 			FromGUI::SetWidgetSelection widgetSelection = {};
-			widgetSelection.handles = selection;
+			widgetSelection.handles = selectedHandles;
 			SerializeAndQueueMessage(state.simConnection, widgetSelection);
 		}
 
@@ -482,10 +482,10 @@ namespace LCDHardwareMonitor::GUI
 		static void
 		FromSim_WidgetsAdded(SimulationState% simState, ToGUI::WidgetsAdded& widgetsAdded)
 		{
-			for (u32 i = 0; i < widgetsAdded.widgetHandles.length; i++)
+			for (u32 i = 0; i < widgetsAdded.handles.length; i++)
 			{
 				Widget mWidget = {};
-				mWidget.Handle = widgetsAdded.widgetHandles[i].value;
+				mWidget.Handle = widgetsAdded.handles[i].value;
 				simState.Widgets->Add(mWidget);
 			}
 			simState.NotifyPropertyChanged("");

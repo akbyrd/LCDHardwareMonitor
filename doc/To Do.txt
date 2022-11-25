@@ -1,24 +1,16 @@
-Handle Table with pointesr
-Pointers + patch after changes
-
-Want something stable across changes for the GUI
-Might want it for plugin update functions
-
-[x] SensorsAdded::sensorPluginHandles
-[x] WidgetDescsAdded::widgetPluginHandles
-[x] WidgetsAdded::widgetHandles
-[x] WidgetDescsAdded::descs
-[x] SensorsAdded Slice<List<Sensor>>
-[ ] Naming: fooHandle or foo?
-[ ] Renderer still uses refs
-[ ] Remove ListRef
+[x] Naming: fooHandle or foo?
+[ ] Multiple handles in plugin_shared.h
 [ ] WidgetDesc vs WidgetData
 [ ] Replace Widget::sensorHandle with a value?
+[ ] Renderer still uses refs
+[ ] Remove ListRef
 ----
 [ ] Handle plugin list resize
 [ ] Handle widget plugin list resize
 [ ] Handle sensor plugin list resize
+[ ] Handle widget desc list resize
 [ ] Handle widget list resize
+[ ] Handle sensor list resize
 ----
 [ ] Improve HandleTable API
 [ ]	Add tombstone
