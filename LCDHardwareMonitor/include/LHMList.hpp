@@ -88,6 +88,9 @@ struct Slice
 	inline T& operator[] (u32 i)  { Assert(i < length); return (T&) ((u8*) data)[stride*i]; }
 };
 
+// -------------------------------------------------------------------------------------------------
+// List Functions
+
 template<typename T>
 inline b8
 List_Reserve(List<T>& list, u32 capacity)
@@ -455,14 +458,6 @@ List_SizeOf(List<T>& list)
 
 template<typename T>
 inline u32
-List_SizeOf(Slice<T>& slice)
-{
-	u32 result = sizeof(T) * slice.length;
-	return result;
-}
-
-template<typename T>
-inline u32
 List_SizeOfRemaining(List<T>& list)
 {
 	u32 result = sizeof(T) * (list.capacity - list.length);
@@ -485,17 +480,6 @@ List_Slice(List<T>& list, u32 start)
 	result.length = list.length - start;
 	result.stride = sizeof(T);
 	result.data   = &list[start];
-	return result;
-}
-
-template<typename T>
-inline Slice<T>
-List_Slice(Slice<T>& slice, u32 start)
-{
-	Slice<T> result = {};
-	result.length = slice.length - start;
-	result.stride = slice.stride;
-	result.data   = &slice[start];
 	return result;
 }
 
@@ -533,8 +517,53 @@ List_MemberSlice(List<T>& list, U T::* memberPtr1, V U::* memberPtr2)
 }
 
 template<typename T>
+u32
+ToString(String& string, List<T>& list)
+{
+	u32 written = 0;
+	if (list.length == 0)
+	{
+		written += ToString(string, "List: {}");
+	}
+	else
+	{
+		written += ToString(string, "List: {\n");
+		for (u32 i = 0; i < list.length; i++)
+		{
+			written += ToString(string, "\t");
+			written += ToString(string, list[i]);
+			written += ToString(string, ",\n");
+		}
+		written += ToString(string, "}");
+	}
+	return written;
+}
+
+// -------------------------------------------------------------------------------------------------
+// Slice Functions
+
+template<typename T>
+inline u32
+Slice_SizeOf(Slice<T>& slice)
+{
+	u32 result = sizeof(T) * slice.length;
+	return result;
+}
+
+template<typename T>
+inline Slice<T>
+Slice_Slice(Slice<T>& slice, u32 start)
+{
+	Slice<T> result = {};
+	result.length = slice.length - start;
+	result.stride = slice.stride;
+	result.data   = &slice[start];
+	return result;
+}
+
+template<typename T>
 inline T&
-List_GetLast(Slice<T>& list)
+Slice_GetLast(Slice<T>& list)
 {
 	Assert(list.length > 0);
 	return list[list.length - 1];
@@ -562,29 +591,6 @@ Slice_MemberSlice(Slice<T>& slice, U T::* memberPtr)
 	}
 
 	return result;
-}
-
-template<typename T>
-u32
-ToString(String& string, List<T>& list)
-{
-	u32 written = 0;
-	if (list.length == 0)
-	{
-		written += ToString(string, "List: {}");
-	}
-	else
-	{
-		written += ToString(string, "List: {\n");
-		for (u32 i = 0; i < list.length; i++)
-		{
-			written += ToString(string, "\t");
-			written += ToString(string, list[i]);
-			written += ToString(string, ",\n");
-		}
-		written += ToString(string, "}");
-	}
-	return written;
 }
 
 template<typename T>

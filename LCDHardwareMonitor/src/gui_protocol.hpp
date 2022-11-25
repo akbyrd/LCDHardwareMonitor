@@ -51,8 +51,8 @@ namespace ToGUI
 	// TODO: SensorsRemoved
 	struct SensorsAdded
 	{
-		Header              header;
-		Slice<List<Sensor>> sensors;
+		Header        header;
+		Slice<Sensor> sensors;
 	};
 
 	// TODO: WidgetDescsRemoved
@@ -479,7 +479,7 @@ void
 Serialize(ByteStream& stream, Slice<T>& slice)
 {
 	T* data = (T*) &stream.bytes.data[stream.cursor];
-	stream.cursor += List_SizeOf(slice);
+	stream.cursor += Slice_SizeOf(slice);
 
 	switch (stream.mode)
 	{

@@ -452,19 +452,15 @@ namespace LCDHardwareMonitor::GUI
 		{
 			for (u32 i = 0; i < sensorsAdded.sensors.length; i++)
 			{
-				Slice<::Sensor> sensors = sensorsAdded.sensors[i];
-				for (u32 j = 0; j < sensors.length; j++)
-				{
-					::Sensor& sensor = sensors[j];
+				::Sensor sensor = sensorsAdded.sensors[i];
 
-					Sensor mSensor = {};
-					mSensor.Handle     = sensor.handle.value;
-					mSensor.Name       = ToManagedString(sensor.name);
-					mSensor.Identifier = ToManagedString(sensor.identifier);
-					mSensor.Format     = ToManagedString(sensor.format);
-					mSensor.Value      = sensor.value;
-					simState.Sensors->Add(mSensor);
-				}
+				Sensor mSensor = {};
+				mSensor.Handle     = sensor.handle.value;
+				mSensor.Name       = ToManagedString(sensor.name);
+				mSensor.Identifier = ToManagedString(sensor.identifier);
+				mSensor.Format     = ToManagedString(sensor.format);
+				mSensor.Value      = sensor.value;
+				simState.Sensors->Add(mSensor);
 			}
 			simState.NotifyPropertyChanged("");
 		}

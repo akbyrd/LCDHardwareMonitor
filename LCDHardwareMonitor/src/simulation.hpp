@@ -456,7 +456,7 @@ ToGUI_PluginStatesChanged(SimulationState& s, Slice<Plugin> plugins)
 }
 
 static void
-ToGUI_SensorsAdded(SimulationState& s, Slice<List<Sensor>> sensors)
+ToGUI_SensorsAdded(SimulationState& s, Slice<Sensor> sensors)
 {
 	if (s.guiConnection.pipe.state != PipeState::Connected) return;
 
@@ -505,23 +505,22 @@ OnConnect(SimulationState& s)
 	ToGUI_Connect(s);
 	ToGUI_PluginsAdded(s, s.plugins);
 	ToGUI_PluginStatesChanged(s, s.plugins);
-	ToGUI_SensorsAdded(s, List_MemberSlice(s.sensorPlugins, &SensorPlugin::sensors));
+
+	for (u32 i = 0; i < s.sensorPlugins.length; i++)
+	{
+		SensorPlugin& sensorPlugin = s.sensorPlugins[i];
+		ToGUI_SensorsAdded(s, sensorPlugin.sensors);
+	}
 
 	for (u32 i = 0; i < s.widgetPlugins.length; i++)
 	{
 		WidgetPlugin& widgetPlugin = s.widgetPlugins[i];
-
-		// NOTE: It's surprisingly tricky to send a Slice<Slice<T>> when it's backed by
-		// a set of List<T>. The inner slices are temporaries and need to be stored.
-		Slice<WidgetDesc> descs = List_MemberSlice(widgetPlugin.widgetDatas, &WidgetData::desc);
-		ToGUI_WidgetDescsAdded(s, descs);
+		ToGUI_WidgetDescsAdded(s, List_MemberSlice(widgetPlugin.widgetDatas, &WidgetData::desc));
 
 		for (u32 j = 0; j < widgetPlugin.widgetDatas.length; j++)
 		{
 			WidgetData& widgetData = widgetPlugin.widgetDatas[j];
-
-			Slice<Handle<Widget>> handles = List_MemberSlice(widgetData.widgets, &Widget::handle);
-			ToGUI_WidgetsAdded(s, handles);
+			ToGUI_WidgetsAdded(s, List_MemberSlice(widgetData.widgets, &Widget::handle));
 		}
 	}
 }

@@ -8,6 +8,7 @@ Might want it for plugin update functions
 [x] WidgetDescsAdded::widgetPluginHandles
 [x] WidgetsAdded::widgetHandles
 [x] WidgetDescsAdded::descs
+[x] SensorsAdded Slice<List<Sensor>>
 [ ] Naming: fooHandle or foo?
 [ ] Renderer still uses refs
 [ ] Remove ListRef
