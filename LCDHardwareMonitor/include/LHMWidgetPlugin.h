@@ -1,15 +1,13 @@
 #ifndef LHM_WIDGETPLUGIN
 #define LHM_WIDGETPLUGIN
 
-// TODO: Remove?
-struct WidgetData;
-struct SensorPlugin;
+struct WidgetType;
 struct Sensor;
 
 struct Widget
 {
 	Handle<Widget>     handle;
-	Handle<WidgetData> dataHandle;
+	Handle<WidgetType> typeHandle;
 	Handle<Sensor>     sensorHandle;
 	v2                 position;
 	v2                 size;
@@ -69,7 +67,6 @@ struct WidgetDesc
 	using UpdateFn     = void(PluginContext&, WidgetAPI::Update);
 	using TeardownFn   = void(PluginContext&, WidgetAPI::Teardown);
 
-	Handle<WidgetDesc> handle;
 	String             name;
 	u32                userDataSize;
 	InitializeFn*      Initialize;

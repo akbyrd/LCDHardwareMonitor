@@ -56,13 +56,21 @@ struct SensorPlugin
 
 struct WidgetPlugin;
 
-struct WidgetData
+struct WidgetType
 {
-	Handle<WidgetData>   handle;
+	using InitializeFn = b8  (PluginContext&, WidgetAPI::Initialize);
+	using UpdateFn     = void(PluginContext&, WidgetAPI::Update);
+	using TeardownFn   = void(PluginContext&, WidgetAPI::Teardown);
+
+	Handle<WidgetType>   handle;
 	Handle<WidgetPlugin> widgetPluginHandle;
-	WidgetDesc           desc;
+	String               name;
+	u32                  userDataSize;
 	List<Widget>         widgets;
 	Bytes                widgetsUserData;
+	InitializeFn*        Initialize;
+	UpdateFn*            Update;
+	TeardownFn*          Teardown;
 };
 
 struct WidgetPlugin
@@ -71,5 +79,5 @@ struct WidgetPlugin
 	Handle<Plugin>        pluginHandle;
 	StringSlice           name;
 	WidgetPluginFunctions functions;
-	List<WidgetData>      widgetDatas;
+	List<WidgetType>      widgetTypes;
 };

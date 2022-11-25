@@ -55,11 +55,11 @@ namespace ToGUI
 		Slice<Sensor> sensors;
 	};
 
-	// TODO: WidgetDescsRemoved
-	struct WidgetDescsAdded
+	// TODO: WidgetTypesRemoved
+	struct WidgetTypesAdded
 	{
 		Header                    header;
-		Slice<Handle<WidgetDesc>> handles;
+		Slice<Handle<WidgetType>> handles;
 		Slice<String>             names;
 	};
 
@@ -129,7 +129,7 @@ namespace FromGUI
 	struct AddWidget
 	{
 		Header             header;
-		Handle<WidgetData> handle;
+		Handle<WidgetType> handle;
 		v2                 position;
 	};
 
@@ -229,7 +229,7 @@ void Serialize(ByteStream&, StringView&);
 void Serialize(ByteStream&, ToGUI::PluginsAdded&);
 void Serialize(ByteStream&, ToGUI::PluginStatesChanged&);
 void Serialize(ByteStream&, ToGUI::SensorsAdded&);
-void Serialize(ByteStream&, ToGUI::WidgetDescsAdded&);
+void Serialize(ByteStream&, ToGUI::WidgetTypesAdded&);
 void Serialize(ByteStream&, ToGUI::WidgetsAdded&);
 void Serialize(ByteStream&, ToGUI::WidgetSelectionChanged&);
 void Serialize(ByteStream&, FromGUI::SetPluginLoadStates&);
@@ -644,25 +644,11 @@ Serialize(ByteStream& stream, Sensor& sensor)
 }
 
 void
-Serialize(ByteStream& stream, ToGUI::WidgetDescsAdded& widgetDescsAdded)
+Serialize(ByteStream& stream, ToGUI::WidgetTypesAdded& widgetTypesAdded)
 {
-	Serialize(stream, widgetDescsAdded.header);
-	Serialize(stream, widgetDescsAdded.handles);
-	Serialize(stream, widgetDescsAdded.names);
-}
-
-void
-Serialize(ByteStream& stream, WidgetDesc& widgetDesc)
-{
-	Serialize(stream, widgetDesc.handle);
-	Serialize(stream, widgetDesc.name);
-	Serialize(stream, widgetDesc.userDataSize);
-	if (stream.mode == ByteStreamMode::Write)
-	{
-		widgetDesc.Initialize = nullptr;
-		widgetDesc.Update     = nullptr;
-		widgetDesc.Teardown   = nullptr;
-	}
+	Serialize(stream, widgetTypesAdded.header);
+	Serialize(stream, widgetTypesAdded.handles);
+	Serialize(stream, widgetTypesAdded.names);
 }
 
 void

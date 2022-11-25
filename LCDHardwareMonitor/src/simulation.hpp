@@ -211,7 +211,7 @@ UnregisterSensors(PluginContext& context, Slice<Handle<Sensor>> sensorHandles)
 // Widget API
 
 static void
-RegisterWidgets(PluginContext& context, Slice<WidgetDesc> widgetDescs)
+RegisterWidgetTypes(PluginContext& context, Slice<WidgetDesc> widgetDescs)
 {
 	if (!context.success) return;
 
@@ -223,14 +223,17 @@ RegisterWidgets(PluginContext& context, Slice<WidgetDesc> widgetDescs)
 	{
 		WidgetDesc& widgetDesc = widgetDescs[i];
 
-		WidgetData& widgetData = List_Append(widgetPlugin.widgetDatas);
-		widgetData.handle             = context.s->handleTable.Add(&widgetData);
-		widgetData.widgetPluginHandle = widgetPlugin.handle;
-		widgetData.desc               = widgetDesc;
-		widgetData.desc.handle        = { widgetData.handle.value };
+		WidgetType& widgetType = List_Append(widgetPlugin.widgetTypes);
+		widgetType.handle             = context.s->handleTable.Add(&widgetType);
+		widgetType.widgetPluginHandle = widgetPlugin.handle;
+		widgetType.name               = String_FromView(widgetDesc.name);
+		widgetType.userDataSize       = widgetDesc.userDataSize;
+		widgetType.Initialize         = widgetDesc.Initialize;
+		widgetType.Update             = widgetDesc.Update;
+		widgetType.Teardown           = widgetDesc.Teardown;
 
-		List_Reserve(widgetData.widgets, 8);
-		List_Reserve(widgetData.widgetsUserData, 8 * widgetDesc.userDataSize);
+		List_Reserve(widgetType.widgets, 8);
+		List_Reserve(widgetType.widgetsUserData, 8 * widgetDesc.userDataSize);
 	}
 }
 
@@ -466,14 +469,14 @@ ToGUI_SensorsAdded(SimulationState& s, Slice<Sensor> sensors)
 }
 
 static void
-ToGUI_WidgetDescsAdded(SimulationState& s, Slice<WidgetDesc> widgetDescs)
+ToGUI_WidgetTypesAdded(SimulationState& s, Slice<WidgetType> widgetTypes)
 {
 	if (s.guiConnection.pipe.state != PipeState::Connected) return;
 
-	ToGUI::WidgetDescsAdded widgetDescsAdded = {};
-	widgetDescsAdded.handles = Slice_MemberSlice(widgetDescs, &WidgetDesc::handle);
-	widgetDescsAdded.names   = Slice_MemberSlice(widgetDescs, &WidgetDesc::name);
-	SerializeAndQueueMessage(s.guiConnection, widgetDescsAdded);
+	ToGUI::WidgetTypesAdded widgetTypesAdded = {};
+	widgetTypesAdded.handles = Slice_MemberSlice(widgetTypes, &WidgetType::handle);
+	widgetTypesAdded.names   = Slice_MemberSlice(widgetTypes, &WidgetType::name);
+	SerializeAndQueueMessage(s.guiConnection, widgetTypesAdded);
 }
 
 static void
@@ -515,12 +518,12 @@ OnConnect(SimulationState& s)
 	for (u32 i = 0; i < s.widgetPlugins.length; i++)
 	{
 		WidgetPlugin& widgetPlugin = s.widgetPlugins[i];
-		ToGUI_WidgetDescsAdded(s, List_MemberSlice(widgetPlugin.widgetDatas, &WidgetData::desc));
+		ToGUI_WidgetTypesAdded(s, widgetPlugin.widgetTypes);
 
-		for (u32 j = 0; j < widgetPlugin.widgetDatas.length; j++)
+		for (u32 j = 0; j < widgetPlugin.widgetTypes.length; j++)
 		{
-			WidgetData& widgetData = widgetPlugin.widgetDatas[j];
-			ToGUI_WidgetsAdded(s, List_MemberSlice(widgetData.widgets, &Widget::handle));
+			WidgetType& widgetType = widgetPlugin.widgetTypes[j];
+			ToGUI_WidgetsAdded(s, List_MemberSlice(widgetType.widgets, &Widget::handle));
 		}
 	}
 }
@@ -711,21 +714,21 @@ UnloadSensorPlugin(SimulationState& s, SensorPlugin& sensorPlugin)
 }
 
 static void
-TeardownWidgetData(WidgetData& widgetData)
+TeardownWidgetType(WidgetType& widgetType)
 {
-	List_Free(widgetData.widgets);
-	List_Free(widgetData.widgetsUserData);
+	List_Free(widgetType.widgets);
+	List_Free(widgetType.widgetsUserData);
 }
 
 static void
 TeardownWidgetPlugin(WidgetPlugin& widgetPlugin)
 {
-	for (u32 i = 0; i < widgetPlugin.widgetDatas.length; i++)
+	for (u32 i = 0; i < widgetPlugin.widgetTypes.length; i++)
 	{
-		WidgetData& widgetData = widgetPlugin.widgetDatas[i];
-		TeardownWidgetData(widgetData);
+		WidgetType& widgetType = widgetPlugin.widgetTypes[i];
+		TeardownWidgetType(widgetType);
 	}
-	List_Free(widgetPlugin.widgetDatas);
+	List_Free(widgetPlugin.widgetTypes);
 }
 
 static Result<WidgetPlugin*>
@@ -766,7 +769,7 @@ LoadWidgetPlugin(SimulationState& s, Plugin& plugin)
 		context.success      = true;
 
 		WidgetPluginAPI::Initialize api = {};
-		api.RegisterWidgets = RegisterWidgets;
+		api.RegisterWidgets = RegisterWidgetTypes;
 		api.LoadPixelShader = LoadPixelShader;
 
 		success = widgetPlugin.functions.Initialize(context, api);
@@ -798,20 +801,20 @@ UnloadWidgetPlugin(SimulationState& s, WidgetPlugin& widgetPlugin)
 	context.widgetPlugin = &widgetPlugin;
 
 	WidgetAPI::Teardown widgetAPI = {};
-	for (u32 i = 0; i < widgetPlugin.widgetDatas.length; i++)
+	for (u32 i = 0; i < widgetPlugin.widgetTypes.length; i++)
 	{
-		WidgetData& widgetData = widgetPlugin.widgetDatas[i];
-		if (widgetData.widgets.length == 0) continue;
+		WidgetType& widgetType = widgetPlugin.widgetTypes[i];
+		if (widgetType.widgets.length == 0) continue;
 
 		context.success = true;
 
-		widgetAPI.widgets                = widgetData.widgets;
-		widgetAPI.widgetsUserData        = widgetData.widgetsUserData;
-		widgetAPI.widgetsUserData.stride = widgetData.desc.userDataSize;
+		widgetAPI.widgets                = widgetType.widgets;
+		widgetAPI.widgetsUserData        = widgetType.widgetsUserData;
+		widgetAPI.widgetsUserData.stride = widgetType.userDataSize;
 
 		// TODO: try/catch?
-		if (widgetData.desc.Teardown)
-			widgetData.desc.Teardown(context, widgetAPI);
+		if (widgetType.Teardown)
+			widgetType.Teardown(context, widgetAPI);
 	}
 
 	// TODO: try/catch?
@@ -821,10 +824,10 @@ UnloadWidgetPlugin(SimulationState& s, WidgetPlugin& widgetPlugin)
 		widgetPlugin.functions.Teardown(context, pluginAPI);
 	}
 
-	for (u32 i = 0; i < widgetPlugin.widgetDatas.length; i++)
+	for (u32 i = 0; i < widgetPlugin.widgetTypes.length; i++)
 	{
-		WidgetData& widgetData = widgetPlugin.widgetDatas[i];
-		RemoveWidgetReferences(s, List_MemberSlice(widgetData.widgets, &Widget::handle));
+		WidgetType& widgetType = widgetPlugin.widgetTypes[i];
+		RemoveWidgetReferences(s, List_MemberSlice(widgetType.widgets, &Widget::handle));
 	}
 	TeardownWidgetPlugin(widgetPlugin);
 
@@ -865,41 +868,41 @@ GetNameFromPath(StringView path)
 }
 
 static Slice<Widget>
-AddWidgets(SimulationState& s, WidgetData& widgetData, u32 count)
+AddWidgets(SimulationState& s, WidgetType& widgetType, u32 count)
 {
-	u32 prevWidgetLen = widgetData.widgets.length;
+	u32 prevWidgetLen = widgetType.widgets.length;
 
 	auto createGuard = guard {
-		widgetData.widgets.length = prevWidgetLen;
-		widgetData.widgetsUserData.length = widgetData.desc.userDataSize * prevWidgetLen;
+		widgetType.widgets.length = prevWidgetLen;
+	widgetType.widgetsUserData.length = widgetType.userDataSize * prevWidgetLen;
 	};
 
-	List_AppendRange(widgetData.widgets, count);
-	List_AppendRange(widgetData.widgetsUserData, widgetData.desc.userDataSize * count);
+	List_AppendRange(widgetType.widgets, count);
+	List_AppendRange(widgetType.widgetsUserData, widgetType.userDataSize * count);
 
 	PluginContext context = {};
 	context.s            = &s;
-	context.widgetPlugin = s.handleTable[widgetData.widgetPluginHandle];
+	context.widgetPlugin = s.handleTable[widgetType.widgetPluginHandle];
 	context.success      = true;
 
 	WidgetAPI::Initialize api = {};
-	api.widgets                = List_Slice(widgetData.widgets, prevWidgetLen);
-	api.widgetsUserData        = List_Slice(widgetData.widgetsUserData, widgetData.desc.userDataSize * prevWidgetLen);
-	api.widgetsUserData.stride = widgetData.desc.userDataSize;
+	api.widgets                = List_Slice(widgetType.widgets, prevWidgetLen);
+	api.widgetsUserData        = List_Slice(widgetType.widgetsUserData, widgetType.userDataSize * prevWidgetLen);
+	api.widgetsUserData.stride = widgetType.userDataSize;
 
 	for (u32 i = 0; i < count; i++)
 	{
-		Widget& widget = widgetData.widgets[prevWidgetLen + i];
+		Widget& widget = widgetType.widgets[prevWidgetLen + i];
 		widget.handle       = s.handleTable.Add(&widget);
-		widget.dataHandle   = widgetData.handle;
+		widget.typeHandle   = widgetType.handle;
 		widget.sensorHandle = s.nullSensorHandle;
 		widget.position     = {};
 	}
 
-	widgetData.desc.Initialize(context, api);
+	widgetType.Initialize(context, api);
 	if (!context.success) return {};
 
-	Slice<Widget> newWidgets = List_Slice(widgetData.widgets, prevWidgetLen);
+	Slice<Widget> newWidgets = List_Slice(widgetType.widgets, prevWidgetLen);
 	ToGUI_WidgetsAdded(s, Slice_MemberSlice(newWidgets, &Widget::handle));
 
 	createGuard.dismiss = true;
@@ -961,16 +964,16 @@ RemoveWidgets(SimulationState& s, Slice<Handle<Widget>> widgetHandles)
 	{
 		Handle<Widget> widgetHandle = widgetHandles[i];
 		Widget&        widget       = *s.handleTable[widgetHandle];
-		WidgetData&    data         = *s.handleTable[widget.dataHandle];
+		WidgetType&    widgetType   = *s.handleTable[widget.typeHandle];
 
-		u32 widgetIndex = List_PointerToIndex(data.widgets, widget);
-		List_RemoveFast(data.widgets, widgetIndex);
-		List_RemoveRangeFast(data.widgetsUserData, data.desc.userDataSize * widgetIndex, data.desc.userDataSize);
+		u32 widgetIndex = List_PointerToIndex(widgetType.widgets, widget);
+		List_RemoveFast(widgetType.widgets, widgetIndex);
+		List_RemoveRangeFast(widgetType.widgetsUserData, widgetType.userDataSize * widgetIndex, widgetType.userDataSize);
 		s.handleTable.Remove(widgetHandle);
 
-		if (data.widgets.length > 0)
+		if (widgetType.widgets.length > 0)
 		{
-			Widget& movedWidget = data.widgets[widgetIndex];
+			Widget& movedWidget = widgetType.widgets[widgetIndex];
 			s.handleTable.Update(movedWidget.handle, &movedWidget);
 		}
 	}
@@ -988,12 +991,12 @@ RemoveSensorReferences(SimulationState& s, Slice<Handle<Sensor>> sensorHandles)
 		for (u32 j = 0; j < s.widgetPlugins.length; j++)
 		{
 			WidgetPlugin& widgetPlugin = s.widgetPlugins[j];
-			for (u32 k = 0; k < widgetPlugin.widgetDatas.length; k++)
+			for (u32 k = 0; k < widgetPlugin.widgetTypes.length; k++)
 			{
-				WidgetData& widgetData = widgetPlugin.widgetDatas[k];
-				for (u32 l = 0; l < widgetData.widgets.length; l++)
+				WidgetType& widgetType = widgetPlugin.widgetTypes[k];
+				for (u32 l = 0; l < widgetType.widgets.length; l++)
 				{
-					Widget& widget = widgetData.widgets[l];
+					Widget& widget = widgetType.widgets[l];
 					if (widget.sensorHandle == sensorHandle)
 					{
 						widget.sensorHandle = Handle<Sensor>::Null;
@@ -1126,20 +1129,20 @@ HighlightWidgets(SimulationState& s, Slice<Handle<Widget>> widgetHandles, Outlin
 		{
 			Handle<Widget> widgetHandle = widgetHandles[i];
 			Widget&        widget       = *s.handleTable[widgetHandle];
-			WidgetData&    widgetData   = *s.handleTable[widget.dataHandle];
-			WidgetPlugin&  widgetPlugin = *s.handleTable[widgetData.widgetPluginHandle];
+			WidgetType&    widgetType = *s.handleTable[widget.typeHandle];
+			WidgetPlugin&  widgetPlugin = *s.handleTable[widgetType.widgetPluginHandle];
 
 			context.widgetPlugin = &widgetPlugin;
 			context.success      = true;
 
 			widgetAPI.widgets                = widget;
 			// TODO: Can this be made simpler?
-			u32 widgetIndex = List_PointerToIndex(widgetData.widgets, widget);
-			widgetAPI.widgetsUserData        = widgetData.widgetsUserData[widgetData.desc.userDataSize * widgetIndex];
-			widgetAPI.widgetsUserData.stride = widgetData.desc.userDataSize;
+			u32 widgetIndex = List_PointerToIndex(widgetType.widgets, widget);
+			widgetAPI.widgetsUserData        = widgetType.widgetsUserData[widgetType.userDataSize * widgetIndex];
+			widgetAPI.widgetsUserData.stride = widgetType.userDataSize;
 
 			// TODO: try/catch?
-			widgetData.desc.Update(context, widgetAPI);
+			widgetType.Update(context, widgetAPI);
 		}
 		Renderer_PopDepthBuffer(*s.renderer);
 		Renderer_PopRenderTarget(*s.renderer);
@@ -1449,8 +1452,8 @@ FromGUI_AddWidget(SimulationState& s, FromGUI::AddWidget& addWidget)
 		return;
 	}
 
-	WidgetData& widgetData = *s.handleTable[addWidget.handle];
-	Slice<Widget> widgets = AddWidgets(s, widgetData, 1);
+	WidgetType& widgetType = *s.handleTable[addWidget.handle];
+	Slice<Widget> widgets = AddWidgets(s, widgetType, 1);
 	if (widgets.length == 0) return;
 
 	Widget& widget = widgets[0];
@@ -1855,8 +1858,8 @@ Simulation_Initialize(
 
 
 		u32 dummyWidgetCount = 6;
-		WidgetData& widgetData = widgetPlugin->widgetDatas[0];
-		Slice<Widget> widgets = AddWidgets(s, widgetData, dummyWidgetCount);
+		WidgetType& widgetType = widgetPlugin->widgetTypes[0];
+		Slice<Widget> widgets = AddWidgets(s, widgetType, dummyWidgetCount);
 		for (u32 i = 0; i < widgets.length; i++)
 		{
 			Widget& widget = widgets[i];
@@ -2035,19 +2038,19 @@ Simulation_Update(SimulationState& s)
 			if (widgetPlugin.functions.Update)
 				widgetPlugin.functions.Update(context, pluginAPI);
 
-			for (u32 j = 0; j < widgetPlugin.widgetDatas.length; j++)
+			for (u32 j = 0; j < widgetPlugin.widgetTypes.length; j++)
 			{
-				WidgetData& widgetData = widgetPlugin.widgetDatas[j];
-				if (widgetData.widgets.length == 0) continue;
+				WidgetType& widgetType = widgetPlugin.widgetTypes[j];
+				if (widgetType.widgets.length == 0) continue;
 
 				context.success = true;
 
-				widgetAPI.widgets                = widgetData.widgets;
-				widgetAPI.widgetsUserData        = widgetData.widgetsUserData;
-				widgetAPI.widgetsUserData.stride = widgetData.desc.userDataSize;
+				widgetAPI.widgets                = widgetType.widgets;
+				widgetAPI.widgetsUserData        = widgetType.widgetsUserData;
+				widgetAPI.widgetsUserData.stride = widgetType.userDataSize;
 
 				// TODO: try/catch?
-				widgetData.desc.Update(context, widgetAPI);
+				widgetType.Update(context, widgetAPI);
 			}
 
 			Renderer_PopEvent(*s.renderer);
@@ -2072,12 +2075,12 @@ Simulation_Update(SimulationState& s)
 		for (u32 i = 0; i < s.widgetPlugins.length; i++)
 		{
 			WidgetPlugin& widgetPlugin = s.widgetPlugins[i];
-			for (u32 j = 0; j < widgetPlugin.widgetDatas.length; j++)
+			for (u32 j = 0; j < widgetPlugin.widgetTypes.length; j++)
 			{
-				WidgetData& widgetData = widgetPlugin.widgetDatas[j];
-				for (u32 k = 0; k < widgetData.widgets.length; k++)
+				WidgetType& widgetType = widgetPlugin.widgetTypes[j];
+				for (u32 k = 0; k < widgetType.widgets.length; k++)
 				{
-					Widget& widget = widgetData.widgets[k];
+					Widget& widget = widgetType.widgets[k];
 					if (widget.depth < selectionDepth)
 					{
 						if (!ApproximatelyZero(mouseDir.z))

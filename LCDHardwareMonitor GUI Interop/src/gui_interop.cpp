@@ -466,14 +466,13 @@ namespace LCDHardwareMonitor::GUI
 		}
 
 		static void
-		FromSim_WidgetDescsAdded(SimulationState% simState, ToGUI::WidgetDescsAdded& widgetDescsAdded)
+		FromSim_WidgetTypesAdded(SimulationState% simState, ToGUI::WidgetTypesAdded& widgetTypesAdded)
 		{
-			for (u32 i = 0; i < widgetDescsAdded.handles.length; i++)
+			for (u32 i = 0; i < widgetTypesAdded.handles.length; i++)
 			{
-				// TODO: Are we just leaking strings in messages?
 				WidgetDesc mWidgetDesc = {};
-				mWidgetDesc.Handle = widgetDescsAdded.handles[i].value;
-				mWidgetDesc.Name   = ToManagedString(widgetDescsAdded.names[i]);
+				mWidgetDesc.Handle = widgetTypesAdded.handles[i].value;
+				mWidgetDesc.Name   = ToManagedString(widgetTypesAdded.names[i]);
 				simState.WidgetDescs->Add(mWidgetDesc);
 			}
 			simState.NotifyPropertyChanged("");
@@ -585,7 +584,7 @@ namespace LCDHardwareMonitor::GUI
 						HANDLE_MESSAGE(PluginsAdded)
 						HANDLE_MESSAGE(PluginStatesChanged)
 						HANDLE_MESSAGE(SensorsAdded)
-						HANDLE_MESSAGE(WidgetDescsAdded)
+						HANDLE_MESSAGE(WidgetTypesAdded)
 						HANDLE_MESSAGE(WidgetsAdded)
 						HANDLE_MESSAGE(WidgetSelectionChanged)
 					}
