@@ -4,24 +4,15 @@ Pointers + patch after changes
 Want something stable across changes for the GUI
 Might want it for plugin update functions
 
-[x] PluginRef
-[x] WidgetPluginRef
-[x] SensorPluginRef
-[x] Ensure remove from lists
-[x] Ensure remove from handle table
-[x] Remove rawRefToKind
-[x] WidgetRef
-[x] SensorRef
-[x] WidgetDataRef
-[x] WidgetDescRef
-[x] FullWidgetDataRef
-[x] FullWidgetRef
-[x] FullSensorRef
-[ ] Widget::sensorPluginHandle
-[ ] WidgetDesc vs WidgetData
-[ ] Remove old TODOs
+[x] SensorsAdded::sensorPluginHandles
+[x] WidgetDescsAdded::widgetPluginHandles
+[ ] WidgetsAdded::widgetHandles
+[ ] WidgetDescsAdded::descs
+[ ] Naming: fooHandle or foo?
 [ ] Renderer still uses refs
 [ ] Remove ListRef
+[ ] WidgetDesc vs WidgetData
+[ ] Replace Widget::sensorHandle with a value?
 ----
 [ ] Handle plugin list resize
 [ ] Handle widget plugin list resize
@@ -232,7 +223,6 @@ Reset GUI interactions when GUI or preview lose focus.
 Drag sensors
 Reconcile input when connecting (buttons already down) and disconnecting (release down buttons).
 Is it worth trying to send everything at once? (Slice<List<Sensor>> feels kind of silly)
-Deal with PluginRef vs WidgetPluginRef on managed side
 Implement all the remove functions
 Only allow drop on widgets when dragging sensors
 Configure widgets

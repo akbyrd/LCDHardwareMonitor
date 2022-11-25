@@ -456,13 +456,12 @@ ToGUI_PluginStatesChanged(SimulationState& s, Slice<Plugin> plugins)
 }
 
 static void
-ToGUI_SensorsAdded(SimulationState& s, Slice<Handle<SensorPlugin>> sensorPluginHandles, Slice<List<Sensor>> sensors)
+ToGUI_SensorsAdded(SimulationState& s, Slice<List<Sensor>> sensors)
 {
 	if (s.guiConnection.pipe.state != PipeState::Connected) return;
 
 	ToGUI::SensorsAdded sensorsAdded = {};
-	sensorsAdded.sensorPluginHandles = sensorPluginHandles;
-	sensorsAdded.sensors             = sensors;
+	sensorsAdded.sensors = sensors;
 	SerializeAndQueueMessage(s.guiConnection, sensorsAdded);
 }
 
@@ -472,8 +471,7 @@ ToGUI_WidgetDescsAdded(SimulationState& s, Handle<WidgetPlugin> widgetPluginHand
 	if (s.guiConnection.pipe.state != PipeState::Connected) return;
 
 	ToGUI::WidgetDescsAdded widgetDescsAdded = {};
-	widgetDescsAdded.widgetPluginHandles = widgetPluginHandle;
-	widgetDescsAdded.descs               = widgetDescs;
+	widgetDescsAdded.descs = widgetDescs;
 	SerializeAndQueueMessage(s.guiConnection, widgetDescsAdded);
 }
 
@@ -506,12 +504,7 @@ OnConnect(SimulationState& s)
 	ToGUI_Connect(s);
 	ToGUI_PluginsAdded(s, s.plugins);
 	ToGUI_PluginStatesChanged(s, s.plugins);
-
-	{
-		Slice<Handle<SensorPlugin>> sensorPluginHandles = List_MemberSlice(s.sensorPlugins, &SensorPlugin::handle);
-		Slice<List<Sensor>>         sensors             = List_MemberSlice(s.sensorPlugins, &SensorPlugin::sensors);
-		ToGUI_SensorsAdded(s, sensorPluginHandles, sensors);
-	}
+	ToGUI_SensorsAdded(s, List_MemberSlice(s.sensorPlugins, &SensorPlugin::sensors));
 
 	for (u32 i = 0; i < s.widgetPlugins.length; i++)
 	{
@@ -974,6 +967,7 @@ RemoveWidgets(SimulationState& s, Slice<Handle<Widget>> handles)
 		u32 widgetIndex = List_PointerToIndex(data.widgets, widget);
 		List_RemoveFast(data.widgets, widgetIndex);
 		List_RemoveRangeFast(data.widgetsUserData, data.desc.userDataSize * widgetIndex, data.desc.userDataSize);
+		s.handleTable.Remove(handle);
 
 		if (data.widgets.length > 0)
 		{
@@ -1363,8 +1357,6 @@ FromGUI_ResetCamera(SimulationState& s, FromGUI::ResetCamera&)
 static void
 FromGUI_SetPluginLoadStates(SimulationState& s, FromGUI::SetPluginLoadStates& setStates)
 {
-	// TODO: If a plugin is unloaded and a new one is loaded it will take up the same slot and the
-	// ref here will be invalidated (tombstone?)
 	Assert(setStates.handles.length == setStates.loadStates.length);
 	for (u32 i = 0; i < setStates.handles.length; i++)
 	{

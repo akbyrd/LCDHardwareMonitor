@@ -618,9 +618,5 @@ ToString(String& string, Slice<T>& list)
 // TODO: Use placement new to avoid calling destructors on garbage objects?
 // TODO: Use functions to zero empty slots. Use raw access to skip the zeroing. Use the function to
 // fuzz unused slots with different values.
-// TODO: Null object pattern and Refs are in tension with each other. There are two interesting
-// cases: 1) Zero init data is 'invalid' in the sense it doesn't map to anything at all. Using zero
-// init data is an error. 2) Zero init data is 'invalid' in the sense that it's not the intended
-// value, but it maps to a default/null object and is valid to use.
 
 #endif

@@ -86,7 +86,6 @@ namespace LCDHardwareMonitor::GUI
 
 	public value struct Sensor
 	{
-		property UInt32     PluginHandle;
 		property UInt32     Handle;
 		property CLRString^ Name;
 		property CLRString^ Identifier;
@@ -96,7 +95,6 @@ namespace LCDHardwareMonitor::GUI
 
 	public value struct WidgetDesc
 	{
-		property UInt32     PluginHandle;
 		property UInt32     Handle;
 		property CLRString^ Name;
 	};
@@ -230,12 +228,9 @@ namespace LCDHardwareMonitor::GUI
 		static void
 		SetPluginLoadState(SimulationState^ simState, Plugin% plugin, PluginLoadState loadState)
 		{
-			Handle<::Plugin> nHandle = { plugin.Handle };
-			::PluginLoadState nLoadState = (::PluginLoadState) loadState;
-
 			FromGUI::SetPluginLoadStates setLoadStates = {};
-			setLoadStates.handles = nHandle;
-			setLoadStates.loadStates = nLoadState;
+			setLoadStates.handles    = Handle<::Plugin> { plugin.Handle };
+			setLoadStates.loadStates = (::PluginLoadState) loadState;
 			SerializeAndQueueMessage(state.simConnection, setLoadStates);
 
 			// TODO: Plugin isn't actually being passed by reference
@@ -463,7 +458,6 @@ namespace LCDHardwareMonitor::GUI
 					::Sensor& sensor = sensors[j];
 
 					Sensor mSensor = {};
-					mSensor.PluginHandle = sensorsAdded.sensorPluginHandles[i].value;
 					mSensor.Handle       = sensor.handle.value;
 					mSensor.Name         = ToManagedString(sensor.name);
 					mSensor.Identifier   = ToManagedString(sensor.identifier);
@@ -486,9 +480,8 @@ namespace LCDHardwareMonitor::GUI
 					::WidgetDesc& desc = widgetDescs[j];
 
 					WidgetDesc mWidgetDesc = {};
-					mWidgetDesc.PluginHandle = widgetDescsAdded.widgetPluginHandles[i].value;
-					mWidgetDesc.Handle       = desc.handle.value;
-					mWidgetDesc.Name         = ToManagedString(desc.name);
+					mWidgetDesc.Handle = desc.handle.value;
+					mWidgetDesc.Name   = ToManagedString(desc.name);
 					simState.WidgetDescs->Add(mWidgetDesc);
 				}
 			}
