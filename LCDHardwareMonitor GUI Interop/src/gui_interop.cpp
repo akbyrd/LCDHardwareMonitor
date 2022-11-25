@@ -458,11 +458,11 @@ namespace LCDHardwareMonitor::GUI
 					::Sensor& sensor = sensors[j];
 
 					Sensor mSensor = {};
-					mSensor.Handle       = sensor.handle.value;
-					mSensor.Name         = ToManagedString(sensor.name);
-					mSensor.Identifier   = ToManagedString(sensor.identifier);
-					mSensor.Format       = ToManagedString(sensor.format);
-					mSensor.Value        = sensor.value;
+					mSensor.Handle     = sensor.handle.value;
+					mSensor.Name       = ToManagedString(sensor.name);
+					mSensor.Identifier = ToManagedString(sensor.identifier);
+					mSensor.Format     = ToManagedString(sensor.format);
+					mSensor.Value      = sensor.value;
 					simState.Sensors->Add(mSensor);
 				}
 			}
@@ -472,18 +472,13 @@ namespace LCDHardwareMonitor::GUI
 		static void
 		FromSim_WidgetDescsAdded(SimulationState% simState, ToGUI::WidgetDescsAdded& widgetDescsAdded)
 		{
-			for (u32 i = 0; i < widgetDescsAdded.descs.length; i++)
+			for (u32 i = 0; i < widgetDescsAdded.handles.length; i++)
 			{
-				Slice<::WidgetDesc> widgetDescs = widgetDescsAdded.descs[i];
-				for (u32 j = 0; j < widgetDescs.length; j++)
-				{
-					::WidgetDesc& desc = widgetDescs[j];
-
-					WidgetDesc mWidgetDesc = {};
-					mWidgetDesc.Handle = desc.handle.value;
-					mWidgetDesc.Name   = ToManagedString(desc.name);
-					simState.WidgetDescs->Add(mWidgetDesc);
-				}
+				// TODO: Are we just leaking strings in messages?
+				WidgetDesc mWidgetDesc = {};
+				mWidgetDesc.Handle = widgetDescsAdded.handles[i].value;
+				mWidgetDesc.Name   = ToManagedString(widgetDescsAdded.names[i]);
+				simState.WidgetDescs->Add(mWidgetDesc);
 			}
 			simState.NotifyPropertyChanged("");
 		}

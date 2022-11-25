@@ -58,8 +58,9 @@ namespace ToGUI
 	// TODO: WidgetDescsRemoved
 	struct WidgetDescsAdded
 	{
-		Header                   header;
-		Slice<Slice<WidgetDesc>> descs;
+		Header                    header;
+		Slice<Handle<WidgetDesc>> handles;
+		Slice<String>             names;
 	};
 
 	// TODO: WidgetsRemoved
@@ -646,7 +647,8 @@ void
 Serialize(ByteStream& stream, ToGUI::WidgetDescsAdded& widgetDescsAdded)
 {
 	Serialize(stream, widgetDescsAdded.header);
-	Serialize(stream, widgetDescsAdded.descs);
+	Serialize(stream, widgetDescsAdded.handles);
+	Serialize(stream, widgetDescsAdded.names);
 }
 
 void

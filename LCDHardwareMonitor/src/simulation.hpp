@@ -466,12 +466,13 @@ ToGUI_SensorsAdded(SimulationState& s, Slice<List<Sensor>> sensors)
 }
 
 static void
-ToGUI_WidgetDescsAdded(SimulationState& s, Handle<WidgetPlugin> widgetPluginHandle, Slice<WidgetDesc> widgetDescs)
+ToGUI_WidgetDescsAdded(SimulationState& s, Slice<WidgetDesc> widgetDescs)
 {
 	if (s.guiConnection.pipe.state != PipeState::Connected) return;
 
 	ToGUI::WidgetDescsAdded widgetDescsAdded = {};
-	widgetDescsAdded.descs = widgetDescs;
+	widgetDescsAdded.handles = Slice_MemberSlice(widgetDescs, &WidgetDesc::handle);
+	widgetDescsAdded.names   = Slice_MemberSlice(widgetDescs, &WidgetDesc::name);
 	SerializeAndQueueMessage(s.guiConnection, widgetDescsAdded);
 }
 
@@ -513,7 +514,7 @@ OnConnect(SimulationState& s)
 		// NOTE: It's surprisingly tricky to send a Slice<Slice<T>> when it's backed by
 		// a set of List<T>. The inner slices are temporaries and need to be stored.
 		Slice<WidgetDesc> descs = List_MemberSlice(widgetPlugin.widgetDatas, &WidgetData::desc);
-		ToGUI_WidgetDescsAdded(s, widgetPlugin.handle, descs);
+		ToGUI_WidgetDescsAdded(s, descs);
 
 		for (u32 j = 0; j < widgetPlugin.widgetDatas.length; j++)
 		{

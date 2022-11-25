@@ -6,8 +6,8 @@ Might want it for plugin update functions
 
 [x] SensorsAdded::sensorPluginHandles
 [x] WidgetDescsAdded::widgetPluginHandles
-[ ] WidgetsAdded::widgetHandles
-[ ] WidgetDescsAdded::descs
+[x] WidgetsAdded::widgetHandles
+[x] WidgetDescsAdded::descs
 [ ] Naming: fooHandle or foo?
 [ ] Renderer still uses refs
 [ ] Remove ListRef
