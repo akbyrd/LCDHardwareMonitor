@@ -184,6 +184,17 @@ namespace LCDHardwareMonitor::GUI
 			return result;
 		}
 
+		static i32
+		FindPluginIndex(SimulationState^ simState, UInt32 pluginHandle)
+		{
+			for (i32 i = 0; i < simState->Plugins->Count; i++)
+			{
+				if (simState->Plugins[i].Handle == pluginHandle)
+					return i;
+			}
+			return -1;
+		}
+
 		// -------------------------------------------------------------------------------------------
 
 		static void
@@ -226,15 +237,23 @@ namespace LCDHardwareMonitor::GUI
 		}
 
 		static void
-		SetPluginLoadState(SimulationState^ simState, Plugin% plugin, PluginLoadState loadState)
+		SetPluginLoadState(SimulationState^ simState, Plugin plugin, PluginLoadState loadState, PluginLoadState intermediateState)
 		{
 			FromGUI::SetPluginLoadStates setLoadStates = {};
 			setLoadStates.handles    = Handle<::Plugin> { plugin.Handle };
 			setLoadStates.loadStates = (::PluginLoadState) loadState;
 			SerializeAndQueueMessage(state.simConnection, setLoadStates);
 
-			// TODO: Plugin isn't actually being passed by reference
-			plugin.LoadState = loadState == PluginLoadState::Unloaded ? PluginLoadState::Unloading : PluginLoadState::Loading;
+			// NOTE: This is a bit janky, but that's C# value types for you. There's no way to get a
+			// ref to an element of an ObservableCollection. Which wouldn't matter anyway because this
+			// is called from drag-and-drop operations where the value is copied and boxed. Also we
+			// need to update the collection before NotifyPropertyChanged is called so we can't have
+			// the caller update the collection themselves.
+			i32 index = FindPluginIndex(simState, plugin.Handle);
+			Assert(index != -1);
+			plugin.LoadState = intermediateState;
+			simState->Plugins[index] = plugin;
+
 			simState->NotifyPropertyChanged("");
 		}
 
