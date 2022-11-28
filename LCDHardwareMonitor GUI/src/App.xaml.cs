@@ -104,7 +104,7 @@ namespace LCDHardwareMonitor.GUI
 
 			// TODO: Clear mouse pos when minimized / not visible?
 			var mainWindow = (MainWindow) MainWindow;
-			if (mainWindow != null)
+			if (mainWindow != null && mainWindow.preview.IsVisible)
 			{
 				Point mousePos = mainWindow.GetMousePosition();
 				Interop.MouseMove(SimulationState, mousePos);

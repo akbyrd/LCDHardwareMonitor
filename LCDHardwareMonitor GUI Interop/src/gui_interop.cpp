@@ -621,14 +621,23 @@ namespace LCDHardwareMonitor::GUI
 
 	public value struct Win32 abstract sealed
 	{
-		static Point
-		GetCursorPos()
+		static bool
+		GetCursorPos(Point% cursorPos)
 		{
+			// NOTE: This can fail in some circumstances, but there's not much we can/should do to
+			// handle it. One scenario is when a UAC prompt pops up. But not when switching to a
+			// different desktop, surprisingly.
 			POINT point = {};
-			bool result = ::GetCursorPos(&point);
-			// TODO: Logging
-			AssertOrUnused(result);
-			return Point(point.x, point.y);
+			if (::GetCursorPos(&point))
+			{
+				cursorPos = Point(point.x, point.y);
+				return true;
+			}
+			else
+			{
+				cursorPos = {};
+				return false;
+			}
 		}
 	};
 }

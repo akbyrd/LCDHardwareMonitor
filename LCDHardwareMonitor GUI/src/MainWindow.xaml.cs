@@ -148,14 +148,18 @@ namespace LCDHardwareMonitor.GUI
 
 		internal Point GetMousePosition()
 		{
-			// TODO: Make this better
-			if (!preview.IsVisible) return new Point();
-
-			Point previewPos = preview.PointToScreen(new Point());
-			Point cursorPos = Win32.GetCursorPos();
-			Point mousePos = (Point) (cursorPos - previewPos);
-			mousePos.Y = preview.RenderSize.Height - 1 - mousePos.Y;
-			return mousePos;
+			Point cursorPos = new Point();
+			if (Win32.GetCursorPos(ref cursorPos))
+			{
+				Point previewPos = preview.PointToScreen(new Point());
+				Point mousePos = (Point) (cursorPos - previewPos);
+				mousePos.Y = preview.RenderSize.Height - 1 - mousePos.Y;
+				return mousePos;
+			}
+			else
+			{
+				return simState.MousePos;
+			}
 		}
 
 		private void Preview_MouseDown(object sender, MouseButtonEventArgs e)
@@ -306,8 +310,15 @@ namespace LCDHardwareMonitor.GUI
 					Debug.Assert(false);
 					break;
 
-				case PluginKind.Widget: Interop.AddWidget(simState, data.widgetHandle, GetMousePosition()); break;
-				case PluginKind.Sensor: break;
+				case PluginKind.Widget:
+					Debug.Assert(preview.IsVisible);
+
+					Point mousePos = GetMousePosition();
+					Interop.AddWidget(simState, data.widgetHandle, mousePos);
+					break;
+
+				case PluginKind.Sensor:
+					break;
 			}
 		}
 
