@@ -1,6 +1,3 @@
-#include "Solid Colored.ps.h"
-#include "Outline.ps.h"
-
 struct HandleTable
 {
 	union Element
@@ -11,54 +8,93 @@ struct HandleTable
 
 	u32           firstFree = 0;
 	List<Element> elements;
+	List<u8>      generations;
+
+	static constexpr u32 IndexShift     = 4;
+	static constexpr u32 IndexMask      = u32(~0xf);
+	static constexpr u32 GenerationMask = 0xf;
+	static constexpr u32 MaxIndex       = (u32Max >> IndexShift) - 1;
+
+	inline u32 IndexToHandle(u32 index, u8 generation)
+	{
+		Assert(index <= MaxIndex);
+		u32 handle = ((index + 1) << IndexShift) | generation;
+		return handle;
+	}
+
+	inline u32 HandleToIndex(u32 handle)
+	{
+		u32 index = (handle >> IndexShift) - 1;
+		return index;
+	}
 
 	template <typename T>
 	inline Handle<T> Add(T* pointer)
 	{
-		Handle<T> result = {};
-		Element* element = nullptr;
-
+		u32 index;
+		Element* element;
+		u8* generation;
 		if (firstFree)
 		{
-			element = &elements[firstFree - 1];
-			result.value = firstFree;
+			index = firstFree;
+			element = &elements[index];
+			generation = &generations[index];
 			firstFree = element->nextFree;
 		}
 		else
 		{
+			index = elements.length;
 			element = &List_Append(elements);
-			result.value = elements.length;
+			generation = &List_Append(generations);
 		}
 
 		element->pointer = pointer;
+		Handle<T> result = { IndexToHandle(index, *generation) };
 		return result;
 	}
 
 	template <typename T>
 	inline void Remove(Handle<T> handle)
 	{
-		Element& element = elements[handle.value - 1];
+		u32 index = HandleToIndex(handle.value);
+
+		Element& element = elements[index];
 		element.nextFree = firstFree;
-		firstFree = handle.value;
+
+		u8& generation = generations[index];
+		generation = (generation + 1) % GenerationMask;
+
+		firstFree = index;
 	}
 
 	template <typename T>
 	inline void Update(Handle<T> handle, T* pointer)
 	{
-		elements[handle.value - 1].pointer = pointer;
+		u32 index = HandleToIndex(handle.value);
+
+		Element& element = elements[index];
+		element.pointer = pointer;
+
+		u8& generation = generations[index];
+		generation = (generation + 1) % GenerationMask;
 	}
 
 	template <typename T>
 	inline b8 IsValid(Handle<T> handle)
 	{
-		b8 result = handle.value <= elements.length;
+		u32 index = HandleToIndex(handle.value);
+
+		b8 result = true;
+		result &= index < elements.length;
+		result &= (handle.value & GenerationMask) == generations[index];
 		return result;
 	}
 
 	template <typename T>
 	inline T* operator[](Handle<T> handle)
 	{
-		void* pointer = elements[handle.value - 1].pointer;
+		u32 index = HandleToIndex(handle.value);
+		void* pointer = elements[index].pointer;
 		return static_cast<T*>(pointer);
 	}
 };

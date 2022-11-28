@@ -7,6 +7,8 @@
 #include "renderer.h"
 #include "plugin_shared.h"
 #include "gui_protocol.hpp"
+#include "Solid Colored.ps.h"
+#include "Outline.ps.h"
 #include "ft232h.h"
 #include "ili9341.hpp"
 #include "simulation.hpp"

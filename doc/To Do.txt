@@ -1,6 +1,3 @@
-[ ] Improve HandleTable API
-[ ]	Add tombstone
-----
 [ ] Renderer still uses refs
 [ ] Remove ListRef
 [ ] Rename Plugin to PluginFile
@@ -28,10 +25,6 @@ GUI lags when preview window is up (desktop)
 GUI mouse position is wrong (Samsung laptop)
 GUI and preview window are fighting over mouse position
 GUI isn't pixel perfect (Samsung laptop)
-Hang during shutdown on Samsung laptop
-	Only happens when hosting the CLR, using DirectX, and the mixed mode debugger
-	Might also be related Intel graphics driver
-	Reported to Microsoft https://developercommunity.visualstudio.com/t/Deadlock-when-using-Mixed-NET-Framewor/10206805?
 Slight hang when clicking title bar on Samsung laptop
 Widgets change slightly when hovered (render also updates and contains smoothing logic)
 WPF has slow update rate when not focused on other PCs (not mine).

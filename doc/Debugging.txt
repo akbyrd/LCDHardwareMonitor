@@ -11,6 +11,10 @@ load the log in the GUI. The gist of the capture process is:
 	VsgDbgEndCapture();
 	VsgDbgBeginCapture();
 	VsgDbgUnInit();
+There's a hang during shutdown on some machines
+	Only happens when hosting the CLR, using DirectX, and the mixed mode debugger
+	Possibly related to graphics drivers, only happens on one of my machines
+	https://developercommunity.visualstudio.com/t/Deadlock-when-using-Mixed-NET-Framewor/10206805?
 
 
 
