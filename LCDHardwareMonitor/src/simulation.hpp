@@ -932,7 +932,7 @@ AddWidgets(SimulationState& s, WidgetType& widgetType, u32 count)
 
 	auto createGuard = guard {
 		widgetType.widgets.length = prevWidgetLen;
-	widgetType.widgetsUserData.length = widgetType.userDataSize * prevWidgetLen;
+		widgetType.widgetsUserData.length = widgetType.userDataSize * prevWidgetLen;
 	};
 
 	ListWithHandles_Append(s.handleTable, widgetType.widgets, count);

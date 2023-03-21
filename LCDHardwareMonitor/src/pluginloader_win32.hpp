@@ -42,9 +42,9 @@ struct LHMHostControl final : public IHostControl
 
 struct PluginLoaderState
 {
-	ComPtr<ICLRRuntimeHost>  clrHost;
-	LHMHostControl           lhmHostControl;
-	ILHMPluginLoader*        lhmPluginLoader;
+	ComPtr<ICLRRuntimeHost> clrHost;
+	LHMHostControl          lhmHostControl;
+	ILHMPluginLoader*       lhmPluginLoader;
 };
 
 b8

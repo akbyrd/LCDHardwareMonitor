@@ -1,12 +1,10 @@
-[ ] Renderer still uses refs
-[ ] Remove ListRef
-[ ] Rename Plugin to PluginFile
-[ ] Reuse Plugins
-
-
-
 Current
 -------
+Renderer still uses refs
+Remove ListRef
+Rename Plugin to PluginFile
+Reuse Plugins
+----
 Choose a new scripting language for deployment
 Consider removing anonymous structs from math types
 Update sensors in the UI
