@@ -24,6 +24,10 @@ Use of the WRL ComPtr is preferred for a couple reasons
   2) It allows temporary pointers to be created on the stack and cleaned up
      without any additional bookkeeping.
 
+ATL vs WRL
+   WRL is a little lighter. With WIN32_LEAN_AND_MEAN: WRL ~240k, ATL ~300k LOC
+   WRL has no equivalent of CComHeapPtr
+
 ComPtrs should usually be passed as raw pointers for simplicity. However, an
 exception is common utility functions like SetDebugObjectName where the constant
 .Get() would be annoying.
@@ -60,3 +64,9 @@ context->ClearRenderTargetView(renderTarget, color);
 https://blog.molecular-matters.com/2011/11/21/gamma-correct-rendering/
 http://http.developer.nvidia.com/GPUGems3/gpugems3_ch24.html
 http://filmicgames.com/archives/299
+
+
+
+Hosting in WPF
+--------------
+https://learn.microsoft.com/en-us/dotnet/desktop/wpf/advanced/wpf-and-direct3d9-interoperation

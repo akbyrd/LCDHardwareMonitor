@@ -1,5 +1,7 @@
 Current
 -------
+Read https://learn.microsoft.com/en-us/dotnet/desktop/wpf/advanced/wpf-and-direct3d9-interoperation
+----
 Renderer still uses refs
 Remove ListRef
 Rename Plugin to PluginFile
@@ -33,17 +35,6 @@ The renderer will probably crash when re-loading plugins that create meshes, aft
 Allow StringView to be used as a parameter to a constexpr function
 Using OpenHardwareMonitor tanks frame rate. Why? Has it always?
 Lag when selecting preview while GUI is open
-D3D warning:
-	D3D11 WARNING: ID3D11DeviceContext::PSSetShaderResources:
-	Resource being set to PS shader resource slot 1 is still bound on output! Forcing to NULL.
-	[ STATE_SETTING WARNING #7: DEVICE_PSSETSHADERRESOURCES_HAZARD]
-Fix flush pipe error
-	Platform_FlushPipe - Failed to flush pipe 'LCDHardwareMonitor GUI Pipe': The pipe has been ended. (109)
-		D:\Dev\Atomic Bird Games\LCDHardwareMonitor\LCDHardwareMonitor\src\platform_win32.hpp(900)
-Fix VS crash
-	devenv crashes with Exception code: 0xc0000374 (heap corruption?)
-	only seems to happen with multiple startup projects
-	LHM appears to hang in D3D creation sometimes? Unrelated?
 GUI shouldn't close the simulation if it didn't start it
 There's a frame of flicker where the old image size is drawn when zooming. Is this fixable?
 There's some sort of mouse position jump on my laptop when rotating the camera
