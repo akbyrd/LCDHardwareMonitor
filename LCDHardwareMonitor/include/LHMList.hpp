@@ -418,8 +418,9 @@ inline void
 List_RemoveRangeFast(List<T>& list, u32 start, u32 count)
 {
 	Assert(start < list.length && (start + count) <= list.length);
-	memcpy(&list[start], &list[start + count], sizeof(T) * count);
-	List_ZeroRange(list, list.length - count, 1);
+	if (start < list.length - count)
+		memcpy(&list[start], &list[list.length - count], sizeof(T) * count);
+	List_ZeroRange(list, list.length - count, count);
 	list.length -= count;
 }
 

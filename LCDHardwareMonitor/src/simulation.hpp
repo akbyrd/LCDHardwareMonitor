@@ -1029,7 +1029,7 @@ RemoveWidgets(SimulationState& s, Slice<Handle<Widget>> widgetHandles)
 		List_RemoveRangeFast(widgetType.widgetsUserData, widgetType.userDataSize * widgetIndex, widgetType.userDataSize);
 		s.handleTable.Remove(widgetHandle);
 
-		if (widgetType.widgets.length > 0)
+		if (widgetIndex < widgetType.widgets.length)
 		{
 			Widget& movedWidget = widgetType.widgets[widgetIndex];
 			s.handleTable.Update(movedWidget.handle, &movedWidget);
