@@ -39,7 +39,8 @@ struct PSConstantBufferUpdate
 	void*       data;
 };
 
-using CPUTexture = List<struct CPUTextureData>::RefT;
+struct CPUTextureData;
+using CPUTexture = typename List<CPUTextureData>::RefT;
 
 struct CPUTextureBytes
 {

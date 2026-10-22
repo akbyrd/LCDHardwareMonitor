@@ -1,11 +1,17 @@
 #ifndef LHM_RENDERER
 #define LHM_RENDERER
 
-using Mesh         = List<struct MeshData>::RefT;
-using VertexShader = List<struct VertexShaderData>::RefT;
-using PixelShader  = List<struct PixelShaderData>::RefT;
-using RenderTarget = List<struct RenderTargetData>::RefT;
-using DepthBuffer  = List<struct DepthBufferData>::RefT;
+struct MeshData;
+struct VertexShaderData;
+struct PixelShaderData;
+struct RenderTargetData;
+struct DepthBufferData;
+
+using Mesh         = typename List<MeshData>::RefT;
+using VertexShader = typename List<VertexShaderData>::RefT;
+using PixelShader  = typename List<PixelShaderData>::RefT;
+using RenderTarget = typename List<RenderTargetData>::RefT;
+using DepthBuffer  = typename List<DepthBufferData>::RefT;
 
 // TODO: Re-order structs in this file
 enum struct ShaderStage
