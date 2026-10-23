@@ -71,6 +71,22 @@ Cos(r64 theta)
 
 template<typename T>
 constexpr inline T
+Max(T lhs, T rhs)
+{
+	T result = lhs > rhs ? lhs : rhs;
+	return result;
+}
+
+template<typename T>
+constexpr inline T
+Min(T lhs, T rhs)
+{
+	T result = lhs < rhs ? lhs : rhs;
+	return result;
+}
+
+template<typename T>
+constexpr inline T
 Clamp(T value, T min, T max)
 {
 	T sMin = Min(min, max);
@@ -133,22 +149,6 @@ InverseLerpClamped(T from, T to, T value)
 	Assert((to - from) != 0);
 	r32 result = (r32) (value - from) / (r32) (to - from);
 	result = Clamp01(result);
-	return result;
-}
-
-template<typename T>
-constexpr inline T
-Max(T lhs, T rhs)
-{
-	T result = lhs > rhs ? lhs : rhs;
-	return result;
-}
-
-template<typename T>
-constexpr inline T
-Min(T lhs, T rhs)
-{
-	T result = lhs < rhs ? lhs : rhs;
 	return result;
 }
 
