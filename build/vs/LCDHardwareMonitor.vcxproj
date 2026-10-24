@@ -95,7 +95,8 @@
       <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
     </ClCompile>
     <PostBuildEvent>
-      <Command>Deploy.bat ProjectPostBuild "$(PlatformTarget)" "$(OutDir)" "$(SolutionDir)..\..\LCDHardwareMonitor" "" "d2xx"</Command>
+      <Command>Deploy.bat ProjectPostBuild "$(PlatformTarget)" "$(OutDir)" "$(SolutionDir)..\..\LCDHardwareMonitor" "" "d2xx" &amp;&amp; ^
+Deploy.bat CopyShaderCompiler "$(PlatformTarget)" "$(WindowsSdkDir)"</Command>
     </PostBuildEvent>
     <Link>
       <AdditionalLibraryDirectories>$(SolutionDir)..\..\LCDHardwareMonitor\ext\d2xx\lib_$(PlatformTarget)\</AdditionalLibraryDirectories>
@@ -112,7 +113,8 @@
       <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
     </ClCompile>
     <PostBuildEvent>
-      <Command>Deploy.bat ProjectPostBuild "$(PlatformTarget)" "$(OutDir)" "$(SolutionDir)..\..\LCDHardwareMonitor" "" "d2xx"</Command>
+      <Command>Deploy.bat ProjectPostBuild "$(PlatformTarget)" "$(OutDir)" "$(SolutionDir)..\..\LCDHardwareMonitor" "" "d2xx" &amp;&amp; ^
+Deploy.bat CopyShaderCompiler "$(PlatformTarget)" "$(WindowsSdkDir)"</Command>
     </PostBuildEvent>
     <Link>
       <AdditionalLibraryDirectories>$(SolutionDir)..\..\LCDHardwareMonitor\ext\d2xx\lib_$(PlatformTarget)\</AdditionalLibraryDirectories>
@@ -137,7 +139,8 @@
       <DelayLoadDLLs>FTD2XX.dll</DelayLoadDLLs>
     </Link>
     <PostBuildEvent>
-      <Command>Deploy.bat ProjectPostBuild "$(PlatformTarget)" "$(OutDir)" "$(SolutionDir)..\..\LCDHardwareMonitor" "" "d2xx"</Command>
+      <Command>Deploy.bat ProjectPostBuild "$(PlatformTarget)" "$(OutDir)" "$(SolutionDir)..\..\LCDHardwareMonitor" "" "d2xx" &amp;&amp; ^
+Deploy.bat CopyShaderCompiler "$(PlatformTarget)" "$(WindowsSdkDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -158,7 +161,8 @@
       <DelayLoadDLLs>FTD2XX.dll</DelayLoadDLLs>
     </Link>
     <PostBuildEvent>
-      <Command>Deploy.bat ProjectPostBuild "$(PlatformTarget)" "$(OutDir)" "$(SolutionDir)..\..\LCDHardwareMonitor" "" "d2xx"</Command>
+      <Command>Deploy.bat ProjectPostBuild "$(PlatformTarget)" "$(OutDir)" "$(SolutionDir)..\..\LCDHardwareMonitor" "" "d2xx" &amp;&amp; ^
+Deploy.bat CopyShaderCompiler "$(PlatformTarget)" "$(WindowsSdkDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -265,5 +269,6 @@
   </ImportGroup>
   <Target Name="CleanBetter" AfterTargets="Clean">
     <RemoveDir Directories="$(TargetDir)" />
+    <RemoveDir Directories="$(SolutionDir)run" Condition="'$(BuildType)' == 'Clean'" />
   </Target>
 </Project>

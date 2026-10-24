@@ -4,7 +4,7 @@ REM @ECHO OFF
 REM TODO: Add clean function
 
 REM Usage
-REM Deploy.bat SolutionPreBuild "$(PlatformTarget)" "$(WindowsSdkDir)"
+REM Deploy.bat CopyShaderCompiler "$(PlatformTarget)" "$(WindowsSdkDir)"
 REM Deploy.bat ProjectPostBuild "$(PlatformTarget)" "$(OutDir)" "<PROJECT_DIR>" ["<SUB_DIR>" <ext directory names>]
 REM Deploy.bat GenerateTLH      "$(PlatformTarget)" "$(OutDir)" "$(TargetName)" "<PROJECT_DIR>"
 
@@ -16,7 +16,7 @@ SET RUN_DIR=run
 ECHO.
 GOTO :%FUNCTION%
 
-:SolutionPreBuild
+:CopyShaderCompiler
 	SET PLATFORM_ARCH=%~2
 	SET WIN_SDK_DIR=%~3
 	SET D3D_COMPILER=%WIN_SDK_DIR%Redist\D3D\%PLATFORM_ARCH%\d3dcompiler_47.dll

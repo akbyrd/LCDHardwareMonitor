@@ -6,39 +6,20 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LCDHardwareMonitor", "LCDHardwareMonitor.vcxproj", "{0BBAB39F-5449-4FCE-AD78-884154644605}"
 	ProjectSection(ProjectDependencies) = postProject
 		{7DA05A6B-45B5-4877-B211-14ED51B5388B} = {7DA05A6B-45B5-4877-B211-14ED51B5388B}
-		{C66C06EE-10BF-465E-90C9-8564F20626D2} = {C66C06EE-10BF-465E-90C9-8564F20626D2}
 		{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A} = {2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LCDHardwareMonitor API CLR", "LCDHardwareMonitor API CLR.vcxproj", "{246430DC-680A-432E-B7DE-BCC2C59CDDAE}"
-	ProjectSection(ProjectDependencies) = postProject
-		{C66C06EE-10BF-465E-90C9-8564F20626D2} = {C66C06EE-10BF-465E-90C9-8564F20626D2}
-	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LCDHardwareMonitor PluginLoader CLR", "LCDHardwareMonitor PluginLoader CLR.vcxproj", "{4CF4BF35-2C27-4969-BFD7-34149A9CBF12}"
-	ProjectSection(ProjectDependencies) = postProject
-		{C66C06EE-10BF-465E-90C9-8564F20626D2} = {C66C06EE-10BF-465E-90C9-8564F20626D2}
-	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Sensor Plugin - OpenHardwareMonitor", "Sensor Plugin - OpenHardwareMonitor.vcxproj", "{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}"
-	ProjectSection(ProjectDependencies) = postProject
-		{C66C06EE-10BF-465E-90C9-8564F20626D2} = {C66C06EE-10BF-465E-90C9-8564F20626D2}
-	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Widget Plugin - Filled Bar", "Widget Plugin - Filled Bar.vcxproj", "{7DA05A6B-45B5-4877-B211-14ED51B5388B}"
-	ProjectSection(ProjectDependencies) = postProject
-		{C66C06EE-10BF-465E-90C9-8564F20626D2} = {C66C06EE-10BF-465E-90C9-8564F20626D2}
-	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LCDHardwareMonitor GUI", "LCDHardwareMonitor GUI.csproj", "{5ECF7D2F-1DD5-4E32-A973-018FCBD33380}"
-	ProjectSection(ProjectDependencies) = postProject
-		{C66C06EE-10BF-465E-90C9-8564F20626D2} = {C66C06EE-10BF-465E-90C9-8564F20626D2}
-	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LCDHardwareMonitor GUI Interop", "LCDHardwareMonitor GUI Interop.vcxproj", "{E16AAA6C-043D-416E-8CE7-D7FDB83B8722}"
-	ProjectSection(ProjectDependencies) = postProject
-		{C66C06EE-10BF-465E-90C9-8564F20626D2} = {C66C06EE-10BF-465E-90C9-8564F20626D2}
-	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{93AE6C14-C253-4259-B426-1784014EBBB1}"
 	ProjectSection(SolutionItems) = preProject
@@ -50,12 +31,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		..\..\README.md = ..\..\README.md
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PreBuild", "PreBuild.vcxproj", "{C66C06EE-10BF-465E-90C9-8564F20626D2}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LCDHardwareMonitor PluginLoader CLR Interface", "LCDHardwareMonitor PluginLoader CLR Interface.vcxproj", "{7E6A520B-1A13-444A-B224-78C8F6BE9A93}"
-	ProjectSection(ProjectDependencies) = postProject
-		{C66C06EE-10BF-465E-90C9-8564F20626D2} = {C66C06EE-10BF-465E-90C9-8564F20626D2}
-	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -121,14 +97,6 @@ Global
 		{E16AAA6C-043D-416E-8CE7-D7FDB83B8722}.Release|x64.Build.0 = Release|x64
 		{E16AAA6C-043D-416E-8CE7-D7FDB83B8722}.Release|x86.ActiveCfg = Release|Win32
 		{E16AAA6C-043D-416E-8CE7-D7FDB83B8722}.Release|x86.Build.0 = Release|Win32
-		{C66C06EE-10BF-465E-90C9-8564F20626D2}.Debug|x64.ActiveCfg = Debug|x64
-		{C66C06EE-10BF-465E-90C9-8564F20626D2}.Debug|x64.Build.0 = Debug|x64
-		{C66C06EE-10BF-465E-90C9-8564F20626D2}.Debug|x86.ActiveCfg = Debug|Win32
-		{C66C06EE-10BF-465E-90C9-8564F20626D2}.Debug|x86.Build.0 = Debug|Win32
-		{C66C06EE-10BF-465E-90C9-8564F20626D2}.Release|x64.ActiveCfg = Release|x64
-		{C66C06EE-10BF-465E-90C9-8564F20626D2}.Release|x64.Build.0 = Release|x64
-		{C66C06EE-10BF-465E-90C9-8564F20626D2}.Release|x86.ActiveCfg = Release|Win32
-		{C66C06EE-10BF-465E-90C9-8564F20626D2}.Release|x86.Build.0 = Release|Win32
 		{7E6A520B-1A13-444A-B224-78C8F6BE9A93}.Debug|x64.ActiveCfg = Debug|x64
 		{7E6A520B-1A13-444A-B224-78C8F6BE9A93}.Debug|x64.Build.0 = Debug|x64
 		{7E6A520B-1A13-444A-B224-78C8F6BE9A93}.Debug|x86.ActiveCfg = Debug|Win32
