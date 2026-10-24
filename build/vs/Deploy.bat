@@ -1,4 +1,3 @@
-SETLOCAL
 SETLOCAL EnableDelayedExpansion
 REM @ECHO OFF
 
@@ -62,7 +61,7 @@ GOTO :%FUNCTION%
 	REM $(OutDir) ends with a \ which breaks tlbexp. It will complain about an
 	REM invalid character in the path. Appending a . is a hack to avoid the error.
 
-	REM Warning TX00131175 is disabled because it appears to be spurious can I can't find a way to
+	REM Warning TX00131175 is disabled because it appears to be spurious and I can't find a way to
 	REM prevent it. It's complaining that all library references should be specified when cross-
 	REM compiling but 1) I'm not cross-compiling and 2) I shouldn't have any dependencies.
 

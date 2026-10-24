@@ -5,7 +5,6 @@ VisualStudioVersion = 16.0.30320.27
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LCDHardwareMonitor", "LCDHardwareMonitor.vcxproj", "{0BBAB39F-5449-4FCE-AD78-884154644605}"
 	ProjectSection(ProjectDependencies) = postProject
-		{7E6A520B-1A13-444A-B224-78C8F6BE9A93} = {7E6A520B-1A13-444A-B224-78C8F6BE9A93}
 		{7DA05A6B-45B5-4877-B211-14ED51B5388B} = {7DA05A6B-45B5-4877-B211-14ED51B5388B}
 		{C66C06EE-10BF-465E-90C9-8564F20626D2} = {C66C06EE-10BF-465E-90C9-8564F20626D2}
 		{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A} = {2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}
@@ -54,6 +53,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PreBuild", "PreBuild.vcxproj", "{C66C06EE-10BF-465E-90C9-8564F20626D2}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LCDHardwareMonitor PluginLoader CLR Interface", "LCDHardwareMonitor PluginLoader CLR Interface.vcxproj", "{7E6A520B-1A13-444A-B224-78C8F6BE9A93}"
+	ProjectSection(ProjectDependencies) = postProject
+		{C66C06EE-10BF-465E-90C9-8564F20626D2} = {C66C06EE-10BF-465E-90C9-8564F20626D2}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

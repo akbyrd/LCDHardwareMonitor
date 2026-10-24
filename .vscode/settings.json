@@ -1,6 +1,6 @@
 {
 	"files.exclude": {
-		".git*": true,
+		".git": true,
 	},
 
 	"search.exclude": {
@@ -8,9 +8,18 @@
 		"build":   true,
 	},
 
-	"C_Cpp.default.windowsSdkVersion": "10.0.18362.0",
+	"dotnet.defaultSolution": "build/vs/LCDHardwareMonitor.sln",
+
 	"C_Cpp.default.compilerPath": "cl.exe",
-	"C_Cpp.default.compilerArgs": [ "/clr" ],
+	"C_Cpp.default.compilerArgs": [
+		"/clr",
+		"/AIC:/Program Files (x86)/Reference Assemblies/Microsoft/Framework/.NETFramework/v4.7.2",
+		"/FUSystem.dll",
+		"/FUSystem.Core.dll",
+		"/FUWindowsBase.dll",
+		"/FUPresentationCore.dll",
+		"/FU${workspaceFolder}/Sensor Plugin - OpenHardwareMonitor/ext/OpenHardwareMonitorLib.dll",
+	],
 	"C_Cpp.default.cppStandard": "c++17",
 	"C_Cpp.default.intelliSenseMode": "msvc-x64",
 	"C_Cpp.default.includePath": [
@@ -18,15 +27,6 @@
 		"${workspaceFolder}/LCDHardwareMonitor/include",
 		"${workspaceFolder}/LCDHardwareMonitor/src",
 		"${workspaceFolder}/LCDHardwareMonitor/ext/d2xx/include",
-	],
-
-	"clangd.fallbackFlags": [
-		"--driver-mode=cl",
-		"--target=x86_64-pc-windows-msvc",
-		"/std:c++17",
-		"/imsvcC:/Program Files (x86)/Windows Kits/NETFXSDK/4.8/Include/um",
-		"-I${workspaceFolder}/LCDHardwareMonitor/include",
-		"-I${workspaceFolder}/LCDHardwareMonitor/src",
-		"-I${workspaceFolder}/LCDHardwareMonitor/ext/d2xx/include",
+		"${workspaceFolder}/build/vs/bin/Debug_x64/LCDHardwareMonitor PluginLoader CLR Interface",
 	],
 }

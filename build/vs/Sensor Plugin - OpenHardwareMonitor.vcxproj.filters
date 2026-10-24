@@ -19,7 +19,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="..\..\doc\OHM Sensors.txt">
+    <Text Include="..\..\Sensor Plugin - OpenHardwareMonitor\doc\OHM Sensors.txt">
       <Filter>Documentation</Filter>
     </Text>
   </ItemGroup>

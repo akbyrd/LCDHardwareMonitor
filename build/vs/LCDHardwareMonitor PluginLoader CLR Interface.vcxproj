@@ -24,7 +24,6 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{7E6A520B-1A13-444A-B224-78C8F6BE9A93}</ProjectGuid>
-    <AssemblyName>LCDHardwareMonitor.PluginLoader.CLR</AssemblyName>
     <RootNamespace>LCDHardwareMonitor</RootNamespace>
     <ProjectName>LCDHardwareMonitor PluginLoader CLR Interface</ProjectName>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
@@ -33,21 +32,21 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
     <CLRSupport>true</CLRSupport>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
     <CLRSupport>true</CLRSupport>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
     <CLRSupport>true</CLRSupport>
@@ -55,7 +54,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
     <CLRSupport>true</CLRSupport>
@@ -103,6 +102,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>EnableAllWarnings</WarningLevel>
+      <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(SolutionDir)..\..\LCDHardwareMonitor\include</AdditionalIncludeDirectories>
@@ -112,13 +112,11 @@
       <Command>Deploy.bat GenerateTLB "$(PlatformTarget)" "$(OutDir)" "$(TargetName)" &amp;&amp; ^
 Deploy.bat ProjectPostBuild "$(PlatformTarget)" "$(OutDir)" "$(SolutionDir)..\..\LCDHardwareMonitor PluginLoader CLR Interface"</Command>
     </PostBuildEvent>
-    <Link />
-    <Manifest />
-    <Manifest />
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>EnableAllWarnings</WarningLevel>
+      <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(SolutionDir)..\..\LCDHardwareMonitor\include</AdditionalIncludeDirectories>
@@ -128,13 +126,11 @@ Deploy.bat ProjectPostBuild "$(PlatformTarget)" "$(OutDir)" "$(SolutionDir)..\..
       <Command>Deploy.bat GenerateTLB "$(PlatformTarget)" "$(OutDir)" "$(TargetName)" &amp;&amp; ^
 Deploy.bat ProjectPostBuild "$(PlatformTarget)" "$(OutDir)" "$(SolutionDir)..\..\LCDHardwareMonitor PluginLoader CLR Interface"</Command>
     </PostBuildEvent>
-    <Link />
-    <Manifest />
-    <Manifest />
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <WarningLevel>EnableAllWarnings</WarningLevel>
+      <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -150,12 +146,11 @@ Deploy.bat ProjectPostBuild "$(PlatformTarget)" "$(OutDir)" "$(SolutionDir)..\..
       <Command>Deploy.bat GenerateTLB "$(PlatformTarget)" "$(OutDir)" "$(TargetName)" &amp;&amp; ^
 Deploy.bat ProjectPostBuild "$(PlatformTarget)" "$(OutDir)" "$(SolutionDir)..\..\LCDHardwareMonitor PluginLoader CLR Interface"</Command>
     </PostBuildEvent>
-    <Manifest />
-    <Manifest />
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <WarningLevel>EnableAllWarnings</WarningLevel>
+      <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -171,8 +166,6 @@ Deploy.bat ProjectPostBuild "$(PlatformTarget)" "$(OutDir)" "$(SolutionDir)..\..
       <Command>Deploy.bat GenerateTLB "$(PlatformTarget)" "$(OutDir)" "$(TargetName)" &amp;&amp; ^
 Deploy.bat ProjectPostBuild "$(PlatformTarget)" "$(OutDir)" "$(SolutionDir)..\..\LCDHardwareMonitor PluginLoader CLR Interface"</Command>
     </PostBuildEvent>
-    <Manifest />
-    <Manifest />
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

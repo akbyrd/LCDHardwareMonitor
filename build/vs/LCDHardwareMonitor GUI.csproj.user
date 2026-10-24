@@ -17,8 +17,6 @@
     <StartArguments>
     </StartArguments>
     <StartWorkingDirectory>$(SolutionDir)run\</StartWorkingDirectory>
-    <StartProgram>
-    </StartProgram>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <EnableUnmanagedDebugging>true</EnableUnmanagedDebugging>
@@ -26,7 +24,6 @@
     <StartArguments>
     </StartArguments>
     <StartWorkingDirectory>$(SolutionDir)run\</StartWorkingDirectory>
-    <StartProgram>$(SolutionDir)run\GUI\LCDHardwareMonitor GUI.exe</StartProgram>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
     <EnableUnmanagedDebugging>true</EnableUnmanagedDebugging>
@@ -34,7 +31,6 @@
     <StartArguments>
     </StartArguments>
     <StartWorkingDirectory>$(SolutionDir)run\</StartWorkingDirectory>
-    <StartProgram>$(SolutionDir)run\GUI\LCDHardwareMonitor GUI.exe</StartProgram>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
     <EnableUnmanagedDebugging>true</EnableUnmanagedDebugging>
@@ -42,6 +38,5 @@
     <StartArguments>
     </StartArguments>
     <StartWorkingDirectory>$(SolutionDir)run\</StartWorkingDirectory>
-    <StartProgram>$(SolutionDir)run\GUI\LCDHardwareMonitor GUI.exe</StartProgram>
   </PropertyGroup>
 </Project>
