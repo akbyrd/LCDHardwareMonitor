@@ -13,10 +13,7 @@ using Microsoft::WRL::ComPtr;
 #pragma warning(push)
 // NOTE: The automatically included comdef.h in the tlh generates warnings
 #pragma warning(disable: 5204) // non-virtual destructor
-// NOTE: Added a hack "additional include directory" for this to work
-#import "LCDHardwareMonitor.PluginLoader.CLR.Interface.tlb" \
-	no_namespace \
-	no_smart_pointers
+#include "LCDHardwareMonitor.PluginLoader.CLR.Interface.tlh"
 #pragma warning(pop)
 
 struct LHMHostControl final : public IHostControl
@@ -282,7 +279,11 @@ PluginLoader_LoadSensorPlugin(PluginLoaderState& s, Plugin& plugin, SensorPlugin
 		{
 			// NOTE: fuslogvw is great for debugging managed assembly loading.
 			// TODO: Do we need to try/catch the managed code?
-			success = (b8) s.lhmPluginLoader->LoadSensorPlugin(&plugin, &sensorPlugin, &pluginDesc);
+			u8 loaded = 0;
+			HRESULT hr = s.lhmPluginLoader->LoadSensorPlugin(&plugin, &sensorPlugin, &pluginDesc, &loaded);
+			LOG_HRESULT_IF_FAILED(hr, break,
+				Severity::Error, "Failed to call managed Sensor plugin loader '%'", plugin.fileName);
+			success = (b8) loaded;
 			LOG_IF(!success, IGNORE,
 				Severity::Error, "Failed to load managed Sensor plugin '%'", plugin.fileName);
 			break;
@@ -330,10 +331,16 @@ PluginLoader_UnloadSensorPlugin(PluginLoaderState& s, Plugin& plugin, SensorPlug
 			break;
 
 		case PluginLanguage::Managed:
-			success = (b8) s.lhmPluginLoader->UnloadSensorPlugin(&plugin, &sensorPlugin);
+		{
+			u8 unloaded = 0;
+			HRESULT hr = s.lhmPluginLoader->UnloadSensorPlugin(&plugin, &sensorPlugin, &unloaded);
+			LOG_HRESULT_IF_FAILED(hr, break,
+				Severity::Error, "Failed to call managed Sensor plugin unloader '%'", plugin.info.name);
+			success = (b8) unloaded;
 			LOG_IF(!success, IGNORE,
 				Severity::Error, "Failed to unload managed Sensor plugin '%'", plugin.info.name);
 			break;
+		}
 	}
 	if (!success) return false;
 
@@ -402,7 +409,11 @@ PluginLoader_LoadWidgetPlugin(PluginLoaderState& s, Plugin& plugin, WidgetPlugin
 		{
 			// NOTE: fuslogvw is great for debugging managed assembly loading.
 			// TODO: Do we need to try/catch the managed code?
-			success = (b8) s.lhmPluginLoader->LoadWidgetPlugin(&plugin, &widgetPlugin, &pluginDesc);
+			u8 loaded = 0;
+			HRESULT hr = s.lhmPluginLoader->LoadWidgetPlugin(&plugin, &widgetPlugin, &pluginDesc, &loaded);
+			LOG_HRESULT_IF_FAILED(hr, break,
+				Severity::Error, "Failed to call managed Widget plugin loader '%'", plugin.fileName);
+			success = (b8) loaded;
 			LOG_IF(!success, IGNORE,
 				Severity::Error, "Failed to load managed Widget plugin '%'", plugin.fileName);
 			break;
@@ -450,10 +461,16 @@ PluginLoader_UnloadWidgetPlugin(PluginLoaderState& s, Plugin& plugin, WidgetPlug
 			break;
 
 		case PluginLanguage::Managed:
-			success = (b8) s.lhmPluginLoader->UnloadWidgetPlugin(&plugin, &widgetPlugin);
+		{
+			u8 unloaded = 0;
+			HRESULT hr = s.lhmPluginLoader->UnloadWidgetPlugin(&plugin, &widgetPlugin, &unloaded);
+			LOG_HRESULT_IF_FAILED(hr, break,
+				Severity::Error, "Failed to call managed Widget plugin unloader '%'", plugin.info.name);
+			success = (b8) unloaded;
 			LOG_IF(!success, IGNORE,
 				Severity::Error, "Failed to unload managed Widget plugin '%'", plugin.info.name);
 			break;
+		}
 	}
 	if (!success) return false;
 

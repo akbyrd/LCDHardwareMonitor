@@ -21,6 +21,9 @@
   <ItemGroup>
     <ClCompile Include="..\..\LCDHardwareMonitor PluginLoader CLR Interface\src\pluginloader_clr_interface.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\LCDHardwareMonitor PluginLoader CLR Interface\src\pluginloader_clr_interface_tlh.cpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{7E6A520B-1A13-444A-B224-78C8F6BE9A93}</ProjectGuid>
@@ -109,7 +112,7 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <PostBuildEvent>
-      <Command>Deploy.bat GenerateTLB "$(PlatformTarget)" "$(OutDir)" "$(TargetName)" &amp;&amp; ^
+      <Command>Deploy.bat GenerateTLH "$(PlatformTarget)" "$(OutDir)" "$(TargetName)" "$(SolutionDir)..\..\LCDHardwareMonitor PluginLoader CLR Interface" &amp;&amp; ^
 Deploy.bat ProjectPostBuild "$(PlatformTarget)" "$(OutDir)" "$(SolutionDir)..\..\LCDHardwareMonitor PluginLoader CLR Interface"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -123,7 +126,7 @@ Deploy.bat ProjectPostBuild "$(PlatformTarget)" "$(OutDir)" "$(SolutionDir)..\..
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <PostBuildEvent>
-      <Command>Deploy.bat GenerateTLB "$(PlatformTarget)" "$(OutDir)" "$(TargetName)" &amp;&amp; ^
+      <Command>Deploy.bat GenerateTLH "$(PlatformTarget)" "$(OutDir)" "$(TargetName)" "$(SolutionDir)..\..\LCDHardwareMonitor PluginLoader CLR Interface" &amp;&amp; ^
 Deploy.bat ProjectPostBuild "$(PlatformTarget)" "$(OutDir)" "$(SolutionDir)..\..\LCDHardwareMonitor PluginLoader CLR Interface"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -143,7 +146,7 @@ Deploy.bat ProjectPostBuild "$(PlatformTarget)" "$(OutDir)" "$(SolutionDir)..\..
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PostBuildEvent>
-      <Command>Deploy.bat GenerateTLB "$(PlatformTarget)" "$(OutDir)" "$(TargetName)" &amp;&amp; ^
+      <Command>Deploy.bat GenerateTLH "$(PlatformTarget)" "$(OutDir)" "$(TargetName)" "$(SolutionDir)..\..\LCDHardwareMonitor PluginLoader CLR Interface" &amp;&amp; ^
 Deploy.bat ProjectPostBuild "$(PlatformTarget)" "$(OutDir)" "$(SolutionDir)..\..\LCDHardwareMonitor PluginLoader CLR Interface"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -163,7 +166,7 @@ Deploy.bat ProjectPostBuild "$(PlatformTarget)" "$(OutDir)" "$(SolutionDir)..\..
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PostBuildEvent>
-      <Command>Deploy.bat GenerateTLB "$(PlatformTarget)" "$(OutDir)" "$(TargetName)" &amp;&amp; ^
+      <Command>Deploy.bat GenerateTLH "$(PlatformTarget)" "$(OutDir)" "$(TargetName)" "$(SolutionDir)..\..\LCDHardwareMonitor PluginLoader CLR Interface" &amp;&amp; ^
 Deploy.bat ProjectPostBuild "$(PlatformTarget)" "$(OutDir)" "$(SolutionDir)..\..\LCDHardwareMonitor PluginLoader CLR Interface"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>

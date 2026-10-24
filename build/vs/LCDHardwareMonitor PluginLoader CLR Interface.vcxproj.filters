@@ -11,4 +11,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\LCDHardwareMonitor PluginLoader CLR Interface\src\pluginloader_clr_interface_tlh.cpp">
+      <Filter>Source Files</Filter>
+    </None>
+  </ItemGroup>
 </Project>

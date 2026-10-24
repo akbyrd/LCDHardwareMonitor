@@ -6,7 +6,7 @@ REM TODO: Add clean function
 REM Usage
 REM Deploy.bat SolutionPreBuild "$(PlatformTarget)" "$(WindowsSdkDir)"
 REM Deploy.bat ProjectPostBuild "$(PlatformTarget)" "$(OutDir)" "<PROJECT_DIR>" ["<SUB_DIR>" <ext directory names>]
-REM Deploy.bat GenerateTLB      "$(PlatformTarget)" "$(OutDir)" "$(TargetName)"
+REM Deploy.bat GenerateTLH      "$(PlatformTarget)" "$(OutDir)" "$(TargetName)" "<PROJECT_DIR>"
 
 REM NOTE: Must use CRLF. LF results in "the system cannot find the batch label specified"
 
@@ -57,8 +57,8 @@ GOTO :%FUNCTION%
 		)
 	GOTO Exit
 
-:GenerateTLB
-	REM $(OutDir) ends with a \ which breaks tlbexp. It will complain about an
+:GenerateTLH
+	REM $(OutDir) ends with a \ which breaks tlbexp and cl. It will complain about an
 	REM invalid character in the path. Appending a . is a hack to avoid the error.
 
 	REM Warning TX00131175 is disabled because it appears to be spurious and I can't find a way to
@@ -68,6 +68,7 @@ GOTO :%FUNCTION%
 	SET PLATFORM_ARCH=%~2
 	SET OUT_DIR=%~3
 	SET TARGET_NAME=%~4
+	SET PROJECT_DIR=%~5
 	SET TARGET_FILE_NO_EXT=%OUT_DIR%%TARGET_NAME%
 	IF      "%PLATFORM_ARCH%" == "x86" ( SET TLB_ARCH=win32 ) ^
 	ELSE IF "%PLATFORM_ARCH%" == "x64" ( SET TLB_ARCH=win64 )
@@ -79,6 +80,15 @@ GOTO :%FUNCTION%
 		/%TLB_ARCH% ^
 		/silence:00131175 ^
 		/nologo > NUL
+	IF ERRORLEVEL 1 GOTO Abort
+
+	ECHO  **** Generating TLH
+	cl ^
+		"%PROJECT_DIR%\src\pluginloader_clr_interface_tlh.cpp" ^
+		/Fo"%TARGET_FILE_NO_EXT%.obj" ^
+		/I"%OUT_DIR%." ^
+		/c ^
+		/nologo
 	IF ERRORLEVEL 1 GOTO Abort
 	GOTO Exit
 
