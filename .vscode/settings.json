@@ -19,6 +19,8 @@
 		"/FUWindowsBase.dll",
 		"/FUPresentationCore.dll",
 		"/FU${workspaceFolder}/Sensor Plugin - OpenHardwareMonitor/ext/OpenHardwareMonitorLib.dll",
+		"/FU${workspaceFolder}/build/vs/bin/Debug_x64/LCDHardwareMonitor API CLR/LCDHardwareMonitor.API.CLR.dll",
+		"/FU${workspaceFolder}/build/vs/bin/Debug_x64/LCDHardwareMonitor PluginLoader CLR Interface/LCDHardwareMonitor.PluginLoader.CLR.Interface.dll",
 	],
 	"C_Cpp.default.cppStandard": "c++17",
 	"C_Cpp.default.intelliSenseMode": "msvc-x64",
