@@ -29,6 +29,7 @@
 		"${workspaceFolder}/LCDHardwareMonitor/include",
 		"${workspaceFolder}/LCDHardwareMonitor/src",
 		"${workspaceFolder}/LCDHardwareMonitor/ext/d2xx/include",
+		"${workspaceFolder}/modules/keel",
 		"${workspaceFolder}/cache/build/windows-x64-Debug-msvc/LCDHardwareMonitor PluginLoader CLR Interface/bin",
 	],
 }

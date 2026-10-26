@@ -1,5 +1,6 @@
 Current
 -------
+Migrate to keel
 Read https://learn.microsoft.com/en-us/dotnet/desktop/wpf/advanced/wpf-and-direct3d9-interoperation
 ----
 Renderer still uses refs
@@ -158,7 +159,7 @@ Add push and pop for blend modes
 Change rasterizer state to be runtime configurable
 Render with alpha, then convert to 16 bit
 I'm no longer convince the Push/Pop model is all that useful. Why not just Set everything?
-	Push/Pop is good for plugins, so they can change and restor state without knowing what the state
+	Push/Pop is good for plugins, so they can change and restore state without knowing what the state
 	was. But we could also just re-apply state between plugins. Or only use PushPop for plugins and
 	Set for internal code.
 Add a way to push both a render target and depth buffer in the same command
@@ -202,7 +203,7 @@ How should this interact with the rate at which we send gui messages?
 2) Multimedia timers: Accurate. Appears to set system timer frequency
 3) Waitable timers
 4) Timer queue timers
-5) Threadpool timers
+5) Thread pool timers
 6) select() (winsock2)
 7) usleep/nanosleep (posix)
 * Might be stuck changing the windows timer. Only set it when necessary. Don't set it at all
@@ -252,7 +253,7 @@ Catch managed exceptions from the native side. Can't have them crash the
 Decide whether plugins needing elevation should be expressed in the plugin
 	API. OHM requires elevation to work, and presumably other hardware senors
 	plugins might as well. If plugins can say "i require elevation" then we
-	can warn the user at startup that an enabled plugin requries elevation
+	can warn the user at startup that an enabled plugin requires elevation
 	but the program is not elevated. This in turn means we are less likely
 	to crash from loading that assumes elevation and break, and we don't have
 	to ship with elevation enabled by default.
@@ -290,3 +291,9 @@ Reset state structs if Initialize fails
 Ensure program doesn't cause all CPU cores to boost constantly (preferably at all)
 Collect crash reports / metrics
 Test with different character code pages.
+
+
+
+Other
+-----
+Update to .NET [Core]

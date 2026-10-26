@@ -55,7 +55,7 @@
       <WarningLevel>EnableAllWarnings</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(OutDir)..\..\LCDHardwareMonitor PluginLoader CLR Interface\bin;$(SolutionDir)..\..\LCDHardwareMonitor\include;$(SolutionDir)..\..\LCDHardwareMonitor\ext\d2xx\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(OutDir)..\..\LCDHardwareMonitor PluginLoader CLR Interface\bin;$(SolutionDir)..\..\LCDHardwareMonitor\include;$(SolutionDir)..\..\LCDHardwareMonitor\ext\d2xx\include;$(SolutionDir)..\..\modules\keel</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
     </ClCompile>
@@ -75,7 +75,7 @@ Deploy.bat CopyShaderCompiler "$(PlatformTarget)" "$(WindowsSdkDir)" "$(OutDir)"
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(OutDir)..\..\LCDHardwareMonitor PluginLoader CLR Interface\bin;$(SolutionDir)..\..\LCDHardwareMonitor\include;$(SolutionDir)..\..\LCDHardwareMonitor\ext\d2xx\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(OutDir)..\..\LCDHardwareMonitor PluginLoader CLR Interface\bin;$(SolutionDir)..\..\LCDHardwareMonitor\include;$(SolutionDir)..\..\LCDHardwareMonitor\ext\d2xx\include;$(SolutionDir)..\..\modules\keel</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
     </ClCompile>
@@ -187,6 +187,9 @@ Deploy.bat CopyShaderCompiler "$(PlatformTarget)" "$(WindowsSdkDir)" "$(OutDir)"
     </ProjectReference>
     <ProjectReference Include="LCDHardwareMonitor PluginLoader CLR.vcxproj">
       <Project>{4cf4bf35-2c27-4969-bfd7-34149a9cbf12}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\modules\keel\build\msbuild\keel.vcxproj">
+      <Project>{63e907a3-c550-2be9-c347-50501f665218}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
