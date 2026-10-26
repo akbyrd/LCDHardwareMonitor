@@ -8,7 +8,7 @@
 		"build":   true,
 	},
 
-	"dotnet.defaultSolution": "build/vs/LCDHardwareMonitor.sln",
+	"dotnet.defaultSolution": "build/msbuild/LCDHardwareMonitor.sln",
 
 	"C_Cpp.default.compilerPath": "cl.exe",
 	"C_Cpp.default.compilerArgs": [
@@ -19,8 +19,8 @@
 		"/FUWindowsBase.dll",
 		"/FUPresentationCore.dll",
 		"/FU${workspaceFolder}/Sensor Plugin - OpenHardwareMonitor/ext/OpenHardwareMonitorLib.dll",
-		"/FU${workspaceFolder}/build/vs/bin/Debug_x64/LCDHardwareMonitor API CLR/LCDHardwareMonitor.API.CLR.dll",
-		"/FU${workspaceFolder}/build/vs/bin/Debug_x64/LCDHardwareMonitor PluginLoader CLR Interface/LCDHardwareMonitor.PluginLoader.CLR.Interface.dll",
+		"/FU${workspaceFolder}/build/msbuild/bin/Debug_x64/LCDHardwareMonitor API CLR/LCDHardwareMonitor.API.CLR.dll",
+		"/FU${workspaceFolder}/build/msbuild/bin/Debug_x64/LCDHardwareMonitor PluginLoader CLR Interface/LCDHardwareMonitor.PluginLoader.CLR.Interface.dll",
 	],
 	"C_Cpp.default.cppStandard": "c++17",
 	"C_Cpp.default.intelliSenseMode": "msvc-x64",
@@ -29,6 +29,6 @@
 		"${workspaceFolder}/LCDHardwareMonitor/include",
 		"${workspaceFolder}/LCDHardwareMonitor/src",
 		"${workspaceFolder}/LCDHardwareMonitor/ext/d2xx/include",
-		"${workspaceFolder}/build/vs/bin/Debug_x64/LCDHardwareMonitor PluginLoader CLR Interface",
+		"${workspaceFolder}/build/msbuild/bin/Debug_x64/LCDHardwareMonitor PluginLoader CLR Interface",
 	],
 }
