@@ -201,6 +201,17 @@ Connection_Teardown(ConnectionState& con)
 	con = {};
 }
 
+void
+Connection_Reset(ConnectionState& con)
+{
+	for (u32 i = 0; i < con.queue.length; i++)
+		con.queue[i].length = 0;
+	con.queue.length = 0;
+	con.queueIndex   = 0;
+	con.sendIndex    = 0;
+	con.recvIndex    = 0;
+}
+
 // NOTE: There's one small gotcha with this serialization approach. We use
 // Serialize(ByteStream&, T&) to support a pattern where you simply call Serialize for every member
 // of your type and it will serialize properly as long as overloads exist for types that aren't

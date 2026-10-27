@@ -419,9 +419,7 @@ namespace LCDHardwareMonitor::GUI
 			simState.IsSimulationConnected = false;
 			simState.NotifyPropertyChanged("");
 
-			ConnectionState& simCon = s.simConnection;
-			simCon.sendIndex = 0;
-			simCon.recvIndex = 0;
+			Connection_Reset(s.simConnection);
 			// TODO: Will need to handle 'pending' states.
 		}
 

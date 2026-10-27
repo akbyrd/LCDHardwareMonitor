@@ -570,8 +570,7 @@ OnDisconnect(SimulationState& s)
 	List_Free(s.hovered);
 	List_Free(s.selected);
 
-	s.guiConnection.sendIndex = 0;
-	s.guiConnection.recvIndex = 0;
+	Connection_Reset(s.guiConnection);
 }
 
 static void
