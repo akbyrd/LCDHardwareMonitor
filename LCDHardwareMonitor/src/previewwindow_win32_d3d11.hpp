@@ -309,13 +309,11 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 
 		case WM_LBUTTONDOWN:
 		{
-			// TODO: If you move the mouse quickly and click it's possible to get this without a
-			// corresponding mouse move. Maybe they come out of order? This probably applies to all
-			// mouse buttons. Maybe also keyboard? Ugh.
-			// TODO: Assertion fires occasionally if GUI and preview are open. They're fighting to set
-			// mouse the position.
-			v2i pos = GetMousePosition(lParam, s->zoomFactor, s->renderSize);
-			Assert(pos == s->simulationState->mousePos);
+			// NOTE: If GUI and preview are both open they fight to set mouse the position.
+			s->mousePos = GetMousePosition(lParam, s->zoomFactor, s->renderSize);
+			FromGUI::MouseMove mouseMove = {};
+			mouseMove.pos = s->mousePos;
+			FromGUI_MouseMove(*s->simulationState, mouseMove);
 
 			if (s->simulationState->guiInteraction != GUIInteraction::Null) break;
 

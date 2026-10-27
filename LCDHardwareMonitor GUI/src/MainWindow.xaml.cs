@@ -151,8 +151,7 @@ namespace LCDHardwareMonitor.GUI
 			Point cursorPos = new Point();
 			if (Win32.GetCursorPos(ref cursorPos))
 			{
-				Point previewPos = preview.PointToScreen(new Point());
-				Point mousePos = (Point) (cursorPos - previewPos);
+				Point mousePos = preview.PointFromScreen(cursorPos);
 				mousePos.Y = preview.RenderSize.Height - 1 - mousePos.Y;
 				return mousePos;
 			}
