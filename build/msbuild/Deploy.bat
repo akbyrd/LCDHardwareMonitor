@@ -11,7 +11,7 @@ REM Deploy.bat GenerateTLH      "$(PlatformTarget)" "$(OutDir)" "$(TargetName)" 
 REM NOTE: Must use CRLF. LF results in "the system cannot find the batch label specified"
 
 SET FUNCTION=%~1
-SET RUN_DIR=run
+SET RUN_DIR=..\..\cache\run
 
 ECHO.
 GOTO :%FUNCTION%

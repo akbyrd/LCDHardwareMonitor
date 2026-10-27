@@ -75,25 +75,25 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>bin\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</OutDir>
-    <IntDir>obj\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</IntDir>
+    <OutDir>$(SolutionDir)..\..\cache\bin\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</OutDir>
+    <IntDir>$(SolutionDir)..\..\cache\obj\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</IntDir>
     <LinkIncremental>false</LinkIncremental>
     <TargetName>LCDHardwareMonitor.GUI.Interop</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>bin\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</OutDir>
-    <IntDir>obj\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</IntDir>
+    <OutDir>$(SolutionDir)..\..\cache\bin\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</OutDir>
+    <IntDir>$(SolutionDir)..\..\cache\obj\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</IntDir>
     <LinkIncremental>false</LinkIncremental>
     <TargetName>LCDHardwareMonitor.GUI.Interop</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>bin\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</OutDir>
-    <IntDir>obj\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</IntDir>
+    <OutDir>$(SolutionDir)..\..\cache\bin\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</OutDir>
+    <IntDir>$(SolutionDir)..\..\cache\obj\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</IntDir>
     <TargetName>LCDHardwareMonitor.GUI.Interop</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>bin\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</OutDir>
-    <IntDir>obj\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</IntDir>
+    <OutDir>$(SolutionDir)..\..\cache\bin\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</OutDir>
+    <IntDir>$(SolutionDir)..\..\cache\obj\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</IntDir>
     <TargetName>LCDHardwareMonitor.GUI.Interop</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">

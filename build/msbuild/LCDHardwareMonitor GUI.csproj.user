@@ -16,27 +16,27 @@
     <StartAction>Project</StartAction>
     <StartArguments>
     </StartArguments>
-    <StartWorkingDirectory>$(SolutionDir)run\</StartWorkingDirectory>
+    <StartWorkingDirectory>$(SolutionDir)..\..\cache\run\</StartWorkingDirectory>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <EnableUnmanagedDebugging>true</EnableUnmanagedDebugging>
     <StartAction>Project</StartAction>
     <StartArguments>
     </StartArguments>
-    <StartWorkingDirectory>$(SolutionDir)run\</StartWorkingDirectory>
+    <StartWorkingDirectory>$(SolutionDir)..\..\cache\run\</StartWorkingDirectory>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
     <EnableUnmanagedDebugging>true</EnableUnmanagedDebugging>
     <StartAction>Project</StartAction>
     <StartArguments>
     </StartArguments>
-    <StartWorkingDirectory>$(SolutionDir)run\</StartWorkingDirectory>
+    <StartWorkingDirectory>$(SolutionDir)..\..\cache\run\</StartWorkingDirectory>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
     <EnableUnmanagedDebugging>true</EnableUnmanagedDebugging>
     <StartAction>Project</StartAction>
     <StartArguments>
     </StartArguments>
-    <StartWorkingDirectory>$(SolutionDir)run\</StartWorkingDirectory>
+    <StartWorkingDirectory>$(SolutionDir)..\..\cache\run\</StartWorkingDirectory>
   </PropertyGroup>
 </Project>

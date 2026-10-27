@@ -70,20 +70,20 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>bin\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</OutDir>
-    <IntDir>obj\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</IntDir>
+    <OutDir>$(SolutionDir)..\..\cache\bin\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</OutDir>
+    <IntDir>$(SolutionDir)..\..\cache\obj\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>bin\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</OutDir>
-    <IntDir>obj\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</IntDir>
+    <OutDir>$(SolutionDir)..\..\cache\bin\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</OutDir>
+    <IntDir>$(SolutionDir)..\..\cache\obj\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>bin\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</OutDir>
-    <IntDir>obj\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</IntDir>
+    <OutDir>$(SolutionDir)..\..\cache\bin\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</OutDir>
+    <IntDir>$(SolutionDir)..\..\cache\obj\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>bin\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</OutDir>
-    <IntDir>obj\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</IntDir>
+    <OutDir>$(SolutionDir)..\..\cache\bin\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</OutDir>
+    <IntDir>$(SolutionDir)..\..\cache\obj\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -269,6 +269,6 @@ Deploy.bat CopyShaderCompiler "$(PlatformTarget)" "$(WindowsSdkDir)"</Command>
   </ImportGroup>
   <Target Name="CleanBetter" AfterTargets="Clean">
     <RemoveDir Directories="$(TargetDir)" />
-    <RemoveDir Directories="$(SolutionDir)run" Condition="'$(BuildType)' == 'Clean'" />
+    <RemoveDir Directories="$(SolutionDir)..\..\cache\run" Condition="'$(BuildType)' == 'Clean'" />
   </Target>
 </Project>

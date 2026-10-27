@@ -1,9 +1,13 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
+    <BaseIntermediateOutputPath>$(MSBuildProjectDirectory)\..\..\cache\obj\$(Configuration)_$(Platform)\LCDHardwareMonitor GUI\</BaseIntermediateOutputPath>
+    <RestorePackagesPath>$(MSBuildProjectDirectory)\..\..\cache\packages\</RestorePackagesPath>
+  </PropertyGroup>
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
     <ProjectGuid>{5ECF7D2F-1DD5-4E32-A973-018FCBD33380}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <RootNamespace>LCDHardwareMonitor.GUI</RootNamespace>
@@ -17,16 +21,14 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <DebugSymbols>true</DebugSymbols>
-    <OutputPath>bin\$(Configuration)_$(Platform)\LCDHardwareMonitor GUI\</OutputPath>
-    <BaseIntermediateOutputPath>obj\$(Configuration)_$(Platform)\LCDHardwareMonitor GUI\</BaseIntermediateOutputPath>
+    <OutputPath>$(SolutionDir)..\..\cache\bin\$(Configuration)_$(Platform)\LCDHardwareMonitor GUI\</OutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <DebugType>full</DebugType>
     <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
-    <OutputPath>bin\$(Configuration)_$(Platform)\LCDHardwareMonitor GUI\</OutputPath>
-    <BaseIntermediateOutputPath>obj\$(Configuration)_$(Platform)\LCDHardwareMonitor GUI\</BaseIntermediateOutputPath>
+    <OutputPath>$(SolutionDir)..\..\cache\bin\$(Configuration)_$(Platform)\LCDHardwareMonitor GUI\</OutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <Optimize>true</Optimize>
@@ -35,16 +37,14 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <DebugSymbols>true</DebugSymbols>
-    <OutputPath>bin\$(Configuration)_$(Platform)\LCDHardwareMonitor GUI\</OutputPath>
-    <BaseIntermediateOutputPath>obj\$(Configuration)_$(Platform)\LCDHardwareMonitor GUI\</BaseIntermediateOutputPath>
+    <OutputPath>$(SolutionDir)..\..\cache\bin\$(Configuration)_$(Platform)\LCDHardwareMonitor GUI\</OutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <DebugType>full</DebugType>
     <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
-    <OutputPath>bin\$(Configuration)_$(Platform)\LCDHardwareMonitor GUI\</OutputPath>
-    <BaseIntermediateOutputPath>obj\$(Configuration)_$(Platform)\LCDHardwareMonitor GUI\</BaseIntermediateOutputPath>
+    <OutputPath>$(SolutionDir)..\..\cache\bin\$(Configuration)_$(Platform)\LCDHardwareMonitor GUI\</OutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <Optimize>true</Optimize>
@@ -52,16 +52,9 @@
     <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="ControlzEx, Version=3.0.2.4, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>packages\ControlzEx.3.0.2.4\lib\net462\ControlzEx.dll</HintPath>
-    </Reference>
-    <Reference Include="MahApps.Metro, Version=1.6.5.1, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>packages\MahApps.Metro.1.6.5\lib\net47\MahApps.Metro.dll</HintPath>
-    </Reference>
+    <PackageReference Include="MahApps.Metro" Version="1.6.5" />
+    <PackageReference Include="ControlzEx" Version="3.0.2.4" />
     <Reference Include="System" />
-    <Reference Include="System.Windows.Interactivity, Version=4.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>packages\ControlzEx.3.0.2.4\lib\net462\System.Windows.Interactivity.dll</HintPath>
-    </Reference>
     <Reference Include="System.Xaml" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
@@ -104,7 +97,6 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
       <SubType>Designer</SubType>
     </EmbeddedResource>
-    <None Include="packages.config" />
     <None Include="..\..\LCDHardwareMonitor GUI\Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
