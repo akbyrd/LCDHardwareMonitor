@@ -45,10 +45,18 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>$(SolutionDir)..\..\cache\build\windows-$(PlatformTarget)-$(Configuration)-msvc\$(ProjectName)\bin\</OutDir>
     <IntDir>$(SolutionDir)..\..\cache\build\windows-$(PlatformTarget)-$(Configuration)-msvc\$(ProjectName)\obj\</IntDir>
+    <LocalDebuggerCommand>$(OutDir)..\..\run\$(ProjectName).exe</LocalDebuggerCommand>
+    <LocalDebuggerWorkingDirectory>$(OutDir)..\..\run\</LocalDebuggerWorkingDirectory>
+    <LocalDebuggerDebuggerType>Mixed</LocalDebuggerDebuggerType>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(SolutionDir)..\..\cache\build\windows-$(PlatformTarget)-$(Configuration)-msvc\$(ProjectName)\bin\</OutDir>
     <IntDir>$(SolutionDir)..\..\cache\build\windows-$(PlatformTarget)-$(Configuration)-msvc\$(ProjectName)\obj\</IntDir>
+    <LocalDebuggerCommand>$(OutDir)..\..\run\$(ProjectName).exe</LocalDebuggerCommand>
+    <LocalDebuggerWorkingDirectory>$(OutDir)..\..\run\</LocalDebuggerWorkingDirectory>
+    <LocalDebuggerDebuggerType>Mixed</LocalDebuggerDebuggerType>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
