@@ -669,9 +669,17 @@ Platform_UpdatePipeConnection(Pipe& pipe)
 		u32 error = GetLastError();
 		switch (error)
 		{
+			// The server intentionally disconnected
+			case ERROR_PIPE_NOT_CONNECTED:
+				if (pipe.isServer)
+				{
+					Assert(false);
+					return PipeResult::UnexpectedFailure;
+				}
+				[[fallthrough]];
+
 			// Pipe has been closed
 			case ERROR_BROKEN_PIPE:
-			case ERROR_PIPE_NOT_CONNECTED:
 			case ERROR_NO_DATA:
 				Assert(available == 0);
 				result = Platform_DisconnectPipe(pipe);
@@ -793,6 +801,15 @@ Platform_WritePipe(Pipe& pipe, ByteSlice bytes)
 		u32 error = GetLastError();
 		switch (error)
 		{
+			// The server intentionally disconnected
+			case ERROR_PIPE_NOT_CONNECTED:
+				if (pipe.isServer)
+				{
+					Assert(false);
+					return PipeResult::UnexpectedFailure;
+				}
+				[[fallthrough]];
+
 			// The pipe is being closed
 			case ERROR_NO_DATA:
 				// TODO: Would like to set Disconnecting state here, but that makes it harder for the
@@ -839,10 +856,17 @@ Platform_ReadPipe(Pipe& pipe, Bytes& bytes)
 		u32 error = GetLastError();
 		switch (error)
 		{
-			// TODO: What is the exact cause of each of these errors?
+			// The server intentionally disconnected
+			case ERROR_PIPE_NOT_CONNECTED:
+				if (pipe.isServer)
+				{
+					Assert(false);
+					return PipeResult::UnexpectedFailure;
+				}
+				[[fallthrough]];
+
 			// Pipe has been closed
 			case ERROR_BROKEN_PIPE:
-			case ERROR_PIPE_NOT_CONNECTED:
 			case ERROR_NO_DATA:
 				Assert(available == 0);
 				// TODO: Would like to set Disconnecting state here, but that makes it harder for the

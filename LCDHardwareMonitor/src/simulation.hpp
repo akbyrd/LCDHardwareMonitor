@@ -595,10 +595,6 @@ OnTeardown(ConnectionState& con)
 		Severity::Info, "Unable to send GUI disconnect signal");
 	LOG_IF(result == PipeResult::UnexpectedFailure, return,
 		Severity::Error, "Failed to send GUI disconnect signal");
-
-	result = Platform_FlushPipe(con.pipe);
-	LOG_IF(result == PipeResult::UnexpectedFailure, return,
-		Severity::Error, "Failed to flush GUI communication pipe");
 }
 
 // -------------------------------------------------------------------------------------------------
