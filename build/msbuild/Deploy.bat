@@ -4,14 +4,13 @@ REM @ECHO OFF
 REM TODO: Add clean function
 
 REM Usage
-REM Deploy.bat CopyShaderCompiler "$(PlatformTarget)" "$(WindowsSdkDir)"
+REM Deploy.bat CopyShaderCompiler "$(PlatformTarget)" "$(WindowsSdkDir)" "$(OutDir)"
 REM Deploy.bat ProjectPostBuild "$(PlatformTarget)" "$(OutDir)" "<PROJECT_DIR>" ["<SUB_DIR>" <ext directory names>]
 REM Deploy.bat GenerateTLH      "$(PlatformTarget)" "$(OutDir)" "$(TargetName)" "<PROJECT_DIR>"
 
 REM NOTE: Must use CRLF. LF results in "the system cannot find the batch label specified"
 
 SET FUNCTION=%~1
-SET RUN_DIR=..\..\cache\run
 
 ECHO.
 GOTO :%FUNCTION%
@@ -19,6 +18,8 @@ GOTO :%FUNCTION%
 :CopyShaderCompiler
 	SET PLATFORM_ARCH=%~2
 	SET WIN_SDK_DIR=%~3
+	SET OUT_DIR=%~4
+	SET RUN_DIR=%OUT_DIR%..\..\run
 	SET D3D_COMPILER=%WIN_SDK_DIR%Redist\D3D\%PLATFORM_ARCH%\d3dcompiler_47.dll
 
 	ECHO  **** Copying shader compiler
@@ -31,6 +32,7 @@ GOTO :%FUNCTION%
 	SET OUT_DIR=%~3
 	SET PROJECT_DIR=%~4
 	SET SUB_DIR=%~5
+	SET RUN_DIR=%OUT_DIR%..\..\run
 
 	ECHO  **** Copying output to run
 	XCOPY /Y /I /S /B /EXCLUDE:exclude_from_copy.txt "%OUT_DIR%*" "%RUN_DIR%\%SUB_DIR%" > NUL

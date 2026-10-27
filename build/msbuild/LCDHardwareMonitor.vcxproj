@@ -70,33 +70,33 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>$(SolutionDir)..\..\cache\bin\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</OutDir>
-    <IntDir>$(SolutionDir)..\..\cache\obj\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</IntDir>
+    <OutDir>$(SolutionDir)..\..\cache\build\windows-$(PlatformTarget)-$(Configuration)-msvc\$(ProjectName)\bin\</OutDir>
+    <IntDir>$(SolutionDir)..\..\cache\build\windows-$(PlatformTarget)-$(Configuration)-msvc\$(ProjectName)\obj\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>$(SolutionDir)..\..\cache\bin\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</OutDir>
-    <IntDir>$(SolutionDir)..\..\cache\obj\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</IntDir>
+    <OutDir>$(SolutionDir)..\..\cache\build\windows-$(PlatformTarget)-$(Configuration)-msvc\$(ProjectName)\bin\</OutDir>
+    <IntDir>$(SolutionDir)..\..\cache\build\windows-$(PlatformTarget)-$(Configuration)-msvc\$(ProjectName)\obj\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>$(SolutionDir)..\..\cache\bin\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</OutDir>
-    <IntDir>$(SolutionDir)..\..\cache\obj\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</IntDir>
+    <OutDir>$(SolutionDir)..\..\cache\build\windows-$(PlatformTarget)-$(Configuration)-msvc\$(ProjectName)\bin\</OutDir>
+    <IntDir>$(SolutionDir)..\..\cache\build\windows-$(PlatformTarget)-$(Configuration)-msvc\$(ProjectName)\obj\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>$(SolutionDir)..\..\cache\bin\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</OutDir>
-    <IntDir>$(SolutionDir)..\..\cache\obj\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</IntDir>
+    <OutDir>$(SolutionDir)..\..\cache\build\windows-$(PlatformTarget)-$(Configuration)-msvc\$(ProjectName)\bin\</OutDir>
+    <IntDir>$(SolutionDir)..\..\cache\build\windows-$(PlatformTarget)-$(Configuration)-msvc\$(ProjectName)\obj\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>EnableAllWarnings</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(OutDir)..\LCDHardwareMonitor PluginLoader CLR Interface;$(SolutionDir)..\..\LCDHardwareMonitor\include;$(SolutionDir)..\..\LCDHardwareMonitor\ext\d2xx\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(OutDir)..\..\LCDHardwareMonitor PluginLoader CLR Interface\bin;$(SolutionDir)..\..\LCDHardwareMonitor\include;$(SolutionDir)..\..\LCDHardwareMonitor\ext\d2xx\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
     </ClCompile>
     <PostBuildEvent>
       <Command>Deploy.bat ProjectPostBuild "$(PlatformTarget)" "$(OutDir)" "$(SolutionDir)..\..\LCDHardwareMonitor" "" "d2xx" &amp;&amp; ^
-Deploy.bat CopyShaderCompiler "$(PlatformTarget)" "$(WindowsSdkDir)"</Command>
+Deploy.bat CopyShaderCompiler "$(PlatformTarget)" "$(WindowsSdkDir)" "$(OutDir)"</Command>
     </PostBuildEvent>
     <Link>
       <AdditionalLibraryDirectories>$(SolutionDir)..\..\LCDHardwareMonitor\ext\d2xx\lib_$(PlatformTarget)\</AdditionalLibraryDirectories>
@@ -108,13 +108,13 @@ Deploy.bat CopyShaderCompiler "$(PlatformTarget)" "$(WindowsSdkDir)"</Command>
       <WarningLevel>EnableAllWarnings</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(OutDir)..\LCDHardwareMonitor PluginLoader CLR Interface;$(SolutionDir)..\..\LCDHardwareMonitor\include;$(SolutionDir)..\..\LCDHardwareMonitor\ext\d2xx\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(OutDir)..\..\LCDHardwareMonitor PluginLoader CLR Interface\bin;$(SolutionDir)..\..\LCDHardwareMonitor\include;$(SolutionDir)..\..\LCDHardwareMonitor\ext\d2xx\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
     </ClCompile>
     <PostBuildEvent>
       <Command>Deploy.bat ProjectPostBuild "$(PlatformTarget)" "$(OutDir)" "$(SolutionDir)..\..\LCDHardwareMonitor" "" "d2xx" &amp;&amp; ^
-Deploy.bat CopyShaderCompiler "$(PlatformTarget)" "$(WindowsSdkDir)"</Command>
+Deploy.bat CopyShaderCompiler "$(PlatformTarget)" "$(WindowsSdkDir)" "$(OutDir)"</Command>
     </PostBuildEvent>
     <Link>
       <AdditionalLibraryDirectories>$(SolutionDir)..\..\LCDHardwareMonitor\ext\d2xx\lib_$(PlatformTarget)\</AdditionalLibraryDirectories>
@@ -128,7 +128,7 @@ Deploy.bat CopyShaderCompiler "$(PlatformTarget)" "$(WindowsSdkDir)"</Command>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(OutDir)..\LCDHardwareMonitor PluginLoader CLR Interface;$(SolutionDir)..\..\LCDHardwareMonitor\include;$(SolutionDir)..\..\LCDHardwareMonitor\ext\d2xx\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(OutDir)..\..\LCDHardwareMonitor PluginLoader CLR Interface\bin;$(SolutionDir)..\..\LCDHardwareMonitor\include;$(SolutionDir)..\..\LCDHardwareMonitor\ext\d2xx\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
     </ClCompile>
@@ -140,7 +140,7 @@ Deploy.bat CopyShaderCompiler "$(PlatformTarget)" "$(WindowsSdkDir)"</Command>
     </Link>
     <PostBuildEvent>
       <Command>Deploy.bat ProjectPostBuild "$(PlatformTarget)" "$(OutDir)" "$(SolutionDir)..\..\LCDHardwareMonitor" "" "d2xx" &amp;&amp; ^
-Deploy.bat CopyShaderCompiler "$(PlatformTarget)" "$(WindowsSdkDir)"</Command>
+Deploy.bat CopyShaderCompiler "$(PlatformTarget)" "$(WindowsSdkDir)" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -150,7 +150,7 @@ Deploy.bat CopyShaderCompiler "$(PlatformTarget)" "$(WindowsSdkDir)"</Command>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(OutDir)..\LCDHardwareMonitor PluginLoader CLR Interface;$(SolutionDir)..\..\LCDHardwareMonitor\include;$(SolutionDir)..\..\LCDHardwareMonitor\ext\d2xx\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(OutDir)..\..\LCDHardwareMonitor PluginLoader CLR Interface\bin;$(SolutionDir)..\..\LCDHardwareMonitor\include;$(SolutionDir)..\..\LCDHardwareMonitor\ext\d2xx\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
     </ClCompile>
@@ -162,7 +162,7 @@ Deploy.bat CopyShaderCompiler "$(PlatformTarget)" "$(WindowsSdkDir)"</Command>
     </Link>
     <PostBuildEvent>
       <Command>Deploy.bat ProjectPostBuild "$(PlatformTarget)" "$(OutDir)" "$(SolutionDir)..\..\LCDHardwareMonitor" "" "d2xx" &amp;&amp; ^
-Deploy.bat CopyShaderCompiler "$(PlatformTarget)" "$(WindowsSdkDir)"</Command>
+Deploy.bat CopyShaderCompiler "$(PlatformTarget)" "$(WindowsSdkDir)" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -269,6 +269,6 @@ Deploy.bat CopyShaderCompiler "$(PlatformTarget)" "$(WindowsSdkDir)"</Command>
   </ImportGroup>
   <Target Name="CleanBetter" AfterTargets="Clean">
     <RemoveDir Directories="$(TargetDir)" />
-    <RemoveDir Directories="$(SolutionDir)..\..\cache\run" Condition="'$(BuildType)' == 'Clean'" />
+    <RemoveDir Directories="$(SolutionDir)..\..\cache\build\windows-$(PlatformTarget)-$(Configuration)-msvc\run" Condition="'$(BuildType)' == 'Clean'" />
   </Target>
 </Project>

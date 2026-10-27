@@ -75,25 +75,25 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>$(SolutionDir)..\..\cache\bin\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</OutDir>
-    <IntDir>$(SolutionDir)..\..\cache\obj\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</IntDir>
+    <OutDir>$(SolutionDir)..\..\cache\build\windows-$(PlatformTarget)-$(Configuration)-msvc\$(ProjectName)\bin\</OutDir>
+    <IntDir>$(SolutionDir)..\..\cache\build\windows-$(PlatformTarget)-$(Configuration)-msvc\$(ProjectName)\obj\</IntDir>
     <LinkIncremental>false</LinkIncremental>
     <TargetName>Sensor.OpenHardwareMonitor</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>$(SolutionDir)..\..\cache\bin\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</OutDir>
-    <IntDir>$(SolutionDir)..\..\cache\obj\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</IntDir>
+    <OutDir>$(SolutionDir)..\..\cache\build\windows-$(PlatformTarget)-$(Configuration)-msvc\$(ProjectName)\bin\</OutDir>
+    <IntDir>$(SolutionDir)..\..\cache\build\windows-$(PlatformTarget)-$(Configuration)-msvc\$(ProjectName)\obj\</IntDir>
     <LinkIncremental>false</LinkIncremental>
     <TargetName>Sensor.OpenHardwareMonitor</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>$(SolutionDir)..\..\cache\bin\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</OutDir>
-    <IntDir>$(SolutionDir)..\..\cache\obj\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</IntDir>
+    <OutDir>$(SolutionDir)..\..\cache\build\windows-$(PlatformTarget)-$(Configuration)-msvc\$(ProjectName)\bin\</OutDir>
+    <IntDir>$(SolutionDir)..\..\cache\build\windows-$(PlatformTarget)-$(Configuration)-msvc\$(ProjectName)\obj\</IntDir>
     <TargetName>Sensor.OpenHardwareMonitor</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>$(SolutionDir)..\..\cache\bin\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</OutDir>
-    <IntDir>$(SolutionDir)..\..\cache\obj\$(Configuration)_$(PlatformTarget)\$(ProjectName)\</IntDir>
+    <OutDir>$(SolutionDir)..\..\cache\build\windows-$(PlatformTarget)-$(Configuration)-msvc\$(ProjectName)\bin\</OutDir>
+    <IntDir>$(SolutionDir)..\..\cache\build\windows-$(PlatformTarget)-$(Configuration)-msvc\$(ProjectName)\obj\</IntDir>
     <TargetName>Sensor.OpenHardwareMonitor</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
