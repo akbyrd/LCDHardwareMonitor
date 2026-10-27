@@ -61,6 +61,14 @@ namespace LCDHardwareMonitor.GUI
 
 			InitializeComponent();
 			CompositionTarget.Rendering += CompositionTarget_Rendering;
+			SourceInitialized += (sender, e) => UpdatePreviewScale(VisualTreeHelper.GetDpi(this));
+			DpiChanged += (sender, e) => UpdatePreviewScale(e.NewDpi);
+		}
+
+		private void UpdatePreviewScale(DpiScale dpi)
+		{
+			// NOTE: We could do this in a custom image class, if we end up with more than one use case
+			preview.LayoutTransform = new ScaleTransform(1.0 / dpi.DpiScaleX, 1.0 / dpi.DpiScaleY);
 		}
 
 		private void CompositionTarget_Rendering(object sender, EventArgs e)

@@ -58,7 +58,7 @@ PreviewWindow_Initialize(
 		u32 windowStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE;
 
 		RECT windowRect = { 0, 0, (i32) rendererState.renderSize.x, (i32) rendererState.renderSize.y };
-		b8 success = AdjustWindowRect(&windowRect, (u32) windowStyle, false);
+		b8 success = AdjustWindowRectExForDpi(&windowRect, (u32) windowStyle, false, 0, GetDpiForSystem());
 		LOG_LAST_ERROR_IF(!success, IGNORE,
 			Severity::Error, "Failed to set preview window size or style");
 
@@ -477,6 +477,35 @@ PreviewWndProc(HWND hwnd, u32 uMsg, WPARAM wParam, LPARAM lParam)
 			}
 
 			break;
+		}
+
+		case WM_DPICHANGED:
+		{
+			u32   dpi           = HIWORD(wParam);
+			RECT& suggestedRect = *(RECT*) lParam;
+
+			u32  windowStyle = (u32) GetWindowLongPtrA(hwnd, GWL_STYLE);
+			RECT windowRect  = { 0, 0, (i32) s->renderSize.x, (i32) s->renderSize.y };
+			b8 success = AdjustWindowRectExForDpi(&windowRect, windowStyle, false, 0, dpi);
+			LOG_LAST_ERROR_IF(!success, return 0,
+				Severity::Warning, "Failed to compute preview window size for new DPI");
+
+			s->nonClientSize.x = (windowRect.right - windowRect.left) - s->renderSize.x;
+			s->nonClientSize.y = (windowRect.bottom - windowRect.top) - s->renderSize.y;
+
+			v2u newWindowSize = (u32) s->zoomFactor * s->renderSize + s->nonClientSize;
+			success = SetWindowPos(
+				hwnd,
+				nullptr,
+				suggestedRect.left,
+				suggestedRect.top,
+				(i32) newWindowSize.x,
+				(i32) newWindowSize.y,
+				SWP_NOZORDER | SWP_NOACTIVATE
+			);
+			LOG_LAST_ERROR_IF(!success, return 0,
+				Severity::Warning, "Failed to resize preview window for new DPI");
+			return 0;
 		}
 
 		case WM_CLOSE:

@@ -23,9 +23,6 @@ Bugs
 ----
 Sometimes Sensor strings are missing (race condition?)
 GUI lags when preview window is up (desktop)
-GUI mouse position is wrong (Samsung laptop)
-GUI and preview window are fighting over mouse position
-GUI isn't pixel perfect (Samsung laptop)
 Slight hang when clicking title bar on Samsung laptop
 Widgets change slightly when hovered (render also updates and contains smoothing logic)
 WPF has slow update rate when not focused on other PCs (not mine).

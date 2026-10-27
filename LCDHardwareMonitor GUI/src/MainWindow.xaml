@@ -12,6 +12,7 @@
 	ResizeMode="CanResizeWithGrip" ResizeBorderThickness="0, 0, 10, 10"
 	WindowTitleBrush="Transparent" NonActiveWindowTitleBrush="Transparent"
 	MinHeight="450" MinWidth="512"
+	UseLayoutRounding="True"
 	KeyDown="Window_KeyDown"
 	DataContext="{Binding Path=SimulationState, Source={x:Static Application.Current}}">
 

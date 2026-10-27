@@ -72,8 +72,13 @@ WinMainImpl(HINSTANCE hInstance, HINSTANCE hPrevInstance, c8* pCmdLine, i32 nCmd
 	PreviewWindowState previewState      = {};
 
 
+	// DPI
+	b8 success = SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+	LOG_LAST_ERROR_IF(!success, IGNORE, Severity::Warning, "Failed to set process DPI awareness");
+
+
 	// Renderer
-	b8 success = Renderer_Initialize(rendererState);
+	success = Renderer_Initialize(rendererState);
 	LOG_IF(!success, return -1, Severity::Fatal, "Failed to initialize the renderer");
 	DEFER_TEARDOWN { Renderer_Teardown(rendererState); };
 

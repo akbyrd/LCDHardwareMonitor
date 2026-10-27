@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
@@ -14,6 +15,15 @@ namespace LCDHardwareMonitor.GUI
 
 		DispatcherTimer timer;
 		bool activated;
+
+		[DllImport("user32.dll")]
+		static extern bool SetProcessDpiAwarenessContext(IntPtr context);
+		static readonly IntPtr DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 = new IntPtr(-4);
+
+		static App()
+		{
+			SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+		}
 
 		App()
 		{
