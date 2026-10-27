@@ -185,6 +185,7 @@ static String GetNameFromPath(StringView);
 static void RemoveSensorReferences(SimulationState&, Slice<Handle<Sensor>>);
 static void RemoveWidgetReferences(SimulationState&, Slice<Handle<Widget>>);
 static void RemoveHoverAnimation(SimulationState&, u32);
+static void EndInteraction(SimulationState&);
 
 // -------------------------------------------------------------------------------------------------
 // Sensor API
@@ -567,6 +568,7 @@ OnConnect(SimulationState& s)
 static void
 OnDisconnect(SimulationState& s)
 {
+	EndInteraction(s);
 	List_Free(s.hovered);
 	List_Free(s.selected);
 
@@ -1098,6 +1100,17 @@ MouseLook(SimulationState& s)
 }
 
 static void
+EndMouseLook(SimulationState& s)
+{
+	Assert(s.guiInteraction == GUIInteraction::MouseLook);
+	s.guiInteraction  = GUIInteraction::Null;
+
+	s.mousePosStart   = {};
+	s.cameraRot      += s.cameraRotStart;
+	s.cameraRotStart  = {};
+}
+
+static void
 ResetCamera(SimulationState& s)
 {
 	v2 offset = (v2) s.renderSize / 2.0f;
@@ -1143,6 +1156,38 @@ DragSelection(SimulationState& s)
 
 			selected.position += (v2) deltaPos;
 		}
+	}
+}
+
+static void
+EndDragSelection(SimulationState& s)
+{
+	Assert(s.guiInteraction == GUIInteraction::DragSelection);
+	s.guiInteraction = GUIInteraction::Null;
+
+	s.mousePosStart  = {};
+}
+
+static void
+EndDragAndDrop(SimulationState& s)
+{
+	Assert(s.guiInteraction == GUIInteraction::DragAndDrop);
+	s.guiInteraction = GUIInteraction::Null;
+}
+
+static void
+EndInteraction(SimulationState& s)
+{
+	switch (s.guiInteraction)
+	{
+		default:
+			Assert(false);
+			break;
+
+		case GUIInteraction::Null:          break;
+		case GUIInteraction::MouseLook:     EndMouseLook(s);     break;
+		case GUIInteraction::DragAndDrop:   EndDragAndDrop(s);   break;
+		case GUIInteraction::DragSelection: EndDragSelection(s); break;
 	}
 }
 
@@ -1393,12 +1438,7 @@ FromGUI_BeginMouseLook(SimulationState& s, FromGUI::BeginMouseLook&)
 static void
 FromGUI_EndMouseLook(SimulationState& s, FromGUI::EndMouseLook&)
 {
-	Assert(s.guiInteraction == GUIInteraction::MouseLook);
-	s.guiInteraction  = GUIInteraction::Null;
-
-	s.mousePosStart   = {};
-	s.cameraRot      += s.cameraRotStart;
-	s.cameraRotStart  = {};
+	EndMouseLook(s);
 }
 
 static void
@@ -1490,8 +1530,7 @@ FromGUI_DragDrop(SimulationState& s, FromGUI::DragDrop& dragDrop)
 		}
 		else
 		{
-			Assert(s.guiInteraction == GUIInteraction::DragAndDrop);
-			s.guiInteraction = GUIInteraction::Null;
+			EndDragAndDrop(s);
 		}
 	}
 }
@@ -1564,10 +1603,7 @@ FromGUI_BeginDragSelection(SimulationState& s, FromGUI::BeginDragSelection&)
 static void
 FromGUI_EndDragSelection(SimulationState& s, FromGUI::EndDragSelection&)
 {
-	Assert(s.guiInteraction == GUIInteraction::DragSelection);
-	s.guiInteraction = GUIInteraction::Null;
-
-	s.mousePosStart  = {};
+	EndDragSelection(s);
 }
 
 static void

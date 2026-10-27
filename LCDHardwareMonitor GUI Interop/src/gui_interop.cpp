@@ -118,6 +118,7 @@ namespace LCDHardwareMonitor::GUI
 		Null,
 		MouseLook,
 		Dragging,
+		DragAndDrop,
 	};
 
 	public ref class SimulationState : INotifyPropertyChanged
@@ -334,8 +335,17 @@ namespace LCDHardwareMonitor::GUI
 		static void
 		DragDrop(SimulationState^ simState, PluginKind pluginKind, bool inProgress)
 		{
-			Unused(simState);
-			Assert(simState->Interaction == Interaction::Null);
+			if (inProgress)
+			{
+				if (simState->Interaction != Interaction::Null) return;
+				simState->Interaction = Interaction::DragAndDrop;
+			}
+			else
+			{
+				if (simState->Interaction != Interaction::DragAndDrop) return;
+				simState->Interaction = Interaction::Null;
+			}
+			simState->NotifyPropertyChanged("");
 
 			FromGUI::DragDrop dragDrop = {};
 			dragDrop.pluginKind = (::PluginKind) pluginKind;
@@ -416,6 +426,7 @@ namespace LCDHardwareMonitor::GUI
 			simState.Plugins->Clear();
 			simState.Sensors->Clear();
 			simState.WidgetDescs->Clear();
+			simState.Interaction = Interaction::Null;
 			simState.IsSimulationConnected = false;
 			simState.NotifyPropertyChanged("");
 
