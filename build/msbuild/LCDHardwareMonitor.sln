@@ -6,11 +6,14 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LCDHardwareMonitor", "LCDHardwareMonitor.vcxproj", "{0BBAB39F-5449-4FCE-AD78-884154644605}"
 	ProjectSection(ProjectDependencies) = postProject
 		{7DA05A6B-45B5-4877-B211-14ED51B5388B} = {7DA05A6B-45B5-4877-B211-14ED51B5388B}
+		{D9F7D6B6-AFB3-479C-8D71-33E2B6778BFC} = {D9F7D6B6-AFB3-479C-8D71-33E2B6778BFC}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LCDHardwareMonitor API CLR", "LCDHardwareMonitor API CLR.vcxproj", "{246430DC-680A-432E-B7DE-BCC2C59CDDAE}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LCDHardwareMonitor PluginLoader CLR", "LCDHardwareMonitor PluginLoader CLR.vcxproj", "{4CF4BF35-2C27-4969-BFD7-34149A9CBF12}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Sensor Plugin - Windows", "Sensor Plugin - Windows.vcxproj", "{D9F7D6B6-AFB3-479C-8D71-33E2B6778BFC}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Widget Plugin - Filled Bar", "Widget Plugin - Filled Bar.vcxproj", "{7DA05A6B-45B5-4877-B211-14ED51B5388B}"
 EndProject
@@ -57,6 +60,10 @@ Global
 		{7DA05A6B-45B5-4877-B211-14ED51B5388B}.Debug|x64.Build.0 = Debug|x64
 		{7DA05A6B-45B5-4877-B211-14ED51B5388B}.Release|x64.ActiveCfg = Release|x64
 		{7DA05A6B-45B5-4877-B211-14ED51B5388B}.Release|x64.Build.0 = Release|x64
+		{D9F7D6B6-AFB3-479C-8D71-33E2B6778BFC}.Debug|x64.ActiveCfg = Debug|x64
+		{D9F7D6B6-AFB3-479C-8D71-33E2B6778BFC}.Debug|x64.Build.0 = Debug|x64
+		{D9F7D6B6-AFB3-479C-8D71-33E2B6778BFC}.Release|x64.ActiveCfg = Release|x64
+		{D9F7D6B6-AFB3-479C-8D71-33E2B6778BFC}.Release|x64.Build.0 = Release|x64
 		{5ECF7D2F-1DD5-4E32-A973-018FCBD33380}.Debug|x64.ActiveCfg = Debug|x64
 		{5ECF7D2F-1DD5-4E32-A973-018FCBD33380}.Debug|x64.Build.0 = Debug|x64
 		{5ECF7D2F-1DD5-4E32-A973-018FCBD33380}.Release|x64.ActiveCfg = Release|x64

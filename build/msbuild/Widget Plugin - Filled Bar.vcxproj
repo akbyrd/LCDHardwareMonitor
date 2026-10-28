@@ -84,12 +84,6 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ProjectReference Include="LCDHardwareMonitor API CLR.vcxproj">
-      <Project>{246430dc-680a-432e-b7de-bcc2c59cddae}</Project>
-      <Private>false</Private>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="..\..\Widget Plugin - Filled Bar\src\dllmain.cpp" />
   </ItemGroup>
   <ItemGroup>

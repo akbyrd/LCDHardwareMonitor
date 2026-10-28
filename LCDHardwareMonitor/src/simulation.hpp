@@ -1938,6 +1938,10 @@ Simulation_Initialize(
 
 	// DEBUG: Testing
 	{
+		Plugin& windowsPlugin = RegisterPlugin(s, "Sensor Plugins\\Windows", "Sensor.Windows.dll");
+		Result<SensorPlugin*> sensorPlugin = LoadSensorPlugin(s, windowsPlugin);
+		if (!sensorPlugin) return false;
+
 		Plugin& filledBarPlugin = RegisterPlugin(s, "Widget Plugins\\Filled Bar", "Widget.FilledBar.dll");
 		Result<WidgetPlugin*> widgetPlugin = LoadWidgetPlugin(s, filledBarPlugin);
 		if (!widgetPlugin) return false;
