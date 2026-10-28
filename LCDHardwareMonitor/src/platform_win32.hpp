@@ -474,10 +474,7 @@ Platform_DisconnectPipeClient(Pipe& pipe)
 		case PipeState::Connected:
 		case PipeState::Disconnecting:
 		{
-			b8 success = CloseHandle(pipe.impl->handle);
-			LOG_LAST_ERROR_IF(!success, return PipeResult::UnexpectedFailure,
-				Severity::Warning, "Failed to disconnect pipe client '%'", pipe.name);
-
+			CloseHandle(pipe.impl->handle);
 			pipe.impl->handle = nullptr;
 			break;
 		}
@@ -773,18 +770,18 @@ Platform_CreatePipeServer(StringView name, Pipe& pipe)
 		// status asynchronously.
 
 		pipe.impl->connect.hEvent = CreateEventA(nullptr, true, true, nullptr);
-		LOG_LAST_ERROR_IF(pipe.impl->connect.hEvent == INVALID_HANDLE_VALUE, return PipeResult::UnexpectedFailure,
+		LOG_LAST_ERROR_IF(!pipe.impl->connect.hEvent, return PipeResult::UnexpectedFailure,
 			Severity::Warning, "Failed to create pipe server connect event '%'", pipe.name);
 	}
 
 	// Create pipe events
 	{
 		pipe.impl->read.hEvent = CreateEventA(nullptr, true, false, nullptr);
-		LOG_LAST_ERROR_IF(pipe.impl->read.hEvent == INVALID_HANDLE_VALUE, return PipeResult::UnexpectedFailure,
+		LOG_LAST_ERROR_IF(!pipe.impl->read.hEvent, return PipeResult::UnexpectedFailure,
 			Severity::Warning, "Failed to create pipe read event '%'", pipe.name);
 
 		pipe.impl->write.hEvent = CreateEventA(nullptr, true, false, nullptr);
-		LOG_LAST_ERROR_IF(pipe.impl->write.hEvent == INVALID_HANDLE_VALUE, return PipeResult::UnexpectedFailure,
+		LOG_LAST_ERROR_IF(!pipe.impl->write.hEvent, return PipeResult::UnexpectedFailure,
 			Severity::Warning, "Failed to create pipe write event '%'", pipe.name);
 	}
 
@@ -818,11 +815,11 @@ Platform_CreatePipeClient(StringView name, Pipe& pipe)
 	// Create pipe events
 	{
 		pipe.impl->read.hEvent = CreateEventA(nullptr, true, false, nullptr);
-		LOG_LAST_ERROR_IF(pipe.impl->read.hEvent == INVALID_HANDLE_VALUE, return PipeResult::UnexpectedFailure,
+		LOG_LAST_ERROR_IF(!pipe.impl->read.hEvent, return PipeResult::UnexpectedFailure,
 			Severity::Warning, "Failed to create pipe read event '%'", pipe.name);
 
 		pipe.impl->write.hEvent = CreateEventA(nullptr, true, false, nullptr);
-		LOG_LAST_ERROR_IF(pipe.impl->write.hEvent == INVALID_HANDLE_VALUE, return PipeResult::UnexpectedFailure,
+		LOG_LAST_ERROR_IF(!pipe.impl->write.hEvent, return PipeResult::UnexpectedFailure,
 			Severity::Warning, "Failed to create pipe write event '%'", pipe.name);
 	}
 
@@ -842,7 +839,6 @@ Platform_DestroyPipe(Pipe& pipe)
 {
 	String_Free(pipe.name);
 	String_Free(pipe.impl->fullName);
-	// TODO: Handle failure?
 	Platform_CancelPipeWrite(pipe);
 	CloseHandle(pipe.impl->handle);
 	CloseHandle(pipe.impl->connect.hEvent);
