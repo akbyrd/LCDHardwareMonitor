@@ -25,7 +25,17 @@ struct WidgetAPI
 
 	struct Update
 	{
-		using GetSensorFn               = Sensor*(PluginContext&, Handle<Sensor>);
+		using GetSensorFn = Sensor*(PluginContext&, Handle<Sensor>);
+
+		r32           t;
+		Slice<Widget> widgets;
+		ByteSlice     widgetsUserData;
+		Slice<Sensor> sensors;
+		GetSensorFn*  GetSensor;
+	};
+
+	struct Render
+	{
 		using GetViewMatrixFn           = Matrix (PluginContext&);
 		using GetProjectionMatrixFn     = Matrix (PluginContext&);
 		using GetViewProjectionMatrixFn = Matrix (PluginContext&);
@@ -37,11 +47,8 @@ struct WidgetAPI
 		using PopVertexShaderFn         = void   (PluginContext&);
 		using PopPixelShaderFn          = void   (PluginContext&);
 
-		r32                        t;
 		Slice<Widget>              widgets;
 		ByteSlice                  widgetsUserData;
-		Slice<Sensor>              sensors;
-		GetSensorFn*               GetSensor;
 		GetViewMatrixFn*           GetViewMatrix;
 		GetProjectionMatrixFn*     GetProjectionMatrix;
 		GetViewProjectionMatrixFn* GetViewProjectionMatrix;
@@ -65,12 +72,14 @@ struct WidgetDesc
 {
 	using InitializeFn = b8  (PluginContext&, WidgetAPI::Initialize);
 	using UpdateFn     = void(PluginContext&, WidgetAPI::Update);
+	using RenderFn     = void(PluginContext&, WidgetAPI::Render);
 	using TeardownFn   = void(PluginContext&, WidgetAPI::Teardown);
 
 	String             name;
 	u32                userDataSize;
 	InitializeFn*      Initialize;
 	UpdateFn*          Update;
+	RenderFn*          Render;
 	TeardownFn*        Teardown;
 };
 

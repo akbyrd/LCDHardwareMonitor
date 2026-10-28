@@ -14,5 +14,6 @@ public interface class IWidgetPluginTeardown   { void Teardown      (PluginConte
 
 public interface class IWidgetInitialize       { b8   Initialize    (PluginContext& context, WidgetAPI::Initialize api); };
 public interface class IWidgetUpdate           { void Update        (PluginContext& context, WidgetAPI::Update     api); };
+public interface class IWidgetRender           { void Render        (PluginContext& context, WidgetAPI::Render     api); };
 public interface class IWidgetTeardown         { void Teardown      (PluginContext& context, WidgetAPI::Teardown   api); };
 #undef Attributes

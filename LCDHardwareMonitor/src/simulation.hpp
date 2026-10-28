@@ -267,6 +267,7 @@ RegisterWidgetTypes(PluginContext& context, Slice<WidgetDesc> widgetDescs)
 		widgetType.userDataSize       = widgetDesc.userDataSize;
 		widgetType.Initialize         = widgetDesc.Initialize;
 		widgetType.Update             = widgetDesc.Update;
+		widgetType.Render             = widgetDesc.Render;
 		widgetType.Teardown           = widgetDesc.Teardown;
 
 		List_Reserve(widgetType.widgets, 8);
@@ -1207,10 +1208,7 @@ HighlightWidgets(SimulationState& s, Slice<Handle<Widget>> widgetHandles, Outlin
 		context.s = &s;
 
 		// TODO: Duplicating this is error prone
-		WidgetAPI::Update widgetAPI = {};
-		widgetAPI.t                       = s.currentTime;
-		widgetAPI.sensors                 = s.sensorPlugins[0].sensors;
-		widgetAPI.GetSensor               = GetSensor;
+		WidgetAPI::Render widgetAPI = {};
 		widgetAPI.GetViewMatrix           = GetViewMatrix;
 		widgetAPI.GetProjectionMatrix     = GetProjectionMatrix;
 		widgetAPI.GetViewProjectionMatrix = GetViewProjectionMatrix;
@@ -1243,7 +1241,7 @@ HighlightWidgets(SimulationState& s, Slice<Handle<Widget>> widgetHandles, Outlin
 			widgetAPI.widgetsUserData.stride = widgetType.userDataSize;
 
 			// TODO: try/catch?
-			widgetType.Update(context, widgetAPI);
+			widgetType.Render(context, widgetAPI);
 		}
 		Renderer_PopDepthBuffer(*s.renderer);
 		Renderer_PopRenderTarget(*s.renderer);
@@ -2100,20 +2098,22 @@ Simulation_Update(SimulationState& s)
 
 		WidgetPluginAPI::Update pluginAPI = {};
 
-		WidgetAPI::Update widgetAPI = {};
-		widgetAPI.t                       = s.currentTime;
-		widgetAPI.sensors                 = s.sensorPlugins[0].sensors;
-		widgetAPI.GetSensor               = GetSensor;
-		widgetAPI.GetViewMatrix           = GetViewMatrix;
-		widgetAPI.GetProjectionMatrix     = GetProjectionMatrix;
-		widgetAPI.GetViewProjectionMatrix = GetViewProjectionMatrix;
-		widgetAPI.UpdateVSConstantBuffer  = UpdateVSConstantBuffer;
-		widgetAPI.UpdatePSConstantBuffer  = UpdatePSConstantBuffer;
-		widgetAPI.DrawMesh                = DrawMesh;
-		widgetAPI.PushVertexShader        = PushVertexShader;
-		widgetAPI.PushPixelShader         = PushPixelShader;
-		widgetAPI.PopVertexShader         = PopVertexShader;
-		widgetAPI.PopPixelShader          = PopPixelShader;
+		WidgetAPI::Update updateAPI = {};
+		updateAPI.t         = s.currentTime;
+		updateAPI.sensors   = s.sensorPlugins[0].sensors;
+		updateAPI.GetSensor = GetSensor;
+
+		WidgetAPI::Render renderAPI = {};
+		renderAPI.GetViewMatrix           = GetViewMatrix;
+		renderAPI.GetProjectionMatrix     = GetProjectionMatrix;
+		renderAPI.GetViewProjectionMatrix = GetViewProjectionMatrix;
+		renderAPI.UpdateVSConstantBuffer  = UpdateVSConstantBuffer;
+		renderAPI.UpdatePSConstantBuffer  = UpdatePSConstantBuffer;
+		renderAPI.DrawMesh                = DrawMesh;
+		renderAPI.PushVertexShader        = PushVertexShader;
+		renderAPI.PushPixelShader         = PushPixelShader;
+		renderAPI.PopVertexShader         = PopVertexShader;
+		renderAPI.PopPixelShader          = PopPixelShader;
 
 		for (u32 i = 0; i < s.widgetPlugins.length; i++)
 		{
@@ -2135,15 +2135,21 @@ Simulation_Update(SimulationState& s)
 				WidgetType& widgetType = widgetPlugin.widgetTypes[j];
 				if (widgetType.widgets.length == 0) continue;
 
-				context.success = true;
+				ByteSlice widgetsUserData = widgetType.widgetsUserData;
+				widgetsUserData.stride = widgetType.userDataSize;
+				widgetsUserData.length = widgetType.widgets.length;
 
-				widgetAPI.widgets                = widgetType.widgets;
-				widgetAPI.widgetsUserData        = widgetType.widgetsUserData;
-				widgetAPI.widgetsUserData.stride = widgetType.userDataSize;
-				widgetAPI.widgetsUserData.length = widgetType.widgets.length;
+				updateAPI.widgets         = widgetType.widgets;
+				updateAPI.widgetsUserData = widgetsUserData;
+				renderAPI.widgets         = widgetType.widgets;
+				renderAPI.widgetsUserData = widgetsUserData;
 
 				// TODO: try/catch?
-				widgetType.Update(context, widgetAPI);
+				context.success = true;
+				widgetType.Update(context, updateAPI);
+
+				context.success = true;
+				widgetType.Render(context, renderAPI);
 			}
 
 			Renderer_PopEvent(*s.renderer);

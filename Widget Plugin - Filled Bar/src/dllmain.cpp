@@ -40,6 +40,19 @@ InitializeBarWidgets(PluginContext& context, WidgetAPI::Initialize api)
 static void
 UpdateBarWidgets(PluginContext& context, WidgetAPI::Update api)
 {
+	for (u32 i = 0; i < api.widgets.length; i++)
+	{
+		Widget&    widget    = api.widgets[i];
+		BarWidget& barWidget = (BarWidget&) api.widgetsUserData[i];
+
+		Sensor& sensor = *api.GetSensor(context, widget.sensorHandle);
+		barWidget.psPerObject.fillAmount = Lerp(barWidget.psPerObject.fillAmount, sensor.value, 0.10f);
+	}
+}
+
+static void
+RenderBarWidgets(PluginContext& context, WidgetAPI::Render api)
+{
 	if (api.widgets.length == 0) return;
 
 	api.PushVertexShader(context, StandardVertexShader::WVP);
@@ -50,33 +63,18 @@ UpdateBarWidgets(PluginContext& context, WidgetAPI::Update api)
 		Widget&    widget    = api.widgets[i];
 		BarWidget& barWidget = (BarWidget&) api.widgetsUserData[i];
 
-		// Update
-		{
-			// TODO: Lerping here means rendering has side effects. This interferes with rendering more
-			// than once to highlight widgets.
-			// Option 1 - Store lastValue
-			// Option 2 - Split Update and Render for widgets
-			// Option 3 - Don't render multiple times - push shader overrides before updating
-			// Option 4 - Don't render multiple times - remember rendering calls and replay them
-			Sensor& sensor = *api.GetSensor(context, widget.sensorHandle);
-			barWidget.psPerObject.fillAmount = Lerp(barWidget.psPerObject.fillAmount, sensor.value, 0.10f);
-		}
+		v2 position = WidgetPosition(widget);
+		v2 size = widget.size;
 
-		// Draw
-		{
-			v2 position = WidgetPosition(widget);
-			v2 size = widget.size;
+		Matrix world = Identity();
+		SetPosition(world, position, -widget.depth);
+		SetScale   (world, size, 1.0f);
+		barWidget.vsPerObject.wvp = world * api.GetViewProjectionMatrix(context);
 
-			Matrix world = Identity();
-			SetPosition(world, position, -widget.depth);
-			SetScale   (world, size, 1.0f);
-			barWidget.vsPerObject.wvp = world * api.GetViewProjectionMatrix(context);
-
-			// TODO: Can we use instancing to accelerate this?
-			api.UpdateVSConstantBuffer(context, StandardVertexShader::WVP, 0, &barWidget.vsPerObject);
-			api.UpdatePSConstantBuffer(context, filledBarPS, 0, &barWidget.psPerObject);
-			api.DrawMesh(context, StandardMesh::Quad);
-		}
+		// TODO: Can we use instancing to accelerate this?
+		api.UpdateVSConstantBuffer(context, StandardVertexShader::WVP, 0, &barWidget.vsPerObject);
+		api.UpdatePSConstantBuffer(context, filledBarPS, 0, &barWidget.psPerObject);
+		api.DrawMesh(context, StandardMesh::Quad);
 	}
 
 	api.PopVertexShader(context);
@@ -91,6 +89,7 @@ Initialize(PluginContext& context, WidgetPluginAPI::Initialize api)
 	widgetDesc.userDataSize = sizeof(BarWidget);
 	widgetDesc.Initialize   = InitializeBarWidgets;
 	widgetDesc.Update       = UpdateBarWidgets;
+	widgetDesc.Render       = RenderBarWidgets;
 	api.RegisterWidgets(context, widgetDesc);
 
 	u32 cBufSizes[] = {

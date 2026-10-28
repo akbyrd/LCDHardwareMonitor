@@ -60,6 +60,7 @@ struct WidgetType
 {
 	using InitializeFn = b8  (PluginContext&, WidgetAPI::Initialize);
 	using UpdateFn     = void(PluginContext&, WidgetAPI::Update);
+	using RenderFn     = void(PluginContext&, WidgetAPI::Render);
 	using TeardownFn   = void(PluginContext&, WidgetAPI::Teardown);
 
 	Handle<WidgetType>   handle;
@@ -70,6 +71,7 @@ struct WidgetType
 	Bytes                widgetsUserData;
 	InitializeFn*        Initialize;
 	UpdateFn*            Update;
+	RenderFn*            Render;
 	TeardownFn*          Teardown;
 };
 
