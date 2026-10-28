@@ -580,7 +580,8 @@ OnTeardown(ConnectionState& con)
 {
 	PipeResult result;
 
-	ToGUI::Disconnect disconnect = {};
+	// TODO: Consider queuing this
+	static ToGUI::Disconnect disconnect = {};
 	disconnect.header.id    = IdOf<ToGUI::Disconnect>;
 	disconnect.header.index = con.sendIndex - (con.queue.length - con.queueIndex);
 	disconnect.header.size  = sizeof(ToGUI::Disconnect);

@@ -36,7 +36,6 @@ Lag when selecting preview while GUI is open
 GUI shouldn't close the simulation if it didn't start it
 There's a frame of flicker where the old image size is drawn when zooming. Is this fixable?
 There's some sort of mouse position jump on my laptop when rotating the camera
-I think pipes want to be no-wait
 Ensure we're handling CloseHandle failures correctly
 Double check anywhere we index bytes.data in case we're forgetting stride
 

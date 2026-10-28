@@ -350,6 +350,9 @@ struct PipeImpl
 	String     fullName;
 	HANDLE     handle;
 	OVERLAPPED connect;
+	OVERLAPPED read;
+	OVERLAPPED write;
+	u8*        writeData;
 };
 
 inline b8
@@ -359,6 +362,42 @@ IsValidHandle(HANDLE handle)
 	// Things would be fine if that were the end of it. But some functions take 'pseudohandles' and
 	// INVALID_HANDLE_VALUE can be a valid pseudohandle. Fuck you, Microsoft.
 	return handle != nullptr && handle != INVALID_HANDLE_VALUE;
+}
+
+PipeResult
+Platform_CancelPipeWrite(Pipe& pipe)
+{
+	if (!pipe.impl->writeData) return PipeResult::Success;
+	pipe.impl->writeData = nullptr;
+
+	b8 success = CancelIoEx(
+		pipe.impl->handle,
+		&pipe.impl->write
+	);
+	if (!success)
+	{
+		u32 error = GetLastError();
+		switch (error)
+		{
+			// Write already completed
+			case ERROR_NOT_FOUND:
+				return PipeResult::Success;
+
+			default:
+				LOG_LAST_ERROR(Severity::Warning, "Failed to cancel pending pipe write '%'", pipe.name);
+				return PipeResult::UnexpectedFailure;
+		}
+	}
+
+	// Wait for the cancellation so the caller can release the buffer
+	u32 written;
+	GetOverlappedResult(
+		pipe.impl->handle,
+		&pipe.impl->write,
+		(DWORD*) &written,
+		true
+	);
+	return PipeResult::Success;
 }
 
 PipeResult
@@ -382,6 +421,15 @@ Platform_DisconnectPipeServer(Pipe& pipe)
 			);
 			LOG_LAST_ERROR_IF(!success, return PipeResult::UnexpectedFailure,
 				Severity::Warning, "Failed to cancel pending pipe server connection '%'", pipe.name);
+
+			// Wait for the cancellation so the overlapped struct can be released
+			u32 written;
+			GetOverlappedResult(
+				pipe.impl->handle,
+				&pipe.impl->connect,
+				(DWORD*) &written,
+				true
+			);
 			break;
 		}
 
@@ -442,6 +490,9 @@ Platform_DisconnectPipeClient(Pipe& pipe)
 PipeResult
 Platform_DisconnectPipe(Pipe& pipe)
 {
+	PipeResult result = Platform_CancelPipeWrite(pipe);
+	if (result != PipeResult::Success) return result;
+
 	return pipe.isServer
 		? Platform_DisconnectPipeServer(pipe)
 		: Platform_DisconnectPipeClient(pipe);
@@ -601,7 +652,7 @@ Platform_ConnectPipeClient(Pipe& pipe)
 				0,
 				nullptr,
 				OPEN_EXISTING,
-				FILE_ATTRIBUTE_NORMAL,
+				FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED,
 				nullptr
 			);
 			if (pipe.impl->handle == INVALID_HANDLE_VALUE)
@@ -726,6 +777,17 @@ Platform_CreatePipeServer(StringView name, Pipe& pipe)
 			Severity::Warning, "Failed to create pipe server connect event '%'", pipe.name);
 	}
 
+	// Create pipe events
+	{
+		pipe.impl->read.hEvent = CreateEventA(nullptr, true, false, nullptr);
+		LOG_LAST_ERROR_IF(pipe.impl->read.hEvent == INVALID_HANDLE_VALUE, return PipeResult::UnexpectedFailure,
+			Severity::Warning, "Failed to create pipe read event '%'", pipe.name);
+
+		pipe.impl->write.hEvent = CreateEventA(nullptr, true, false, nullptr);
+		LOG_LAST_ERROR_IF(pipe.impl->write.hEvent == INVALID_HANDLE_VALUE, return PipeResult::UnexpectedFailure,
+			Severity::Warning, "Failed to create pipe write event '%'", pipe.name);
+	}
+
 	// TODO: Would like to automatically kick off a connection here, but that makes it harder for the
 	// caller to handle connect/disconnect events.
 	cleanupGuard.dismiss = true;
@@ -753,6 +815,17 @@ Platform_CreatePipeClient(StringView name, Pipe& pipe)
 		pipe.impl->fullName = String_Format("\\\\.\\pipe\\%", pipe.name);
 	}
 
+	// Create pipe events
+	{
+		pipe.impl->read.hEvent = CreateEventA(nullptr, true, false, nullptr);
+		LOG_LAST_ERROR_IF(pipe.impl->read.hEvent == INVALID_HANDLE_VALUE, return PipeResult::UnexpectedFailure,
+			Severity::Warning, "Failed to create pipe read event '%'", pipe.name);
+
+		pipe.impl->write.hEvent = CreateEventA(nullptr, true, false, nullptr);
+		LOG_LAST_ERROR_IF(pipe.impl->write.hEvent == INVALID_HANDLE_VALUE, return PipeResult::UnexpectedFailure,
+			Severity::Warning, "Failed to create pipe write event '%'", pipe.name);
+	}
+
 	// Attempt to connect
 	{
 		cleanupGuard.dismiss = true;
@@ -770,8 +843,11 @@ Platform_DestroyPipe(Pipe& pipe)
 	String_Free(pipe.name);
 	String_Free(pipe.impl->fullName);
 	// TODO: Handle failure?
+	Platform_CancelPipeWrite(pipe);
 	CloseHandle(pipe.impl->handle);
 	CloseHandle(pipe.impl->connect.hEvent);
+	CloseHandle(pipe.impl->read.hEvent);
+	CloseHandle(pipe.impl->write.hEvent);
 	Free(pipe.impl);
 	pipe = {};
 }
@@ -779,46 +855,97 @@ Platform_DestroyPipe(Pipe& pipe)
 PipeResult
 Platform_WritePipe(Pipe& pipe, ByteSlice bytes)
 {
-	// NOTE: Writes are synchronous. If this changes be aware of the following facts: 1) The
-	// 'written' parameter is not valid for async writes and 2) the data buffer MUST NOT CHANGE
-	// during an async write (i.e. build a buffer of outgoing data).
-
-	// NOTE: Synchronous writes will begin blocking once the pipes internal buffer is full.
+	// NOTE: Writes are asynchronous. A write that doesn't fit in the pipe buffer stays pending and
+	// returns TransientFailure. The data buffer MUST NOT CHANGE while the write is pending: the
+	// caller retries the same message until it returns Success, or disconnects the pipe (which
+	// cancels the write) before releasing the buffer.
 
 	Assert(!Slice_IsSparse(bytes));
 	if (pipe.state != PipeState::Connected) return PipeResult::TransientFailure;
 
 	u32 written;
-	b8 success = WriteFile(
-		pipe.impl->handle,
-		bytes.data,
-		bytes.length,
-		(DWORD*) &written,
-		nullptr
-	);
-	if (!success)
+	b8 success;
+	if (pipe.impl->writeData)
 	{
-		u32 error = GetLastError();
-		switch (error)
+		Assert(pipe.impl->writeData == bytes.data);
+
+		success = GetOverlappedResult(
+			pipe.impl->handle,
+			&pipe.impl->write,
+			(DWORD*) &written,
+			false
+		);
+		if (!success)
 		{
-			// The server intentionally disconnected
-			case ERROR_PIPE_NOT_CONNECTED:
-				if (pipe.isServer)
-				{
-					Assert(false);
+			u32 error = GetLastError();
+			switch (error)
+			{
+				// Write is still pending
+				case ERROR_IO_INCOMPLETE:
+					return PipeResult::TransientFailure;
+
+				// The server intentionally disconnected
+				case ERROR_PIPE_NOT_CONNECTED:
+					if (pipe.isServer)
+					{
+						pipe.impl->writeData = nullptr;
+						Assert(false);
+						return PipeResult::UnexpectedFailure;
+					}
+					[[fallthrough]];
+
+				// The pipe is being closed
+				case ERROR_BROKEN_PIPE:
+				case ERROR_NO_DATA:
+					pipe.impl->writeData = nullptr;
+					return PipeResult::TransientFailure;
+
+				default:
+					pipe.impl->writeData = nullptr;
+					LOG_LAST_ERROR(Severity::Warning, "Writing to pipe failed '%'", pipe.name);
 					return PipeResult::UnexpectedFailure;
-				}
-				[[fallthrough]];
+			}
+		}
+		pipe.impl->writeData = nullptr;
+	}
+	else
+	{
+		success = WriteFile(
+			pipe.impl->handle,
+			bytes.data,
+			bytes.length,
+			(DWORD*) &written,
+			&pipe.impl->write
+		);
+		if (!success)
+		{
+			u32 error = GetLastError();
+			switch (error)
+			{
+				// Write is pending until the reader makes room
+				case ERROR_IO_PENDING:
+					pipe.impl->writeData = bytes.data;
+					return PipeResult::TransientFailure;
 
-			// The pipe is being closed
-			case ERROR_NO_DATA:
-				// TODO: Would like to set Disconnecting state here, but that makes it harder for the
-				// caller to handle connect/disconnect events.
-				return PipeResult::TransientFailure;
+				// The server intentionally disconnected
+				case ERROR_PIPE_NOT_CONNECTED:
+					if (pipe.isServer)
+					{
+						Assert(false);
+						return PipeResult::UnexpectedFailure;
+					}
+					[[fallthrough]];
 
-			default:
-				LOG_LAST_ERROR(Severity::Warning, "Writing to pipe failed '%'", pipe.name);
-				return PipeResult::UnexpectedFailure;
+				// The pipe is being closed
+				case ERROR_NO_DATA:
+					// TODO: Would like to set Disconnecting state here, but that makes it harder for the
+					// caller to handle connect/disconnect events.
+					return PipeResult::TransientFailure;
+
+				default:
+					LOG_LAST_ERROR(Severity::Warning, "Writing to pipe failed '%'", pipe.name);
+					return PipeResult::UnexpectedFailure;
+			}
 		}
 	}
 
@@ -888,16 +1015,23 @@ Platform_ReadPipe(Pipe& pipe, Bytes& bytes)
 		bytes.data,
 		available,
 		(DWORD*) &read,
-		nullptr
+		&pipe.impl->read
 	);
 	if (!success)
 	{
 		u32 error = GetLastError();
 		switch (error)
 		{
-			// Read is pending
 			case ERROR_IO_PENDING:
-				return PipeResult::TransientFailure;
+				success = GetOverlappedResult(
+					pipe.impl->handle,
+					&pipe.impl->read,
+					(DWORD*) &read,
+					true
+				);
+				LOG_LAST_ERROR_IF(!success, return PipeResult::UnexpectedFailure,
+					Severity::Warning, "Reading from pipe failed '%'", pipe.name);
+				break;
 
 			default:
 				LOG_LAST_ERROR(Severity::Warning, "Reading from pipe failed '%'", pipe.name);

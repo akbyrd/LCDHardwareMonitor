@@ -1,5 +1,3 @@
-// TODO: Spend up to 8 ms receiving messages
-// TODO: What happens when the simulation tries to send a message larger than the pipe buffer size?
 // TODO: Add loops to connecting, reading, and writing (predicated on making progress each iteration)
 // TODO: Be careful to ensure the gui and sim never end up doing a blocking write simultaneously
 // TODO: Decide whether to support multiple instances or enforce a single instance
@@ -430,6 +428,9 @@ namespace LCDHardwareMonitor::GUI
 			simState.IsSimulationConnected = false;
 			simState.NotifyPropertyChanged("");
 
+			PipeResult result = Platform_DisconnectPipe(s.simConnection.pipe);
+			LOG_IF(result != PipeResult::Success, IGNORE,
+				Severity::Error, "Failed to disconnect pipe after sim disconnect");
 			Connection_Reset(s.simConnection);
 			// TODO: Will need to handle 'pending' states.
 		}
