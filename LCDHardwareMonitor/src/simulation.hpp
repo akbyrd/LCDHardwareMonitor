@@ -842,6 +842,7 @@ UnloadWidgetPlugin(SimulationState& s, WidgetPlugin& widgetPlugin)
 		widgetAPI.widgets                = widgetType.widgets;
 		widgetAPI.widgetsUserData        = widgetType.widgetsUserData;
 		widgetAPI.widgetsUserData.stride = widgetType.userDataSize;
+		widgetAPI.widgetsUserData.length = widgetType.widgets.length;
 
 		// TODO: try/catch?
 		if (widgetType.Teardown)
@@ -945,6 +946,7 @@ AddWidgets(SimulationState& s, WidgetType& widgetType, u32 count)
 	api.widgets                = List_Slice(widgetType.widgets, prevWidgetLen);
 	api.widgetsUserData        = List_Slice(widgetType.widgetsUserData, widgetType.userDataSize * prevWidgetLen);
 	api.widgetsUserData.stride = widgetType.userDataSize;
+	api.widgetsUserData.length = count;
 
 	for (u32 i = 0; i < count; i++)
 	{
@@ -2138,6 +2140,7 @@ Simulation_Update(SimulationState& s)
 				widgetAPI.widgets                = widgetType.widgets;
 				widgetAPI.widgetsUserData        = widgetType.widgetsUserData;
 				widgetAPI.widgetsUserData.stride = widgetType.userDataSize;
+				widgetAPI.widgetsUserData.length = widgetType.widgets.length;
 
 				// TODO: try/catch?
 				widgetType.Update(context, widgetAPI);

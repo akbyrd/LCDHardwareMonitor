@@ -1626,6 +1626,7 @@ Renderer_GetCPUTextureBytes(RendererState& s, CPUTexture ct)
 	CPUTextureBytes textureBytes = {};
 	textureBytes.bytes.data   = (u8*) cpuTextureData.mappedResource.pData;
 	textureBytes.bytes.length = cpuTextureData.mappedResource.DepthPitch;
+	textureBytes.bytes.stride = 1;
 	textureBytes.size         = s.renderSize;
 	textureBytes.rowStride    = cpuTextureData.mappedResource.RowPitch;
 	textureBytes.pixelStride  = 2;
