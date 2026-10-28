@@ -58,7 +58,7 @@ namespace LCDHardwareMonitor.GUI
 
 		void OnExit(object sender, ExitEventArgs e)
 		{
-			// DEBUG: Only want this during development
+			// TODO: Use a command line parameter to toggle this
 			Interop.TerminateSim(SimulationState);
 			OnTick(null, null);
 			Interop.Teardown();

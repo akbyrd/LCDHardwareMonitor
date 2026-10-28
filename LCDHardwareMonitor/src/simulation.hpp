@@ -1938,10 +1938,6 @@ Simulation_Initialize(
 
 	// DEBUG: Testing
 	{
-		Plugin& ohmPlugin = RegisterPlugin(s, "Sensor Plugins\\OpenHardwareMonitor", "Sensor.OpenHardwareMonitor.dll");
-		Result<SensorPlugin*> sensorPlugin = LoadSensorPlugin(s, ohmPlugin);
-		if (!sensorPlugin) return false;
-
 		Plugin& filledBarPlugin = RegisterPlugin(s, "Widget Plugins\\Filled Bar", "Widget.FilledBar.dll");
 		Result<WidgetPlugin*> widgetPlugin = LoadWidgetPlugin(s, filledBarPlugin);
 		if (!widgetPlugin) return false;

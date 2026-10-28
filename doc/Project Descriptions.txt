@@ -59,14 +59,6 @@ instantiates the main class through a COM interface (unfortunately). Due to the
 COM usage, the assembly must be parsed into .tlb file for the core application
 to use and to avoid registering the COM types system-wide.
 
-Sensor Plugin - OpenHardwareMonitor
-Project dependencies: LCDHardwareMonitor API CLR
-Other references: OpenHardwareMonitorLib
-Include directories: LCDHardwareMonitor API
-Output: dll
-Compiler flags: /clr
-Post build: "Deploy.bat" "$(OutDir)" "Sensor Plugins\OpenHardwareMonitor"
-
 Widget Plugin - Filled Bar
 Project dependencies: LCDHardwareMonitor API CLR
 Other references: None

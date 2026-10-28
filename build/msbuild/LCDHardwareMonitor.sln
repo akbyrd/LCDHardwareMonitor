@@ -1,23 +1,23 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.30320.27
+# Visual Studio Version 18
+VisualStudioVersion = 18.11.12324.101 stable
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LCDHardwareMonitor", "LCDHardwareMonitor.vcxproj", "{0BBAB39F-5449-4FCE-AD78-884154644605}"
 	ProjectSection(ProjectDependencies) = postProject
 		{7DA05A6B-45B5-4877-B211-14ED51B5388B} = {7DA05A6B-45B5-4877-B211-14ED51B5388B}
-		{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A} = {2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LCDHardwareMonitor API CLR", "LCDHardwareMonitor API CLR.vcxproj", "{246430DC-680A-432E-B7DE-BCC2C59CDDAE}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LCDHardwareMonitor PluginLoader CLR", "LCDHardwareMonitor PluginLoader CLR.vcxproj", "{4CF4BF35-2C27-4969-BFD7-34149A9CBF12}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Sensor Plugin - OpenHardwareMonitor", "Sensor Plugin - OpenHardwareMonitor.vcxproj", "{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Widget Plugin - Filled Bar", "Widget Plugin - Filled Bar.vcxproj", "{7DA05A6B-45B5-4877-B211-14ED51B5388B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LCDHardwareMonitor GUI", "LCDHardwareMonitor GUI.csproj", "{5ECF7D2F-1DD5-4E32-A973-018FCBD33380}"
+	ProjectSection(ProjectDependencies) = postProject
+		{0BBAB39F-5449-4FCE-AD78-884154644605} = {0BBAB39F-5449-4FCE-AD78-884154644605}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LCDHardwareMonitor GUI Interop", "LCDHardwareMonitor GUI Interop.vcxproj", "{E16AAA6C-043D-416E-8CE7-D7FDB83B8722}"
 EndProject
@@ -53,10 +53,6 @@ Global
 		{4CF4BF35-2C27-4969-BFD7-34149A9CBF12}.Debug|x64.Build.0 = Debug|x64
 		{4CF4BF35-2C27-4969-BFD7-34149A9CBF12}.Release|x64.ActiveCfg = Release|x64
 		{4CF4BF35-2C27-4969-BFD7-34149A9CBF12}.Release|x64.Build.0 = Release|x64
-		{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}.Debug|x64.ActiveCfg = Debug|x64
-		{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}.Debug|x64.Build.0 = Debug|x64
-		{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}.Release|x64.ActiveCfg = Release|x64
-		{2585BAF1-E85B-4FD3-9A91-ABCB8CCF685A}.Release|x64.Build.0 = Release|x64
 		{7DA05A6B-45B5-4877-B211-14ED51B5388B}.Debug|x64.ActiveCfg = Debug|x64
 		{7DA05A6B-45B5-4877-B211-14ED51B5388B}.Debug|x64.Build.0 = Debug|x64
 		{7DA05A6B-45B5-4877-B211-14ED51B5388B}.Release|x64.ActiveCfg = Release|x64

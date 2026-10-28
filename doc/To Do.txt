@@ -1,5 +1,6 @@
 Current
 -------
+Replace OpenHardwareMonitor (with a Windows plugin)
 Migrate to keel
 Read https://learn.microsoft.com/en-us/dotnet/desktop/wpf/advanced/wpf-and-direct3d9-interoperation
 ----
@@ -21,18 +22,15 @@ Link list selection to sim selection
 
 Bugs
 ----
-Sometimes Sensor strings are missing (race condition?)
+OnTeardown - Unable to send GUI disconnect signal
+context.success can lead to unbalanced push/pop
+The renderer will probably crash when re-loading plugins that create meshes, after finalization.
+----
 Slight hang when clicking title bar on Samsung laptop
+There's some sort of mouse position jump on my laptop when rotating the camera
 WPF has slow update rate when not focused on other PCs (not mine).
 	Probably a performance setting.
 	Seems to only happen when selecting the preview window.
-The renderer will probably crash when re-loading plugins that create meshes, after finalization.
-Allow StringView to be used as a parameter to a constexpr function
-Using OpenHardwareMonitor tanks frame rate. Why? Has it always?
-GUI shouldn't close the simulation if it didn't start it
-There's a frame of flicker where the old image size is drawn when zooming. Is this fixable?
-There's some sort of mouse position jump on my laptop when rotating the camera
-context.success can lead to unbalanced push/pop
 
 
 
@@ -206,16 +204,6 @@ How should this interact with the rate at which we send gui messages?
 
 
 
-Features - OHM Plugin
----------------------
-Probably need a replacement SDK since it's unmaintained
-	CPUID System Monitor SDK is one option, but it's paid
-	AIDA64 doesn't have an SDK but it supports WMI and shared memory
-	Rivatuner?
-	HWiNFO (promising!)
-
-
-
 Features - Plugins
 ------------------
 Consider using .NET Core instead of .NET Framework.
@@ -242,7 +230,7 @@ Ensure debugging for both native and managed plugins is reasonable.
 Catch managed exceptions from the native side. Can't have them crash the
 	application.
 Decide whether plugins needing elevation should be expressed in the plugin
-	API. OHM requires elevation to work, and presumably other hardware senors
+	API. CPU temps require elevation, and presumably other hardware senors
 	plugins might as well. If plugins can say "i require elevation" then we
 	can warn the user at startup that an enabled plugin requires elevation
 	but the program is not elevated. This in turn means we are less likely

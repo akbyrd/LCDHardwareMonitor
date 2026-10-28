@@ -18,7 +18,6 @@
 		"/FUSystem.Core.dll",
 		"/FUWindowsBase.dll",
 		"/FUPresentationCore.dll",
-		"/FU${workspaceFolder}/Sensor Plugin - OpenHardwareMonitor/ext/OpenHardwareMonitorLib.dll",
 		"/FU${workspaceFolder}/cache/build/windows-x64-Debug-msvc/LCDHardwareMonitor API CLR/bin/LCDHardwareMonitor.API.CLR.dll",
 		"/FU${workspaceFolder}/cache/build/windows-x64-Debug-msvc/LCDHardwareMonitor PluginLoader CLR Interface/bin/LCDHardwareMonitor.PluginLoader.CLR.Interface.dll",
 	],

@@ -5,7 +5,6 @@
 			"name": "(Windows) Launch",
 			"type": "cppvsdbg",
 			"request": "launch",
-			// NOTE: Must be run as admin for OHM to work properly
 			"program": "${workspaceFolder}/cache/build/windows-x64-Debug-msvc/run/LCDHardwareMonitor.exe",
 			"cwd": "${workspaceFolder}/cache/build/windows-x64-Debug-msvc/run",
 			"logging": {

@@ -200,10 +200,6 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 		sensorPluginCLR.pluginInstance->GetPluginInfo(pluginDesc);
 		sensorPlugin.functions.GetPluginInfo = nullptr;
 
-		// DEBUG: Remove me (just for fast loading)
-		#if true
-		#pragma message("warning: Sensor plugin init temporarily disabled for faster loading")
-		#else
 		auto iInitialize = dynamic_cast<ISensorPluginInitialize^>(sensorPluginCLR.pluginInstance);
 		if (iInitialize)
 		{
@@ -224,7 +220,6 @@ LHMPluginLoader : AppDomainManager, ILHMPluginLoader
 			sensorPluginCLR.teardownDelegate = gcnew SensorPlugin_CLR::TeardownDelegate(iTeardown, &ISensorPluginTeardown::Teardown);
 			sensorPlugin.functions.Teardown = (SensorPluginFunctions::TeardownFn*) (void*) Marshal::GetFunctionPointerForDelegate(sensorPluginCLR.teardownDelegate);
 		}
-		#endif
 
 		return true;
 	}

@@ -1,6 +1,3 @@
-[submodule "modules/OpenHardwareMonitor"]
-	path = modules/OpenHardwareMonitor
-	url = https://github.com/openhardwaremonitor/openhardwaremonitor.git
 [submodule "modules/keel"]
 	path = modules/keel
 	url = https://github.com/akbyrd/keel.git

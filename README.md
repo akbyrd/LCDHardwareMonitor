@@ -36,7 +36,6 @@ This project started with the desire for a far more capable alternative to LCDSy
 (all included or automatic)
 * FTDI d2xx driver (included with Windows, installed when plugging in device)
 * FTDI d2xx headers and import library (included)
-* OpenHardwareMonitor.dll (included)
 * MahApps.Metro (automatic through NuGet)
 * ControlzEz (automatic through NuGet)
 
