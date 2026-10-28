@@ -50,10 +50,11 @@ struct StringView
 	u32 length;
 	c8* data;
 
-	StringView()                       { length = 0;             data = nullptr;     }
-	StringView(const String& string)   { length = string.length; data = string.data; }
+	StringView()                         { length = 0;             data = nullptr;     }
+	StringView(const String& string)     { length = string.length; data = string.data; }
+	StringView(const c8* chars, u32 len) { length = len;           data = (c8*) chars; }
 	template<u32 Length>
-	StringView(const c8(&arr)[Length]) { length = Length - 1;    data = (c8*) arr;   }
+	StringView(const c8(&arr)[Length])   { length = Length - 1;    data = (c8*) arr;   }
 
 	c8& operator[] (StrPos p) { u32 i = ToIndex(p); Assert(i < length); return data[i]; }
 	c8& operator[] (u32 i)    { Assert(i < length); return data[i]; }
@@ -101,6 +102,9 @@ String_Reserve(String& string, u32 capacity)
 // TODO: See what the errors are like when format isn't a c8[] or isn't constexpr
 #define String_Format(format, ...) \
 	String_FormatChecked<CountPlaceholders(format)>(format, ##__VA_ARGS__)
+
+#define String_FormatInto(buffer, format, ...) \
+	String_FormatIntoChecked<CountPlaceholders(format)>(buffer, format, ##__VA_ARGS__)
 
 String
 String_FromView(StringView view)
@@ -291,6 +295,34 @@ String_FormatChecked(StringView format, Args&&... args)
 {
 	static_assert(PlaceholderCount == sizeof...(args));
 	return String_FormatImpl(format, args...);
+}
+
+template<u32 Capacity, typename... Args>
+StringView
+String_FormatIntoImpl(c8 (&buffer)[Capacity], StringView format, Args&&... args)
+{
+	String string = {};
+
+	u32 stringLen = FormatImpl(string, format, 0, args...);
+	Assert(stringLen < Capacity);
+	if (stringLen >= Capacity) return {};
+
+	string.capacity = Capacity;
+	string.data     = buffer;
+	string.data[0]  = '\0';
+
+	FormatImpl(string, format, 0, args...);
+	Assert(string.length == stringLen);
+
+	return string;
+}
+
+template<u32 PlaceholderCount, u32 Capacity, typename... Args>
+inline StringView
+String_FormatIntoChecked(c8 (&buffer)[Capacity], StringView format, Args&&... args)
+{
+	static_assert(PlaceholderCount == sizeof...(args));
+	return String_FormatIntoImpl(buffer, format, args...);
 }
 
 // -------------------------------------------------------------------------------------------------

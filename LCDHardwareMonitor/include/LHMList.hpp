@@ -76,6 +76,7 @@ struct Slice
 	                     Slice()                      { length = 0;           stride = sizeof(T); data = nullptr;        }
 	                     Slice(const T& element)      { length = 1;           stride = sizeof(T); data = (T*) &element;  }
 	                     Slice(const List<T>& list)   { length = list.length; stride = sizeof(T); data = (T*) list.data; }
+	                     Slice(T* items, u32 count)   { length = count;       stride = sizeof(T); data = items;          }
 	template<u32 Length> Slice(const T(&arr)[Length]) { length = Length;      stride = sizeof(T); data = (T*) arr;       }
 
 	//operator Slice<Slice<T>>() { return { 1, sizeof(Slice<T>), this }; }

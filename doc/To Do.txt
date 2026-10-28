@@ -1,6 +1,6 @@
 Current
 -------
-Replace OpenHardwareMonitor (with a Windows plugin)
+Simplify Windows plugin
 Migrate to keel
 Read https://learn.microsoft.com/en-us/dotnet/desktop/wpf/advanced/wpf-and-direct3d9-interoperation
 ----
@@ -42,6 +42,15 @@ Start using Scoped
 Try out range based for loops
 Starting to feel like state checking should be in the sim
 Rewrite List<T>
+
+
+
+Refactoring - Identifiers
+-------------------------
+Do we want abstracted names or not? (`/node/0/processor/5/usage` vs `\Processor Information(0,5)\% Processor Utility`)
+Do we enforce any sort of naming between plugins?
+Do the need to be globally unique or locally unique?
+	If globally unique, enforce it
 
 
 
