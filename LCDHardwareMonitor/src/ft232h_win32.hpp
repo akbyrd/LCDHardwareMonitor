@@ -26,56 +26,56 @@ struct FT232HState
 
 namespace FT232H
 {
-	static const u32   SerialNumber  = 0x04036014;
-	static const char* Description   = "FT232H";
-	static const u32   ClockSpeedMax = 30'000'000;
-	static const u32   ClockSpeedMin = u32(457.763);
+	constexpr u32   SerialNumber  = 0x04036014;
+	constexpr char* Description   = "FT232H";
+	constexpr u32   ClockSpeedMax = 30'000'000;
+	constexpr u32   ClockSpeedMin = u32(457.763);
 
-	struct LowPins
+	namespace LowPins
 	{
-		static const u8 CLKBit = 0;
-		static const u8 DOBit  = 1;
-		static const u8 DIBit  = 2;
+		constexpr u8 CLKBit = 0;
+		constexpr u8 DOBit  = 1;
+		constexpr u8 DIBit  = 2;
 
-		static const u8 CLKMask = 1 << CLKBit;
-		static const u8 DOMask  = 1 << DOBit;
-		static const u8 DIMask  = 1 << DIBit;
+		constexpr u8 CLKMask = 1 << CLKBit;
+		constexpr u8 DOMask  = 1 << DOBit;
+		constexpr u8 DIMask  = 1 << DIBit;
 	};
 
-	struct HighPins
+	namespace HighPins
 	{
-		static const u8 CSBit  = 0;
-		static const u8 DCBit  = 1;
-		static const u8 RSTBit = 2;
+		constexpr u8 CSBit  = 0;
+		constexpr u8 DCBit  = 1;
+		constexpr u8 RSTBit = 2;
 
-		static const u8 CSMask  = 1 << CSBit;
-		static const u8 DCMask  = 1 << DCBit;
-		static const u8 RSTMask = 1 << RSTBit;
+		constexpr u8 CSMask  = 1 << CSBit;
+		constexpr u8 DCMask  = 1 << DCBit;
+		constexpr u8 RSTMask = 1 << RSTBit;
 	};
 
-	struct Command
+	namespace Command
 	{
-		static const u8 SendBytesFallingMSB  = 0x11;
-		static const u8 RecvBytesRisingMSB   = 0x20;
-		static const u8 SetDataBitsLowByte   = 0x80;
-		static const u8 ReadDataBitsLowByte  = 0x81;
-		static const u8 SetDataBitsHighByte  = 0x82;
-		static const u8 ReadDataBitsHighByte = 0x83;
-		static const u8 EnableLoopback       = 0x84;
-		static const u8 DisableLoopback      = 0x85;
-		static const u8 SetClockDivisor      = 0x86;
-		static const u8 SendImmediate        = 0x87;
-		static const u8 DisableClockDivide   = 0x8A;
-		static const u8 EnableClockDivide    = 0x8B;
-		static const u8 Enable3PhaseClock    = 0x8C;
-		static const u8 Disable3PhaseClock   = 0x8D;
-		static const u8 DisableAdaptiveClock = 0x97;
-		static const u8 BadCommand           = 0xAB;
+		constexpr u8 SendBytesFallingMSB  = 0x11;
+		constexpr u8 RecvBytesRisingMSB   = 0x20;
+		constexpr u8 SetDataBitsLowByte   = 0x80;
+		constexpr u8 ReadDataBitsLowByte  = 0x81;
+		constexpr u8 SetDataBitsHighByte  = 0x82;
+		constexpr u8 ReadDataBitsHighByte = 0x83;
+		constexpr u8 EnableLoopback       = 0x84;
+		constexpr u8 DisableLoopback      = 0x85;
+		constexpr u8 SetClockDivisor      = 0x86;
+		constexpr u8 SendImmediate        = 0x87;
+		constexpr u8 DisableClockDivide   = 0x8A;
+		constexpr u8 EnableClockDivide    = 0x8B;
+		constexpr u8 Enable3PhaseClock    = 0x8C;
+		constexpr u8 Disable3PhaseClock   = 0x8D;
+		constexpr u8 DisableAdaptiveClock = 0x97;
+		constexpr u8 BadCommand           = 0xAB;
 	};
 
-	struct Response
+	namespace Response
 	{
-		static const u8 BadCommand = 0xFA;
+		constexpr u8 BadCommand = 0xFA;
 	};
 }
 

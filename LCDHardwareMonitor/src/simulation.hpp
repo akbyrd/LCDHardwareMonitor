@@ -28,7 +28,7 @@ struct HandleTable
 		return index;
 	}
 
-	template <typename T>
+	template<typename T>
 	inline Handle<T> Add(T* pointer)
 	{
 		u32 index;
@@ -53,7 +53,7 @@ struct HandleTable
 		return result;
 	}
 
-	template <typename T>
+	template<typename T>
 	inline void Remove(Handle<T> handle)
 	{
 		u32 index = HandleToIndex(handle.value);
@@ -67,7 +67,7 @@ struct HandleTable
 		firstFree = index;
 	}
 
-	template <typename T>
+	template<typename T>
 	inline void Update(Handle<T> handle, T* pointer)
 	{
 		u32 index = HandleToIndex(handle.value);
@@ -79,7 +79,7 @@ struct HandleTable
 		generation = (generation + 1) % GenerationMask;
 	}
 
-	template <typename T>
+	template<typename T>
 	inline b8 IsValid(Handle<T> handle)
 	{
 		u32 index = HandleToIndex(handle.value);
@@ -90,7 +90,7 @@ struct HandleTable
 		return result;
 	}
 
-	template <typename T>
+	template<typename T>
 	inline T* operator[](Handle<T> handle)
 	{
 		u32 index = HandleToIndex(handle.value);
@@ -179,7 +179,7 @@ struct PluginContext
 // -------------------------------------------------------------------------------------------------
 // C++ is Stupid.
 
-template <typename T>
+template<typename T>
 static T& ListWithHandles_Append(HandleTable&, List<T>&, u32 = 1);
 static String GetNameFromPath(StringView);
 static void RemoveSensorReferences(SimulationState&, Slice<Handle<Sensor>>);
@@ -877,7 +877,7 @@ UnloadWidgetPlugin(SimulationState& s, WidgetPlugin& widgetPlugin)
 
 // -------------------------------------------------------------------------------------------------
 
-template <typename T>
+template<typename T>
 static T&
 ListWithHandles_Append(HandleTable& handleTable, List<T>& list, u32 count)
 {

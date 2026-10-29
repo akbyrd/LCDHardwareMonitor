@@ -162,7 +162,7 @@ namespace FromGUI
 }
 
 template<>
-constexpr u32 IdOf<Message::Null> = 0;
+constexpr inline u32 IdOf<Message::Null> = 0;
 
 enum struct ByteStreamMode
 {

@@ -31,7 +31,7 @@ struct ListRef
 };
 
 template<typename T>
-const ListRef<T> ListRef<T>::Null = {};
+constexpr inline ListRef<T> ListRef<T>::Null = {};
 
 template<typename T>
 inline b8 operator== (ListRef<T> lhs, ListRef<T> rhs) { return lhs.value == rhs.value; }
@@ -519,7 +519,7 @@ List_MemberSlice(List<T>& list, U T::* memberPtr1, V U::* memberPtr2)
 }
 
 template<typename T>
-u32
+inline u32
 ToString(String& string, List<T>& list)
 {
 	u32 written = 0;
@@ -596,7 +596,7 @@ Slice_MemberSlice(Slice<T>& slice, U T::* memberPtr)
 }
 
 template<typename T>
-u32
+inline u32
 ToString(String& string, Slice<T>& list)
 {
 	u32 written = 0;

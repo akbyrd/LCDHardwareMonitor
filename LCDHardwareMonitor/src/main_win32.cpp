@@ -20,7 +20,7 @@
 // TODO: Need a proper shutdown implementation (clean vs error)
 // TODO: Need to handle multiple instance more gracefully
 
-static const i32 togglePreviewWindowID = 0;
+constexpr i32 togglePreviewWindowID = 0;
 
 struct MessagePumpContext
 {

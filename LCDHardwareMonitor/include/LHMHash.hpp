@@ -2,7 +2,8 @@
 #define LHM_HASH
 
 // NOTE: This is somewhat weak for short, similar strings. Consider FNV or Murmur.
-constexpr u32 Adler32(const c8* data, size length)
+constexpr u32
+Adler32(const c8* data, size length)
 {
 	if (length == 0) return 0;
 
@@ -19,13 +20,15 @@ constexpr u32 Adler32(const c8* data, size length)
 }
 
 template<size N>
-constexpr u32 Adler32(const char (&data)[N])
+constexpr u32
+Adler32(const char (&data)[N])
 {
 	return Adler32(data, N);
 }
 
 template<typename T>
-constexpr u32 _IdOf()
+constexpr u32
+_IdOf()
 {
 	return Adler32(__FUNCTION_FULL_NAME__);
 }

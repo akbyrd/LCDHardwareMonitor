@@ -31,9 +31,9 @@ using Microsoft::WRL::ComPtr;
 
 namespace HLSLSemantic
 {
-	static const c8* Position = "POSITION";
-	static const c8* Color    = "COLOR";
-	static const c8* TexCoord = "TEXCOORD";
+	constexpr c8* Position = "POSITION";
+	constexpr c8* Color    = "COLOR";
+	constexpr c8* TexCoord = "TEXCOORD";
 }
 
 struct MeshData

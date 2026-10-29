@@ -17,9 +17,9 @@ using CLRString = System::String;
 using LHMString = ::String;
 
 template<typename ...Args>
-constexpr inline void Unused(Args^ ...) {}
+constexpr void Unused(Args^ ...) {}
 
-void
+inline void
 String_FromCLR(LHMString& lhmString, CLRString^ clrString)
 {
 	using namespace System;
@@ -36,7 +36,7 @@ String_FromCLR(LHMString& lhmString, CLRString^ clrString)
 	Marshal::FreeHGlobal((IntPtr) cstring);
 }
 
-StringView
+inline StringView
 StringView_PinCLR(CLRString^ clrString)
 {
 	using namespace System::Runtime::InteropServices;
@@ -47,7 +47,7 @@ StringView_PinCLR(CLRString^ clrString)
 	return string;
 }
 
-void
+inline void
 StringView_ReleaseCLR(StringView& string)
 {
 	using namespace System;

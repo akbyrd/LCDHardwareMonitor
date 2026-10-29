@@ -2,7 +2,7 @@
 #define LHM_COMPILER
 
 #if _MSC_VER
-	// Some warnings are just fucking stupid
+	// Some warnings are just stupid
 	#pragma warning (disable: 4201) // Nameless struct/union
 	#pragma warning (disable: 5246) // Initialization of a subobject braces
 	#pragma warning (disable: 4514) // Unreferenced inline removed

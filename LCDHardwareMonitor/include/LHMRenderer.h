@@ -32,39 +32,39 @@ using Index = u32;
 
 namespace StandardRenderTarget
 {
-	static const RenderTarget Null = { 1 };
-	static const RenderTarget Main = { 2 };
+	constexpr RenderTarget Null = { 1 };
+	constexpr RenderTarget Main = { 2 };
 };
 
 namespace StandardDepthBuffer
 {
-	static const DepthBuffer Null = { 1 };
-	static const DepthBuffer Main = { 2 };
+	constexpr DepthBuffer Null = { 1 };
+	constexpr DepthBuffer Main = { 2 };
 };
 
 namespace StandardMesh
 {
-	static const Mesh Null       = { 1 };
-	static const Mesh Triangle   = { 2 };
-	static const Mesh Quad       = { 3 };
-	static const Mesh Cube       = { 4 };
-	static const Mesh Fullscreen = { 5 };
+	constexpr Mesh Null       = { 1 };
+	constexpr Mesh Triangle   = { 2 };
+	constexpr Mesh Quad       = { 3 };
+	constexpr Mesh Cube       = { 4 };
+	constexpr Mesh Fullscreen = { 5 };
 };
 
 namespace StandardVertexShader
 {
-	static const VertexShader Null      = { 1 };
-	static const VertexShader WVP       = { 2 };
-	static const VertexShader ClipSpace = { 3 };
+	constexpr VertexShader Null      = { 1 };
+	constexpr VertexShader WVP       = { 2 };
+	constexpr VertexShader ClipSpace = { 3 };
 };
 
 namespace StandardPixelShader
 {
-	static const PixelShader Null             = { 1 };
-	static const PixelShader SolidColored     = { 2 };
-	static const PixelShader VertexColored    = { 3 };
-	static const PixelShader DebugCoordinates = { 4 };
-	static const PixelShader Composite        = { 5 };
+	constexpr PixelShader Null             = { 1 };
+	constexpr PixelShader SolidColored     = { 2 };
+	constexpr PixelShader VertexColored    = { 3 };
+	constexpr PixelShader DebugCoordinates = { 4 };
+	constexpr PixelShader Composite        = { 5 };
 };
 
 #endif

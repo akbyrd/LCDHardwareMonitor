@@ -24,7 +24,7 @@ struct Instance
 
 struct State
 {
-	static const u64 sampleIntervalMs = 1000;
+	static constexpr u64 sampleIntervalMs = 1000;
 
 	PDH_HQUERY     query;
 	PDH_HCOUNTER   utility;

@@ -2,7 +2,7 @@
 #define LHM_MEMORY
 
 template<typename T>
-u8*
+inline u8*
 AlignUp(u8* address)
 {
 	u8 mod = (size) address % alignof(T);
@@ -10,8 +10,8 @@ AlignUp(u8* address)
 	return address;
 }
 
-template <typename T>
-u8*
+template<typename T>
+inline u8*
 AlignDown(u8* address)
 {
 	u8 mod = (size) address % alignof(T);
@@ -19,7 +19,7 @@ AlignDown(u8* address)
 	return address;
 }
 
-u32
+inline u32
 RelativeOffset(u8* from, u8* to)
 {
 	u32 offset = (u32) (to - from);
@@ -133,39 +133,45 @@ struct FixedAllocator
 	}
 };
 
-void OutOfMemory()
+inline void
+OutOfMemory()
 {
 	// TODO: Logging
 	exit(-1);
 }
 
-void* AllocChecked(size bytes)
+inline void*
+AllocChecked(size bytes)
 {
 	void* memory = malloc(bytes);
 	if (!memory) OutOfMemory();
 	return memory;
 }
 
-void* AllocUnchecked(size bytes)
+inline void*
+AllocUnchecked(size bytes)
 {
 	void* memory = malloc(bytes);
 	return memory;
 }
 
-void* ReallocChecked(void* memory, size bytes)
+inline void*
+ReallocChecked(void* memory, size bytes)
 {
 	memory = realloc(memory, bytes);
 	if (!memory) OutOfMemory();
 	return memory;
 }
 
-void* ReallocUnchecked(void* memory, size bytes)
+inline void*
+ReallocUnchecked(void* memory, size bytes)
 {
 	memory = realloc(memory, bytes);
 	return memory;
 }
 
-void Free(void* memory)
+inline void
+Free(void* memory)
 {
 	// TODO: Should we assert redundant frees?
 	//Assert(memory);

@@ -12,7 +12,7 @@ struct PluginDesc
 struct PluginContext;
 
 // TODO: Should be able to make this private once we copy sensor values to widgets
-template <typename T>
+template<typename T>
 struct Handle
 {
 	u32 value = 0;
@@ -22,12 +22,12 @@ struct Handle
 };
 
 template<typename T>
-const Handle<T> Handle<T>::Null = {};
+constexpr inline Handle<T> Handle<T>::Null = {};
 
-template <typename T>
+template<typename T>
 inline b8 operator== (Handle<T> lhs, Handle<T> rhs) { return lhs.value == rhs.value; }
 
-template <typename T>
+template<typename T>
 inline b8 operator!= (Handle<T> lhs, Handle<T> rhs) { return lhs.value != rhs.value; }
 
 #endif

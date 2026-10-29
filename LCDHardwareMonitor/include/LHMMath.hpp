@@ -22,35 +22,35 @@
 // -------------------------------------------------------------------------------------------------
 // General
 
-constexpr i8  i8Min  = -0x80;                  // -128;
-constexpr i8  i8Max  =  0x7F;                  //  127;
-constexpr i16 i16Min = -0x8000;                // -32'768;
-constexpr i16 i16Max =  0x7FFF;                //  32'767;
-constexpr i32 i32Min =  0x8000'0000;           // -2'147'483'648;
-constexpr i32 i32Max =  0x7FFF'FFFF;           //  2'147'483'647;
-constexpr i64 i64Min =  0x8000'0000'0000'0000; // -9'223'372'036'854'775'808;
-constexpr i64 i64Max =  0x7FFF'FFFF'FFFF'FFFF; //  9'223'372'036'854'775'807;
+constexpr inline i8  i8Min  = -0x80;                  // -128;
+constexpr inline i8  i8Max  =  0x7F;                  //  127;
+constexpr inline i16 i16Min = -0x8000;                // -32'768;
+constexpr inline i16 i16Max =  0x7FFF;                //  32'767;
+constexpr inline i32 i32Min =  0x8000'0000;           // -2'147'483'648;
+constexpr inline i32 i32Max =  0x7FFF'FFFF;           //  2'147'483'647;
+constexpr inline i64 i64Min =  0x8000'0000'0000'0000; // -9'223'372'036'854'775'808;
+constexpr inline i64 i64Max =  0x7FFF'FFFF'FFFF'FFFF; //  9'223'372'036'854'775'807;
 
-constexpr u8  u8Max  =  0xFF;                  //  255;
-constexpr u16 u16Max =  0xFFFF;                //  65'535;
-constexpr u32 u32Max =  0xFFFF'FFFF;           //  4'294'967'295;
-constexpr u64 u64Max =  0xFFFF'FFFF'FFFF'FFFF; //  18'446'744'073'709'551'615;
+constexpr inline u8  u8Max  =  0xFF;                  //  255;
+constexpr inline u16 u16Max =  0xFFFF;                //  65'535;
+constexpr inline u32 u32Max =  0xFFFF'FFFF;           //  4'294'967'295;
+constexpr inline u64 u64Max =  0xFFFF'FFFF'FFFF'FFFF; //  18'446'744'073'709'551'615;
 
 // TODO: Change to bit patterns like ints
-constexpr r32 r32Min =  1.175494351e-38f;
-constexpr r32 r32Max =  3.402823466e+38f;
+constexpr inline r32 r32Min =  1.175494351e-38f;
+constexpr inline r32 r32Max =  3.402823466e+38f;
 
-constexpr r32 r32Epsilon = 31.192092896e-07f;
-constexpr r32 r32Pi      = 3.141592654f;
+constexpr inline r32 r32Epsilon = 31.192092896e-07f;
+constexpr inline r32 r32Pi      = 3.141592654f;
 
 template<typename T>
-constexpr inline T
+constexpr T
 Abs(T value)
 {
 	return value < 0 ? -value : value;
 }
 
-constexpr inline b8
+constexpr b8
 ApproximatelyZero(r32 value)
 {
 	b8 result = Abs(value) < r32Epsilon;
@@ -70,7 +70,7 @@ Cos(r64 theta)
 }
 
 template<typename T>
-constexpr inline T
+constexpr T
 Max(T lhs, T rhs)
 {
 	T result = lhs > rhs ? lhs : rhs;
@@ -78,7 +78,7 @@ Max(T lhs, T rhs)
 }
 
 template<typename T>
-constexpr inline T
+constexpr T
 Min(T lhs, T rhs)
 {
 	T result = lhs < rhs ? lhs : rhs;
@@ -86,7 +86,7 @@ Min(T lhs, T rhs)
 }
 
 template<typename T>
-constexpr inline T
+constexpr T
 Clamp(T value, T min, T max)
 {
 	T sMin = Min(min, max);
@@ -99,7 +99,7 @@ Clamp(T value, T min, T max)
 }
 
 template<typename T>
-constexpr inline T
+constexpr T
 Clamp01(T value)
 {
 	T result = value;
@@ -109,7 +109,7 @@ Clamp01(T value)
 }
 
 template<typename T>
-constexpr inline b8
+constexpr b8
 IsMultipleOf(T size, T multiple)
 {
 	T mod = (T) (size % multiple);
@@ -117,7 +117,7 @@ IsMultipleOf(T size, T multiple)
 }
 
 template<typename T>
-constexpr inline T
+constexpr T
 Lerp(T from, T to, r32 t)
 {
 	T result = (T) ((1.0f - t)*(r32) from + t*(r32) to);
@@ -125,7 +125,7 @@ Lerp(T from, T to, r32 t)
 }
 
 template<typename T>
-constexpr inline T
+constexpr T
 LerpClamped(T from, T to, r32 t)
 {
 	T result = (T) ((1.0f - t)*(r32) from + t*(r32) to);
@@ -134,7 +134,7 @@ LerpClamped(T from, T to, r32 t)
 }
 
 template<typename T>
-constexpr inline r32
+constexpr r32
 InverseLerp(T from, T to, T value)
 {
 	Assert((to - from) != 0);
@@ -143,7 +143,7 @@ InverseLerp(T from, T to, T value)
 }
 
 template<typename T>
-constexpr inline r32
+constexpr r32
 InverseLerpClamped(T from, T to, T value)
 {
 	Assert((to - from) != 0);
@@ -238,7 +238,7 @@ using v2u64 = v2t<u64>;
 
 // Operators
 template<typename T>
-constexpr inline b8
+constexpr b8
 operator== (v2t<T> lhs, v2t<T> rhs)
 {
 	b8 result =
@@ -248,7 +248,7 @@ operator== (v2t<T> lhs, v2t<T> rhs)
 }
 
 template<typename T>
-constexpr inline b8
+constexpr b8
 operator!= (v2t<T> lhs, v2t<T> rhs)
 {
 	b8 result = !(
@@ -259,7 +259,7 @@ operator!= (v2t<T> lhs, v2t<T> rhs)
 }
 
 template<typename T>
-constexpr inline v2t<T>
+constexpr v2t<T>
 operator+ (v2t<T> v)
 {
 	v2t<T> result = {
@@ -270,7 +270,7 @@ operator+ (v2t<T> v)
 }
 
 template<typename T>
-constexpr inline v2t<T>
+constexpr v2t<T>
 operator+ (v2t<T> lhs, v2t<T> rhs)
 {
 	v2t<T> result = {
@@ -281,14 +281,14 @@ operator+ (v2t<T> lhs, v2t<T> rhs)
 }
 
 template<typename T>
-constexpr inline void
+constexpr void
 operator+= (v2t<T>& lhs, v2t<T> rhs)
 {
 	lhs = lhs + rhs;
 }
 
 template<typename T>
-constexpr inline v2t<T>
+constexpr v2t<T>
 operator- (v2t<T> v)
 {
 	v2t<T> result = {
@@ -299,7 +299,7 @@ operator- (v2t<T> v)
 }
 
 template<typename T>
-constexpr inline v2t<T>
+constexpr v2t<T>
 operator- (v2t<T> lhs, v2t<T> rhs)
 {
 	v2t<T> result = {
@@ -310,14 +310,14 @@ operator- (v2t<T> lhs, v2t<T> rhs)
 }
 
 template<typename T>
-constexpr inline void
+constexpr void
 operator-= (v2t<T>& lhs, v2t<T> rhs)
 {
 	lhs = lhs - rhs;
 }
 
 template<typename T>
-constexpr inline v2t<T>
+constexpr v2t<T>
 operator* (T lhs, v2t<T> rhs)
 {
 	v2t<T> result = {
@@ -328,7 +328,7 @@ operator* (T lhs, v2t<T> rhs)
 }
 
 template<typename T>
-constexpr inline v2t<T>
+constexpr v2t<T>
 operator* (v2t<T> lhs, T rhs)
 {
 	v2t<T> result = {
@@ -339,7 +339,7 @@ operator* (v2t<T> lhs, T rhs)
 }
 
 template<typename T>
-constexpr inline v2t<T>
+constexpr v2t<T>
 operator* (v2t<T> lhs, v2t<T> rhs)
 {
 	v2t<T> result = {
@@ -350,21 +350,21 @@ operator* (v2t<T> lhs, v2t<T> rhs)
 }
 
 template<typename T>
-constexpr inline void
+constexpr void
 operator*= (v2t<T>& lhs, T rhs)
 {
 	lhs = lhs * rhs;
 }
 
 template<typename T>
-constexpr inline void
+constexpr void
 operator*= (v2t<T>& lhs, v2t<T> rhs)
 {
 	lhs = lhs * rhs;
 }
 
 template<typename T>
-constexpr inline v2t<T>
+constexpr v2t<T>
 operator/ (v2t<T> lhs, T rhs)
 {
 	v2t<T> result = {
@@ -375,7 +375,7 @@ operator/ (v2t<T> lhs, T rhs)
 }
 
 template<typename T>
-constexpr inline v2t<T>
+constexpr v2t<T>
 operator/ (T lhs, v2t<T> rhs)
 {
 	v2t<T> result = {
@@ -386,7 +386,7 @@ operator/ (T lhs, v2t<T> rhs)
 }
 
 template<typename T>
-constexpr inline v2t<T>
+constexpr v2t<T>
 operator/ (v2t<T> lhs, v2t<T> rhs)
 {
 	v2t<T> result = {
@@ -397,21 +397,21 @@ operator/ (v2t<T> lhs, v2t<T> rhs)
 }
 
 template<typename T>
-constexpr inline void
+constexpr void
 operator/= (v2t<T>& lhs, T rhs)
 {
 	lhs = lhs / rhs;
 }
 
 template<typename T>
-constexpr inline void
+constexpr void
 operator/= (v2t<T>& lhs, v2t<T> rhs)
 {
 	lhs = lhs / rhs;
 }
 
 template<typename T>
-constexpr inline T&
+constexpr T&
 v2t<T>::operator[] (u32 index)
 {
 	Assert(index < ArrayLength(arr));
@@ -420,7 +420,7 @@ v2t<T>::operator[] (u32 index)
 }
 
 template<typename T>
-constexpr inline const T&
+constexpr const T&
 v2t<T>::operator[] (u32 index) const
 {
 	Assert(index < ArrayLength(arr));
@@ -430,7 +430,7 @@ v2t<T>::operator[] (u32 index) const
 
 template<typename T>
 template<typename U>
-constexpr inline
+constexpr
 v2t<T>::operator v2t<U>()
 {
 	v2t<U> result = {
@@ -442,7 +442,7 @@ v2t<T>::operator v2t<U>()
 
 template<typename T>
 template<typename U>
-constexpr inline
+constexpr
 v2t<T>::operator v3t<U>()
 {
 	v3t<U> result = {
@@ -455,7 +455,7 @@ v2t<T>::operator v3t<U>()
 
 template<typename T>
 template<typename U>
-constexpr inline
+constexpr
 v2t<T>::operator v4t<U>()
 {
 	v4t<U> result = {
@@ -468,7 +468,7 @@ v2t<T>::operator v4t<U>()
 }
 
 template<typename T>
-constexpr inline T
+constexpr T
 Dot(v2t<T> lhs, v2t<T> rhs)
 {
 	T result = (T) (
@@ -479,7 +479,7 @@ Dot(v2t<T> lhs, v2t<T> rhs)
 }
 
 template<typename T>
-constexpr inline v2t<T>
+constexpr v2t<T>
 Clamp(v2t<T> v, v2t<T> min, v2t<T> max)
 {
 	v2t<T> result = {
@@ -490,7 +490,7 @@ Clamp(v2t<T> v, v2t<T> min, v2t<T> max)
 }
 
 template<typename T>
-constexpr inline v2t<T>
+constexpr v2t<T>
 Clamp01(v2t<T> v)
 {
 	v2t<T> result = {
@@ -501,7 +501,7 @@ Clamp01(v2t<T> v)
 }
 
 template<typename T>
-constexpr inline v2t<T>
+constexpr v2t<T>
 Lerp(v2t<T> from, v2t<T> to, r32 t)
 {
 	v2t<T> result = {
@@ -512,7 +512,7 @@ Lerp(v2t<T> from, v2t<T> to, r32 t)
 }
 
 template<typename T>
-constexpr inline v2t<T>
+constexpr v2t<T>
 LerpClamped(v2t<T> from, v2t<T> to, r32 t)
 {
 	v2t<T> result = {
@@ -523,7 +523,7 @@ LerpClamped(v2t<T> from, v2t<T> to, r32 t)
 }
 
 template<typename T>
-constexpr inline v2t<r32>
+constexpr v2t<r32>
 InverseLerp(v2t<T> from, v2t<T> to, v2t<T> value)
 {
 	v2t<r32> result = {
@@ -534,7 +534,7 @@ InverseLerp(v2t<T> from, v2t<T> to, v2t<T> value)
 }
 
 template<typename T>
-constexpr inline v2t<r32>
+constexpr v2t<r32>
 InverseLerpClamped(v2t<T> from, v2t<T> to, v2t<T> value)
 {
 	v2t<r32> result = {
@@ -583,7 +583,7 @@ MagnitudeSq(v2t<r64> v)
 }
 
 template<typename T>
-constexpr inline v2t<T>
+constexpr v2t<T>
 Max(v2t<T> lhs, v2t<T> rhs)
 {
 	v2t<T> result = {
@@ -594,7 +594,7 @@ Max(v2t<T> lhs, v2t<T> rhs)
 }
 
 template<typename T>
-constexpr inline v2t<T>
+constexpr v2t<T>
 Min(v2t<T> lhs, v2t<T> rhs)
 {
 	v2t<T> result = {
@@ -680,7 +680,7 @@ using v3u64 = v3t<u64>;
 
 // Operators
 template<typename T>
-constexpr inline b8
+constexpr b8
 operator== (v3t<T> lhs, v3t<T> rhs)
 {
 	b8 result =
@@ -691,7 +691,7 @@ operator== (v3t<T> lhs, v3t<T> rhs)
 }
 
 template<typename T>
-constexpr inline b8
+constexpr b8
 operator!= (v3t<T> lhs, v3t<T> rhs)
 {
 	b8 result = !(
@@ -703,7 +703,7 @@ operator!= (v3t<T> lhs, v3t<T> rhs)
 }
 
 template<typename T>
-constexpr inline v3t<T>
+constexpr v3t<T>
 operator+ (v3t<T> v)
 {
 	v3t<T> result = {
@@ -715,7 +715,7 @@ operator+ (v3t<T> v)
 }
 
 template<typename T>
-constexpr inline v3t<T>
+constexpr v3t<T>
 operator+ (v3t<T> lhs, v3t<T> rhs)
 {
 	v3t<T> result = {
@@ -727,14 +727,14 @@ operator+ (v3t<T> lhs, v3t<T> rhs)
 }
 
 template<typename T>
-constexpr inline void
+constexpr void
 operator+= (v3t<T>& lhs, v3t<T> rhs)
 {
 	lhs = lhs + rhs;
 }
 
 template<typename T>
-constexpr inline v3t<T>
+constexpr v3t<T>
 operator- (v3t<T> v)
 {
 	v3t<T> result = {
@@ -746,7 +746,7 @@ operator- (v3t<T> v)
 }
 
 template<typename T>
-constexpr inline v3t<T>
+constexpr v3t<T>
 operator- (v3t<T> lhs, v3t<T> rhs)
 {
 	v3t<T> result = {
@@ -758,14 +758,14 @@ operator- (v3t<T> lhs, v3t<T> rhs)
 }
 
 template<typename T>
-constexpr inline void
+constexpr void
 operator-= (v3t<T>& lhs, v3t<T> rhs)
 {
 	lhs = lhs - rhs;
 }
 
 template<typename T>
-constexpr inline v3t<T>
+constexpr v3t<T>
 operator* (T lhs, v3t<T> rhs)
 {
 	v3t<T> result = {
@@ -777,7 +777,7 @@ operator* (T lhs, v3t<T> rhs)
 }
 
 template<typename T>
-constexpr inline v3t<T>
+constexpr v3t<T>
 operator* (v3t<T> lhs, T rhs)
 {
 	v3t<T> result = {
@@ -789,7 +789,7 @@ operator* (v3t<T> lhs, T rhs)
 }
 
 template<typename T>
-constexpr inline v3t<T>
+constexpr v3t<T>
 operator* (v3t<T> lhs, v3t<T> rhs)
 {
 	v3t<T> result = {
@@ -801,21 +801,21 @@ operator* (v3t<T> lhs, v3t<T> rhs)
 }
 
 template<typename T>
-constexpr inline void
+constexpr void
 operator*= (v3t<T>& lhs, T rhs)
 {
 	lhs = lhs * rhs;
 }
 
 template<typename T>
-constexpr inline void
+constexpr void
 operator*= (v3t<T>& lhs, v3t<T> rhs)
 {
 	lhs = lhs * rhs;
 }
 
 template<typename T>
-constexpr inline v3t<T>
+constexpr v3t<T>
 operator/ (v3t<T> lhs, T rhs)
 {
 	v3t<T> result = {
@@ -827,7 +827,7 @@ operator/ (v3t<T> lhs, T rhs)
 }
 
 template<typename T>
-constexpr inline v3t<T>
+constexpr v3t<T>
 operator/ (T lhs, v3t<T> rhs)
 {
 	v3t<T> result = {
@@ -839,7 +839,7 @@ operator/ (T lhs, v3t<T> rhs)
 }
 
 template<typename T>
-constexpr inline v3t<T>
+constexpr v3t<T>
 operator/ (v3t<T> lhs, v3t<T> rhs)
 {
 	v3t<T> result = {
@@ -851,21 +851,21 @@ operator/ (v3t<T> lhs, v3t<T> rhs)
 }
 
 template<typename T>
-constexpr inline void
+constexpr void
 operator/= (v3t<T>& lhs, T rhs)
 {
 	lhs = lhs / rhs;
 }
 
 template<typename T>
-constexpr inline void
+constexpr void
 operator/= (v3t<T>& lhs, v3t<T> rhs)
 {
 	lhs = lhs / rhs;
 }
 
 template<typename T>
-constexpr inline T&
+constexpr T&
 v3t<T>::operator[] (u32 index)
 {
 	Assert(index < ArrayLength(arr));
@@ -874,7 +874,7 @@ v3t<T>::operator[] (u32 index)
 }
 
 template<typename T>
-constexpr inline const T&
+constexpr const T&
 v3t<T>::operator[] (u32 index) const
 {
 	Assert(index < ArrayLength(arr));
@@ -884,7 +884,7 @@ v3t<T>::operator[] (u32 index) const
 
 template<typename T>
 template<typename U>
-constexpr inline
+constexpr
 v3t<T>::operator v2t<U>()
 {
 	v2t<U> result = {
@@ -896,7 +896,7 @@ v3t<T>::operator v2t<U>()
 
 template<typename T>
 template<typename U>
-constexpr inline
+constexpr
 v3t<T>::operator v3t<U>()
 {
 	v3t<U> result = {
@@ -909,7 +909,7 @@ v3t<T>::operator v3t<U>()
 
 template<typename T>
 template<typename U>
-constexpr inline
+constexpr
 v3t<T>::operator v4t<U>()
 {
 	v4t<U> result = {
@@ -922,7 +922,7 @@ v3t<T>::operator v4t<U>()
 }
 
 template<typename T>
-constexpr inline v3t<T>
+constexpr v3t<T>
 Clamp(v3t<T> v, v3t<T> min, v3t<T> max)
 {
 	v3t<T> result = {
@@ -934,7 +934,7 @@ Clamp(v3t<T> v, v3t<T> min, v3t<T> max)
 }
 
 template<typename T>
-constexpr inline v3t<T>
+constexpr v3t<T>
 Clamp01(v3t<T> v)
 {
 	v3t<T> result = {
@@ -946,7 +946,7 @@ Clamp01(v3t<T> v)
 }
 
 template<typename T>
-constexpr inline v3t<T>
+constexpr v3t<T>
 Cross(v3t<T> lhs, v3t<T> rhs)
 {
 	// TODO: This is right handed. What's our system?
@@ -959,7 +959,7 @@ Cross(v3t<T> lhs, v3t<T> rhs)
 }
 
 template<typename T>
-constexpr inline T
+constexpr T
 Dot(v3t<T> lhs, v3t<T> rhs)
 {
 	T result = (T) (
@@ -1003,7 +1003,7 @@ GetOrbitPos(v3t<r64> target, v2t<r64> yp, r64 radius)
 }
 
 template<typename T>
-constexpr inline v3t<T>
+constexpr v3t<T>
 Lerp(v3t<T> from, v3t<T> to, r32 t)
 {
 	v3t<T> result = {
@@ -1015,7 +1015,7 @@ Lerp(v3t<T> from, v3t<T> to, r32 t)
 }
 
 template<typename T>
-constexpr inline v3t<T>
+constexpr v3t<T>
 LerpClamped(v3t<T> from, v3t<T> to, r32 t)
 {
 	v3t<T> result = {
@@ -1027,7 +1027,7 @@ LerpClamped(v3t<T> from, v3t<T> to, r32 t)
 }
 
 template<typename T>
-constexpr inline v3t<r32>
+constexpr v3t<r32>
 InverseLerp(v3t<T> from, v3t<T> to, v3t<T> value)
 {
 	v3t<r32> result = {
@@ -1039,7 +1039,7 @@ InverseLerp(v3t<T> from, v3t<T> to, v3t<T> value)
 }
 
 template<typename T>
-constexpr inline v3t<r32>
+constexpr v3t<r32>
 InverseLerpClamped(v3t<T> from, v3t<T> to, v3t<T> value)
 {
 	v3t<r32> result = {
@@ -1093,7 +1093,7 @@ MagnitudeSq(v3t<r64> v)
 }
 
 template<typename T>
-constexpr inline v3t<T>
+constexpr v3t<T>
 Max(v3t<T> lhs, v3t<T> rhs)
 {
 	v3t<T> result = {
@@ -1105,7 +1105,7 @@ Max(v3t<T> lhs, v3t<T> rhs)
 }
 
 template<typename T>
-constexpr inline v3t<T>
+constexpr v3t<T>
 Min(v3t<T> lhs, v3t<T> rhs)
 {
 	v3t<T> result = {
@@ -1189,7 +1189,7 @@ using v4u64 = v4t<u64>;
 
 // Operators
 template<typename T>
-constexpr inline b8
+constexpr b8
 operator== (v4t<T> lhs, v4t<T> rhs)
 {
 	b8 result =
@@ -1201,7 +1201,7 @@ operator== (v4t<T> lhs, v4t<T> rhs)
 }
 
 template<typename T>
-constexpr inline b8
+constexpr b8
 operator!= (v4t<T> lhs, v4t<T> rhs)
 {
 	b8 result = !(
@@ -1214,7 +1214,7 @@ operator!= (v4t<T> lhs, v4t<T> rhs)
 }
 
 template<typename T>
-constexpr inline v4t<T>
+constexpr v4t<T>
 operator+ (v4t<T> v)
 {
 	v4t<T> result = {
@@ -1227,7 +1227,7 @@ operator+ (v4t<T> v)
 }
 
 template<typename T>
-constexpr inline v4t<T>
+constexpr v4t<T>
 operator+ (v4t<T> lhs, v4t<T> rhs)
 {
 	v4t<T> result = {
@@ -1240,14 +1240,14 @@ operator+ (v4t<T> lhs, v4t<T> rhs)
 }
 
 template<typename T>
-constexpr inline void
+constexpr void
 operator+= (v4t<T>& lhs, v4t<T> rhs)
 {
 	lhs = lhs + rhs;
 }
 
 template<typename T>
-constexpr inline v4t<T>
+constexpr v4t<T>
 operator- (v4t<T> v)
 {
 	v4t<T> result = {
@@ -1260,7 +1260,7 @@ operator- (v4t<T> v)
 }
 
 template<typename T>
-constexpr inline v4t<T>
+constexpr v4t<T>
 operator- (v4t<T> lhs, v4t<T> rhs)
 {
 	v4t<T> result = {
@@ -1273,14 +1273,14 @@ operator- (v4t<T> lhs, v4t<T> rhs)
 }
 
 template<typename T>
-constexpr inline void
+constexpr void
 operator-= (v4t<T>& lhs, v4t<T> rhs)
 {
 	lhs = lhs - rhs;
 }
 
 template<typename T>
-constexpr inline v4t<T>
+constexpr v4t<T>
 operator* (T lhs, v4t<T> rhs)
 {
 	v4t<T> result = {
@@ -1293,7 +1293,7 @@ operator* (T lhs, v4t<T> rhs)
 }
 
 template<typename T>
-constexpr inline v4t<T>
+constexpr v4t<T>
 operator* (v4t<T> lhs, T rhs)
 {
 	v4t<T> result = {
@@ -1306,7 +1306,7 @@ operator* (v4t<T> lhs, T rhs)
 }
 
 template<typename T>
-constexpr inline v4t<T>
+constexpr v4t<T>
 operator* (v4t<T> lhs, v4t<T> rhs)
 {
 	v4t<T> result = {
@@ -1319,21 +1319,21 @@ operator* (v4t<T> lhs, v4t<T> rhs)
 }
 
 template<typename T>
-constexpr inline void
+constexpr void
 operator*= (v4t<T>& lhs, T rhs)
 {
 	lhs = lhs * rhs;
 }
 
 template<typename T>
-constexpr inline void
+constexpr void
 operator*= (v4t<T>& lhs, v4t<T> rhs)
 {
 	lhs = lhs * rhs;
 }
 
 template<typename T>
-constexpr inline v4t<T>
+constexpr v4t<T>
 operator/ (v4t<T> lhs, T rhs)
 {
 	v4t<T> result = {
@@ -1346,7 +1346,7 @@ operator/ (v4t<T> lhs, T rhs)
 }
 
 template<typename T>
-constexpr inline v4t<T>
+constexpr v4t<T>
 operator/ (T lhs, v4t<T> rhs)
 {
 	v4t<T> result = {
@@ -1359,7 +1359,7 @@ operator/ (T lhs, v4t<T> rhs)
 }
 
 template<typename T>
-constexpr inline v4t<T>
+constexpr v4t<T>
 operator/ (v4t<T> lhs, v4t<T> rhs)
 {
 	v4t<T> result = {
@@ -1372,21 +1372,21 @@ operator/ (v4t<T> lhs, v4t<T> rhs)
 }
 
 template<typename T>
-constexpr inline void
+constexpr void
 operator/= (v4t<T>& lhs, T rhs)
 {
 	lhs = lhs / rhs;
 }
 
 template<typename T>
-constexpr inline void
+constexpr void
 operator/= (v4t<T>& lhs, v4t<T> rhs)
 {
 	lhs = lhs / rhs;
 }
 
 template<typename T>
-constexpr inline T&
+constexpr T&
 v4t<T>::operator[] (u32 index)
 {
 	Assert(index < ArrayLength(arr));
@@ -1395,7 +1395,7 @@ v4t<T>::operator[] (u32 index)
 }
 
 template<typename T>
-constexpr inline const T&
+constexpr const T&
 v4t<T>::operator[] (u32 index) const
 {
 	Assert(index < ArrayLength(arr));
@@ -1405,7 +1405,7 @@ v4t<T>::operator[] (u32 index) const
 
 template<typename T>
 template<typename U>
-constexpr inline
+constexpr
 v4t<T>::operator v2t<U>()
 {
 	v2t<U> result = {
@@ -1417,7 +1417,7 @@ v4t<T>::operator v2t<U>()
 
 template<typename T>
 template<typename U>
-constexpr inline
+constexpr
 v4t<T>::operator v3t<U>()
 {
 	v3t<U> result = {
@@ -1430,7 +1430,7 @@ v4t<T>::operator v3t<U>()
 
 template<typename T>
 template<typename U>
-constexpr inline
+constexpr
 v4t<T>::operator v4t<U>()
 {
 	v4t<U> result = {
@@ -1443,7 +1443,7 @@ v4t<T>::operator v4t<U>()
 }
 
 template<typename T>
-constexpr inline v4t<T>
+constexpr v4t<T>
 Clamp(v4t<T> v, v4t<T> min, v4t<T> max)
 {
 	v4t<T> result = {
@@ -1456,7 +1456,7 @@ Clamp(v4t<T> v, v4t<T> min, v4t<T> max)
 }
 
 template<typename T>
-constexpr inline v4t<T>
+constexpr v4t<T>
 Clamp01(v4t<T> v)
 {
 	v4t<T> result = {
@@ -1469,7 +1469,7 @@ Clamp01(v4t<T> v)
 }
 
 template<typename T>
-constexpr inline T
+constexpr T
 Dot(v4t<T> lhs, v4t<T> rhs)
 {
 	T result = (T) (
@@ -1482,7 +1482,7 @@ Dot(v4t<T> lhs, v4t<T> rhs)
 }
 
 template<typename T>
-constexpr inline v4t<T>
+constexpr v4t<T>
 Lerp(v4t<T> from, v4t<T> to, r32 t)
 {
 	v4t<T> result = {
@@ -1495,7 +1495,7 @@ Lerp(v4t<T> from, v4t<T> to, r32 t)
 }
 
 template<typename T>
-constexpr inline v4t<T>
+constexpr v4t<T>
 LerpClamped(v4t<T> from, v4t<T> to, r32 t)
 {
 	v4t<T> result = {
@@ -1508,7 +1508,7 @@ LerpClamped(v4t<T> from, v4t<T> to, r32 t)
 }
 
 template<typename T>
-constexpr inline v4t<r32>
+constexpr v4t<r32>
 InverseLerp(v4t<T> from, v4t<T> to, v4t<T> value)
 {
 	v4t<r32> result = {
@@ -1521,7 +1521,7 @@ InverseLerp(v4t<T> from, v4t<T> to, v4t<T> value)
 }
 
 template<typename T>
-constexpr inline v4t<r32>
+constexpr v4t<r32>
 InverseLerpClamped(v4t<T> from, v4t<T> to, v4t<T> value)
 {
 	v4t<r32> result = {
@@ -1580,7 +1580,7 @@ MagnitudeSq(v4t<r64> v)
 }
 
 template<typename T>
-constexpr inline v4t<T>
+constexpr v4t<T>
 Max(v4t<T> lhs, v4t<T> rhs)
 {
 	v4t<T> result = {
@@ -1593,7 +1593,7 @@ Max(v4t<T> lhs, v4t<T> rhs)
 }
 
 template<typename T>
-constexpr inline v4t<T>
+constexpr v4t<T>
 Min(v4t<T> lhs, v4t<T> rhs)
 {
 	v4t<T> result = {
@@ -1668,7 +1668,7 @@ union Matrix
 	constexpr const v4& operator[] (u32 _col) const;
 };
 
-constexpr inline v4
+constexpr v4
 Row(const Matrix& m, u32 row)
 {
 	v4 result = {
@@ -1680,14 +1680,14 @@ Row(const Matrix& m, u32 row)
 	return result;
 }
 
-constexpr inline const v4&
+constexpr const v4&
 Col(const Matrix& m, u32 col)
 {
 	const v4& result = m.col[col];
 	return result;
 }
 
-constexpr inline Matrix
+constexpr Matrix
 operator* (const Matrix& lhs, const Matrix& rhs)
 {
 	Matrix result = {
@@ -1699,7 +1699,7 @@ operator* (const Matrix& lhs, const Matrix& rhs)
 	return result;
 }
 
-constexpr inline void
+constexpr void
 operator*= (Matrix& lhs, const Matrix& rhs)
 {
 	lhs = {
@@ -1711,7 +1711,7 @@ operator*= (Matrix& lhs, const Matrix& rhs)
 }
 
 // TODO: Versions for v3?
-constexpr inline v4
+constexpr v4
 operator* (v4 lhs, const Matrix& rhs)
 {
 	v4 result = {
@@ -1723,13 +1723,13 @@ operator* (v4 lhs, const Matrix& rhs)
 	return result;
 }
 
-constexpr inline void
+constexpr void
 operator*= (v4& lhs, const Matrix& rhs)
 {
 	lhs = lhs * rhs;
 }
 
-constexpr inline v4&
+constexpr v4&
 Matrix::operator[] (u32 _col)
 {
 	Assert(_col < ArrayLength(col));
@@ -1737,7 +1737,7 @@ Matrix::operator[] (u32 _col)
 	return result;
 }
 
-constexpr inline const v4&
+constexpr const v4&
 Matrix::operator[] (u32 _col) const
 {
 	Assert(_col < ArrayLength(arr));
@@ -1745,7 +1745,7 @@ Matrix::operator[] (u32 _col) const
 	return result;
 }
 
-constexpr inline Matrix
+constexpr Matrix
 Identity()
 {
 	Matrix result = {
@@ -1758,7 +1758,7 @@ Identity()
 }
 
 // TODO: What about scale?
-constexpr inline Matrix
+constexpr Matrix
 InvertRT(const Matrix& m)
 {
 	Matrix result = {
@@ -1804,7 +1804,7 @@ Orbit(v3 target, v2 yp, r32 radius)
 	return LookAt(pos, target);
 }
 
-constexpr inline Matrix
+constexpr Matrix
 Orthographic(v2 size, r32 near, r32 far)
 {
 	Matrix result = {};
@@ -1816,7 +1816,7 @@ Orthographic(v2 size, r32 near, r32 far)
 	return result;
 }
 
-constexpr inline Matrix
+constexpr Matrix
 Transpose(const Matrix& m)
 {
 	Matrix result = {
@@ -1828,14 +1828,14 @@ Transpose(const Matrix& m)
 	return result;
 }
 
-constexpr inline void
+constexpr void
 SetPosition(Matrix& m, v2 pos)
 {
 	m.tx = pos.x;
 	m.ty = pos.y;
 }
 
-constexpr inline void
+constexpr void
 SetPosition(Matrix& m, v2 pos, r32 zPos)
 {
 	m.tx = pos.x;
@@ -1843,7 +1843,7 @@ SetPosition(Matrix& m, v2 pos, r32 zPos)
 	m.tz = zPos;
 }
 
-constexpr inline void
+constexpr void
 SetPosition(Matrix& m, v3 pos)
 {
 	m.tx = pos.x;
@@ -1851,19 +1851,19 @@ SetPosition(Matrix& m, v3 pos)
 	m.tz = pos.z;
 }
 
-constexpr inline void
+constexpr void
 SetTranslation(Matrix& m, v2 pos)
 {
 	SetPosition(m, pos);
 }
 
-constexpr inline void
+constexpr void
 SetTranslation(Matrix& m, v2 pos, r32 zPos)
 {
 	SetPosition(m, pos, zPos);
 }
 
-constexpr inline void
+constexpr void
 SetTranslation(Matrix& m, v3 pos)
 {
 	SetPosition(m, pos);
@@ -1917,14 +1917,14 @@ SetRotation(Matrix& m, v3 ypr)
 	m.m22 = cy*cp;
 }
 
-constexpr inline void
+constexpr void
 SetScale(Matrix& m, v2 scale)
 {
 	m.sx = scale.x;
 	m.sy = scale.y;
 }
 
-constexpr inline void
+constexpr void
 SetScale(Matrix& m, v2 scale, r32 zScale)
 {
 	m.sx = scale.x;
@@ -1932,7 +1932,7 @@ SetScale(Matrix& m, v2 scale, r32 zScale)
 	m.sz = zScale;
 }
 
-constexpr inline void
+constexpr void
 SetScale(Matrix& m, v3 scale)
 {
 	m.sx = scale.x;
@@ -2043,7 +2043,7 @@ GetSR(v2 scale, v2 yp)
 	return result;
 }
 
-constexpr inline void
+constexpr void
 SetST(Matrix& m, v3 scale, v3 pos)
 {
 	m.tx = pos.x;
@@ -2063,7 +2063,7 @@ SetST(Matrix& m, v3 scale, v3 pos)
 	m.zz = scale.z;
 }
 
-constexpr inline void
+constexpr void
 SetST(Matrix& m, v2 scale, v2 pos)
 {
 	m.tx = pos.x;
@@ -2082,7 +2082,7 @@ SetST(Matrix& m, v2 scale, v2 pos)
 	m.zz = 0.0f;
 }
 
-constexpr inline Matrix
+constexpr Matrix
 GetST(v3 scale, v3 pos)
 {
 	Matrix result = Identity();
@@ -2090,7 +2090,7 @@ GetST(v3 scale, v3 pos)
 	return result;
 }
 
-constexpr inline Matrix
+constexpr Matrix
 GetST(v2 scale, v2 pos)
 {
 	Matrix result = Identity();
@@ -2238,7 +2238,7 @@ RectCombine(v4t<T> lhs, v4t<T> rhs)
 // -------------------------------------------------------------------------------------------------
 // Color
 
-constexpr inline u16
+constexpr u16
 Color16(u8 r, u8 g, u8 b)
 {
 	// |<- MSB
@@ -2250,7 +2250,7 @@ Color16(u8 r, u8 g, u8 b)
 	return result;
 }
 
-constexpr inline u32
+constexpr u32
 Color32(u8 r, u8 g, u8 b, u8 a)
 {
 	u32 rp = (u32) (r << 24);
@@ -2261,7 +2261,7 @@ Color32(u8 r, u8 g, u8 b, u8 a)
 	return result;
 }
 
-constexpr inline v4
+constexpr v4
 Color128(u8 r, u8 g, u8 b, u8 a)
 {
 	// https://developercommunity.visualstudio.com/content/problem/1167562/spurious-warning-c5219-in-1672.html
@@ -2276,29 +2276,29 @@ Color128(u8 r, u8 g, u8 b, u8 a)
 
 namespace Colors16
 {
-	static const u16 Black   = Color16(0x00, 0x00, 0x00);
-	static const u16 Gray    = Color16(0x80, 0x80, 0x80);
-	static const u16 White   = Color16(0xFF, 0xFF, 0xFF);
-	static const u16 Red     = Color16(0xFF, 0x00, 0x00);
-	static const u16 Green   = Color16(0x00, 0xFF, 0x00);
-	static const u16 Blue    = Color16(0x00, 0x00, 0xFF);
-	static const u16 Cyan    = Color16(0x00, 0xFF, 0xFF);
-	static const u16 Magenta = Color16(0xFF, 0x00, 0xFF);
-	static const u16 Yellow  = Color16(0xFF, 0xFF, 0x00);
+	constexpr u16 Black   = Color16(0x00, 0x00, 0x00);
+	constexpr u16 Gray    = Color16(0x80, 0x80, 0x80);
+	constexpr u16 White   = Color16(0xFF, 0xFF, 0xFF);
+	constexpr u16 Red     = Color16(0xFF, 0x00, 0x00);
+	constexpr u16 Green   = Color16(0x00, 0xFF, 0x00);
+	constexpr u16 Blue    = Color16(0x00, 0x00, 0xFF);
+	constexpr u16 Cyan    = Color16(0x00, 0xFF, 0xFF);
+	constexpr u16 Magenta = Color16(0xFF, 0x00, 0xFF);
+	constexpr u16 Yellow  = Color16(0xFF, 0xFF, 0x00);
 };
 
 namespace Colors128
 {
-	static const v4 Clear   = Color128(0x00, 0x00, 0x00, 0x00);
-	static const v4 Black   = Color128(0x00, 0x00, 0x00, 0xFF);
-	static const v4 Gray    = Color128(0x80, 0x80, 0x80, 0xFF);
-	static const v4 White   = Color128(0xFF, 0xFF, 0xFF, 0xFF);
-	static const v4 Red     = Color128(0xFF, 0x00, 0x00, 0xFF);
-	static const v4 Green   = Color128(0x00, 0xFF, 0x00, 0xFF);
-	static const v4 Blue    = Color128(0x00, 0x00, 0xFF, 0xFF);
-	static const v4 Cyan    = Color128(0x00, 0xFF, 0xFF, 0xFF);
-	static const v4 Magenta = Color128(0xFF, 0x00, 0xFF, 0xFF);
-	static const v4 Yellow  = Color128(0xFF, 0xFF, 0x00, 0xFF);
+	constexpr v4 Clear   = Color128(0x00, 0x00, 0x00, 0x00);
+	constexpr v4 Black   = Color128(0x00, 0x00, 0x00, 0xFF);
+	constexpr v4 Gray    = Color128(0x80, 0x80, 0x80, 0xFF);
+	constexpr v4 White   = Color128(0xFF, 0xFF, 0xFF, 0xFF);
+	constexpr v4 Red     = Color128(0xFF, 0x00, 0x00, 0xFF);
+	constexpr v4 Green   = Color128(0x00, 0xFF, 0x00, 0xFF);
+	constexpr v4 Blue    = Color128(0x00, 0x00, 0xFF, 0xFF);
+	constexpr v4 Cyan    = Color128(0x00, 0xFF, 0xFF, 0xFF);
+	constexpr v4 Magenta = Color128(0xFF, 0x00, 0xFF, 0xFF);
+	constexpr v4 Yellow  = Color128(0xFF, 0xFF, 0x00, 0xFF);
 };
 
 // -------------------------------------------------------------------------------------------------
@@ -2323,7 +2323,7 @@ struct LerpConfig
 };
 
 template<typename T>
-constexpr inline void
+constexpr void
 Lerped_ContinueFromValue(Lerped<T>& lerped, T value)
 {
 	r32 progress = InverseLerpClamped(lerped.startValue, lerped.endValue, value);
@@ -2333,7 +2333,7 @@ Lerped_ContinueFromValue(Lerped<T>& lerped, T value)
 }
 
 template<typename T>
-constexpr inline void
+constexpr void
 Lerped_Initialize(Lerped<T>& lerped, LerpConfig<T> config, i64 startTime)
 {
 	lerped.startTime  = startTime;
@@ -2344,7 +2344,7 @@ Lerped_Initialize(Lerped<T>& lerped, LerpConfig<T> config, i64 startTime)
 }
 
 template<typename T>
-constexpr inline void
+constexpr void
 Lerped_Reinitialize(Lerped<T>& lerped, LerpConfig<T> config, i64 startTime, T value)
 {
 	lerped.startTime  = startTime;
@@ -2355,7 +2355,7 @@ Lerped_Reinitialize(Lerped<T>& lerped, LerpConfig<T> config, i64 startTime, T va
 }
 
 template<typename T>
-constexpr inline Lerped<T>
+constexpr Lerped<T>
 Lerped_Create(LerpConfig<T> config, i64 startTime)
 {
 	Lerped<T> lerped = {};
@@ -2364,7 +2364,7 @@ Lerped_Create(LerpConfig<T> config, i64 startTime)
 }
 
 template<typename T>
-constexpr inline T
+constexpr T
 Lerped_Update(Lerped<T>& lerped, i64 currentTime)
 {
 	i64 elapsedTime = currentTime - lerped.startTime;
@@ -2374,7 +2374,7 @@ Lerped_Update(Lerped<T>& lerped, i64 currentTime)
 }
 
 template<typename T>
-constexpr inline b8
+constexpr b8
 Lerped_IsComplete(Lerped<T>& lerped)
 {
 	b8 result = lerped.value == lerped.endValue;
@@ -2384,7 +2384,7 @@ Lerped_IsComplete(Lerped<T>& lerped)
 // -------------------------------------------------------------------------------------------------
 // Bit Manipulation
 
-constexpr inline u8
+constexpr u8
 GetByte(u8 index, u32 value) { return (value >> (index * 8)) & 0xFF; }
 
 #define UnpackLSB2(x) GetByte(0, x), GetByte(1, x)
@@ -2395,10 +2395,10 @@ GetByte(u8 index, u32 value) { return (value >> (index * 8)) & 0xFF; }
 #define UnpackMSB3(x) GetByte(2, x), GetByte(1, x), GetByte(0, x)
 #define UnpackMSB4(x) GetByte(3, x), GetByte(2, x), GetByte(1, x), GetByte(0, x)
 
-constexpr inline u8
+constexpr u8
 GetBit(u8 value, u8 index) { return (u8) ((value >> index) & 0x1); }
 
-constexpr inline u8
+constexpr u8
 SetBit(u8 value, u8 bitIndex, u8 bitValue)
 {
 	value &= ~(1 << bitIndex);

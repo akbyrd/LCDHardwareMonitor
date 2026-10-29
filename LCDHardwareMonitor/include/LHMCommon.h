@@ -5,11 +5,8 @@
 #include <string.h>
 #include <math.h>
 
-// Fuck you, Microsoft
 #pragma warning(push, 0)
-// signed unsigned mismatch
-#pragma warning(disable: 4365)
-// TODO: Why can't this be <memory.h>?
+#pragma warning(disable: 4365) // signed unsigned mismatch
 #include <memory>
 #pragma warning(pop)
 
@@ -37,13 +34,13 @@ const u64 Megabyte = 1024LL * Kilobyte;
 const u64 Gigabyte = 1024LL * Megabyte;
 
 template<typename T, size S>
-constexpr inline size ArrayLength(const T(&)[S]) { return S; }
+constexpr size ArrayLength(const T(&)[S]) { return S; }
 
 template<typename T, size S>
-constexpr inline size ArraySize(const T(&)[S]) { return S * sizeof(T); }
+constexpr size ArraySize(const T(&)[S]) { return S * sizeof(T); }
 
 template<typename ...Args>
-constexpr inline void Unused(Args const& ...) {}
+constexpr void Unused(Args const& ...) {}
 
 #if DEBUG
 	#define Assert(condition) if (!(condition)) { *((u8 *) 0) = 0; }

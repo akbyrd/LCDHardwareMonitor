@@ -30,7 +30,7 @@ struct StrPos
 inline u32 ToIndex(StrPos pos) { return pos.value - 1; }
 inline u32 ToStrPos(u32 index) { return { index + 1 }; }
 
-const StrPos StrPos::Null = {};
+constexpr inline StrPos StrPos::Null = {};
 
 struct String
 {
@@ -106,7 +106,7 @@ String_Reserve(String& string, u32 capacity)
 #define String_FormatInto(buffer, format, ...) \
 	String_FormatIntoChecked<CountPlaceholders(format)>(buffer, format, ##__VA_ARGS__)
 
-String
+inline String
 String_FromView(StringView view)
 {
 	String string = {};
@@ -118,7 +118,7 @@ String_FromView(StringView view)
 	return string;
 }
 
-String
+inline String
 String_FromSlice(StringSlice slice)
 {
 	String string = {};
@@ -172,7 +172,7 @@ String_FindLast(StringView string, c8 item)
 	return StrPos::Null;
 }
 
-StringSlice
+inline StringSlice
 String_Slice(StringView string, StrPos first, StrPos last)
 {
 	StringSlice slice = {};
@@ -341,21 +341,21 @@ ToStringf(String& string, StringView format, T value)
 }
 
 // TODO: Might want to add a 'context' parameter that can keep track of nested indentation
-u32 ToString(String& string, u8        value) { return ToStringf(string, "%hu",  value); }
-u32 ToString(String& string, u16       value) { return ToStringf(string, "%u",   value); }
-u32 ToString(String& string, u32       value) { return ToStringf(string, "%lu",  value); }
-u32 ToString(String& string, u64       value) { return ToStringf(string, "%llu", value); }
-u32 ToString(String& string, i8        value) { return ToStringf(string, "%hi",  value); }
-u32 ToString(String& string, i16       value) { return ToStringf(string, "%i",   value); }
-u32 ToString(String& string, i32       value) { return ToStringf(string, "%li",  value); }
-u32 ToString(String& string, i64       value) { return ToStringf(string, "%lli", value); }
-u32 ToString(String& string, r32       value) { return ToStringf(string, "%f",   value); }
-u32 ToString(String& string, r64       value) { return ToStringf(string, "%f",   value); }
-u32 ToString(String& string, c8        value) { return ToStringf(string, "%c",   value); }
-u32 ToString(String& string, const c8* value) { return ToStringf(string, "%s",   value); }
-u32 ToString(String& string, b8        value) { return ToStringf(string, "%s",   value ? "true" : "false"); }
+inline u32 ToString(String& string, u8        value) { return ToStringf(string, "%hu",  value); }
+inline u32 ToString(String& string, u16       value) { return ToStringf(string, "%u",   value); }
+inline u32 ToString(String& string, u32       value) { return ToStringf(string, "%lu",  value); }
+inline u32 ToString(String& string, u64       value) { return ToStringf(string, "%llu", value); }
+inline u32 ToString(String& string, i8        value) { return ToStringf(string, "%hi",  value); }
+inline u32 ToString(String& string, i16       value) { return ToStringf(string, "%i",   value); }
+inline u32 ToString(String& string, i32       value) { return ToStringf(string, "%li",  value); }
+inline u32 ToString(String& string, i64       value) { return ToStringf(string, "%lli", value); }
+inline u32 ToString(String& string, r32       value) { return ToStringf(string, "%f",   value); }
+inline u32 ToString(String& string, r64       value) { return ToStringf(string, "%f",   value); }
+inline u32 ToString(String& string, c8        value) { return ToStringf(string, "%c",   value); }
+inline u32 ToString(String& string, const c8* value) { return ToStringf(string, "%s",   value); }
+inline u32 ToString(String& string, b8        value) { return ToStringf(string, "%s",   value ? "true" : "false"); }
 
-u32
+inline u32
 ToString(String& string, String value)
 {
 	b8 lengthOnly = !string.data;
@@ -365,7 +365,7 @@ ToString(String& string, String value)
 	return written;
 }
 
-u32
+inline u32
 ToString(String& string, StringView value)
 {
 	b8 lengthOnly = !string.data;
@@ -375,7 +375,7 @@ ToString(String& string, StringView value)
 	return written;
 }
 
-u32
+inline u32
 ToString(String& string, StringSlice value)
 {
 	b8 lengthOnly = !string.data;

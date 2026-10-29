@@ -16,47 +16,47 @@ struct ILI9341State
 
 namespace ILI9341
 {
-	static const u32 WriteClockSpeed = 30'000'000;
-	static const u32 ReadClockSpeed  = 15'000'000;
+	constexpr u32 WriteClockSpeed = 30'000'000;
+	constexpr u32 ReadClockSpeed  = 15'000'000;
 
-	struct Command
+	namespace Command
 	{
-		static const u8 Nop                          = 0x00;
-		static const u8 SoftwareReset                = 0x01;
-		static const u8 ReadIdentificationInfo       = 0x04;
-		static const u8 ReadStatus                   = 0x09;
-		static const u8 ReadPowerMode                = 0x0A;
-		static const u8 ReadMemoryAccessControl      = 0x0B;
-		static const u8 ReadPixelFormat              = 0x0C;
-		static const u8 ReadImageFormat              = 0x0D;
-		static const u8 ReadSignalMode               = 0x0E;
-		static const u8 ReadSelfDiagnostic           = 0x0F;
-		static const u8 SleepIn                      = 0x10;
-		static const u8 SleepOut                     = 0x11;
-		static const u8 GammaSet                     = 0x26;
-		static const u8 DisplayOff                   = 0x28;
-		static const u8 DisplayOn                    = 0x29;
-		static const u8 ColumnAddressSet             = 0x2A;
-		static const u8 PageAddressSet               = 0x2B;
-		static const u8 MemoryWrite                  = 0x2C;
-		static const u8 MemoryAccessControl          = 0x36;
-		static const u8 PixelFormatSet               = 0x3A;
-		static const u8 FrameRateControlNormal       = 0xB1;
-		static const u8 DisplayFunctionControl       = 0xB6;
-		static const u8 PowerControl1                = 0xC0;
-		static const u8 PowerControl2                = 0xC1;
-		static const u8 VCOMControl1                 = 0xC5;
-		static const u8 VCOMControl2                 = 0xC7;
-		static const u8 PowerControlA                = 0xCB;
-		static const u8 PowerControlB                = 0xCF;
-		static const u8 PositiveGammaCorrection      = 0xE0;
-		static const u8 NegativeGammaCorrection      = 0xE1;
-		static const u8 DriverTimingControlAInternal = 0xE8;
-		static const u8 DriverTimingControlAExternal = 0xE9;
-		static const u8 DriverTimingControlB         = 0xEA;
-		static const u8 PowerOnSequenceControl       = 0xED;
-		static const u8 Enable3Gamma                 = 0xF2;
-		static const u8 PumpRatioControl             = 0xF7;
+		constexpr u8 Nop                          = 0x00;
+		constexpr u8 SoftwareReset                = 0x01;
+		constexpr u8 ReadIdentificationInfo       = 0x04;
+		constexpr u8 ReadStatus                   = 0x09;
+		constexpr u8 ReadPowerMode                = 0x0A;
+		constexpr u8 ReadMemoryAccessControl      = 0x0B;
+		constexpr u8 ReadPixelFormat              = 0x0C;
+		constexpr u8 ReadImageFormat              = 0x0D;
+		constexpr u8 ReadSignalMode               = 0x0E;
+		constexpr u8 ReadSelfDiagnostic           = 0x0F;
+		constexpr u8 SleepIn                      = 0x10;
+		constexpr u8 SleepOut                     = 0x11;
+		constexpr u8 GammaSet                     = 0x26;
+		constexpr u8 DisplayOff                   = 0x28;
+		constexpr u8 DisplayOn                    = 0x29;
+		constexpr u8 ColumnAddressSet             = 0x2A;
+		constexpr u8 PageAddressSet               = 0x2B;
+		constexpr u8 MemoryWrite                  = 0x2C;
+		constexpr u8 MemoryAccessControl          = 0x36;
+		constexpr u8 PixelFormatSet               = 0x3A;
+		constexpr u8 FrameRateControlNormal       = 0xB1;
+		constexpr u8 DisplayFunctionControl       = 0xB6;
+		constexpr u8 PowerControl1                = 0xC0;
+		constexpr u8 PowerControl2                = 0xC1;
+		constexpr u8 VCOMControl1                 = 0xC5;
+		constexpr u8 VCOMControl2                 = 0xC7;
+		constexpr u8 PowerControlA                = 0xCB;
+		constexpr u8 PowerControlB                = 0xCF;
+		constexpr u8 PositiveGammaCorrection      = 0xE0;
+		constexpr u8 NegativeGammaCorrection      = 0xE1;
+		constexpr u8 DriverTimingControlAInternal = 0xE8;
+		constexpr u8 DriverTimingControlAExternal = 0xE9;
+		constexpr u8 DriverTimingControlB         = 0xEA;
+		constexpr u8 PowerOnSequenceControl       = 0xED;
+		constexpr u8 Enable3Gamma                 = 0xF2;
+		constexpr u8 PumpRatioControl             = 0xF7;
 	};
 }
 
