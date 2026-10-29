@@ -212,7 +212,7 @@ static Bytes
 LoadFile(StringView path, u32 padding = 0)
 {
 	Bytes result = {};
-	auto resultGuard = guard { List_Free(result); };
+	Guard resultGuard = guard { List_Free(result); };
 
 	String cwd = {};
 	defer { String_Free(cwd); };
@@ -618,7 +618,7 @@ Platform_ConnectPipeClient(Pipe& pipe)
 {
 	if (IsValidHandle(pipe.impl->handle)) return PipeResult::Success;
 
-	auto cleanupGuard = guard {
+	Guard cleanupGuard = guard {
 		CloseHandle(pipe.impl->handle);
 		pipe.impl->handle = nullptr;
 	};
@@ -745,7 +745,7 @@ Platform_UpdatePipeConnection(Pipe& pipe)
 PipeResult
 Platform_CreatePipeServer(StringView name, Pipe& pipe)
 {
-	auto cleanupGuard = guard { Platform_DestroyPipe(pipe); };
+	Guard cleanupGuard = guard { Platform_DestroyPipe(pipe); };
 
 	// Initialize
 	{
@@ -794,7 +794,7 @@ Platform_CreatePipeServer(StringView name, Pipe& pipe)
 PipeResult
 Platform_CreatePipeClient(StringView name, Pipe& pipe)
 {
-	auto cleanupGuard = guard { Platform_DestroyPipe(pipe); };
+	Guard cleanupGuard = guard { Platform_DestroyPipe(pipe); };
 
 	// Initialize
 	{

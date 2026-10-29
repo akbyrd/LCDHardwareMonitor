@@ -222,7 +222,7 @@ ValidatePluginDesc(PluginDesc& pluginDesc)
 b8
 PluginLoader_LoadSensorPlugin(PluginLoaderState& s, Plugin& plugin, SensorPlugin& sensorPlugin)
 {
-	auto pluginGuard = guard { plugin.loadState = PluginLoadState::Broken; };
+	Guard pluginGuard = guard { plugin.loadState = PluginLoadState::Broken; };
 
 	if (plugin.language != PluginLanguage::Builtin)
 	{
@@ -310,7 +310,7 @@ PluginLoader_UnloadSensorPlugin(PluginLoaderState& s, Plugin& plugin, SensorPlug
 {
 	b8 success = false;
 
-	auto pluginGuard = guard { plugin.loadState = PluginLoadState::Broken; };
+	Guard pluginGuard = guard { plugin.loadState = PluginLoadState::Broken; };
 
 	switch (plugin.language)
 	{
@@ -352,7 +352,7 @@ PluginLoader_UnloadSensorPlugin(PluginLoaderState& s, Plugin& plugin, SensorPlug
 b8
 PluginLoader_LoadWidgetPlugin(PluginLoaderState& s, Plugin& plugin, WidgetPlugin& widgetPlugin)
 {
-	auto pluginGuard = guard { plugin.loadState = PluginLoadState::Broken; };
+	Guard pluginGuard = guard { plugin.loadState = PluginLoadState::Broken; };
 
 	if (plugin.language != PluginLanguage::Builtin)
 	{
@@ -440,7 +440,7 @@ PluginLoader_UnloadWidgetPlugin(PluginLoaderState& s, Plugin& plugin, WidgetPlug
 {
 	b8 success = false;
 
-	auto pluginGuard = guard { plugin.loadState = PluginLoadState::Broken; };
+	Guard pluginGuard = guard { plugin.loadState = PluginLoadState::Broken; };
 
 	switch (plugin.language)
 	{

@@ -609,7 +609,7 @@ RegisterPlugin(SimulationState& s, StringView directory, StringView fileName)
 	Plugin& plugin = ListWithHandles_Append(s.handleTable, s.plugins);
 
 	defer { ToGUI_PluginStatesChanged(s, plugin); };
-	auto pluginGuard = guard { plugin.loadState = PluginLoadState::Broken; };
+	Guard pluginGuard = guard { plugin.loadState = PluginLoadState::Broken; };
 
 	plugin.fileName  = String_FromView(fileName);
 	plugin.directory = String_FromView(directory);
@@ -664,7 +664,7 @@ LoadSensorPlugin(SimulationState& s, Plugin& plugin, SensorPluginFunctions::GetP
 	List_Reserve(sensorPlugin.sensors, 32);
 
 	defer { ToGUI_PluginStatesChanged(s, plugin); };
-	auto pluginGuard = guard
+	Guard pluginGuard = guard
 	{
 		plugin.loadState = PluginLoadState::Broken;
 		List_RemoveLast(s.sensorPlugins);
@@ -716,7 +716,7 @@ UnloadSensorPlugin(SimulationState& s, SensorPlugin& sensorPlugin)
 	Assert(plugin.loadState != PluginLoadState::Unloaded);
 
 	defer { ToGUI_PluginStatesChanged(s, plugin); };
-	auto pluginGuard = guard { plugin.loadState = PluginLoadState::Broken; };
+	Guard pluginGuard = guard { plugin.loadState = PluginLoadState::Broken; };
 
 	// TODO: try/catch?
 	if (sensorPlugin.functions.Teardown)
@@ -773,7 +773,7 @@ LoadWidgetPlugin(SimulationState& s, Plugin& plugin)
 	widgetPlugin.pluginHandle = plugin.handle;
 
 	defer { ToGUI_PluginStatesChanged(s, plugin); };
-	auto pluginGuard = guard
+	Guard pluginGuard = guard
 	{
 		plugin.loadState = PluginLoadState::Broken;
 		List_RemoveLast(s.widgetPlugins);
@@ -826,7 +826,7 @@ UnloadWidgetPlugin(SimulationState& s, WidgetPlugin& widgetPlugin)
 	Assert(plugin.loadState != PluginLoadState::Unloaded);
 
 	defer { ToGUI_PluginStatesChanged(s, plugin); };
-	auto pluginGuard = guard { plugin.loadState = PluginLoadState::Broken; };
+	Guard pluginGuard = guard { plugin.loadState = PluginLoadState::Broken; };
 
 	PluginContext context = {};
 	context.s            = &s;
@@ -930,7 +930,7 @@ AddWidgets(SimulationState& s, WidgetType& widgetType, u32 count)
 {
 	u32 prevWidgetLen = widgetType.widgets.length;
 
-	auto createGuard = guard {
+	Guard createGuard = guard {
 		widgetType.widgets.length = prevWidgetLen;
 		widgetType.widgetsUserData.length = widgetType.userDataSize * prevWidgetLen;
 	};

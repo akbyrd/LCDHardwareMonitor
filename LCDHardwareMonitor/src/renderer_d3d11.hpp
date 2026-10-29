@@ -249,7 +249,7 @@ ConvertStringToWide(StringView string)
 	Assert(string.length + 1 < i32Max);
 
 	Bytes result = {};
-	auto resultGuard = guard { List_Free(result); };
+	Guard resultGuard = guard { List_Free(result); };
 
 	i32 charCount = MultiByteToWideChar(
 		CP_UTF8,
@@ -300,7 +300,7 @@ CreateRenderTargetImpl(RendererState& s, StringView name, b8 resource, D3D11_TEX
 	RenderTargetData& renderTargetData = List_Append(s.renderTargets);
 	renderTargetData.ref = List_GetLastRef(s.renderTargets);
 
-	auto renderTargetGuard = guard {
+	Guard renderTargetGuard = guard {
 		DestroyRenderTarget(s, renderTargetData);
 		List_RemoveLast(s.renderTargets);
 	};
@@ -824,7 +824,7 @@ Renderer_CreateSharedRenderTarget(RendererState& s, StringView name, b8 resource
 
 	RenderTargetData& renderTargetData = s.renderTargets[rt];
 
-	auto renderTargetGuard = guard {
+	Guard renderTargetGuard = guard {
 		DestroyRenderTarget(s, renderTargetData);
 		List_RemoveLast(s.renderTargets);
 	};
@@ -853,7 +853,7 @@ Renderer_CreateCPUTexture(RendererState& s, StringView name)
 	CPUTextureData& cpuTextureData = List_Append(s.cpuTextures);
 	cpuTextureData.ref = List_GetLastRef(s.cpuTextures);
 
-	auto cpuTextureGuard = guard {
+	Guard cpuTextureGuard = guard {
 		DestroyCPUTexture(s, cpuTextureData);
 		List_RemoveLast(s.cpuTextures);
 	};
@@ -894,7 +894,7 @@ Renderer_CreateDepthBuffer(RendererState& s, StringView name, b8 resource)
 	DepthBufferData& depthBufferData = List_Append(s.depthBuffers);
 	depthBufferData.ref = List_GetLastRef(s.depthBuffers);
 
-	auto depthBufferGuard = guard {
+	Guard depthBufferGuard = guard {
 		DestroyDepthBuffer(s, depthBufferData);
 		List_RemoveLast(s.depthBuffers);
 	};
@@ -996,7 +996,7 @@ Renderer_LoadVertexShader(RendererState& s, StringView name, StringView path, Sl
 	VertexShaderData& vs = List_Append(s.vertexShaders);
 	vs.ref = List_GetLastRef(s.vertexShaders);
 
-	auto vsGuard = guard {
+	Guard vsGuard = guard {
 		DestroyVertexShader(s, vs);
 		List_RemoveLast(s.vertexShaders);
 	};
@@ -1097,7 +1097,7 @@ Renderer_LoadPixelShader(RendererState& s, StringView name, StringView path, Sli
 	PixelShaderData& ps = List_Append(s.pixelShaders);
 	ps.ref = List_GetLastRef(s.pixelShaders);
 
-	auto psGuard = guard {
+	Guard psGuard = guard {
 		DestroyPixelShader(s, ps);
 		List_RemoveLast(s.pixelShaders);
 	};

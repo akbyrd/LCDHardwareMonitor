@@ -116,7 +116,7 @@ Initialize(PluginContext& context, SensorPluginAPI::Initialize api)
 	PDH_STATUS status = PdhOpenQueryA(nullptr, 0, &state.query);
 	if (status != ERROR_SUCCESS) return false;
 
-	auto queryGuard = guard { Teardown(context, {}); };
+	Guard queryGuard = guard { Teardown(context, {}); };
 
 	status = PdhAddEnglishCounterA(state.query, "\\Processor Information(*)\\% Processor Utility", 0, &state.utility);
 	if (status != ERROR_SUCCESS) return false;

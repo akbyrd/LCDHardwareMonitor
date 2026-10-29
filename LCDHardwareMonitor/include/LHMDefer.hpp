@@ -20,60 +20,39 @@
 //   cleanup code that we may not have needed to do in specific instances.
 
 // NOTE: Lambdas cannot be default constructed, so the initializer list must be used.
-// NOTE: Template classes can't deduce parameters but functions can.
 // NOTE: Using operator<< lets us keep the actual lambda body out of the defer macro.
 // NOTE: The use of a forwarding reference and std:forward avoids unnecessary copies.
 // NOTE: Const members have to be set in the initializer list.
 
 template<typename TLambda>
-struct deferred final
+struct Defer final
 {
 	const TLambda lambda;
-	deferred(TLambda&& _lambda) : lambda(_lambda) {}
-	~deferred() { lambda(); }
+	Defer(TLambda&& _lambda) : lambda(_lambda) {}
+	~Defer() { lambda(); }
 
 	// NOTE: Avoids warning
-	void operator=(const deferred&) = delete;
+	void operator=(const Defer&) = delete;
 };
-
-struct
-{
-	template<typename TLambda>
-	deferred<TLambda>
-	operator<< (TLambda&& lambda)
-	{
-		return deferred<TLambda>(std::forward<TLambda>(lambda));
-	}
-} make_deferred;
 
 #define DEFER_UNIQUE_NAME2(x, y) x ## y
 #define DEFER_UNIQUE_NAME1(x, y) DEFER_UNIQUE_NAME2(x, y)
 #define DEFER_UNIQUE_NAME() DEFER_UNIQUE_NAME1(__defer_, __COUNTER__)
-#define defer auto DEFER_UNIQUE_NAME() = make_deferred << [&]
+#define defer Defer DEFER_UNIQUE_NAME() = [&]
 
 template<typename TLambda>
-struct guarded final
+struct Guard final
 {
 	const TLambda lambda;
 	b8 dismiss;
-	guarded(TLambda&& lambda) : lambda(lambda), dismiss(false) {}
-	~guarded() { if (!dismiss) lambda(); }
+	Guard(TLambda&& lambda) : lambda(lambda), dismiss(false) {}
+	~Guard() { if (!dismiss) lambda(); }
 
 	// NOTE: Avoids warning
-	void operator=(const guarded&) = delete;
+	void operator=(const Guard&) = delete;
 };
 
-struct
-{
-	template<typename TLambda>
-	guarded<TLambda>
-	operator<< (TLambda&& lambda)
-	{
-		return guarded<TLambda>((TLambda&&) lambda);
-	}
-} make_guard;
-
-#define guard make_guard << [&]
+#define guard [&]
 
 template<typename TResource, auto& ReleaseFn>
 struct Scoped
