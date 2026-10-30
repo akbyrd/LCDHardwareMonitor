@@ -10,5 +10,8 @@
     <ClCompile Include="..\..\Sensor Plugin - Windows\src\dllmain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Sensor Plugin - Windows\src\dllmain_keel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

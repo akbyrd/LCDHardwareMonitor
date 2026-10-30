@@ -279,7 +279,11 @@ Teardown(PluginContext& context, SensorPluginAPI::Teardown api)
 	state = {};
 }
 
+#if false
 EXPORT void
+#else
+void
+#endif
 GetSensorPluginInfo(PluginDesc& desc, SensorPluginFunctions& functions)
 {
 	desc.name       = "Windows Sensors";
